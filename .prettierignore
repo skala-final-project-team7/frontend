@@ -1,0 +1,6 @@
+node_modules
+dist
+coverage
+frontend/docs/ui-spec.pdf
+frontend/assets
+mock-data
