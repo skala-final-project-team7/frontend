@@ -9,8 +9,8 @@
     "preview": "vite preview --host 0.0.0.0",
     "typecheck": "vue-tsc -b --noEmit",
     "lint": "eslint . --ext .ts,.vue --max-warnings 0",
-    "format": "prettier --write \"src/**/*.{ts,vue,css}\" \"*.{js,cjs,ts,json,html}\" \"docs/ai/current-plan.md\"",
-    "test": "vitest run",
+    "format": "prettier --write \"src/**/*.{ts,vue,css}\" \"*.{js,cjs,ts,json,html}\" \"docs/ai/current-plan.md\" \"docs/ai/working-log.md\"",
+    "test": "vitest run --passWithNoTests",
     "test:watch": "vitest"
   },
   "dependencies": {

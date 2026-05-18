@@ -1,26 +1,20 @@
-import { createPinia } from 'pinia';
+/**
+ * --------------------------------------------------
+ * 작성자 : 신유진
+ * 작성목적 : LINA Frontend Vue 애플리케이션의 진입점 구성.
+ *           기본 App 컴포넌트와 전역 스타일을 연결하고 앱을 마운트한다.
+ * 작성일 : 2026-05-18
+ * 변경사항 내역 (날짜, 변경목적, 변경내용 순)
+ *   - 2026-05-18, 최초 작성, Vue 앱 기본 부팅 처리 추가
+ * --------------------------------------------------
+ * [호환성]
+ *   - Node.js 20.x LTS, TypeScript 5.7+
+ *   - Vue 3.5.x, Vite 5.4.x 기준
+ * --------------------------------------------------
+ */
 import { createApp } from 'vue';
 
 import App from './App.vue';
-import { router } from './router';
 import './styles/main.css';
 
-async function enableMocking() {
-  if (import.meta.env.VITE_USE_MOCK !== 'true') {
-    return;
-  }
-
-  const { worker } = await import('./mocks/browser');
-
-  await worker.start({
-    onUnhandledRequest: 'bypass',
-  });
-}
-
-async function bootstrap() {
-  await enableMocking();
-
-  createApp(App).use(createPinia()).use(router).mount('#app');
-}
-
-void bootstrap();
+createApp(App).mount('#app');

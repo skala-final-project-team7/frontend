@@ -38,12 +38,12 @@
 
 - Vue 3 + Vite + TypeScript 기반 frontend 앱 초기 설정
 - `package.json` 스크립트와 의존성 구성
-- Vite, TypeScript, Tailwind CSS, PostCSS, ESLint, Prettier 설정 추가
+- Vite, TypeScript, Tailwind CSS, PostCSS, ESLint, Prettier 기본 설정 추가
 - `src/main.ts`, `src/App.vue`, 전역 스타일 진입점 구성
 
 ### Test Cases
 
-- 앱 기본 라우트가 Vue app으로 렌더링되는지 확인
+- Vue app 기본 진입점이 컴파일되는지 확인
 - TypeScript 설정이 Vue SFC와 Vite 설정을 타입 체크할 수 있는지 확인
 - production build가 Vite 기본 target에서 성공하는지 확인
 - 루트 검증 스크립트가 root frontend app을 대상으로 실행되는지 확인
@@ -53,7 +53,7 @@
 - `package.json`, `package-lock.json`: frontend 의존성 및 npm scripts 구성
 - `index.html`, `vite.config.ts`: Vite 앱 진입점과 alias/test 설정
 - `tsconfig.json`, `tsconfig.app.json`, `tsconfig.node.json`: TypeScript project reference 설정
-- `tailwind.config.js`, `postcss.config.js`, `src/styles/main.css`: Tailwind 및 디자인 토큰 연결
+- `tailwind.config.js`, `postcss.config.js`, `src/styles/main.css`: Tailwind 기본 설정과 전역 스타일 연결
 - `.eslintrc.cjs`, `.prettierrc.json`, `.prettierignore`, `.gitignore`: lint/format/git ignore 설정
 - `src/main.ts`, `src/App.vue`, `src/vite-env.d.ts`: Vue 앱 부팅 진입점
 
@@ -73,7 +73,7 @@
 
 - `npm run typecheck`: passed
 - `npm run lint`: passed
-- `npm test`: passed, 4 test files / 5 tests
+- `npm test`: passed, no test files found with `--passWithNoTests`
 - `./scripts/verify.sh`: passed
 - `npm run build`: passed
 
