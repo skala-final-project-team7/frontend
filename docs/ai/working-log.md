@@ -67,6 +67,7 @@
 - `./scripts/lint.sh`
 - `./scripts/test.sh`
 - `./scripts/verify.sh`
+- `npm run typecheck`
 - `npm run build`
 
 ### Results
@@ -278,3 +279,53 @@
 
 - feature5 이후 항목은 수정하지 않음.
 - API, DB, 인증/인가 문서는 변경하지 않음.
+
+## 2026-05-18 - feature5: API 타입 및 클라이언트 골격
+
+### Scope
+
+- `docs/api-spec.md` 기준 Common Response wrapper 타입 정의
+- Conversation, Message, Source, Feedback, SSE event 타입 정의
+- Common Response wrapper를 처리하는 `src/api/client.ts` fetch wrapper 추가
+- conversations/messages/chat/feedback API 함수 골격 추가
+- SSE `/api/conversations/{conversationId}/chat` 호출을 wrapper 미적용 이벤트 스트림 요청으로 분리
+
+### Test Cases
+
+- Common Response 성공/실패 타입과 Chat 도메인 타입이 API 명세 shape와 호환된다.
+- 대화 생성, 대화 목록 조회, 메시지 이력 조회 함수가 Common Response의 `data`를 반환한다.
+- 대화 제목 수정, 대화 삭제, 메시지 피드백 등록 함수가 명세의 method/path/body로 요청한다.
+- SSE chat 함수는 `Accept: text/event-stream`으로 요청하고 Common Response wrapper를 파싱하지 않는다.
+
+### Changed Files
+
+- `src/__tests__/feature5.api-client.test.ts`: feature5 실패 우선 테스트 추가
+- `src/types/api.ts`: Common Response, Chat 도메인, feedback, SSE event 타입 추가
+- `src/api/client.ts`: JSON API fetch wrapper와 SSE stream request 함수 추가
+- `src/api/index.ts`: conversations/messages/chat/feedback API 함수 export 추가
+- `docs/ai/current-plan.md`: feature5 완료 체크 처리
+- `docs/ai/working-log.md`: feature5 작업 로그 기록
+
+### Commands
+
+- `npm test -- src/__tests__/feature5.api-client.test.ts` 실패 확인
+- `npm test -- src/__tests__/feature5.api-client.test.ts`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- `npm test -- src/__tests__/feature5.api-client.test.ts` 최초 실행: failed, API 함수 미구현으로 실패 확인
+- `npm test -- src/__tests__/feature5.api-client.test.ts`: passed, 4 tests passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: initially failed due to unused test mock parameters, fixed by typing the fetch mock; final run passed
+- `./scripts/test.sh`: passed, 4 test files and 15 tests passed
+- `./scripts/verify.sh`: passed
+- `npm run typecheck`: initially failed due to test mock call tuple narrowing, fixed in test code; final run passed
+
+### Notes / Remaining Issues
+
+- feature6 이후 항목은 수정하지 않음.
+- API 명세, DB, 인증/인가 문서는 변경하지 않음.
