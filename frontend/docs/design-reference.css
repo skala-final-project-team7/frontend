@@ -1,0 +1,337 @@
+:root {
+  /* ===========================
+     Colors
+     =========================== */
+
+  /* Primary */
+  --color-primary: #F48122;
+  --color-primary-light: #FCDAAC;
+  --color-primary-white: #FEFEFE;
+
+  /* Status */
+  --color-success: #2EB97F;
+  --color-error: #FF4800;
+  --color-warning: #FFD64F;
+
+  /* Brand Blue */
+  --color-blue-primary: #185CFF;
+  --color-blue-light: #A3BEFF;
+  --color-blue-pale: #EEF3FF;
+
+  /* Accent */
+  --color-purple: #AF68E2;
+  --color-purple-light: #B899EB;
+  --color-indigo: #ADADFB;
+  --color-sky: #7DBBFF;
+  --color-teal: #6BE6D3;
+  --color-green: #71DD8C;
+  --color-yellow: #FFCC00;
+  --color-orange: #FFB55B;
+  --color-red: #FF4747;
+
+  /* Neutral - Light mode */
+  --color-bg-100: #FCFCFC;
+  --color-bg-200: #F5F5F5;
+  --color-bg-300: #E6E6E6;
+  --color-bg-400: #CCCCCC;
+
+  /* Neutral - Dark (overlays) */
+  --color-dark-80: rgba(0, 0, 0, 0.8);
+  --color-dark-40: rgba(0, 0, 0, 0.4);
+  --color-dark-20: rgba(0, 0, 0, 0.2);
+  --color-dark-10: rgba(0, 0, 0, 0.1);
+  --color-dark-04: rgba(0, 0, 0, 0.04);
+
+  /* Neutral - Light (overlays) */
+  --color-white-80: rgba(255, 255, 255, 0.8);
+  --color-white-40: rgba(255, 255, 255, 0.4);
+  --color-white-20: rgba(255, 255, 255, 0.2);
+  --color-white-15: rgba(255, 255, 255, 0.15);
+  --color-white-10: rgba(255, 255, 255, 0.1);
+  --color-white-04: rgba(255, 255, 255, 0.04);
+
+
+  /* ===========================
+     Typography
+     =========================== */
+
+  --font-family: 'Inter', sans-serif;
+  --font-feature: 'ss01' on, 'cv01' on;
+
+  /* Heading */
+  --font-size-heading: 22.2px;
+  --font-weight-heading: 600;
+  --line-height-heading: 26px;
+
+  /* Body */
+  --font-size-body: 11.1px;
+  --font-weight-body: 400;
+  --line-height-body: 15px;
+
+  /* Caption / Label */
+  --font-size-caption: 6.475px;
+  --line-height-caption: 9px;
+
+  /* Button label */
+  --font-size-button: 10px;
+  --font-weight-button: 700;
+  --line-height-button: 12px;
+
+  /* Small label (출처 등) */
+  --font-size-small: 8px;
+  --line-height-small: 15px;
+
+
+  /* ===========================
+     Layout & Spacing
+     =========================== */
+
+  --border-radius-card: 24px;
+  --border-radius-item: 12.95px;
+  --border-radius-button: 7.4px;
+  --border-radius-tag: 5.55px;
+
+  --padding-card: 12.95px;
+  --padding-item: 18.5px;
+  --padding-button: 9.25px;
+
+  --gap-default: 12.95px;
+  --gap-tight: 3.7px;
+  --gap-xs: 1.85px;
+}
+
+
+/* ===========================
+   Card / Panel
+   =========================== */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 12.95px;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(9.25px);
+  border-radius: 24px;
+  width: 797px;
+}
+
+.panel-header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 18.5px;
+  gap: 185.46px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12.95px;
+  width: 640.1px;
+  height: 63px;
+}
+
+.panel-divider {
+  border-bottom: 0.4625px solid rgba(255, 255, 255, 0.15);
+}
+
+.panel-divider--active {
+  border-bottom: 0.4625px solid rgba(255, 255, 255, 0.8);
+}
+
+
+/* ===========================
+   Buttons
+   =========================== */
+
+/* Primary */
+.btn-primary {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 9.25px;
+  background: #F48122;
+  border: 0.4625px solid #000000;
+  border-radius: 7.4px;
+  font-family: 'Inter';
+  font-weight: 700;
+  font-size: 10px;
+  color: #FFFFFF;
+}
+
+/* Primary - hover (with glow) */
+.btn-primary--hover {
+  background: linear-gradient(90deg, #F79140 0%, #FF4A19 100%);
+  filter: drop-shadow(0px 0px 6px #F48122);
+}
+
+/* Disabled */
+.btn-primary--disabled {
+  background: #CCCCCC;
+  opacity: 0.5;
+  color: #000000;
+}
+
+/* Ghost (dark bg) */
+.btn-ghost {
+  background: rgba(0, 0, 0, 0.8);
+  border: 0.4625px solid rgba(255, 255, 255, 0.8);
+  border-radius: 7.4px;
+  padding: 9.25px;
+  color: #FFFFFF;
+}
+
+
+/* ===========================
+   Source Badge (출처)
+   =========================== */
+
+.badge-source {
+  background: #FEFEFE;
+  border: 0.543863px solid rgba(0, 0, 0, 0.1);
+  font-family: 'Inter';
+  font-size: 8px;
+  line-height: 15px;
+  color: #000000;
+  text-align: center;
+}
+
+.badge-source--disabled {
+  background: #CCCCCC;
+  color: #999999;
+}
+
+.badge-source--muted {
+  background: #F5F5F5;
+  color: #000000;
+}
+
+
+/* ===========================
+   Send Button (icon)
+   =========================== */
+
+/* Active */
+.btn-send {
+  background: #F48122;
+  box-shadow: 0px 0px 4px #F48122;
+  border-radius: 50%;
+}
+
+/* Hover */
+.btn-send--hover {
+  background: #DE6F14;
+  box-shadow: 0px 0px 4px #F48122;
+}
+
+/* Disabled */
+.btn-send--disabled {
+  background: #CCCCCC;
+}
+
+
+/* ===========================
+   Scroll / Anchor Button
+   =========================== */
+
+.btn-scroll {
+  width: 29px;
+  height: 29px;
+  background: #FEFEFE;
+  box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.25);
+  border-radius: 50%;
+}
+
+
+/* ===========================
+   Branding
+   =========================== */
+
+/* ASK LINA logotype */
+.logo-asklina {
+  font-family: 'Inter';
+  font-weight: 700;
+  font-size: 20px;
+  line-height: 15px;
+  color: #000000;
+  text-align: center;
+}
+
+/* SKP symbol glow */
+.logo-skp {
+  filter: drop-shadow(0px 1px 5px #F48122);
+}
+
+
+/* ===========================
+   Settings Modal
+   =========================== */
+
+/* Modal container: 435.09 x 398.11 with subtle shadow */
+.settings-modal {
+  width: 435.09px;
+  height: 398.11px;
+  background: #FFFFFF;
+  border-radius: 12px;
+  filter: drop-shadow(0px 4.3509px 21.7545px rgba(0, 0, 0, 0.1));
+}
+
+/* Left tab menu (일반 설정 / 계정 관리 / 데이터 관리) */
+.settings-tab {
+  font-family: 'Inter';
+  font-size: 8px;
+  line-height: 10px;
+  color: #000000;
+  text-align: center;
+}
+
+.settings-tab--active {
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 4px;
+}
+
+/* Right content - section title (예: "연결된 계정") */
+.settings-section-title {
+  font-family: 'Inter';
+  font-size: 8px;
+  line-height: 10px;
+  color: #000000;
+}
+
+/* Connected account row (계정 관리) */
+.settings-account-row {
+  border: 0.543863px solid rgba(0, 0, 0, 0.1);
+  border-radius: 7.4px;
+  padding: 9.25px;
+}
+
+/* Account label (예: Client_id) */
+.settings-account-label {
+  font-family: 'Inter';
+  font-size: 8px;
+  line-height: 10px;
+  color: #000000;
+}
+
+/* Account meta (인증 갱신 날짜, 안내 문구 등) */
+.settings-account-meta {
+  font-family: 'Inter';
+  font-size: 6.5px;
+  line-height: 10px;
+  color: #999999;
+}
+
+/* CTA inside settings (예: "Confluence로 이동하기") */
+.settings-link {
+  font-family: 'Inter';
+  font-size: 6.5px;
+  line-height: 10px;
+  color: #999999;
+}
+
+/* Info icon (ⓘ) — 안내문구 옆 */
+.settings-info-icon {
+  width: 6.5px;
+  height: 6.5px;
+  border: 0.5px solid #999999;
+  border-radius: 50%;
+}
