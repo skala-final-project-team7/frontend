@@ -75,12 +75,14 @@
 
 # feature6: Chat Mock API 기반
 
-[ ] `VITE_USE_MOCK=true/false` 환경 토글 기준 정의
-[ ] MSW browser worker와 test server 구성
-[ ] `/api/conversations` mock handler 생성
-[ ] `/api/conversations/{conversationId}/messages` mock handler 생성
-[ ] `/api/conversations/{conversationId}/chat` SSE mock 방식을 구현 가능한 수준으로 준비
-[ ] mock handler마다 `TODO(MOCK): {endpoint}` 주석 추가
+[x] `VITE_USE_MOCK=true/false` 환경 토글 기준 정의
+[x] MSW browser worker와 test server 구성
+[x] `/api/conversations` mock handler 생성
+[x] `/api/conversations/{conversationId}/messages` mock handler 생성
+[x] `/api/conversations/{conversationId}/chat` SSE mock 방식을 구현 가능한 수준으로 준비
+[x] `/api/confluence/pages/preview?page_id={pageId}` hover preview mock handler 생성
+[x] Chat 메인 화면에서 사용할 Confluence page preview mock data 1~2개 생성
+[x] mock handler마다 `TODO(MOCK): {endpoint}` 주석 추가
 
 # feature7: Shared UI 상태 컴포넌트
 

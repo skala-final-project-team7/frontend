@@ -15,7 +15,22 @@
 import { createApp } from 'vue';
 
 import App from './App.vue';
+import { isMockApiEnabled } from './mocks';
 import router from './router';
 import './styles/main.css';
 
-createApp(App).use(router).mount('#app');
+async function enableMockApi(): Promise<void> {
+  if (!isMockApiEnabled()) {
+    return;
+  }
+
+  const { mockWorker } = await import('./mocks/browser');
+
+  await mockWorker.start({
+    onUnhandledRequest: 'bypass',
+  });
+}
+
+enableMockApi().then(() => {
+  createApp(App).use(router).mount('#app');
+});

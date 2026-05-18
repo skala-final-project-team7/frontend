@@ -7,6 +7,7 @@
  * 변경사항 내역 (날짜, 변경목적, 변경내용 순)
  *   - 2026-05-18, feature2 구현, API 레이어 경계 상수 추가
  *   - 2026-05-18, feature5 구현, conversations/messages/chat API 함수 골격 추가
+ *   - 2026-05-18, feature6 보강, Confluence 페이지 미리보기 API 함수 추가
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -16,6 +17,7 @@
 import { apiRequest, streamChatRequest } from './client';
 import type {
   ChatQuestionRequest,
+  ConfluencePagePreview,
   ConversationList,
   ConversationMessages,
   CreateConversationResponse,
@@ -116,6 +118,20 @@ export function submitMessageFeedback(
   return apiRequest<Feedback>(`/api/messages/${encodeURIComponent(messageId)}/feedback`, {
     method: 'POST',
     body: request,
+  });
+}
+
+/**
+ * Confluence 원본 페이지 hover preview에 사용할 HTML 미리보기를 조회한다.
+ *
+ * @param pageId Confluence page ID
+ * @returns BFF가 Confluence body.view.value를 포함해 반환한 preview payload
+ */
+export function getConfluencePagePreview(pageId: string): Promise<ConfluencePagePreview> {
+  return apiRequest<ConfluencePagePreview>('/api/confluence/pages/preview', {
+    query: {
+      page_id: pageId,
+    },
   });
 }
 

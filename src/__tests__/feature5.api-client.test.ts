@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   createConversation,
   deleteConversation,
+  getConfluencePagePreview,
   getConversationMessages,
   listConversations,
   streamConversationChat,
@@ -13,6 +14,7 @@ import type {
   ApiErrorResponse,
   ApiSuccessResponse,
   ChatSseEvent,
+  ConfluencePagePreview,
   Conversation,
   DeleteConversationResponse,
   ConversationMessages,
@@ -86,6 +88,16 @@ describe('feature5 API types and client skeleton', () => {
         sources: [source],
       },
     };
+    const previewPage: ConfluencePagePreview = {
+      pageId: '12345',
+      title: 'S3 트러블슈팅 가이드',
+      spaceName: 'Cloud Control Center',
+      authorName: 'Platform Team',
+      updatedAt: '2026-04-15T09:30:00Z',
+      breadcrumbs: ['Cloud Control Center', 'AWS', 'S3', 'S3 트러블슈팅 가이드'],
+      pageUrl: 'https://confluence.example.com/pages/12345',
+      bodyViewValue: '<h1>S3 트러블슈팅 가이드</h1>',
+    };
 
     expect(successResponse.data.conversationId).toBe('conv-uuid-001');
     expect(errorResponse.data).toBeNull();
@@ -94,6 +106,7 @@ describe('feature5 API types and client skeleton', () => {
     expect(deleteResponse).toBeNull();
     expect(feedback.rating).toBe('like');
     expect(sseEvent.event).toBe('sources');
+    expect(previewPage.bodyViewValue).toContain('<h1>');
   });
 
   it('unwraps Common Response data for conversations and messages APIs', async () => {
@@ -277,6 +290,50 @@ describe('feature5 API types and client skeleton', () => {
       }),
     });
     expect(init.headers).not.toHaveProperty('X-Common-Response-Wrapper');
+  });
+
+  it('unwraps Confluence page preview responses with a page_id query', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const requestUrl = String(input);
+      const method = init?.method ?? 'GET';
+
+      if (requestUrl === '/api/confluence/pages/preview?page_id=12345' && method === 'GET') {
+        return jsonResponse({
+          isSuccess: true,
+          code: 200,
+          message: 'Confluence 페이지 미리보기 조회 성공',
+          data: {
+            pageId: '12345',
+            title: 'S3 트러블슈팅 가이드',
+            spaceName: 'Cloud Control Center',
+            authorName: 'Platform Team',
+            updatedAt: '2026-04-15T09:30:00Z',
+            breadcrumbs: ['Cloud Control Center', 'AWS', 'S3', 'S3 트러블슈팅 가이드'],
+            pageUrl: 'https://confluence.example.com/pages/12345',
+            bodyViewValue: '<h1>S3 트러블슈팅 가이드</h1>',
+          } satisfies ConfluencePagePreview,
+        });
+      }
+
+      return jsonResponse(
+        {
+          isSuccess: false,
+          code: 404,
+          message: `Unexpected request: ${method} ${requestUrl}`,
+          data: null,
+        },
+        404,
+      );
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(getConfluencePagePreview('12345')).resolves.toMatchObject({
+      pageId: '12345',
+      title: 'S3 트러블슈팅 가이드',
+      pageUrl: 'https://confluence.example.com/pages/12345',
+      breadcrumbs: ['Cloud Control Center', 'AWS', 'S3', 'S3 트러블슈팅 가이드'],
+      bodyViewValue: '<h1>S3 트러블슈팅 가이드</h1>',
+    });
   });
 });
 

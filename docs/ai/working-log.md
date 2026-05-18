@@ -329,3 +329,82 @@
 
 - feature6 이후 항목은 수정하지 않음.
 - API 명세, DB, 인증/인가 문서는 변경하지 않음.
+
+## 2026-05-18 - feature6: Chat Mock API 기반
+
+### Scope
+
+- `VITE_USE_MOCK=true`일 때만 mock API를 활성화하는 환경 토글 기준 정의
+- MSW shared handler, browser worker, Node test server 구성
+- `/api/conversations` mock handler 생성
+- `/api/conversations/{conversationId}/messages` mock handler 생성
+- `/api/conversations/{conversationId}/chat` SSE mock 응답 준비
+- `/api/confluence/pages/preview?page_id={pageId}` hover preview mock handler 생성
+- Chat 메인 화면에서 사용할 Confluence page preview mock data 1~2개 추가
+- `docs/api-spec.md`에 Confluence 페이지 미리보기 API 계약 추가
+- `src/types/api.ts`와 API 레이어에 Confluence page preview 타입/함수 추가
+- Confluence page preview 응답에 문서 경로 표시용 `breadcrumbs` 필드 추가
+- mock handler마다 `TODO(MOCK): {endpoint}` 마커 추가
+
+### Test Cases
+
+- `VITE_USE_MOCK=true`만 mock API 활성화로 판정한다.
+- MSW browser worker와 Node test server가 shared handler 기반으로 구성된다.
+- `GET /api/conversations`가 Common Response wrapper 형태의 mock 대화 목록을 반환한다.
+- `GET /api/conversations/{conversationId}/messages`가 user/assistant 메시지 이력을 반환한다.
+- `POST /api/conversations/{conversationId}/chat`가 `text/event-stream` 형식의 token/sources/verification/done 이벤트를 반환한다.
+- `GET /api/confluence/pages/preview?page_id={pageId}`가 Confluence `body.view.value`에 대응하는 HTML preview payload를 반환한다.
+- Confluence page preview payload가 `breadcrumbs: string[]`를 포함한다.
+- 알 수 없는 `page_id`는 Common Response error와 404 status를 반환한다.
+- Chat main preview용 Confluence page seed data가 1~2개 존재한다.
+- `getConfluencePagePreview(pageId)`가 `page_id` query로 Common Response wrapper를 호출하고 preview data를 반환한다.
+- 각 mock endpoint handler에 `TODO(MOCK)` 마커가 남아 있다.
+
+### Changed Files
+
+- `src/__tests__/feature6.mock-api.test.ts`: feature6 실패 우선 테스트 추가
+- `src/__tests__/feature5.api-client.test.ts`: Confluence preview API 타입/함수 테스트 추가
+- `docs/api-spec.md`: Confluence page preview 외부 API 명세 추가
+- `src/types/api.ts`: `ConfluencePagePreview` 타입 추가
+- `src/api/index.ts`: `getConfluencePagePreview` 함수 추가
+- `src/mocks/index.ts`: mock 환경 토글과 handler export 추가
+- `src/mocks/data.ts`: Chat mock 대화, 메시지, 출처, Confluence preview seed data 추가
+- `src/mocks/handlers.ts`: conversations/messages/chat/Confluence preview mock handler 추가
+- `src/mocks/browser.ts`: 브라우저용 MSW worker lazy facade 추가
+- `src/mocks/server.ts`: Vitest용 MSW server 추가
+- `src/main.ts`: `VITE_USE_MOCK=true`일 때만 MSW worker 시작
+- `src/vite-env.d.ts`: `VITE_USE_MOCK` 타입 추가
+- `public/mockServiceWorker.js`: 브라우저 worker script 추가
+- `docs/ai/current-plan.md`: feature6 완료 체크 처리
+- `docs/ai/working-log.md`: feature6 작업 로그 기록
+
+### Commands
+
+- `npm test -- src/__tests__/feature6.mock-api.test.ts` 실패 확인
+- `npm test -- src/__tests__/feature6.mock-api.test.ts`
+- `npm test`
+- `npm run typecheck`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- `npm test -- src/__tests__/feature6.mock-api.test.ts` 최초 실행: failed, `@/mocks/server` 모듈 없음으로 실패 확인
+- hover preview mock 추가 테스트 최초 실행: failed, preview handler와 home preview seed data 미구현으로 실패 확인
+- Confluence preview API 타입/함수 테스트 최초 실행: failed, `getConfluencePagePreview` 함수 미구현으로 실패 확인
+- `breadcrumbs` 추가 테스트 최초 실행: failed, mock seed data에 `breadcrumbs` 필드가 없어 실패 확인
+- `npm test -- src/__tests__/feature6.mock-api.test.ts`: passed, 9 tests passed
+- `npm test -- src/__tests__/feature5.api-client.test.ts src/__tests__/feature6.mock-api.test.ts`: passed, 14 tests passed
+- `npm test`: passed, 5 test files and 24 tests passed
+- `npm run typecheck`: passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: initially failed due to unused `mockHandlers` import in `src/mocks/index.ts`, fixed; final run passed
+- `./scripts/test.sh`: passed, 5 test files and 24 tests passed
+- `./scripts/verify.sh`: passed
+
+### Notes / Remaining Issues
+
+- feature7 이후 항목은 수정하지 않음.
+- API 명세, DB, 인증/인가 문서는 변경하지 않음.

@@ -7,6 +7,7 @@
  * 변경사항 내역 (날짜, 변경목적, 변경내용 순)
  *   - 2026-05-18, feature2 구현, API 타입 모듈 골격 추가
  *   - 2026-05-18, feature5 구현, Common Response 및 Chat API 타입 추가
+ *   - 2026-05-18, feature6 보강, Confluence 페이지 미리보기 타입 추가
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -58,6 +59,17 @@ export type Source = {
   url: string;
   updatedAt: string;
   relevanceScore: number;
+};
+
+export type ConfluencePagePreview = {
+  pageId: string;
+  title: string;
+  spaceName: string;
+  authorName: string;
+  updatedAt: string;
+  breadcrumbs: string[];
+  pageUrl: string;
+  bodyViewValue: string;
 };
 
 export type VerificationResult = 'SUPPORTED' | 'PARTIALLY_SUPPORTED' | 'NOT_SUPPORTED';
