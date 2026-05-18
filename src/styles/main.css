@@ -16,32 +16,109 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  color: #000000;
-  background: #ffffff;
-  font-family: theme('fontFamily.sans');
+@layer base {
+  :root {
+    --color-primary: #f48122;
+    --color-primary-light: #fcdaac;
+    --color-primary-white: #fefefe;
+    --color-success: #2eb97f;
+    --color-error: #ff4800;
+    --color-warning: #ffd64f;
+    --color-bg-100: #fcfcfc;
+    --color-bg-200: #f5f5f5;
+    --color-bg-300: #e6e6e6;
+    --color-bg-400: #cccccc;
+    --color-dark-80: rgba(0, 0, 0, 0.8);
+    --color-dark-40: rgba(0, 0, 0, 0.4);
+    --color-dark-20: rgba(0, 0, 0, 0.2);
+    --color-dark-10: rgba(0, 0, 0, 0.1);
+    --color-dark-04: rgba(0, 0, 0, 0.04);
+    --color-white-80: rgba(255, 255, 255, 0.8);
+    --color-white-40: rgba(255, 255, 255, 0.4);
+    --color-white-20: rgba(255, 255, 255, 0.2);
+    --color-white-15: rgba(255, 255, 255, 0.15);
+    --color-white-10: rgba(255, 255, 255, 0.1);
+    --color-white-04: rgba(255, 255, 255, 0.04);
+    --font-family: theme('fontFamily.sans');
+    --font-feature: 'ss01' on, 'cv01' on;
+    --font-size-heading: 24px;
+    --font-weight-heading: 600;
+    --line-height-heading: 30px;
+    --font-size-body: 14px;
+    --font-weight-body: 400;
+    --line-height-body: 20px;
+    --font-size-caption: 11px;
+    --line-height-caption: 16px;
+    --font-size-button: 13px;
+    --font-weight-button: 700;
+    --line-height-button: 16px;
+    --font-size-small: 12px;
+    --line-height-small: 18px;
+    --border-radius-card: 24px;
+    --border-radius-item: 12.95px;
+    --border-radius-button: 7.4px;
+    --border-radius-tag: 5.55px;
+    --padding-card: 12.95px;
+    --padding-item: 18.5px;
+    --padding-button: 9.25px;
+    --gap-default: 12.95px;
+    --gap-tight: 3.7px;
+    --gap-xs: 1.85px;
+    color: var(--color-dark-80);
+    background: var(--color-bg-100);
+    font-family: var(--font-family);
+    font-feature-settings: var(--font-feature);
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    min-width: 320px;
+    min-height: 100vh;
+    margin: 0;
+  }
+
+  button,
+  input,
+  textarea {
+    font: inherit;
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
 }
 
-* {
-  box-sizing: border-box;
-}
+@layer components {
+  .lina-app-layout {
+    @apply min-h-screen bg-bg-100 text-overlay-dark-80;
+  }
 
-body {
-  min-width: 320px;
-  min-height: 100vh;
-  margin: 0;
-}
+  .lina-heading {
+    @apply font-lina text-heading;
+    font-weight: var(--font-weight-heading);
+  }
 
-button,
-input,
-textarea {
-  font: inherit;
-}
+  .lina-body {
+    @apply font-lina text-body;
+    font-weight: var(--font-weight-body);
+  }
 
-button {
-  cursor: pointer;
-}
+  .lina-button-primary {
+    @apply inline-flex items-center justify-center rounded-button border border-primary bg-primary px-button py-button text-button font-bold text-primary-white shadow-primary;
+  }
 
-button:disabled {
-  cursor: not-allowed;
+  .lina-button-ghost {
+    @apply inline-flex items-center justify-center rounded-button border border-overlay-white-80 bg-overlay-dark-80 px-button py-button text-button font-bold text-primary-white;
+  }
+
+  .lina-panel {
+    @apply flex flex-col rounded-card border border-bg-300 bg-primary-white p-card text-overlay-dark-80 shadow-floating;
+  }
 }

@@ -187,7 +187,7 @@
 - Chat 상세 디자인, 실제 메시지 입력 동작, ReferencePanel 상호작용은 feature8 이후 범위로 남김.
 - API, DB, 인증/인가 문서는 변경하지 않음.
 
-## 2026-05-18 - style: Pretendard 전역 폰트 적용
+## 2026-05-18 - feature4: Pretendard 전역 폰트 적용
 
 ### Scope
 
@@ -223,4 +223,58 @@
 
 ### Notes / Remaining Issues
 
+- API, DB, 인증/인가 문서는 변경하지 않음.
+
+## 2026-05-18 - feature4: 디자인 토큰 및 기본 스타일
+
+### Scope
+
+- `frontend/docs/design-reference.css`의 주요 색상, typography, radius, spacing CSS 변수를 Tailwind theme token으로 등록
+- `primary`, `bg`, `status`, `overlay` 계열 색상 토큰 기준을 전역 스타일과 Chat shell placeholder에 적용
+- 기본 layout, typography, button, panel용 최소 CSS/Tailwind utility contract 추가
+- `frontend/assets` 이미지 파일을 Vite import로 참조할 수 있는 경로 모듈 추가
+
+### Test Cases
+
+- Tailwind config에 design-reference 기반 theme token이 등록된다.
+- 전역 CSS에 layout, typography, button, panel 기준 클래스가 정의된다.
+- Chat shell placeholder가 Tailwind 기본 팔레트 또는 임의 hex class 대신 프로젝트 토큰을 사용한다.
+- 기존 `frontend/assets` 이미지가 import 가능한 URL로 export된다.
+
+### Changed Files
+
+- `src/__tests__/feature4.design-tokens.test.ts`: feature4 실패 우선 테스트 추가
+- `tailwind.config.js`: design token 기반 color, fontSize, radius, spacing, shadow, blur theme 확장
+- `src/styles/main.css`: CSS 변수와 `.lina-*` 기본 스타일 contract 추가
+- `src/pages/ChatPage.vue`: feature3 placeholder 스타일을 프로젝트 토큰 기반으로 교체
+- `src/shared/assets.ts`: `frontend/assets` 이미지 import URL export 추가
+- `src/vite-env.d.ts`: Tailwind config 테스트 import 타입 선언 추가
+- `docs/ai/current-plan.md`: feature4 완료 체크 처리
+- `docs/ai/working-log.md`: feature4 작업 로그 기록
+
+### Commands
+
+- `npm test -- --run src/__tests__/feature4.design-tokens.test.ts` 실패 확인
+- `npm test -- --run src/__tests__/feature4.design-tokens.test.ts`
+- `npm test`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+- `npm run build`
+
+### Results
+
+- `npm test -- --run src/__tests__/feature4.design-tokens.test.ts` 최초 실행: failed, `@/shared/assets` 모듈 없음으로 실패 확인
+- `npm test -- --run src/__tests__/feature4.design-tokens.test.ts`: passed, 4 tests passed
+- `npm test`: passed, 3 test files and 11 tests passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed, 3 test files and 11 tests passed
+- `./scripts/verify.sh`: passed
+- `npm run build`: passed
+
+### Notes / Remaining Issues
+
+- feature5 이후 항목은 수정하지 않음.
 - API, DB, 인증/인가 문서는 변경하지 않음.

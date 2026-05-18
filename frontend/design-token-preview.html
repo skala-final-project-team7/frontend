@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LINA Design Token Preview</title>
+    <style>
+      :root {
+        --color-primary: #f48122;
+        --color-primary-light: #fcdaac;
+        --color-primary-white: #fefefe;
+        --color-success: #2eb97f;
+        --color-error: #ff4800;
+        --color-warning: #ffd64f;
+        --color-bg-100: #fcfcfc;
+        --color-bg-200: #f5f5f5;
+        --color-bg-300: #e6e6e6;
+        --color-bg-400: #cccccc;
+        --color-dark-80: rgba(0, 0, 0, 0.8);
+        --color-dark-40: rgba(0, 0, 0, 0.4);
+        --color-dark-20: rgba(0, 0, 0, 0.2);
+        --color-dark-10: rgba(0, 0, 0, 0.1);
+        --color-dark-04: rgba(0, 0, 0, 0.04);
+        --color-white-80: rgba(255, 255, 255, 0.8);
+        --color-white-40: rgba(255, 255, 255, 0.4);
+        --color-white-20: rgba(255, 255, 255, 0.2);
+        --color-white-15: rgba(255, 255, 255, 0.15);
+        --color-white-10: rgba(255, 255, 255, 0.1);
+        --color-white-04: rgba(255, 255, 255, 0.04);
+        --font-family:
+          Inter, 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui,
+          sans-serif;
+        --font-feature: 'ss01' on, 'cv01' on;
+        --font-size-heading: 24px;
+        --font-weight-heading: 600;
+        --line-height-heading: 30px;
+        --font-size-body: 14px;
+        --font-weight-body: 400;
+        --line-height-body: 20px;
+        --font-size-caption: 11px;
+        --line-height-caption: 16px;
+        --font-size-button: 13px;
+        --font-weight-button: 700;
+        --line-height-button: 16px;
+        --font-size-small: 12px;
+        --line-height-small: 18px;
+        --border-radius-card: 24px;
+        --border-radius-item: 12.95px;
+        --border-radius-button: 7.4px;
+        --border-radius-tag: 5.55px;
+        --padding-card: 12.95px;
+        --padding-item: 18.5px;
+        --padding-button: 9.25px;
+        --gap-default: 12.95px;
+        --gap-tight: 3.7px;
+        --gap-xs: 1.85px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-width: 320px;
+        min-height: 100vh;
+        margin: 0;
+        background: var(--color-bg-100);
+        color: var(--color-dark-80);
+        font-family: var(--font-family);
+        font-feature-settings: var(--font-feature);
+      }
+
+      .preview-page {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 40px 24px 56px;
+      }
+
+      .preview-header {
+        display: flex;
+        justify-content: space-between;
+        gap: 24px;
+        align-items: flex-end;
+        padding-bottom: 20px;
+        border-bottom: 1px solid var(--color-bg-300);
+      }
+
+      .lina-heading {
+        margin: 0;
+        font-family: var(--font-family);
+        font-size: var(--font-size-heading);
+        font-weight: var(--font-weight-heading);
+        line-height: var(--line-height-heading);
+      }
+
+      .lina-body {
+        margin: 0;
+        font-family: var(--font-family);
+        font-size: var(--font-size-body);
+        font-weight: var(--font-weight-body);
+        line-height: var(--line-height-body);
+      }
+
+      .preview-section {
+        margin-top: 28px;
+      }
+
+      .section-title {
+        margin: 0 0 12px;
+        font-size: 13px;
+        font-weight: 700;
+        line-height: 18px;
+      }
+
+      .swatch-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+        gap: 12px;
+      }
+
+      .swatch {
+        min-height: 88px;
+        padding: 12px;
+        border: 1px solid var(--color-bg-300);
+        border-radius: var(--border-radius-item);
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        gap: 4px;
+        overflow: hidden;
+      }
+
+      .swatch-name {
+        font-size: var(--font-size-button);
+        font-weight: var(--font-weight-button);
+        line-height: var(--line-height-button);
+      }
+
+      .swatch-value {
+        color: var(--color-dark-40);
+        font-size: var(--font-size-small);
+        line-height: var(--line-height-small);
+      }
+
+      .surface-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 16px;
+      }
+
+      .lina-panel {
+        display: flex;
+        min-height: 210px;
+        flex-direction: column;
+        gap: var(--gap-default);
+        padding: var(--padding-card);
+        border: 1px solid var(--color-bg-300);
+        border-radius: var(--border-radius-card);
+        background: var(--color-primary-white);
+        color: var(--color-dark-80);
+        box-shadow: 0 4px 22px var(--color-dark-10);
+      }
+
+      .panel-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        padding: var(--padding-item);
+        border: 1px solid var(--color-bg-300);
+        border-radius: var(--border-radius-item);
+        background: var(--color-bg-200);
+      }
+
+      .button-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .lina-button-primary,
+      .lina-button-ghost,
+      .lina-button-disabled {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 32px;
+        padding: var(--padding-button) 14px;
+        border-radius: var(--border-radius-button);
+        font-size: var(--font-size-button);
+        font-weight: var(--font-weight-button);
+        line-height: var(--line-height-button);
+      }
+
+      .lina-button-primary {
+        border: 1px solid var(--color-primary);
+        background: var(--color-primary);
+        color: var(--color-primary-white);
+        box-shadow: 0 0 4px var(--color-primary);
+      }
+
+      .lina-button-ghost {
+        border: 1px solid var(--color-white-80);
+        background: var(--color-dark-80);
+        color: var(--color-primary-white);
+      }
+
+      .lina-button-disabled {
+        border: 1px solid var(--color-bg-400);
+        background: var(--color-bg-400);
+        color: var(--color-dark-40);
+      }
+
+      .type-sample {
+        display: grid;
+        gap: 10px;
+        padding: 18px;
+        border: 1px solid var(--color-bg-300);
+        border-radius: var(--border-radius-item);
+        background: var(--color-bg-200);
+      }
+
+      .caption {
+        margin: 0;
+        color: var(--color-dark-40);
+        font-size: var(--font-size-caption);
+        line-height: var(--line-height-caption);
+      }
+
+      .small {
+        margin: 0;
+        color: var(--color-dark-40);
+        font-size: var(--font-size-small);
+        line-height: var(--line-height-small);
+      }
+
+      @media (max-width: 720px) {
+        .preview-header,
+        .surface-grid {
+          grid-template-columns: 1fr;
+          flex-direction: column;
+          align-items: flex-start;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="preview-page">
+      <header class="preview-header">
+        <div>
+          <h1 class="lina-heading">LINA Design Token Preview</h1>
+          <p class="lina-body">main.css / tailwind.config.js에 등록한 기본 토큰 확인용 HTML</p>
+        </div>
+        <div class="button-row">
+          <button class="lina-button-primary" type="button">Primary</button>
+          <button class="lina-button-disabled" type="button" disabled>Disabled</button>
+        </div>
+      </header>
+
+      <section class="preview-section">
+        <h2 class="section-title">Color Tokens</h2>
+        <div class="swatch-grid">
+          <div class="swatch" style="background: var(--color-primary); color: white">
+            <span class="swatch-name">primary</span>
+            <span class="swatch-value" style="color: rgba(255, 255, 255, 0.82)">#f48122</span>
+          </div>
+          <div class="swatch" style="background: var(--color-primary-light)">
+            <span class="swatch-name">primary-light</span>
+            <span class="swatch-value">#fcdaac</span>
+          </div>
+          <div class="swatch" style="background: var(--color-bg-100)">
+            <span class="swatch-name">bg-100</span>
+            <span class="swatch-value">#fcfcfc</span>
+          </div>
+          <div class="swatch" style="background: var(--color-bg-200)">
+            <span class="swatch-name">bg-200</span>
+            <span class="swatch-value">#f5f5f5</span>
+          </div>
+          <div class="swatch" style="background: var(--color-bg-300)">
+            <span class="swatch-name">bg-300</span>
+            <span class="swatch-value">#e6e6e6</span>
+          </div>
+          <div class="swatch" style="background: var(--color-bg-400)">
+            <span class="swatch-name">bg-400</span>
+            <span class="swatch-value">#cccccc</span>
+          </div>
+          <div class="swatch" style="background: var(--color-success); color: white">
+            <span class="swatch-name">status-success</span>
+            <span class="swatch-value" style="color: rgba(255, 255, 255, 0.82)">#2eb97f</span>
+          </div>
+          <div class="swatch" style="background: var(--color-error); color: white">
+            <span class="swatch-name">status-error</span>
+            <span class="swatch-value" style="color: rgba(255, 255, 255, 0.82)">#ff4800</span>
+          </div>
+          <div class="swatch" style="background: var(--color-warning)">
+            <span class="swatch-name">status-warning</span>
+            <span class="swatch-value">#ffd64f</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="preview-section surface-grid">
+        <div>
+          <h2 class="section-title">Typography / Button</h2>
+          <div class="type-sample">
+            <h3 class="lina-heading">ASK LINA</h3>
+            <p class="lina-body">
+              장애 이력과 운영 문서를 기반으로 답변을 구성하는 기본 본문 스타일입니다.
+            </p>
+            <p class="small">Small label: source / updated date / author</p>
+            <p class="caption">Caption: secondary metadata</p>
+            <div class="button-row">
+              <button class="lina-button-primary" type="button">질문 보내기</button>
+              <button class="lina-button-ghost" type="button">Reference</button>
+              <button class="lina-button-disabled" type="button" disabled>대기 중</button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h2 class="section-title">Panel / Surface</h2>
+          <div class="lina-panel">
+            <div class="panel-row">
+              <span class="lina-body">Panel header</span>
+              <span class="small">bg-200 / border-bg-300</span>
+            </div>
+            <p class="lina-body">
+              밝은 패널, 카드 radius, border, shadow, item spacing이 같이 보이도록 구성했습니다.
+            </p>
+            <div class="button-row">
+              <button class="lina-button-primary" type="button">Primary action</button>
+              <button class="lina-button-ghost" type="button">Ghost</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

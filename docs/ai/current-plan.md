@@ -60,10 +60,10 @@
 
 # feature4: 디자인 토큰 및 기본 스타일
 
-[ ] `frontend/docs/design-reference.css`의 CSS 변수를 Tailwind theme token으로 등록
-[ ] 임의 색상 사용 없이 `primary`, `bg`, `status`, `overlay` 계열 토큰으로 스타일 기준 구성
-[ ] 기본 layout, typography, button, panel에 사용할 최소 CSS/Tailwind 기준 작성
-[ ] 기존 `frontend/assets` 이미지를 참조할 수 있는 import 경로 확인
+[x] `frontend/docs/design-reference.css`의 CSS 변수를 Tailwind theme token으로 등록
+[x] 임의 색상 사용 없이 `primary`, `bg`, `status`, `overlay` 계열 토큰으로 스타일 기준 구성
+[x] 기본 layout, typography, button, panel에 사용할 최소 CSS/Tailwind 기준 작성
+[x] 기존 `frontend/assets` 이미지를 참조할 수 있는 import 경로 확인
 
 # feature5: API 타입 및 클라이언트 골격
 

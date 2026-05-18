@@ -13,31 +13,35 @@
 --------------------------------------------------
 -->
 <template>
-  <main data-testid="chat-page" class="min-h-screen bg-white text-neutral-950">
+  <main data-testid="chat-page" class="lina-app-layout bg-bg-100">
     <div class="grid min-h-screen grid-cols-[16rem_minmax(0,1fr)_20rem]">
       <aside
         data-testid="chat-sidebar"
         aria-label="Chat sidebar"
-        class="border-r border-neutral-200 p-4"
+        class="border-r border-bg-300 p-4"
       >
-        <p class="text-sm font-medium text-neutral-700">Sidebar placeholder</p>
+        <p class="lina-body font-medium text-overlay-dark-80">Sidebar placeholder</p>
       </aside>
 
       <section data-testid="chat-main" aria-label="Chat main" class="flex min-w-0 flex-col">
         <div class="flex-1 p-6">
-          <p class="text-sm font-medium text-neutral-700">ChatMain placeholder</p>
-          <p class="mt-2 text-sm text-neutral-500">
+          <p class="lina-body font-medium text-overlay-dark-80">ChatMain placeholder</p>
+          <p class="lina-body mt-2 text-overlay-dark-40">
             SCR-400 detailed design is reserved for feature8.
           </p>
         </div>
 
-        <form data-testid="message-input" aria-label="Message input" class="border-t p-4">
+        <form
+          data-testid="message-input"
+          aria-label="Message input"
+          class="border-t border-bg-300 p-4"
+        >
           <label class="sr-only" for="feature3-message-placeholder">MessageInput placeholder</label>
           <input
             id="feature3-message-placeholder"
             disabled
             placeholder="MessageInput placeholder"
-            class="w-full rounded border border-neutral-200 px-3 py-2 text-sm text-neutral-500"
+            class="lina-body w-full rounded-button border border-bg-300 bg-bg-200 px-3 py-2 text-overlay-dark-40"
           />
         </form>
       </section>
@@ -45,9 +49,9 @@
       <aside
         data-testid="reference-panel"
         aria-label="Reference panel"
-        class="border-l border-neutral-200 p-4"
+        class="border-l border-bg-300 p-4"
       >
-        <p class="text-sm font-medium text-neutral-700">ReferencePanel placeholder</p>
+        <p class="lina-body font-medium text-overlay-dark-80">ReferencePanel placeholder</p>
       </aside>
     </div>
   </main>
