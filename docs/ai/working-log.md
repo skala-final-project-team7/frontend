@@ -82,3 +82,54 @@
 - `npm install` 결과 5개 moderate vulnerability가 보고되었으나, `npm audit fix --force`는 breaking change 가능성이 있어 실행하지 않음.
 - API, DB, 인증/인가 문서는 변경하지 않음.
 - feature2 이후 구조/컴포넌트 작업은 별도 feature 로그에서 기록한다.
+
+## 2026-05-18 - feature2: 폴더 구조 및 아키텍처 골격
+
+### Scope
+
+- `src/pages`, `src/features`, `src/shared` 3계층 컴포넌트 폴더 골격 생성
+- `src/api`, `src/types`, `src/mocks`, `src/stores`, `src/composables`, `src/router` 폴더 골격 생성
+- 컴포넌트가 직접 `fetch`를 호출하지 않고 `src/api`를 경유하도록 API 레이어 경계 상수 정의
+- 서버 상태는 Pinia, UI 상태는 컴포넌트 또는 composable에서 관리한다는 기준 상수 정의
+- 주요 TypeScript 모듈 상단에 표준 주석 블록 작성
+
+### Test Cases
+
+- feature2 필수 폴더가 존재한다.
+- API 레이어 경계가 `src/api`로 문서화되고, 외부 직접 fetch 허용이 false이다.
+- 서버 상태 소유자는 Pinia, UI 상태 소유자는 component 또는 composable로 문서화된다.
+- 주요 TypeScript 모듈에 표준 주석 블록 항목이 포함된다.
+
+### Changed Files
+
+- `src/__tests__/feature2.architecture.test.ts`: feature2 구조 및 경계 검증 테스트 추가
+- `src/api/index.ts`: API 레이어 경계 기준 추가
+- `src/stores/index.ts`: 서버 상태 관리 기준 추가
+- `src/composables/index.ts`: UI 상태 관리 기준 추가
+- `src/types/api.ts`: feature5 타입 구체화를 위한 API 타입 모듈 골격 추가
+- `src/pages/index.ts`, `src/features/index.ts`, `src/shared/index.ts`, `src/mocks/index.ts`, `src/router/index.ts`: feature2 필수 폴더 추적용 진입 파일 추가
+- `docs/ai/current-plan.md`: feature2 완료 체크 처리
+- `docs/ai/working-log.md`: feature2 작업 로그 기록
+
+### Commands
+
+- `npm test -- src/__tests__/feature2.architecture.test.ts` 실패 확인
+- `npm test -- src/__tests__/feature2.architecture.test.ts`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- `npm test -- src/__tests__/feature2.architecture.test.ts` 최초 실행: failed, `@/api` 모듈 없음으로 실패 확인
+- `npm test -- src/__tests__/feature2.architecture.test.ts`: passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed
+- `./scripts/verify.sh`: passed
+
+### Notes / Remaining Issues
+
+- API 상세 타입, 실제 fetch wrapper, mock handler, Vue Router 설정은 feature5, feature6, feature3 범위로 남김.
+- API, DB, 인증/인가 문서는 변경하지 않음.

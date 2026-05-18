@@ -44,11 +44,11 @@
 
 # feature2: 폴더 구조 및 아키텍처 골격
 
-[ ] `src/pages`, `src/features`, `src/shared` 3계층 컴포넌트 폴더 생성
-[ ] `src/api`, `src/types`, `src/mocks`, `src/stores`, `src/composables`, `src/router` 폴더 생성
-[ ] 컴포넌트가 직접 `fetch`를 호출하지 않도록 API 레이어 경계 정의
-[ ] 서버 상태는 Pinia, UI 상태는 컴포넌트 또는 composable에서 관리하는 기준 적용
-[ ] 주요 모듈 상단에 TypeScript 표준 주석 블록 작성
+[x] `src/pages`, `src/features`, `src/shared` 3계층 컴포넌트 폴더 생성
+[x] `src/api`, `src/types`, `src/mocks`, `src/stores`, `src/composables`, `src/router` 폴더 생성
+[x] 컴포넌트가 직접 `fetch`를 호출하지 않도록 API 레이어 경계 정의
+[x] 서버 상태는 Pinia, UI 상태는 컴포넌트 또는 composable에서 관리하는 기준 적용
+[x] 주요 모듈 상단에 TypeScript 표준 주석 블록 작성
 
 # feature3: 라우팅 및 Chat 페이지 뼈대 구성
 
@@ -93,7 +93,7 @@
 
 # feature8: Chat 기본 화면 구현 (SCR-400)
 
-[ ] `frontend/docs/componets.md`의 SCR-400 요구사항 확인
+[ ] `frontend/docs/components.md`의 SCR-400 요구사항 확인
 [ ] `frontend/docs/frames/[SCR-400]main chatbot.png` 기준 레이아웃 구현
 [ ] Sidebar 닫힘/열림 기본 상태와 SettingsEntry 위치 구현
 [ ] ChatEmptyState에 ASK LINA, SKP symbol, 환영 문구, mascot, PreviewPageStack 배치
@@ -101,7 +101,7 @@
 
 # feature9: Chat 대화 화면 구현 (SCR-410, SCR-420, SCR-600)
 
-[ ] 메시지 목록과 사용자/LINA MessageBubble 시각 구분 구현
+[ ] 메시지 목록과 사용자(테두리 존재o)/LINA(테두리 존재x) MessageBubble 시각 구분 구현
 [ ] SSE 청크 누적 표시와 RAG 단계 라벨 placeholder 구현
 [ ] 답변 하단 출처 / Check Reference 버튼 구현
 [ ] 사용자 메시지 인라인 수정 모드 구현
