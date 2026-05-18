@@ -52,11 +52,11 @@
 
 # feature3: 라우팅 및 Chat 페이지 뼈대 구성
 
-[ ] Vue Router 기본 설정 생성
-[ ] 기본 진입 라우트를 Chat 페이지로 연결
-[ ] Chat 페이지에 Sidebar / ChatMain / MessageInput / ReferencePanel 영역만 배치
-[ ] SCR-400~600 상세 구현 전용 placeholder 상태를 구분
-[ ] SCR-400 상세 디자인은 feature8에서 구현하도록 placeholder로 유지
+[x] Vue Router 기본 설정 생성
+[x] 기본 진입 라우트를 Chat 페이지로 연결
+[x] Chat 페이지에 Sidebar / ChatMain / MessageInput / ReferencePanel 영역만 배치
+[x] SCR-400~600 상세 구현 전용 placeholder 상태를 구분
+[x] SCR-400 상세 디자인은 feature8에서 구현하도록 placeholder로 유지
 
 # feature4: 디자인 토큰 및 기본 스타일
 
