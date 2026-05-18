@@ -186,3 +186,41 @@
 
 - Chat 상세 디자인, 실제 메시지 입력 동작, ReferencePanel 상호작용은 feature8 이후 범위로 남김.
 - API, DB, 인증/인가 문서는 변경하지 않음.
+
+## 2026-05-18 - style: Pretendard 전역 폰트 적용
+
+### Scope
+
+- Vite 루트 `index.html`에 Pretendard Variable Dynamic Subset CDN stylesheet 추가
+- Tailwind 기본 `font-sans`를 Pretendard 폰트 스택으로 설정
+- 전역 CSS의 기본 font-family를 Tailwind `fontFamily.sans`와 연결
+
+### Test Cases
+
+- 전역 스타일 설정 파일이 정상 포맷팅된다.
+- 기존 lint/test/verify 검증이 통과한다.
+
+### Changed Files
+
+- `index.html`: Pretendard CDN link 추가
+- `tailwind.config.js`: `fontFamily.sans` 확장
+- `src/styles/main.css`: 전역 font-family를 Tailwind theme 기반으로 변경
+- `docs/ai/working-log.md`: 작업 로그 추가
+
+### Commands
+
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed, 2 test files and 7 tests passed
+- `./scripts/verify.sh`: passed
+
+### Notes / Remaining Issues
+
+- API, DB, 인증/인가 문서는 변경하지 않음.
