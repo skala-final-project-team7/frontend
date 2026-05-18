@@ -67,11 +67,11 @@
 
 # feature5: API 타입 및 클라이언트 골격
 
-[ ] `docs/api-spec.md` 기준 Common Response wrapper 타입 정의
-[ ] Conversation, Message, Source, Feedback, SSE event 타입 정의
-[ ] `src/api/client.ts` fetch wrapper 생성
-[ ] conversations/messages/chat API 함수 골격 생성
-[ ] SSE `/api/conversations/{conversationId}/chat`는 wrapper 미적용 이벤트 스트림으로 분리
+[x] `docs/api-spec.md` 기준 Common Response wrapper 타입 정의
+[x] Conversation, Message, Source, Feedback, SSE event 타입 정의
+[x] `src/api/client.ts` fetch wrapper 생성
+[x] conversations/messages/chat API 함수 골격 생성
+[x] SSE `/api/conversations/{conversationId}/chat`는 wrapper 미적용 이벤트 스트림으로 분리
 
 # feature6: Chat Mock API 기반
 
