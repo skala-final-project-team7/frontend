@@ -16,6 +16,7 @@
 import mascotRealizeImageUrl from '../../frontend/assets/mascot-realize-nobg.png';
 import mascotSearchImageUrl from '../../frontend/assets/mascot-search-nobg.png';
 import mascotImageUrl from '../../frontend/assets/mascot.png';
+import mascotWrongImageUrl from '../../frontend/assets/mascot-wrong.png';
 import searchImageUrl from '../../frontend/assets/search.png';
 import skpSymbolImageUrl from '../../frontend/assets/skp_symbol-nobg.png';
 
@@ -23,6 +24,7 @@ export {
   mascotImageUrl,
   mascotRealizeImageUrl,
   mascotSearchImageUrl,
+  mascotWrongImageUrl,
   searchImageUrl,
   skpSymbolImageUrl,
 };

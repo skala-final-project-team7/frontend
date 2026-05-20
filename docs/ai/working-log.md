@@ -408,3 +408,73 @@
 
 - feature7 이후 항목은 수정하지 않음.
 - API 명세, DB, 인증/인가 문서는 변경하지 않음.
+
+## 2026-05-19 - feature7: Shared UI 상태 컴포넌트
+
+### Scope
+
+- `BaseSpinner`, `EmptyState`, `BaseButton`, `BaseIconButton` 공통 UI 컴포넌트 추가
+- `BaseGradientButton` 공통 orange-red gradient CTA 버튼 추가
+- 버튼 컴포넌트 상태를 Default / Hover / Active / Focus / Disabled로 구분해 스타일 기준 정의
+- Error + Retry 상태를 표현하는 `ErrorRetryState` 컴포넌트 추가
+- `ErrorRetryState` 재시도 버튼에 `@lucide/vue`의 `RefreshCw` 아이콘 적용
+- 아이콘 전용 버튼의 `aria-label` 필수 prop 적용
+- `@lucide/vue` 의존성 추가에 따라 `package.json` / `package-lock.json` 버전을 `0.1.1`로 patch bump
+- feature8 이후 화면 구현에는 진입하지 않고 shared 컴포넌트 export까지만 수행
+
+### Test Cases
+
+- `BaseSpinner`는 `role="status"`와 `aria-live="polite"`로 로딩 상태를 노출한다.
+- `EmptyState`는 제목, 설명, 선택적 action slot을 렌더링한다.
+- `BaseButton`은 native button 기본 type과 variant class를 적용하고 click 이벤트를 emit한다.
+- disabled `BaseButton`은 비활성 상태에서 click handler를 호출하지 않는다.
+- `BaseGradientButton`은 Figma 기준 compact gradient CTA 스타일과 disabled opacity 정책을 적용한다.
+- 버튼 컴포넌트는 Default / Hover / Active / Focus / Disabled 상태별 스타일을 가진다.
+- `BaseIconButton`은 `ariaLabel` required prop을 가지고 실제 `aria-label` 속성에 적용한다.
+- `ErrorRetryState`는 `role="alert"` 메시지, Lucide retry 아이콘, 재시도 버튼을 렌더링하고 retry 이벤트를 emit한다.
+
+### Changed Files
+
+- `src/__tests__/feature7.shared-ui.test.ts`: feature7 실패 우선 테스트 추가
+- `src/shared/ui/BaseSpinner.vue`: 공통 Loading 상태 컴포넌트 추가
+- `src/shared/ui/EmptyState.vue`: 공통 Empty 상태 컴포넌트 추가
+- `src/shared/ui/BaseButton.vue`: 공통 텍스트 버튼 컴포넌트 추가
+- `src/shared/ui/BaseGradientButton.vue`: 공통 gradient CTA 버튼 컴포넌트 추가
+- `src/shared/ui/BaseIconButton.vue`: aria-label 필수 아이콘 버튼 컴포넌트 추가
+- `tailwind.config.js`: 버튼 Focus 상태용 orange glow shadow token 추가
+- `src/shared/ui/ErrorRetryState.vue`: Error + Retry 상태 컴포넌트 추가
+- `src/shared/index.ts`: shared UI 컴포넌트 export 추가
+- `package.json`, `package-lock.json`: `@lucide/vue` 의존성 추가 및 `0.1.1` patch version 반영
+- `frontend/assets/mascot-wrong.png`: EmptyState용 512px 투명 배경 mascot asset 추가
+- `frontend/design-token-preview.html`: shared UI 컴포넌트 정적 preview 추가
+- `docs/ai/current-plan.md`: feature7 완료 체크 처리
+- `docs/ai/working-log.md`: feature7 작업 로그 기록
+
+### Commands
+
+- `npm test -- src/__tests__/feature7.shared-ui.test.ts` 실패 확인
+- `npm test -- src/__tests__/feature7.shared-ui.test.ts`
+- `npm test`
+- `npm run typecheck`
+- `npm version patch --no-git-tag-version`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- `npm test -- src/__tests__/feature7.shared-ui.test.ts` 최초 실행: failed, `@/shared`에 feature7 컴포넌트 export가 없어 mount 대상이 undefined인 상태 확인
+- `npm test -- src/__tests__/feature7.shared-ui.test.ts`: passed, 8 tests passed
+- `npm test`: passed, 6 test files and 33 tests passed
+- `npm run typecheck`: passed
+- `npm version patch --no-git-tag-version`: package version `0.1.0` → `0.1.1`
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed
+- `./scripts/verify.sh`: passed
+
+### Notes / Remaining Issues
+
+- API, DB, 인증/인가 문서는 변경하지 않음.
+- feature8 이후 화면 연결은 다음 feature 범위로 남김.

@@ -180,16 +180,59 @@
 
       .lina-button-primary,
       .lina-button-ghost,
-      .lina-button-disabled {
+      .lina-button-secondary,
+      .lina-button-disabled,
+      .lina-icon-button {
         display: inline-flex;
         align-items: center;
         justify-content: center;
         min-height: 32px;
-        padding: var(--padding-button) 14px;
         border-radius: var(--border-radius-button);
         font-size: var(--font-size-button);
         font-weight: var(--font-weight-button);
         line-height: var(--line-height-button);
+        transition:
+          filter 160ms ease,
+          transform 120ms ease,
+          opacity 160ms ease;
+      }
+
+      .lina-button-primary:hover,
+      .lina-button-ghost:hover,
+      .lina-button-secondary:hover,
+      .lina-icon-button:hover,
+      .lina-gradient-button:hover {
+        filter: brightness(1.05);
+      }
+
+      .lina-button-primary:active,
+      .lina-button-ghost:active,
+      .lina-button-secondary:active,
+      .lina-gradient-button:active {
+        transform: scale(0.98);
+      }
+
+      .lina-icon-button:active {
+        transform: scale(0.96);
+      }
+
+      .lina-button-primary:focus-visible,
+      .lina-button-ghost:focus-visible,
+      .lina-button-secondary:focus-visible,
+      .lina-icon-button:focus-visible,
+      .lina-gradient-button:focus-visible {
+        box-shadow:
+          0 0 6px var(--color-primary),
+          0 2px 5.5px var(--color-dark-10);
+        filter: brightness(1.05);
+        outline: none;
+      }
+
+      .lina-button-primary,
+      .lina-button-ghost,
+      .lina-button-secondary,
+      .lina-button-disabled {
+        padding: var(--padding-button) 14px;
       }
 
       .lina-button-primary {
@@ -205,10 +248,180 @@
         color: var(--color-primary-white);
       }
 
+      .lina-button-secondary,
+      .lina-icon-button {
+        border: 1px solid var(--color-bg-300);
+        background: var(--color-primary-white);
+        color: var(--color-dark-80);
+      }
+
       .lina-button-disabled {
         border: 1px solid var(--color-bg-400);
         background: var(--color-bg-400);
         color: var(--color-dark-40);
+      }
+
+      .lina-icon-button {
+        width: 36px;
+        height: 36px;
+        padding: 0;
+      }
+
+      .shared-preview-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 16px;
+      }
+
+      .shared-preview-card {
+        display: flex;
+        min-height: 178px;
+        flex-direction: column;
+        gap: var(--gap-default);
+        justify-content: center;
+        padding: var(--padding-item);
+        border: 1px solid var(--color-bg-300);
+        border-radius: var(--border-radius-item);
+        background: var(--color-primary-white);
+      }
+
+      .shared-preview-card.center {
+        align-items: center;
+        text-align: center;
+      }
+
+      .button-state-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+        gap: 14px;
+        width: 100%;
+      }
+
+      .button-state-sample {
+        display: flex;
+        min-height: 82px;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 10px;
+        border: 1px solid var(--color-bg-300);
+        border-radius: var(--border-radius-item);
+        background: var(--color-bg-100);
+      }
+
+      .state-label {
+        margin: 0;
+        color: var(--color-dark-40);
+        font-size: var(--font-size-caption);
+        line-height: var(--line-height-caption);
+      }
+
+      .state-hover {
+        filter: brightness(1.05);
+      }
+
+      .state-active {
+        transform: scale(0.98);
+      }
+
+      .state-focus {
+        box-shadow:
+          0 0 6px var(--color-primary),
+          0 2px 5.5px var(--color-dark-10);
+        filter: brightness(1.05);
+      }
+
+      .state-disabled {
+        cursor: not-allowed;
+        filter: none;
+        opacity: 0.4;
+        transform: none;
+      }
+
+      .spinner-dots {
+        display: inline-flex;
+        align-items: center;
+        gap: 32px;
+      }
+
+      .spinner-dot {
+        width: 20px;
+        height: 20px;
+        border-radius: 999px;
+        animation: spinner-dot-pulse 1080ms ease-in-out infinite;
+        background: var(--color-bg-300);
+      }
+
+      @keyframes spinner-dot-pulse {
+        0%,
+        100% {
+          background: var(--color-bg-300);
+          transform: scale(1);
+        }
+
+        30% {
+          background: var(--color-dark-40);
+          transform: scale(1.04);
+        }
+
+        60% {
+          background: var(--color-bg-300);
+          transform: scale(1);
+        }
+      }
+
+      .empty-mascot {
+        width: 128px;
+        height: 128px;
+        object-fit: contain;
+      }
+
+      .error-title {
+        color: var(--color-error);
+        font-weight: 600;
+      }
+
+      .retry-icon {
+        width: 16px;
+        height: 16px;
+      }
+
+      .retry-button {
+        gap: 12px;
+      }
+
+      .lina-gradient-button {
+        display: inline-flex;
+        width: 130.53px;
+        height: 30.46px;
+        align-items: center;
+        justify-content: center;
+        border: 0;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #f79140 0%, #ff4a19 100%);
+        color: #ffffff;
+        font-size: 10px;
+        font-weight: 700;
+        line-height: 12px;
+        transition:
+          filter 160ms ease,
+          transform 120ms ease,
+          opacity 160ms ease;
+      }
+
+      .lina-gradient-button.large-preview {
+        width: 327px;
+        height: 77px;
+        font-size: 24px;
+        line-height: 30px;
+      }
+
+      .lina-gradient-button:disabled {
+        cursor: not-allowed;
+        filter: none;
+        opacity: 0.4;
+        transform: none;
       }
 
       .type-sample {
@@ -312,6 +525,7 @@
             <div class="button-row">
               <button class="lina-button-primary" type="button">질문 보내기</button>
               <button class="lina-button-ghost" type="button">Reference</button>
+              <button class="lina-button-secondary" type="button">Secondary</button>
               <button class="lina-button-disabled" type="button" disabled>대기 중</button>
             </div>
           </div>
@@ -330,6 +544,155 @@
             <div class="button-row">
               <button class="lina-button-primary" type="button">Primary action</button>
               <button class="lina-button-ghost" type="button">Ghost</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="preview-section">
+        <h2 class="section-title">Shared UI Components</h2>
+        <div class="shared-preview-grid">
+          <div class="shared-preview-card center">
+            <div role="status" aria-live="polite">
+              <span class="spinner-dots" aria-hidden="true">
+                <span class="spinner-dot" style="animation-delay: 0ms"></span>
+                <span class="spinner-dot" style="animation-delay: 180ms"></span>
+                <span class="spinner-dot" style="animation-delay: 360ms"></span>
+              </span>
+              <p class="lina-body" style="margin-top: 12px">답변을 생성하고 있습니다</p>
+            </div>
+          </div>
+
+          <div class="shared-preview-card center">
+            <img class="empty-mascot" src="assets/mascot-wrong.png" alt="" aria-hidden="true" />
+            <div>
+              <h3 class="lina-body" style="font-weight: 600">검색 결과가 없습니다</h3>
+              <p class="lina-body" style="color: var(--color-dark-40)">
+                다른 질문으로 다시 시도해 주세요.
+              </p>
+            </div>
+            <button class="lina-button-secondary" type="button">새 질문</button>
+          </div>
+
+          <div class="shared-preview-card">
+            <p class="small">BaseButton / BaseIconButton / BaseGradientButton</p>
+            <div class="button-row">
+              <button class="lina-button-primary" type="button">Primary</button>
+              <button class="lina-button-secondary" type="button">Secondary</button>
+              <button class="lina-button-ghost" type="button">Ghost</button>
+              <button class="lina-button-disabled" type="button" disabled>Disabled</button>
+              <button class="lina-icon-button" type="button" aria-label="설정 열기">S</button>
+              <button class="lina-gradient-button" type="button">Go to Chat</button>
+              <button class="lina-gradient-button" type="button" disabled>Disabled</button>
+            </div>
+          </div>
+
+          <div class="shared-preview-card center" role="alert">
+            <div>
+              <h3 class="lina-body error-title">응답을 불러오지 못했습니다</h3>
+              <p class="lina-body" style="color: var(--color-dark-40)">
+                네트워크 상태를 확인한 뒤 다시 시도해 주세요.
+              </p>
+            </div>
+            <button class="lina-button-primary retry-button" type="button">
+              <svg
+                class="retry-icon"
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M21 3v5h-5"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M8 16H3v5"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+              다시 시도
+            </button>
+          </div>
+
+          <div class="shared-preview-card center">
+            <p class="small">BaseGradientButton enlarged preview</p>
+            <button class="lina-gradient-button large-preview" type="button">Go to Chat</button>
+            <button class="lina-gradient-button large-preview" type="button" disabled>
+              Disabled
+            </button>
+          </div>
+
+          <div class="shared-preview-card" style="grid-column: 1 / -1">
+            <p class="small">Button interaction states</p>
+            <div class="button-state-grid">
+              <div class="button-state-sample">
+                <p class="state-label">Default</p>
+                <button class="lina-button-primary" type="button">Primary</button>
+              </div>
+              <div class="button-state-sample">
+                <p class="state-label">Hover</p>
+                <button class="lina-button-primary state-hover" type="button">Primary</button>
+              </div>
+              <div class="button-state-sample">
+                <p class="state-label">Active</p>
+                <button class="lina-button-primary state-active" type="button">Primary</button>
+              </div>
+              <div class="button-state-sample">
+                <p class="state-label">Focus</p>
+                <button class="lina-button-primary state-focus" type="button">Primary</button>
+              </div>
+              <div class="button-state-sample">
+                <p class="state-label">Disabled</p>
+                <button class="lina-button-primary state-disabled" type="button" disabled>
+                  Primary
+                </button>
+              </div>
+            </div>
+
+            <div class="button-state-grid">
+              <div class="button-state-sample">
+                <p class="state-label">Default</p>
+                <button class="lina-gradient-button" type="button">Go to Chat</button>
+              </div>
+              <div class="button-state-sample">
+                <p class="state-label">Hover</p>
+                <button class="lina-gradient-button state-hover" type="button">Go to Chat</button>
+              </div>
+              <div class="button-state-sample">
+                <p class="state-label">Active</p>
+                <button class="lina-gradient-button state-active" type="button">Go to Chat</button>
+              </div>
+              <div class="button-state-sample">
+                <p class="state-label">Focus</p>
+                <button class="lina-gradient-button state-focus" type="button">Go to Chat</button>
+              </div>
+              <div class="button-state-sample">
+                <p class="state-label">Disabled</p>
+                <button class="lina-gradient-button state-disabled" type="button" disabled>
+                  Go to Chat
+                </button>
+              </div>
             </div>
           </div>
         </div>
