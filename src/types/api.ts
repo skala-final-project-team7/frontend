@@ -72,6 +72,17 @@ export type ConfluencePagePreview = {
   bodyViewValue: string;
 };
 
+export type CurrentUserRole = 'USER' | 'ADMIN';
+
+export type CurrentUser = {
+  userId: string;
+  name: string;
+  email: string;
+  role: CurrentUserRole;
+  profileImageUrl: string;
+  lastLoginAt: string;
+};
+
 export type VerificationResult = 'SUPPORTED' | 'PARTIALLY_SUPPORTED' | 'NOT_SUPPORTED';
 
 export type MessageRole = 'user' | 'assistant';

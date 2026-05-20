@@ -95,19 +95,21 @@
 
 # feature8: Chat 기본 화면 구현 (SCR-400)
 
-[ ] `frontend/docs/components.md`의 SCR-400 요구사항 확인
-[ ] `frontend/docs/frames/[SCR-400]main chatbot.png` 기준 레이아웃 구현
-[ ] Sidebar 닫힘/열림 기본 상태와 SettingsEntry 위치 구현
-[ ] ChatEmptyState에 ASK LINA, SKP symbol, 환영 문구, mascot, PreviewPageStack 배치
-[ ] MessageInput 기본 입력/비활성 상태 구현
+[x] `frontend/docs/components.md`의 SCR-400 요구사항 확인
+[x] `frontend/docs/frames/[SCR-400]main chatbot.png` 기준 레이아웃 구현
+[x] Sidebar 닫힘/열림 기본 상태와 SettingsEntry 위치 구현
+[x] ChatEmptyState에 ASK LINA, SKP symbol, 환영 문구, mascot, PreviewPageStack 배치
+[x] MessageInput 기본 입력/비활성 상태 구현
 
 # feature9: Chat 대화 화면 구현 (SCR-410, SCR-420, SCR-600)
 
 [ ] 메시지 목록과 사용자(테두리 존재o)/LINA(테두리 존재x) MessageBubble 시각 구분 구현
+[ ] enter - 전송 / shift+enter - 사용자 메시지 안에서 '\n' 구현
 [ ] SSE 청크 누적 표시와 RAG 단계 라벨 placeholder 구현
 [ ] 답변 하단 출처 / Check Reference 버튼 구현
 [ ] 사용자 메시지 인라인 수정 모드 구현
 [ ] FollowUpSuggestions 추천 칩 UI 구현
+[ ] 사이드바에서 conversation list에 나오는 제목과 conversation 각각 채팅 내용 연결되도록 구현
 
 # feature10: 출처 패널 구현 (SCR-500, SCR-510)
 

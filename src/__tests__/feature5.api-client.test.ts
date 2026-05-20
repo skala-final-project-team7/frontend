@@ -5,6 +5,7 @@ import {
   deleteConversation,
   getConfluencePagePreview,
   getConversationMessages,
+  getCurrentUser,
   listConversations,
   streamConversationChat,
   submitMessageFeedback,
@@ -16,10 +17,11 @@ import type {
   ChatSseEvent,
   ConfluencePagePreview,
   Conversation,
-  DeleteConversationResponse,
   ConversationMessages,
-  ListConversationsParams,
+  CurrentUser,
+  DeleteConversationResponse,
   Feedback,
+  ListConversationsParams,
   Message,
   Source,
 } from '@/types/api';
@@ -98,6 +100,14 @@ describe('feature5 API types and client skeleton', () => {
       pageUrl: 'https://confluence.example.com/pages/12345',
       bodyViewValue: '<h1>S3 트러블슈팅 가이드</h1>',
     };
+    const currentUser: CurrentUser = {
+      userId: 'user-001',
+      name: '이다연',
+      email: 'dayeon@example.com',
+      role: 'USER',
+      profileImageUrl: 'https://example.com/profile/dayeon.png',
+      lastLoginAt: '2026-05-20T09:00:00Z',
+    };
 
     expect(successResponse.data.conversationId).toBe('conv-uuid-001');
     expect(errorResponse.data).toBeNull();
@@ -107,6 +117,8 @@ describe('feature5 API types and client skeleton', () => {
     expect(feedback.rating).toBe('like');
     expect(sseEvent.event).toBe('sources');
     expect(previewPage.bodyViewValue).toContain('<h1>');
+    expect(currentUser.role).toBe('USER');
+    expect(currentUser.profileImageUrl).toBe('https://example.com/profile/dayeon.png');
   });
 
   it('unwraps Common Response data for conversations and messages APIs', async () => {
@@ -333,6 +345,47 @@ describe('feature5 API types and client skeleton', () => {
       pageUrl: 'https://confluence.example.com/pages/12345',
       breadcrumbs: ['Cloud Control Center', 'AWS', 'S3', 'S3 트러블슈팅 가이드'],
       bodyViewValue: '<h1>S3 트러블슈팅 가이드</h1>',
+    });
+  });
+
+  it('unwraps current user profile from GET /api/users/me', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const requestUrl = String(input);
+      const method = init?.method ?? 'GET';
+
+      if (requestUrl === '/api/users/me' && method === 'GET') {
+        return jsonResponse({
+          isSuccess: true,
+          code: 200,
+          message: '사용자 정보 조회 성공',
+          data: {
+            userId: 'user-001',
+            name: '이다연',
+            email: 'dayeon@example.com',
+            role: 'USER',
+            profileImageUrl: 'https://example.com/profile/dayeon.png',
+            lastLoginAt: '2026-05-20T09:00:00Z',
+          } satisfies CurrentUser,
+        });
+      }
+
+      return jsonResponse(
+        {
+          isSuccess: false,
+          code: 404,
+          message: `Unexpected request: ${method} ${requestUrl}`,
+          data: null,
+        },
+        404,
+      );
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(getCurrentUser()).resolves.toMatchObject({
+      userId: 'user-001',
+      name: '이다연',
+      role: 'USER',
+      profileImageUrl: 'https://example.com/profile/dayeon.png',
     });
   });
 });
