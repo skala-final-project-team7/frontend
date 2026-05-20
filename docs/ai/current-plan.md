@@ -86,12 +86,12 @@
 
 # feature7: Shared UI 상태 컴포넌트
 
-[ ] `BaseSpinner` 생성
-[ ] `EmptyState` 생성
-[ ] `BaseButton` 생성
-[ ] `BaseIconButton` 생성
-[ ] Error + Retry 상태를 표현할 수 있는 shared 컴포넌트 또는 패턴 생성
-[ ] 아이콘 전용 버튼에는 `aria-label`을 필수로 적용
+[x] `BaseSpinner` 생성
+[x] `EmptyState` 생성
+[x] `BaseButton` 생성
+[x] `BaseIconButton` 생성
+[x] Error + Retry 상태를 표현할 수 있는 shared 컴포넌트 또는 패턴 생성
+[x] 아이콘 전용 버튼에는 `aria-label`을 필수로 적용
 
 # feature8: Chat 기본 화면 구현 (SCR-400)
 

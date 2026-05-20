@@ -78,6 +78,7 @@ export default {
       },
       boxShadow: {
         primary: '0 0 4px var(--color-primary)',
+        focus: '0 0 6px var(--color-primary), 0 2px 5.5px var(--color-dark-10)',
         floating: '0 4px 22px var(--color-dark-10)',
       },
       backdropBlur: {
