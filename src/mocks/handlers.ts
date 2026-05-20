@@ -17,12 +17,28 @@ import { HttpResponse, http } from 'msw';
 import {
   mockConfluencePreviewPages,
   mockConversations,
+  mockCurrentUser,
   mockMessagesByConversationId,
   mockSources,
 } from './data';
-import type { ApiSuccessResponse, ConversationList, ConversationMessages } from '@/types/api';
+import type {
+  ApiSuccessResponse,
+  ConversationList,
+  ConversationMessages,
+  CurrentUser,
+} from '@/types/api';
 
 export const mockHandlers = [
+  // TODO(MOCK): GET /api/users/me
+  http.get('*/api/users/me', () => {
+    return HttpResponse.json<ApiSuccessResponse<CurrentUser>>({
+      isSuccess: true,
+      code: 200,
+      message: '사용자 정보 조회 성공',
+      data: mockCurrentUser,
+    });
+  }),
+
   // TODO(MOCK): GET /api/conversations
   http.get('/api/conversations', ({ request }) => {
     const url = new URL(request.url);

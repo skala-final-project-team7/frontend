@@ -21,6 +21,7 @@ import type {
   ConversationList,
   ConversationMessages,
   CreateConversationResponse,
+  CurrentUser,
   DeleteConversationResponse,
   Feedback,
   ListConversationsParams,
@@ -33,6 +34,15 @@ export const API_LAYER_BOUNDARY = {
   allowedNetworkLayer: 'src/api',
   directFetchAllowedOutsideApi: false,
 } as const;
+
+/**
+ * 현재 로그인한 사용자 정보를 조회한다.
+ *
+ * @returns 사용자 ID, 이름, 이메일, 권한, 프로필 이미지, 마지막 로그인 시각
+ */
+export function getCurrentUser(): Promise<CurrentUser> {
+  return apiRequest<CurrentUser>('/api/users/me');
+}
 
 /**
  * 새 대화를 생성한다.

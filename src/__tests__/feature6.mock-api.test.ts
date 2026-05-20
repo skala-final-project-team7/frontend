@@ -3,11 +3,11 @@ import { join } from 'node:path';
 
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
-import { listConversations } from '@/api';
+import { getCurrentUser, listConversations } from '@/api';
 import { mockServer } from '@/mocks/server';
 import { mockWorker } from '@/mocks/browser';
 import { isMockApiEnabled } from '@/mocks';
-import { mockHomeConfluencePages } from '@/mocks/data';
+import { mockCurrentUser, mockHomeConfluencePages } from '@/mocks/data';
 
 describe('feature6 Chat mock API foundation', () => {
   beforeAll(() => {
@@ -49,6 +49,19 @@ describe('feature6 Chat mock API foundation', () => {
       conversationId: 'conv-mock-001',
       title: 'S3 권한 오류 해결 방법',
       messageCount: 4,
+    });
+  });
+
+  it('mocks GET /api/users/me with the current user profile', async () => {
+    const currentUser = await getCurrentUser();
+
+    expect(currentUser).toEqual(mockCurrentUser);
+    expect(currentUser).toMatchObject({
+      userId: 'user-001',
+      name: '이다연',
+      email: 'dayeon@example.com',
+      role: 'USER',
+      profileImageUrl: mockCurrentUser.profileImageUrl,
     });
   });
 
@@ -135,10 +148,11 @@ describe('feature6 Chat mock API foundation', () => {
     expect(mockHomeConfluencePages.length).toBeGreaterThanOrEqual(1);
     expect(mockHomeConfluencePages.length).toBeLessThanOrEqual(2);
     expect(mockHomeConfluencePages[0]).toMatchObject({
-      pageId: '12345',
-      title: 'S3 트러블슈팅 가이드',
-      breadcrumbs: ['Cloud Control Center', 'AWS', 'S3', 'S3 트러블슈팅 가이드'],
-      pageUrl: 'https://confluence.example.com/pages/12345',
+      pageId: 'home-preview-001',
+      title: '자주 묻는 질문 (FAQ) - 인프라 운영',
+      authorName: '이현서',
+      breadcrumbs: ['Cloud Control Center', 'AWS', 'FAQ', '자주 묻는 질문 (FAQ) - 인프라 운영'],
+      pageUrl: 'https://confluence.example.com/pages/home-preview-001',
     });
   });
 
@@ -146,6 +160,7 @@ describe('feature6 Chat mock API foundation', () => {
     const handlersSource = readFileSync(join(process.cwd(), 'src/mocks/handlers.ts'), 'utf8');
 
     expect(handlersSource).toContain('TODO(MOCK): GET /api/conversations');
+    expect(handlersSource).toContain('TODO(MOCK): GET /api/users/me');
     expect(handlersSource).toContain(
       'TODO(MOCK): GET /api/conversations/{conversationId}/messages',
     );

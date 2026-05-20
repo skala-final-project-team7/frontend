@@ -12,7 +12,23 @@
  *   - Vue 3.5.x, Vite 5.4.x 기준
  * --------------------------------------------------
  */
-import type { ConfluencePagePreview, Conversation, Message, Source } from '@/types/api';
+import type {
+  ConfluencePagePreview,
+  Conversation,
+  CurrentUser,
+  Message,
+  Source,
+} from '@/types/api';
+
+export const mockCurrentUser: CurrentUser = {
+  userId: 'user-001',
+  name: '이다연',
+  email: 'dayeon@example.com',
+  role: 'USER',
+  profileImageUrl:
+    'https://mblogthumb-phinf.pstatic.net/MjAyNTA5MDNfMzEg/MDAxNzU2ODk5ODI4NTYx.VzhqoiUeu5-JgOSajxHFRO4o5Bh8LrowuEfxEPKVG6cg.RurBKZOGbgkY5ROekysZZSBL0fgKAB6itfMC3kGU-DIg.JPEG/IMG%EF%BC%BF3630.JPG?type=w800',
+  lastLoginAt: '2026-05-20T09:00:00Z',
+};
 
 export const mockSources: Source[] = [
   {
@@ -20,7 +36,7 @@ export const mockSources: Source[] = [
     pageId: '12345',
     spaceId: '98310',
     spaceName: 'Cloud Control Center',
-    url: 'https://confluence.example.com/pages/12345',
+    url: 'https://yhlee0332.atlassian.net/wiki/spaces/ai27Rev1/pages/557209/macOS',
     updatedAt: '2026-04-15T09:30:00Z',
     relevanceScore: 0.92,
   },
@@ -34,7 +50,7 @@ export const mockConfluencePreviewPages: Record<string, ConfluencePagePreview> =
     authorName: 'Platform Team',
     updatedAt: '2026-04-15T09:30:00Z',
     breadcrumbs: ['Cloud Control Center', 'AWS', 'S3', 'S3 트러블슈팅 가이드'],
-    pageUrl: 'https://confluence.example.com/pages/12345',
+    pageUrl: 'https://yhlee0332.atlassian.net/wiki/spaces/ai27Rev1/pages/491961/FAQ+-',
     bodyViewValue: [
       '<article>',
       '<h1>S3 트러블슈팅 가이드</h1>',
@@ -55,7 +71,7 @@ export const mockConfluencePreviewPages: Record<string, ConfluencePagePreview> =
     authorName: 'Search Platform Team',
     updatedAt: '2026-05-07T09:10:00Z',
     breadcrumbs: ['LINA Operations', '데이터 파이프라인', '동기화 운영 Runbook'],
-    pageUrl: 'https://confluence.example.com/pages/67890',
+    pageUrl: 'https://yhlee0332.atlassian.net/wiki/spaces/ai27Rev1/pages/557209/macOS',
     bodyViewValue: [
       '<article>',
       '<h1>Confluence 문서 동기화 운영 Runbook</h1>',
@@ -70,7 +86,44 @@ export const mockConfluencePreviewPages: Record<string, ConfluencePagePreview> =
   },
 };
 
-export const mockHomeConfluencePages = Object.values(mockConfluencePreviewPages).slice(0, 2);
+export const mockHomeConfluencePages: ConfluencePagePreview[] = [
+  {
+    pageId: 'home-preview-001',
+    title: '자주 묻는 질문 (FAQ) - 인프라 운영',
+    spaceName: 'Cloud Control Center',
+    authorName: '이현서',
+    updatedAt: '2026-05-19T09:30:00Z',
+    breadcrumbs: ['Cloud Control Center', 'AWS', 'FAQ', '자주 묻는 질문 (FAQ) - 인프라 운영'],
+    pageUrl: 'https://yhlee0332.atlassian.net/wiki/spaces/ai27Rev1/pages/491961/FAQ+-',
+    bodyViewValue: [
+      '<article>',
+      '<h1>자주 묻는 질문 (FAQ) - 인프라 운영</h1>',
+      '<h2>AWS 관련</h2>',
+      '<p>Q. AWS 콘솔 접속은 어떻게 하나요?</p>',
+      '<p>A. SSO 포털에서 회사 계정으로 로그인합니다.</p>',
+      '<p>Q. 프로덕션 환경에 직접 접근할 수 있나요?</p>',
+      '</article>',
+    ].join(''),
+  },
+  {
+    pageId: 'home-preview-002',
+    title: '자주 묻는 질문 (FAQ) - 인프라 운영',
+    spaceName: 'LINA Operations',
+    authorName: '김민준',
+    updatedAt: '2026-05-19T10:00:00Z',
+    breadcrumbs: ['LINA Operations', '접속', '자주 묻는 질문 (FAQ) - 인프라 운영'],
+    pageUrl: 'https://yhlee0332.atlassian.net/wiki/spaces/ai27Rev1/pages/491961/FAQ+-',
+    bodyViewValue: [
+      '<article>',
+      '<h1>자주 묻는 질문 (FAQ) - 인프라 운영</h1>',
+      '<h2>접속은 어떻게 하나요?</h2>',
+      '<p>https://skax.awsapps.com에서 회사 계정으로 로그인합니다.</p>',
+      '<p>최초 접속 시 SSO 등록을 요청해야 합니다.</p>',
+      '<p>Slack #infra-support 채널에 문의할 수 있습니다.</p>',
+      '</article>',
+    ].join(''),
+  },
+];
 
 export const mockConversations: Conversation[] = [
   {

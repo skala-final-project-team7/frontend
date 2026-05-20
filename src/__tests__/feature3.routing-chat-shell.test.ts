@@ -26,17 +26,12 @@ describe('feature3 routing and chat shell', () => {
     expect(wrapper.find('[data-testid="chat-page"]').exists()).toBe(true);
   });
 
-  it('keeps only feature3 Chat shell placeholder regions before SCR-400 details', () => {
+  it('keeps the Chat shell regions after SCR-400 details are implemented', () => {
     const wrapper = mount(ChatPage);
 
-    expect(wrapper.find('[data-testid="chat-sidebar"]').text()).toContain('Sidebar placeholder');
-    expect(wrapper.find('[data-testid="chat-main"]').text()).toContain('ChatMain placeholder');
-    expect(wrapper.find('[data-testid="message-input"]').text()).toContain(
-      'MessageInput placeholder',
-    );
-    expect(wrapper.find('[data-testid="reference-panel"]').text()).toContain(
-      'ReferencePanel placeholder',
-    );
-    expect(wrapper.text()).toContain('SCR-400 detailed design is reserved for feature8');
+    expect(wrapper.find('[data-testid="chat-sidebar"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="chat-main"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="message-input"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="reference-panel"]').exists()).toBe(true);
   });
 });

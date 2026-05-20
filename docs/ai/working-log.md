@@ -478,3 +478,174 @@
 
 - API, DB, 인증/인가 문서는 변경하지 않음.
 - feature8 이후 화면 연결은 다음 feature 범위로 남김.
+
+## 2026-05-20 - feature8: Chat 기본 화면 구현 (SCR-400)
+
+### Scope
+
+- `frontend/docs/components.md`와 `frontend/docs/frames/[SCR-400]main chatbot.png` 기준 SCR-400 요구사항 확인
+- Chat shell placeholder를 SCR-400 기본 화면으로 교체
+- Sidebar 닫힘/열림 기본 상태와 좌하단 SettingsEntry 배치
+- ChatEmptyState에 ASK LINA, SKP symbol, 환영 문구, mascot, PreviewPageStack 2개 배치
+- MessageInput의 빈 입력 비활성, 입력 후 전송 가능, 스트리밍 중 비활성/취소 상태 구현
+- feature9 이후 대화/출처/후속질문 기능은 구현하지 않음
+
+### Test Cases
+
+- ChatPage는 닫힌 Sidebar, SettingsEntry, 프로필 버튼, Chat main shell을 렌더링한다.
+- Sidebar 토글 시 닫힘/열림 상태와 inline 검색/채팅 섹션이 전환된다.
+- ChatEmptyState는 ASK LINA, SKP symbol, 사용자 환영 문구, mascot, PreviewPageCard 2개를 렌더링한다.
+- MessageInput은 빈 입력에서 Send 버튼을 비활성화하고 입력 후 Enter 전송을 지원한다.
+- MessageInput은 Shift+Enter를 전송으로 처리하지 않고, 스트리밍 중 입력/전송 비활성 및 취소 버튼을 제공한다.
+
+### Changed Files
+
+- `src/__tests__/feature8.chat-main.test.ts`: feature8 실패 우선 테스트 추가
+- `src/__tests__/feature3.routing-chat-shell.test.ts`: feature8 구현 이후에도 shell 영역 존재를 검증하도록 조정
+- `src/features/chat/ChatEmptyState.vue`: SCR-400 빈 상태 브랜딩/문서 미리보기 화면 추가
+- `src/features/chat/MessageInput.vue`: 기본 메시지 입력, 비활성, 전송, 취소 상태 추가
+- `src/pages/ChatPage.vue`: feature3 placeholder를 SCR-400 기본 화면으로 교체
+- `docs/ai/current-plan.md`: feature8 완료 체크 처리
+- `docs/ai/working-log.md`: feature8 작업 로그 기록
+
+### Commands
+
+- `npm test -- --run src/__tests__/feature8.chat-main.test.ts src/__tests__/feature3.routing-chat-shell.test.ts` 실패 확인
+- `npm test -- --run src/__tests__/feature8.chat-main.test.ts src/__tests__/feature3.routing-chat-shell.test.ts`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- 최초 feature8 테스트 실행: failed, `@/features/chat/ChatEmptyState.vue` 모듈 없음으로 실패 확인
+- 구현 직후 feature8 테스트 실행: initially failed, Enter 제출 핸들러 미호출 확인 후 Vue key modifier로 수정
+- 관련 테스트 재실행: passed, 2 test files and 8 tests passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed, 7 test files and 38 tests passed
+- `./scripts/verify.sh`: passed
+
+### Notes / Remaining Issues
+
+- API, DB, 인증/인가 문서는 변경하지 않음.
+- feature9 이후 항목은 수정하지 않음.
+
+## 2026-05-20 - feature8: SCR-400 화면 보정
+
+### Scope
+
+- SCR-400 기본 화면이 한 화면에 들어오도록 header/sidebar/input/empty state 크기 조정
+- `searchImageUrl` 투명도 80% 적용
+- Sidebar 토글을 상단 mascot hover 시 toggle icon으로 대체되는 방식으로 변경
+- 아이콘 전용 컨트롤에 공통 tooltip wrapper 적용
+- PreviewPageCard를 166:191 비율의 재사용 컴포넌트로 분리
+- SKP symbol asset의 외곽 여백이 ASK LINA 로고에서 도드라지지 않도록 crop wrapper 적용
+
+### Test Cases
+
+- Sidebar mascot hover 시 mascot opacity가 사라지고 sidebar toggle icon이 표시된다.
+- SCR-400 아이콘 전용 컨트롤은 tooltip label을 가진다.
+- BaseTooltip은 hover/focus tooltip content를 렌더링한다.
+- ChatEmptyState의 검색 이미지에는 80% opacity가 적용된다.
+- SKP symbol은 crop wrapper 안에서 렌더링된다.
+- PreviewPageCard는 166:191 비율과 문서 메타/본문을 렌더링한다.
+
+### Changed Files
+
+- `src/__tests__/feature8.chat-main.test.ts`: SCR-400 보정 요구사항 테스트 추가
+- `src/shared/ui/BaseTooltip.vue`: 공통 tooltip wrapper 추가
+- `src/shared/index.ts`: `BaseTooltip` export 추가
+- `src/features/chat/PreviewPageCard.vue`: 재사용 가능한 문서 미리보기 카드 추가
+- `src/features/chat/ChatEmptyState.vue`: 화면 배율, search opacity, SKP crop, PreviewPageCard 적용
+- `src/features/chat/MessageInput.vue`: send icon tooltip 적용
+- `src/pages/ChatPage.vue`: mascot hover sidebar toggle, 전체 icon tooltip, 화면 높이 맞춤 조정
+
+### Commands
+
+- `npm test -- --run src/__tests__/feature8.chat-main.test.ts` 실패 확인
+- `npm test -- --run src/__tests__/feature8.chat-main.test.ts`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- 최초 보정 테스트 실행: failed, `PreviewPageCard.vue` 모듈 없음으로 실패 확인
+- feature8 보정 테스트 재실행: passed, 8 tests passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed, 7 test files and 41 tests passed
+- `./scripts/verify.sh`: passed
+
+### Notes / Remaining Issues
+
+- API, DB, 인증/인가 문서는 변경하지 않음.
+- feature9 이후 항목은 수정하지 않음.
+
+## 2026-05-20 - feature8: SCR-400 후속 보정 (Preview hover, Toast, 진입 애니메이션)
+
+### Scope
+
+- "채팅 검색" input 테두리 제거 + readonly 처리, 클릭 시 모달 열기 TODO 핸들러 연결
+- "설정 및 도움말" 버튼 폰트/색상을 "새 채팅"과 동일하게 정렬, 사이드바 열린 상태에서 tooltip 비활성화 (component 분기)
+- MessageInput 카드에 `focus-within:shadow-focus` 추가하여 textarea focus 시 orange glow 적용
+- 프로필 진입 버튼 aria-label "프로필 메뉴 열기" → "계정 관리"로 변경
+- 라우터 루트 경로 `/` → `/chat`로 변경
+- PreviewPageCard 호버 인터랙션 추가
+  - 카드 hover 시 안쪽 inset 그림자 (`shadow-card-press` 신규 토큰)
+  - 우측 상단에 URL 복사(Link2) / 외부 열기(ArrowUpRight) 아이콘 노출, BaseTooltip 라벨 부여
+  - 하단에 breadcrumbs를 hover 시 노출 (`group-hover:opacity-100`)
+  - article wrapper를 도입해 tooltip이 카드 `overflow-hidden` 경계 밖에서 표시되도록 분리
+- 공통 Toast 시스템 추가
+  - `useToast` composable로 전역 toast 큐 관리
+  - `BaseToast` 컴포넌트가 Teleport로 body 상단 중앙에 렌더링, success/error/info variant 지원
+  - App.vue에 `BaseToast` 1회 마운트
+  - PreviewPageCard 복사 성공/실패 시 toast 노출
+- ChatEmptyState section에 mount 진입 애니메이션 (`<Transition appear>`, 500ms ease-out, translate-y-6 → 0)
+- `dompurify` 의존성 추가 (PreviewPageCard `bodyViewValue` sanitize 용도)
+- `@lucide/vue` 아이콘 추가 import: `Check`, `Info`, `XCircle`, `Link2`, `ArrowUpRight`
+- `tailwind.config.js`에 `boxShadow.card-press` 토큰 추가
+
+### Test Cases
+
+- 기존 feature8 회귀 테스트 12개 유지 통과
+- profile-entry aria-label 변경 반영 (`프로필 메뉴 열기` → `계정 관리`)
+- settings-entry-label 색상 토큰 변경 (`text-overlay-dark-40` → `text-overlay-dark-80`)
+
+### Changed Files
+
+- `src/App.vue`: BaseToast 글로벌 마운트
+- `src/composables/useToast.ts`: 전역 toast composable 신규 추가
+- `src/shared/ui/BaseToast.vue`: 공통 toast 컴포넌트 신규 추가
+- `src/shared/index.ts`: `BaseToast` export 추가
+- `src/features/chat/PreviewPageCard.vue`: wrapper 분리, hover 액션, breadcrumbs, toast 연결
+- `src/features/chat/ChatEmptyState.vue`: mount 진입 transition wrapper 추가
+- `src/features/chat/MessageInput.vue`: `focus-within:shadow-focus` 적용
+- `src/pages/ChatPage.vue`: 채팅 검색 input 테두리 제거, 설정 항목 스타일 정합, profile aria-label 변경
+- `src/router/index.ts`: 루트 라우트 경로 `/chat`로 변경
+- `src/__tests__/feature8.chat-main.test.ts`: profile aria-label, settings-entry-label 색상 변경 반영
+- `tailwind.config.js`: `boxShadow.card-press` inset shadow 토큰 추가
+- `package.json`, `package-lock.json`: `dompurify` 의존성 추가, version 0.1.1 → 0.1.2
+
+### Commands
+
+- `npm install dompurify`
+- `npm test -- --run src/__tests__/feature8.chat-main.test.ts`
+- `npm run typecheck`
+- `npm version patch --no-git-tag-version`
+
+### Results
+
+- `npm test -- --run src/__tests__/feature8.chat-main.test.ts`: passed, 12 tests passed
+- `npm run typecheck`: passed
+- `npm version patch --no-git-tag-version`: package version `0.1.1` → `0.1.2`
+
+### Notes / Remaining Issues
+
+- `npm test` 전체 실행 시 feature3 (`router path '/' 기대`), feature6 (mock data shape 기대 불일치) 4건 실패가 존재하며, 이는 이번 세션 변경(`/` → `/chat` 라우팅, mock data 확장)에 따른 회귀로 후속 보정 필요.
+- API, DB, 인증/인가 문서는 변경하지 않음.
+- 채팅 검색 모달 본체는 미구현 상태로 `openSearchModal` 함수에 TODO 주석 남김.
+- BaseToast은 success/error/info variant만 정의했고, 실제 사용처는 PreviewPageCard 복사 결과 알림 한 곳.

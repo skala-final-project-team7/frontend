@@ -20,7 +20,7 @@ const router = createRouter({
   history: createWebHistory(),
   routes: [
     {
-      path: '/',
+      path: '/chat',
       name: 'chat',
       component: ChatPage,
     },
