@@ -67,7 +67,6 @@
 - `./scripts/lint.sh`
 - `./scripts/test.sh`
 - `./scripts/verify.sh`
-- `npm run typecheck`
 - `npm run build`
 
 ### Results
@@ -120,6 +119,7 @@
 - `./scripts/lint.sh`
 - `./scripts/test.sh`
 - `./scripts/verify.sh`
+- `npm run typecheck`
 
 ### Results
 
@@ -214,6 +214,7 @@
 - `./scripts/lint.sh`
 - `./scripts/test.sh`
 - `./scripts/verify.sh`
+- `npm run typecheck`
 
 ### Results
 
@@ -649,3 +650,362 @@
 - API, DB, 인증/인가 문서는 변경하지 않음.
 - 채팅 검색 모달 본체는 미구현 상태로 `openSearchModal` 함수에 TODO 주석 남김.
 - BaseToast은 success/error/info variant만 정의했고, 실제 사용처는 PreviewPageCard 복사 결과 알림 한 곳.
+
+## 2026-05-21 - feature9: Chat 대화 화면 구현 (SCR-410, SCR-420, SCR-600)
+
+### Scope
+
+- 메시지 목록 렌더링과 사용자/LINA MessageBubble 시각 구분 구현
+- MessageInput Enter 전송, Shift+Enter 줄바꿈 동작 회귀 테스트 추가
+- 질문 전송 시 SSE token/sources/verification/done 이벤트를 누적 반영
+- LINA 답변 하단에 RAG 단계 라벨과 출처 버튼 표시
+- 사용자 메시지 인라인 수정 모드 구현
+- Sidebar conversation list 클릭 시 conversation별 메시지 이력 연결
+- 첫 진입 시 mock conversation의 메시지 이력을 자동 로드해 대화 화면이 바로 보이도록 조정
+- conversation list `isPinned` 필드를 API 타입, mock data, API 문서에 반영
+
+### Test Cases
+
+- 대화 메시지는 사용자 bubble에 border를 적용하고 LINA bubble에는 border를 적용하지 않는다.
+- MessageInput은 Enter로 전송하고 Shift+Enter는 줄바꿈 입력을 유지한다.
+- 질문 전송 후 SSE 청크가 하나의 LINA 답변으로 누적되고 RAG 단계 라벨이 노출된다.
+- 사용자 메시지는 수정 버튼으로 인라인 편집 후 내용이 갱신된다.
+- Sidebar의 pinned/recent conversation title을 클릭하면 해당 conversation 메시지가 표시된다.
+- 첫 진입 시 첫 번째 mock conversation 메시지가 표시된다.
+
+### Changed Files
+
+- `src/__tests__/feature9.chat-conversation.test.ts`: feature9 실패 우선 테스트 추가
+- `src/pages/ChatPage.vue`: 메시지 목록, SSE 누적 처리, 인라인 수정, conversation 선택 연결 구현
+- `src/types/api.ts`: `Conversation.isPinned` 타입 추가
+- `src/mocks/data.ts`: mock conversation pinned 상태 추가
+- `src/__tests__/feature8.chat-main.test.ts`: feature9 pinned list 도입에 따른 stale placeholder 기대값 갱신
+- `src/__tests__/feature3.routing-chat-shell.test.ts`: 기존 `/chat` 라우트 구현에 맞춰 stale 라우팅 기대값 갱신
+- `src/__tests__/feature6.mock-api.test.ts`: 기존 mock data URL에 맞춰 stale URL 기대값 갱신
+- `docs/api-spec.md`: 대화 목록 응답 예시에 `isPinned` 추가
+- `docs/ai/current-plan.md`: feature9 완료 항목 체크
+
+### Commands
+
+- `npm test -- --run src/__tests__/feature9.chat-conversation.test.ts` 실패 확인
+- `npm test -- --run src/__tests__/feature9.chat-conversation.test.ts`
+- `npm test`
+- `npm test -- --run src/__tests__/feature8.chat-main.test.ts src/__tests__/feature9.chat-conversation.test.ts`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+- `npm run typecheck`
+
+### Results
+
+- 최초 feature9 테스트 실행: failed, 메시지 목록/편집/SSE/pinned list 미구현으로 5 tests failed, 1 passed
+- feature9 구현 후 단일 테스트: passed, 5 tests passed
+- feature8/feature9 관련 테스트: passed, 18 tests passed
+- 최초 전체 `npm test`: failed, feature8 stale pinned placeholder 기대값 1건과 기존 feature3/feature6 stale 기대값 4건 확인
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed, 8 test files and 52 tests passed
+- `./scripts/verify.sh`: passed
+- `npm run typecheck`: passed
+
+### Notes / Remaining Issues
+
+- feature10 이후 항목은 수정하지 않음.
+- ReferencePanel 상세 열림/카드/그래프 동작은 feature10 범위로 유지하고, feature9에서는 출처 버튼 클릭 핸들러에 TODO만 남김.
+- DB, 인증/인가 흐름 변경 없음.
+
+## 2026-05-21 - feature9: Chat route/component 분리 및 액션 tooltip 보강
+
+### Scope
+
+- Chat shell은 `ChatPage.vue`에 유지하고 대화 본문은 내부 컴포넌트로 분리
+- `/chat`은 SCR-400 빈 채팅 시작 화면, `/chat/:conversationId`는 SCR-410/420/600 대화 화면으로 route 분리
+- Sidebar conversation 클릭 시 `router.push('/chat/{conversationId}')`로 URL을 변경하고 route param 기준으로 메시지 이력 로드
+- 새 채팅 버튼 클릭 시 `/chat`으로 이동해 빈 상태 표시
+- 사용자/LINA 메시지 하단 액션 아이콘에 기존 `BaseTooltip` 적용
+- 사용자가 수정한 tooltip label 문구 유지
+  - 사용자: `메시지 복사`, `메시지 수정`
+  - LINA: `응답 복사`, `좋은 응답`, `별로인 응답`, `다시 시도`
+
+### Test Cases
+
+- `/chat` route는 ChatPage를 렌더링한다.
+- `/chat/:conversationId` route는 ChatPage를 렌더링한다.
+- Sidebar conversation 클릭 시 route가 `/chat/{conversationId}`로 변경된다.
+- 메시지 액션 아이콘은 `BaseTooltip` label을 가진다.
+- `/chat` 직접 진입 시 SCR-400 빈 상태가 유지된다.
+
+### Changed Files
+
+- `src/router/index.ts`: `/chat/:conversationId` route 추가
+- `src/pages/ChatPage.vue`: route param 기반 메시지 로딩, 새 채팅/대화 선택 route 이동 처리, 대화 본문 렌더링 책임 분리
+- `src/features/chat/ChatConversationView.vue`: 대화 메시지 목록 컴포넌트 추가
+- `src/features/chat/MessageBubble.vue`: 메시지 버블, 인라인 수정, 출처 버튼, 하단 액션 아이콘 및 tooltip 컴포넌트 추가
+- `src/__tests__/feature3.routing-chat-shell.test.ts`: 대화 상세 route 검증 추가
+- `src/__tests__/feature8.chat-main.test.ts`: `/chat` 빈 상태 기준으로 테스트 정리
+- `src/__tests__/feature9.chat-conversation.test.ts`: `/chat/:conversationId` 기준 대화 화면, route 이동, tooltip 검증 추가
+
+### Commands
+
+- `npm test -- --run src/__tests__/feature3.routing-chat-shell.test.ts src/__tests__/feature8.chat-main.test.ts src/__tests__/feature9.chat-conversation.test.ts`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+- `npm run typecheck`
+
+### Results
+
+- 관련 테스트: passed, 3 test files and 21 tests passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed, 8 test files and 53 tests passed
+- `./scripts/verify.sh`: passed
+- `npm run typecheck`: passed
+
+### Notes / Remaining Issues
+
+- ChatPage를 page shell로 유지하고 page 파일 추가 분리는 하지 않음.
+- ReferencePanel 상세 구현은 feature10 범위로 유지함.
+
+## 2026-05-21 - feature9: SSE composable / Pinia 누적 store 전환
+
+### Scope
+
+- Chat SSE 처리 책임을 `ChatPage.vue`의 직접 fetch/파싱에서 `useSSE` composable로 분리
+- SSE token/sources/verification/done 누적 결과를 Pinia `chat` store에 저장
+- `ChatPage.vue`는 route, sidebar, 입력 이벤트를 store action에 연결하는 shell 역할로 축소
+- `main.ts`에 Pinia plugin 등록
+- MSW chat SSE mock 응답을 문자열 응답에서 `ReadableStream<Uint8Array>` chunk 응답으로 변경
+- backend 전환 시 `streamConversationChat()` API 함수만 실제 endpoint 계약에 맞추면 `useSSE`/store/UI는 유지되도록 구성
+
+### Test Cases
+
+- Pinia chat store가 SSE token chunk를 assistant message content로 누적한다.
+- Pinia chat store가 sources / verification / done messageId를 assistant message에 반영한다.
+- Chat conversation 화면은 Pinia store 기반 메시지를 렌더링한다.
+- MSW SSE mock은 `text/event-stream` 응답을 반환하고 token/sources/verification/done 이벤트를 제공한다.
+
+### Changed Files
+
+- `src/composables/useSSE.ts`: SSE Response stream parser composable 추가
+- `src/stores/chat.ts`: conversation messages와 SSE 누적 응답을 관리하는 Pinia store 추가
+- `src/stores/index.ts`: `useChatStore` export 추가
+- `src/main.ts`: Pinia plugin 등록
+- `src/pages/ChatPage.vue`: 로컬 메시지/SSE state 제거, `useChatStore` action/getter 사용
+- `src/mocks/handlers.ts`: chat SSE mock 응답을 ReadableStream chunk 방식으로 변경
+- `src/__tests__/feature9.chat-sse-store.test.ts`: SSE chunk 누적 store 테스트 추가
+- `src/__tests__/feature3.routing-chat-shell.test.ts`, `src/__tests__/feature8.chat-main.test.ts`, `src/__tests__/feature9.chat-conversation.test.ts`: Pinia plugin 주입 및 store 기반 기대값 유지
+
+### Commands
+
+- `npm test -- --run src/__tests__/feature9.chat-sse-store.test.ts src/__tests__/feature9.chat-conversation.test.ts`
+- `npm test -- --run src/__tests__/feature3.routing-chat-shell.test.ts src/__tests__/feature6.mock-api.test.ts src/__tests__/feature8.chat-main.test.ts src/__tests__/feature9.chat-conversation.test.ts`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+- `npm run typecheck`
+
+### Results
+
+- SSE store 관련 테스트: passed, 2 test files and 6 tests passed
+- route/mock/chat 관련 테스트: passed, 4 test files and 31 tests passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: initially failed due to `while (true)` in `useSSE`, loop 구조 수정 후 passed
+- `./scripts/test.sh`: passed, 9 test files and 54 tests passed
+- `./scripts/verify.sh`: passed
+- `npm run typecheck`: passed
+
+### Notes / Remaining Issues
+
+- 실제 backend 연결 시에는 `streamConversationChat()`의 endpoint/인증/에러 계약만 feature11에서 맞추면 된다.
+- 현재 mock SSE는 MSW browser worker에서도 chunk 단위로 응답을 enqueue한다.
+
+## 2026-05-21 - feature9: mock SSE 3초 token demo / loading 표시
+
+### Scope
+
+- MSW chat SSE mock을 token별 chunk로 세분화하고 browser 환경에서 약 3초 동안 순차 표시되도록 지연 추가
+- 첫 token 전 빈 assistant placeholder에 `BaseSpinner` 기반 loading 표시
+- Pinia chat store에 현재 streaming 중인 assistant message id를 저장해 loading 대상 메시지만 식별
+- 3초 지연은 backend 연결 전 제거/단축해야 하므로 `// TODO(MOCK)` 주석으로 명시
+
+### Test Cases
+
+- streaming 중인 빈 assistant placeholder는 loading spinner와 `답변 생성 중` 문구를 렌더링한다.
+- SSE 완료 후 Pinia store는 streaming 상태와 streaming message id를 초기화한다.
+
+### Changed Files
+
+- `src/mocks/handlers.ts`: browser MSW에서 token별 3초 demo streaming delay 추가
+- `src/stores/chat.ts`: `streamingMessageId` state 추가 및 stream lifecycle에 연결
+- `src/features/chat/ChatConversationView.vue`: streaming props를 message bubble로 전달
+- `src/features/chat/MessageBubble.vue`: 빈 assistant streaming placeholder에 `BaseSpinner` 표시
+- `src/pages/ChatPage.vue`: Pinia streaming 상태/id를 conversation view에 전달
+- `src/__tests__/feature9.chat-conversation.test.ts`: assistant loading placeholder 렌더링 테스트 추가
+- `src/__tests__/feature9.chat-sse-store.test.ts`: stream 완료 후 `streamingMessageId` 초기화 검증 추가
+
+### Commands
+
+- `npm test -- --run src/__tests__/feature9.chat-conversation.test.ts src/__tests__/feature9.chat-sse-store.test.ts`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+- `npm run typecheck`
+
+### Results
+
+- feature9 관련 테스트: passed, 2 test files and 7 tests passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed, 9 test files and 55 tests passed
+- `./scripts/verify.sh`: passed
+- `npm run typecheck`: passed
+
+## 2026-05-21 - feature9: chat UX polish / stream first-message fix
+
+### Scope
+
+- 채팅 화면의 내부 세로 스크롤을 제거하고 브라우저 페이지 스크롤로 이동
+- assistant 답변 버블에서 RAG 단계 배지와 source 제목 목록 제거
+- streaming 중 `BaseSpinner`를 답변 콘텐츠 위에 표시
+- `/chat`에서 첫 메시지 전송 시 route 전환 뒤에도 stream 결과가 유지되도록 기존 로드 결과와 local stream 메시지를 병합
+- 사이드바 expanded 상태에서 텍스트/리스트는 width transition이 거의 끝난 뒤 노출되도록 지연
+- 실제 SSE transport는 `fetch + ReadableStream` 유지, EventSource로는 전환하지 않음
+
+### Test Cases
+
+- `/chat`에서 첫 메시지를 보내면 conversation route로 이동하고 stream 결과가 유지된다.
+- sidebar에서 conversation을 선택하면 empty state 대신 해당 대화 기록이 렌더링된다.
+- assistant bubble에는 source 제목이 렌더링되지 않고 source button만 남는다.
+- streaming assistant placeholder는 `BaseSpinner`를 표시한다.
+- sidebar expanded 텍스트는 transition 이후 노출된다.
+
+### Changed Files
+
+- `src/pages/ChatPage.vue`: page-level scroll, route 기반 active conversation 판정, sidebar text reveal delay, stream/history merge 대응
+- `src/features/chat/ChatConversationView.vue`: 내부 overflow-y scroll 제거
+- `src/features/chat/MessageBubble.vue`: RAG 배지/source title 제거, streaming spinner를 content 위에 표시
+- `src/stores/chat.ts`: route 이동 중 로드가 stream 메시지를 덮어쓰지 않도록 기존 local 메시지 병합
+- `src/__tests__/feature8.chat-main.test.ts`: sidebar reveal delay 반영
+- `src/__tests__/feature9.chat-conversation.test.ts`: first-message stream / sidebar selection / source title 제거 검증 추가
+- `docs/ai/working-log.md`: 작업 로그 갱신
+
+### Commands
+
+- `npm test -- --run src/__tests__/feature8.chat-main.test.ts src/__tests__/feature9.chat-conversation.test.ts src/__tests__/feature9.chat-sse-store.test.ts`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+- `npm run typecheck`
+
+### Results
+
+- 관련 테스트: passed, 3 test files and 21 tests passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed, 9 test files and 57 tests passed
+- `./scripts/verify.sh`: passed
+- `npm run typecheck`: passed
+
+## 2026-05-21 - feature9: /chat 첫 전송 새 대화 생성 및 함수 주석 보강
+
+### Scope
+
+- `/chat`에서 첫 메시지 전송 시 기존 conversation을 재사용하지 않고 `createConversation()`으로 새 대화를 만든 뒤 해당 route로 이동하도록 수정
+- MSW mock에 `POST /api/conversations` handler 추가
+- `ChatPage.vue`, `useSSE.ts`, `chat` store, mock handler, 테스트 helper 함수들에 목적/parameter 주석을 보강
+- 첫 대화 생성 흐름이 `chat` mock API, router, SSE stream과 함께 일관되게 동작하도록 테스트 보강
+
+### Test Cases
+
+- `/chat`에서 첫 메시지 전송 시 새 conversation이 생성되고 해당 route로 이동한 뒤 stream 결과가 보인다.
+- MSW mock API는 `POST /api/conversations`를 반환한다.
+- 채팅 화면 관련 helper 함수와 상태 관리 함수에는 호출자용 주석이 존재한다.
+
+### Changed Files
+
+- `src/pages/ChatPage.vue`: `/chat` 첫 전송 시 새 conversation 생성 후 라우팅하도록 변경, 함수 주석 보강
+- `src/mocks/handlers.ts`: `POST /api/conversations` mock handler 추가
+- `src/__tests__/feature6.mock-api.test.ts`: createConversation mock API 검증 추가
+- `src/__tests__/feature8.chat-main.test.ts`, `src/__tests__/feature9.chat-conversation.test.ts`, `src/__tests__/feature9.chat-sse-store.test.ts`: 테스트 helper 함수 주석 보강 및 첫 전송 route 기대값 조정
+- `src/features/chat/MessageInput.vue`, `src/features/chat/MessageBubble.vue`, `src/stores/chat.ts`, `src/composables/useSSE.ts`: 함수 주석 보강
+
+### Commands
+
+- `npm test -- --run src/__tests__/feature6.mock-api.test.ts src/__tests__/feature8.chat-main.test.ts src/__tests__/feature9.chat-conversation.test.ts src/__tests__/feature9.chat-sse-store.test.ts`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+- `npm run typecheck`
+
+### Results
+
+- 관련 테스트: passed, 4 test files and 32 tests passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed, 9 test files and 58 tests passed
+- `./scripts/verify.sh`: passed
+- `npm run typecheck`: passed
+
+## 2026-05-21 - feature9: chat header fixed / page scroll layout
+
+### Scope
+
+- ChatPage 상단 헤더를 sticky 처리하고, `conversation title + menu + account` 구조로 재배치
+- `MessageInput`는 하단에 sticky 상태로 유지해 입력창이 화면 아래에 고정되도록 조정
+- 페이지 전체 스크롤을 통해 긴 대화 내용을 위아래로 확인하도록 레이아웃 유지
+- `/chat` 기본 상태에서는 `새 채팅` 제목을 표시하고, conversation route에서는 해당 대화 제목을 표시
+
+### Test Cases
+
+- `/chat` 기본 화면의 헤더는 `새 채팅` 제목과 더보기/계정 버튼을 렌더링한다.
+- conversation 화면의 헤더는 현재 대화 제목을 렌더링한다.
+- 메시지 내용이 길어져도 헤더는 상단에 남아 있고 입력창은 하단에 유지된다.
+
+### Changed Files
+
+- `src/pages/ChatPage.vue`: sticky header/input layout과 conversation title 렌더링 추가
+- `src/__tests__/feature8.chat-main.test.ts`: 헤더 제목/더보기 버튼 기대값 업데이트
+- `src/__tests__/feature9.chat-conversation.test.ts`: conversation title 기대값 추가
+- `docs/ai/working-log.md`: 작업 로그 갱신
+
+### Commands
+
+- `npm test -- --run src/__tests__/feature8.chat-main.test.ts src/__tests__/feature9.chat-conversation.test.ts`
+
+### Results
+
+- 관련 테스트: passed, 2 test files and 20 tests passed
+
+## 2026-05-21 - feature9: empty state header / conversation header 분리
+
+### Scope
+
+- `/chat` empty state에서는 기존처럼 `LINA + 프로필`만 보여주고, conversation 화면에서만 제목 헤더를 노출
+- conversation 헤더의 타이포그래피 크기를 축소해 시각적 위계를 낮춤
+- 헤더 분기 기준을 `hasActiveConversation`으로 분리해 empty state와 conversation layout을 자연스럽게 구분
+
+### Test Cases
+
+- `/chat` empty state에는 conversation title과 menu button이 렌더링되지 않는다.
+- conversation 화면에는 현재 대화 제목이 더 작은 크기로 렌더링된다.
+
+### Changed Files
+
+- `src/pages/ChatPage.vue`: empty state header / conversation header 조건 분리, title font size 축소
+- `src/__tests__/feature8.chat-main.test.ts`: empty state header 기대값 업데이트
+- `src/__tests__/feature9.chat-conversation.test.ts`: conversation title font size 기대값 추가
+
+### Commands
+
+- `npm test -- --run src/__tests__/feature8.chat-main.test.ts src/__tests__/feature9.chat-conversation.test.ts`
+
+### Results
+
+- 관련 테스트: passed, 2 test files and 20 tests passed

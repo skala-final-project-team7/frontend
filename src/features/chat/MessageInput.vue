@@ -41,6 +41,9 @@ const isSendDisabled = computed(
   () => props.disabled || props.isStreaming || message.value.trim().length === 0,
 );
 
+/**
+ * 현재 입력된 메시지를 제출하고 입력값을 초기화한다.
+ */
 function submitMessage() {
   const trimmedMessage = message.value.trim();
 

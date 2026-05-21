@@ -103,13 +103,13 @@
 
 # feature9: Chat 대화 화면 구현 (SCR-410, SCR-420, SCR-600)
 
-[ ] 메시지 목록과 사용자(테두리 존재o)/LINA(테두리 존재x) MessageBubble 시각 구분 구현
-[ ] enter - 전송 / shift+enter - 사용자 메시지 안에서 '\n' 구현
-[ ] SSE 청크 누적 표시와 RAG 단계 라벨 placeholder 구현
-[ ] 답변 하단 출처 / Check Reference 버튼 구현
-[ ] 사용자 메시지 인라인 수정 모드 구현
-[ ] FollowUpSuggestions 추천 칩 UI 구현
-[ ] 사이드바에서 conversation list에 나오는 제목과 conversation 각각 채팅 내용 연결되도록 구현
+[x] 메시지 목록과 사용자(테두리 존재o)/LINA(테두리 존재x) MessageBubble 시각 구분 구현
+[x] enter - 전송 / shift+enter - 사용자 메시지 안에서 '\n' 구현
+[x] SSE 청크 누적 표시와 RAG 단계 라벨 placeholder 구현
+[x] 답변 하단 출처 버튼 구현
+[x] 사용자 메시지 인라인 수정 모드 구현
+[x] 사이드바에서 conversation list에 나오는 제목과 conversation 각각 채팅 내용 연결되도록 구현
+[x] conversation list 불러올 시, isPinned - 고정된 채팅 정보도 넘어오게 반영(api-spec.md, src/types/api.ts, src/mocks/data.ts 등)
 
 # feature10: 출처 패널 구현 (SCR-500, SCR-510)
 

@@ -1,0 +1,57 @@
+<!--
+--------------------------------------------------
+작성자 : 신유진
+작성목적 : LINA Chat SCR-410/420/600 대화 메시지 목록 렌더링.
+          ChatPage shell에서 대화 화면의 메시지 리스트와 버블 책임을 분리한다.
+작성일 : 2026-05-21
+변경사항 내역 (날짜, 변경목적, 변경내용 순)
+  - 2026-05-21, feature9 보강, ChatConversationView 최초 작성
+--------------------------------------------------
+[호환성]
+  - Node.js 20.x LTS, TypeScript 5.7+
+  - Vue 3.5.x, Tailwind CSS 3.4.x 기준
+--------------------------------------------------
+-->
+<script setup lang="ts">
+import MessageBubble from '@/features/chat/MessageBubble.vue';
+import type { Message, Source } from '@/types/api';
+
+defineProps<{
+  messages: Message[];
+  editingMessageId: string;
+  editingContent: string;
+  isStreaming: boolean;
+  streamingMessageId: string;
+}>();
+
+defineEmits<{
+  startEdit: [message: Message];
+  cancelEdit: [];
+  submitEdit: [messageId: string];
+  updateEditingContent: [content: string];
+  openSources: [sources: Source[] | undefined];
+}>();
+</script>
+
+<template>
+  <div
+    data-testid="message-list"
+    class="mx-auto flex w-full max-w-[900px] flex-1 min-w-0 flex-col gap-5 overflow-x-hidden px-6 py-6"
+    aria-live="polite"
+  >
+    <MessageBubble
+      v-for="message in messages"
+      :key="message.messageId"
+      :message="message"
+      :editing-message-id="editingMessageId"
+      :editing-content="editingContent"
+      :is-streaming="isStreaming"
+      :streaming-message-id="streamingMessageId"
+      @start-edit="$emit('startEdit', $event)"
+      @cancel-edit="$emit('cancelEdit')"
+      @submit-edit="$emit('submitEdit', $event)"
+      @update-editing-content="$emit('updateEditingContent', $event)"
+      @open-sources="$emit('openSources', $event)"
+    />
+  </div>
+</template>

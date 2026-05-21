@@ -22,25 +22,29 @@ defineProps({
 </script>
 
 <template>
-  <div role="status" aria-live="polite" class="inline-flex items-center gap-3 text-overlay-dark-40">
-    <span aria-hidden="true" class="inline-flex items-center gap-8">
+  <div
+    role="status"
+    aria-live="polite"
+    class="inline-flex items-center gap-2 text-small text-overlay-dark-40"
+  >
+    <span aria-hidden="true" class="inline-flex items-center gap-4">
       <span
         data-testid="base-spinner-dot"
-        class="lina-spinner-dot size-5 rounded-full"
+        class="lina-spinner-dot size-3 rounded-full"
         style="animation-delay: 0ms"
       />
       <span
         data-testid="base-spinner-dot"
-        class="lina-spinner-dot size-5 rounded-full"
+        class="lina-spinner-dot size-3 rounded-full"
         style="animation-delay: 180ms"
       />
       <span
         data-testid="base-spinner-dot"
-        class="lina-spinner-dot size-5 rounded-full"
+        class="lina-spinner-dot size-3 rounded-full"
         style="animation-delay: 360ms"
       />
     </span>
-    <span class="lina-body">{{ label }}</span>
+    <span class="lina-body text-small">{{ label }}</span>
   </div>
 </template>
 

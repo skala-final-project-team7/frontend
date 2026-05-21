@@ -1,0 +1,368 @@
+import { mount } from '@vue/test-utils';
+import { createPinia, setActivePinia } from 'pinia';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import MessageBubble from '@/features/chat/MessageBubble.vue';
+import MessageInput from '@/features/chat/MessageInput.vue';
+import { mockConversations, mockCurrentUser, mockMessagesByConversationId } from '@/mocks/data';
+import ChatPage from '@/pages/ChatPage.vue';
+import router from '@/router';
+
+/**
+ * ChatPage를 Pinia와 router가 주입된 상태로 마운트한다.
+ *
+ * @returns 테스트용 ChatPage wrapper
+ */
+function mountChatPage() {
+  return mount(ChatPage, {
+    global: {
+      plugins: [createPinia(), router],
+    },
+  });
+}
+
+/**
+ * JSON 응답을 생성한다.
+ *
+ * @param data JSON body로 반환할 payload
+ * @param status HTTP status code
+ * @returns JSON Response
+ */
+function createJsonResponse(data: unknown, status = 200): Response {
+  return new Response(JSON.stringify(data), {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    status,
+  });
+}
+
+/**
+ * 텍스트/event-stream SSE 응답을 생성한다.
+ *
+ * @returns 테스트용 SSE Response
+ */
+function createSseResponse(): Response {
+  return new Response(
+    [
+      'event: token\n',
+      'data: {"content":"IAM 정책과 "}\n\n',
+      'event: token\n',
+      'data: {"content":"버킷 정책을 함께 점검했습니다."}\n\n',
+      'event: sources\n',
+      'data: {"sources":[{"title":"S3 트러블슈팅 가이드","pageId":"12345","spaceId":"98310","spaceName":"Cloud Control Center","url":"https://confluence.example.com/pages/12345","updatedAt":"2026-04-15T09:30:00Z","relevanceScore":0.92}]}\n\n',
+      'event: verification\n',
+      'data: {"confidenceScore":0.85,"verificationResult":"SUPPORTED"}\n\n',
+      'event: done\n',
+      'data: {"messageId":"msg-streamed-assistant"}\n\n',
+    ].join(''),
+    {
+      headers: {
+        'Content-Type': 'text/event-stream',
+      },
+      status: 200,
+    },
+  );
+}
+
+/**
+ * chat 화면에서 사용하는 API 호출을 테스트용 mock fetch로 대체한다.
+ *
+ * @returns install된 fetch mock
+ */
+function installFeature9FetchMock() {
+  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const requestUrl =
+      typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+    const method = init?.method ?? 'GET';
+
+    if (requestUrl === '/api/conversations' && method === 'POST') {
+      return createJsonResponse(
+        {
+          isSuccess: true,
+          code: 201,
+          message: '새 대화 생성 성공',
+          data: {
+            conversationId: 'conv-mock-created',
+            title: '새 대화',
+            createdAt: '2026-05-21T10:00:00Z',
+          },
+        },
+        201,
+      );
+    }
+
+    if (requestUrl.includes('/api/users/me')) {
+      return createJsonResponse({
+        isSuccess: true,
+        code: 200,
+        message: '사용자 정보 조회 성공',
+        data: mockCurrentUser,
+      });
+    }
+
+    if (requestUrl.includes('/api/conversations/') && requestUrl.endsWith('/messages')) {
+      const conversationId = requestUrl.match(/\/api\/conversations\/([^/]+)\/messages/)?.[1] ?? '';
+
+      return createJsonResponse({
+        isSuccess: true,
+        code: 200,
+        message: '메시지 이력 조회 성공',
+        data: {
+          conversationId,
+          messages: mockMessagesByConversationId[conversationId] ?? [],
+        },
+      });
+    }
+
+    if (requestUrl.includes('/api/conversations/') && requestUrl.endsWith('/chat')) {
+      expect(method).toBe('POST');
+      return createSseResponse();
+    }
+
+    if (requestUrl.includes('/api/conversations')) {
+      return createJsonResponse({
+        isSuccess: true,
+        code: 200,
+        message: '대화 목록 조회 성공',
+        data: {
+          conversations: mockConversations,
+          totalCount: mockConversations.length,
+          page: 0,
+          size: 20,
+        },
+      });
+    }
+
+    return createJsonResponse(
+      {
+        isSuccess: false,
+        code: 404,
+        message: 'not found',
+        data: null,
+      },
+      404,
+    );
+  });
+
+  vi.stubGlobal('fetch', fetchMock);
+
+  return fetchMock;
+}
+
+/**
+ * 비동기 렌더링과 route watcher가 반영될 때까지 UI tick을 비운다.
+ */
+async function flushAsyncUpdates() {
+  await new Promise((resolve) => window.setTimeout(resolve, 0));
+  await new Promise((resolve) => window.setTimeout(resolve, 0));
+}
+
+describe('feature9 SCR-410, SCR-420, SCR-600 Chat conversation screen', () => {
+  beforeEach(async () => {
+    setActivePinia(createPinia());
+    installFeature9FetchMock();
+    await router.push('/chat/conv-mock-001');
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('renders conversation messages with distinct user and LINA bubble treatments', async () => {
+    const wrapper = mountChatPage();
+    await flushAsyncUpdates();
+
+    expect(wrapper.find('[data-testid="chat-empty-state"]').exists()).toBe(false);
+    expect(wrapper.get('header').classes()).toContain('border-bg-300');
+    expect(wrapper.get('[data-testid="conversation-title"]').text()).toBe(
+      mockConversations.find((conversation) => conversation.conversationId === 'conv-mock-001')
+        ?.title,
+    );
+    expect(wrapper.get('[data-testid="conversation-title"]').classes()).toContain('text-[18px]');
+    expect(wrapper.findAll('[data-testid="message-bubble"]')).toHaveLength(2);
+    expect(wrapper.get('[data-testid="message-bubble-user"]').classes()).toEqual(
+      expect.arrayContaining(['border', 'border-bg-300']),
+    );
+    expect(wrapper.get('[data-testid="message-bubble-assistant"]').classes()).not.toContain(
+      'border',
+    );
+    expect(wrapper.text()).toContain('출처');
+    expect(wrapper.find('[data-testid="source-button"]').exists()).toBe(true);
+    expect(wrapper.text()).not.toContain('Check Reference');
+    expect(wrapper.text()).not.toContain('S3 트러블슈팅 가이드');
+    expect(wrapper.text()).not.toContain('답변 생성');
+    expect(wrapper.text()).not.toContain('근거 검증');
+    expect(wrapper.find('[data-testid="message-action-row-user"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="message-action-row-assistant"]').exists()).toBe(true);
+    expect(wrapper.get('[data-testid="message-copy-button"]').attributes('aria-label')).toBe(
+      '메시지 복사',
+    );
+    expect(wrapper.get('[data-testid="assistant-copy-button"]').attributes('aria-label')).toBe(
+      '응답 복사',
+    );
+    expect(wrapper.get('[data-testid="assistant-like-button"]').attributes('aria-label')).toBe(
+      '좋은 응답',
+    );
+    expect(wrapper.get('[data-testid="assistant-dislike-button"]').attributes('aria-label')).toBe(
+      '별로인 응답',
+    );
+    expect(
+      wrapper.get('[data-testid="assistant-regenerate-button"]').attributes('aria-label'),
+    ).toBe('다시 시도');
+
+    const tooltipLabels = wrapper
+      .findAll('[data-testid="base-tooltip"]')
+      .map((tooltip) => tooltip.attributes('aria-label'));
+
+    expect(tooltipLabels).toEqual(
+      expect.arrayContaining([
+        '메시지 복사',
+        '메시지 수정',
+        '응답 복사',
+        '좋은 응답',
+        '별로인 응답',
+        '다시 시도',
+      ]),
+    );
+  });
+
+  it('keeps Enter submit and Shift+Enter multiline behavior in MessageInput', async () => {
+    const onSubmit = vi.fn();
+    const wrapper = mount(MessageInput, {
+      props: {
+        onSubmit,
+      },
+    });
+    const textarea = wrapper.get('textarea');
+
+    await textarea.setValue('첫 줄');
+    await textarea.trigger('keydown.enter.shift');
+    await textarea.setValue('첫 줄\n두 번째 줄');
+
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect((textarea.element as HTMLTextAreaElement).value).toBe('첫 줄\n두 번째 줄');
+
+    await textarea.trigger('keydown.enter');
+
+    expect(onSubmit).toHaveBeenCalledWith('첫 줄\n두 번째 줄');
+  });
+
+  it('streams submitted question into an accumulated LINA answer', async () => {
+    const wrapper = mountChatPage();
+    await flushAsyncUpdates();
+
+    await wrapper.get('textarea').setValue('S3 권한 오류를 다시 정리해줘');
+    await wrapper.get('textarea').trigger('keydown.enter');
+    await flushAsyncUpdates();
+
+    expect(wrapper.text()).toContain('S3 권한 오류를 다시 정리해줘');
+    expect(wrapper.text()).toContain('IAM 정책과 버킷 정책을 함께 점검했습니다.');
+    expect(wrapper.find('[data-testid="source-button"]').exists()).toBe(true);
+    expect(wrapper.text()).not.toContain('Check Reference');
+    expect(wrapper.text()).not.toContain('S3 트러블슈팅 가이드');
+  });
+
+  it('renders loading spinner for an empty assistant placeholder while streaming', () => {
+    const wrapper = mount(MessageBubble, {
+      props: {
+        message: {
+          messageId: 'msg-local-assistant-loading',
+          role: 'assistant',
+          content: '',
+          createdAt: '2026-05-21T00:00:00Z',
+          sources: [],
+        },
+        editingMessageId: '',
+        editingContent: '',
+        isStreaming: true,
+        streamingMessageId: 'msg-local-assistant-loading',
+      },
+    });
+
+    expect(wrapper.get('[data-testid="assistant-stream-loading"]').text()).toContain(
+      '답변 생성 중',
+    );
+    expect(wrapper.findAll('[data-testid="base-spinner-dot"]')).toHaveLength(3);
+  });
+
+  it('keeps the first streamed answer visible when entering chat from /chat', async () => {
+    await router.push('/chat');
+    const wrapper = mountChatPage();
+    await flushAsyncUpdates();
+
+    expect(wrapper.find('[data-testid="chat-empty-state"]').exists()).toBe(true);
+
+    await wrapper.get('textarea').setValue('첫 질문입니다');
+    await wrapper.get('textarea').trigger('keydown.enter');
+    await flushAsyncUpdates();
+
+    expect(router.currentRoute.value.fullPath).toBe('/chat/conv-mock-created');
+    expect(wrapper.find('[data-testid="chat-empty-state"]').exists()).toBe(false);
+    expect(wrapper.text()).toContain('첫 질문입니다');
+    expect(wrapper.text()).toContain('IAM 정책과 버킷 정책을 함께 점검했습니다.');
+    expect(wrapper.find('[data-testid="assistant-stream-loading"]').exists()).toBe(false);
+  });
+
+  it('supports inline editing for user messages without changing public API signatures', async () => {
+    const wrapper = mountChatPage();
+    await flushAsyncUpdates();
+
+    await wrapper.get('[data-testid="message-edit-button"]').trigger('click');
+
+    expect(wrapper.get('[data-testid="message-edit-textarea"]').element).toHaveProperty(
+      'value',
+      mockMessagesByConversationId['conv-mock-001'][0].content,
+    );
+
+    await wrapper.get('[data-testid="message-edit-textarea"]').setValue('수정된 질문입니다');
+    await wrapper.get('[data-testid="message-edit-submit"]').trigger('click');
+
+    expect(wrapper.text()).toContain('수정된 질문입니다');
+    expect(wrapper.find('[data-testid="message-edit-textarea"]').exists()).toBe(false);
+  });
+
+  it('connects sidebar conversation titles to each conversation message history and pinned state', async () => {
+    const wrapper = mountChatPage();
+    await flushAsyncUpdates();
+
+    await wrapper.get('[data-testid="sidebar-mascot-toggle"]').trigger('click');
+    await new Promise((resolve) => window.setTimeout(resolve, 200));
+
+    expect(wrapper.find('[data-testid="pinned-chat-list"]').exists()).toBe(true);
+    expect(wrapper.get('[data-testid="pinned-chat-list"]').text()).toContain(
+      mockConversations.find((conversation) => conversation.isPinned)?.title,
+    );
+
+    await wrapper
+      .findAll('[data-testid="conversation-list-item"]')
+      .find((item) => item.text().includes('Confluence 문서 동기화 상태 확인'))
+      ?.trigger('click');
+    await flushAsyncUpdates();
+
+    expect(router.currentRoute.value.fullPath).toBe('/chat/conv-mock-002');
+    expect(wrapper.text()).toContain('문서 동기화가 마지막으로 언제 성공했어?');
+    expect(wrapper.text()).not.toContain('지난번 S3 버킷 권한 오류 때 어떻게 해결했어?');
+  });
+
+  it('shows the selected conversation history instead of the empty state when entering from /chat', async () => {
+    await router.push('/chat');
+    const wrapper = mountChatPage();
+    await flushAsyncUpdates();
+
+    expect(wrapper.find('[data-testid="chat-empty-state"]').exists()).toBe(true);
+
+    await wrapper.get('[data-testid="sidebar-mascot-toggle"]').trigger('click');
+    await new Promise((resolve) => window.setTimeout(resolve, 200));
+
+    await wrapper
+      .findAll('[data-testid="conversation-list-item"]')
+      .find((item) => item.text().includes('Confluence 문서 동기화 상태 확인'))
+      ?.trigger('click');
+    await flushAsyncUpdates();
+
+    expect(router.currentRoute.value.fullPath).toBe('/chat/conv-mock-002');
+    expect(wrapper.find('[data-testid="chat-empty-state"]').exists()).toBe(false);
+    expect(wrapper.text()).toContain('문서 동기화가 마지막으로 언제 성공했어?');
+  });
+});

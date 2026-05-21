@@ -6,6 +6,7 @@
  * 작성일 : 2026-05-18
  * 변경사항 내역 (날짜, 변경목적, 변경내용 순)
  *   - 2026-05-18, feature6 구현, Chat mock response seed data 추가
+ *   - 2026-05-21, feature9 구현, conversation pinned 상태 mock data 추가
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -132,6 +133,7 @@ export const mockConversations: Conversation[] = [
     createdAt: '2026-05-06T10:00:00Z',
     lastMessageAt: '2026-05-06T10:05:00Z',
     messageCount: 4,
+    isPinned: true,
   },
   {
     conversationId: 'conv-mock-002',
@@ -139,6 +141,7 @@ export const mockConversations: Conversation[] = [
     createdAt: '2026-05-07T09:00:00Z',
     lastMessageAt: '2026-05-07T09:12:00Z',
     messageCount: 2,
+    isPinned: false,
   },
 ];
 

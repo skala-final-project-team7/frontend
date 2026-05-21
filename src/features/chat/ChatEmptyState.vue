@@ -37,58 +37,58 @@ defineProps({
       aria-label="새 채팅 시작"
       class="relative mx-auto flex min-h-0 w-full max-w-none flex-1 flex-col items-center justify-center overflow-hidden px-6 pb-6 pt-4"
     >
-    <div
-      data-testid="ask-lina-logo"
-      class="absolute left-1/2 top-4 flex -translate-x-1/2 items-center justify-center gap-2"
-    >
-      <span class="font-lina text-[42px] font-bold leading-none text-overlay-dark-80">ASK</span>
-      <span
-        data-testid="skp-symbol-crop"
-        class="inline-flex h-10 w-14 items-center justify-center overflow-hidden"
+      <div
+        data-testid="ask-lina-logo"
+        class="absolute left-1/2 top-12 flex -translate-x-1/2 items-center justify-center gap-2"
       >
-        <img
-          data-testid="skp-symbol"
-          :src="skpSymbolImageUrl"
-          alt="SKP"
-          class="h-12 w-[180px] max-w-none object-cover drop-shadow-[0_1px_5px_var(--color-primary)]"
+        <span class="font-lina text-[42px] font-bold leading-none text-overlay-dark-80">ASK</span>
+        <span
+          data-testid="skp-symbol-crop"
+          class="inline-flex h-10 w-14 items-center justify-center overflow-hidden"
+        >
+          <img
+            data-testid="skp-symbol"
+            :src="skpSymbolImageUrl"
+            alt="SKP"
+            class="h-12 w-[180px] max-w-none object-cover drop-shadow-[0_1px_5px_var(--color-primary)]"
+          />
+        </span>
+        <span class="font-lina text-[48px] font-bold leading-none text-primary">LINA</span>
+      </div>
+
+      <p class="mt-20 font-lina text-[26px] leading-9 text-overlay-dark-80">
+        환영합니다. <span class="text-primary">{{ userName }}</span
+        >님
+      </p>
+
+      <div
+        data-testid="preview-page-stack"
+        class="relative mt-10 h-[380px] w-full max-w-[740px] -translate-x-8"
+        aria-label="문서 미리보기"
+      >
+        <PreviewPageCard
+          :page="mockHomeConfluencePages[0]"
+          class="absolute left-1/2 top-8 z-20 -translate-x-[62%]"
         />
-      </span>
-      <span class="font-lina text-[48px] font-bold leading-none text-primary">LINA</span>
-    </div>
 
-    <p class="mt-20 font-lina text-[26px] leading-9 text-overlay-dark-80">
-      환영합니다. <span class="text-primary">{{ userName }}</span
-      >님
-    </p>
+        <PreviewPageCard
+          :page="mockHomeConfluencePages[1]"
+          class="absolute left-1/2 top-0 z-10 -translate-x-[4%]"
+        />
 
-    <div
-      data-testid="preview-page-stack"
-      class="relative mt-10 h-[380px] w-full max-w-[740px] -translate-x-8"
-      aria-label="문서 미리보기"
-    >
-      <PreviewPageCard
-        :page="mockHomeConfluencePages[0]"
-        class="absolute left-1/2 top-8 z-20 -translate-x-[62%]"
-      />
-
-      <PreviewPageCard
-        :page="mockHomeConfluencePages[1]"
-        class="absolute left-1/2 top-0 z-10 -translate-x-[4%]"
-      />
-
-      <img
-        data-testid="chat-empty-mascot"
-        :src="mascotRealizeImageUrl"
-        alt=""
-        class="absolute bottom-5 left-[4%] z-30 h-36 w-36 object-contain"
-      />
-      <img
-        data-testid="chat-empty-search-image"
-        :src="searchImageUrl"
-        alt=""
-        class="absolute right-[-15%] top-[-120px] z-30 h-[360px] w-[360px] object-contain opacity-80"
-      />
-    </div>
+        <img
+          data-testid="chat-empty-mascot"
+          :src="mascotRealizeImageUrl"
+          alt=""
+          class="absolute bottom-5 left-[4%] z-30 h-36 w-36 object-contain"
+        />
+        <img
+          data-testid="chat-empty-search-image"
+          :src="searchImageUrl"
+          alt=""
+          class="absolute right-[-15%] top-[-120px] z-30 h-[360px] w-[360px] object-contain opacity-80"
+        />
+      </div>
     </section>
   </Transition>
 </template>

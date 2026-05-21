@@ -6,6 +6,7 @@
  * 작성일 : 2026-05-18
  * 변경사항 내역 (날짜, 변경목적, 변경내용 순)
  *   - 2026-05-18, feature6 구현, conversations/messages/chat mock handler 추가
+ *   - 2026-05-21, feature9 보강, SSE mock 응답을 ReadableStream chunk 방식으로 변경
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -23,10 +24,14 @@ import {
 } from './data';
 import type {
   ApiSuccessResponse,
+  CreateConversationResponse,
   ConversationList,
   ConversationMessages,
   CurrentUser,
 } from '@/types/api';
+
+// TODO(MOCK): 3초 mock SSE 지연은 token streaming 확인용이므로 backend 연결 전 제거하거나 단축한다.
+const MOCK_SSE_DEMO_DELAY_MS = import.meta.env.MODE === 'test' ? 0 : 375;
 
 export const mockHandlers = [
   // TODO(MOCK): GET /api/users/me
@@ -56,6 +61,20 @@ export const mockHandlers = [
         totalCount: mockConversations.length,
         page,
         size,
+      },
+    });
+  }),
+
+  // TODO(MOCK): POST /api/conversations
+  http.post('*/api/conversations', () => {
+    return HttpResponse.json<ApiSuccessResponse<CreateConversationResponse>>({
+      isSuccess: true,
+      code: 201,
+      message: '새 대화 생성 성공',
+      data: {
+        conversationId: 'conv-mock-003',
+        title: '새 대화',
+        createdAt: '2026-05-21T10:00:00Z',
       },
     });
   }),
@@ -116,19 +135,47 @@ export const mockHandlers = [
   }),
 ];
 
-function createMockSseStream(): string {
-  return [
-    createSseEvent('token', { content: 'S3 권한 오류는' }),
-    createSseEvent('token', { content: ' IAM 정책을 수정하여 해결했습니다.' }),
+/**
+ * token/sources/verification/done 이벤트를 순차 전송하는 mock SSE 스트림을 생성한다.
+ *
+ * @returns MSW HttpResponse에 전달할 ReadableStream
+ */
+function createMockSseStream(): ReadableStream<Uint8Array> {
+  const encoder = new TextEncoder();
+  const events = [
+    createSseEvent('token', { content: 'S3 권한 ' }),
+    createSseEvent('token', { content: '오류는 ' }),
+    createSseEvent('token', { content: 'IAM 정책과 ' }),
+    createSseEvent('token', { content: '버킷 정책을 ' }),
+    createSseEvent('token', { content: '함께 점검해 ' }),
+    createSseEvent('token', { content: '해결했습니다.' }),
     createSseEvent('sources', { sources: mockSources }),
     createSseEvent('verification', {
       confidenceScore: 0.85,
       verificationResult: 'SUPPORTED',
     }),
     createSseEvent('done', { messageId: 'msg-mock-assistant-stream' }),
-  ].join('');
+  ];
+
+  return new ReadableStream({
+    async start(controller) {
+      for (const event of events) {
+        await new Promise((resolve) => globalThis.setTimeout(resolve, MOCK_SSE_DEMO_DELAY_MS));
+        controller.enqueue(encoder.encode(event));
+      }
+
+      controller.close();
+    },
+  });
 }
 
+/**
+ * SSE frame을 `event:` / `data:` 줄 구성으로 인코딩한다.
+ *
+ * @param event SSE 이벤트 이름
+ * @param data JSON 직렬화할 payload
+ * @returns 한 개의 SSE frame 문자열
+ */
 function createSseEvent(event: string, data: unknown): string {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 }

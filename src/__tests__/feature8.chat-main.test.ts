@@ -1,20 +1,65 @@
 import { mount } from '@vue/test-utils';
+import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import ChatEmptyState from '@/features/chat/ChatEmptyState.vue';
 import MessageInput from '@/features/chat/MessageInput.vue';
 import PreviewPageCard from '@/features/chat/PreviewPageCard.vue';
-import { mockConversations, mockCurrentUser, mockHomeConfluencePages } from '@/mocks/data';
+import {
+  mockConversations,
+  mockCurrentUser,
+  mockHomeConfluencePages,
+  mockMessagesByConversationId,
+} from '@/mocks/data';
 import ChatPage from '@/pages/ChatPage.vue';
+import router from '@/router';
 import { BaseFloatingIconButton, BaseTooltip } from '@/shared';
 
+/**
+ * ChatPage를 Pinia와 router가 주입된 상태로 마운트한다.
+ *
+ * @returns 테스트용 ChatPage wrapper
+ */
+function mountChatPage() {
+  return mount(ChatPage, {
+    global: {
+      plugins: [createPinia(), router],
+    },
+  });
+}
+
 describe('feature8 SCR-400 Chat main screen', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    setActivePinia(createPinia());
+    await router.push('/chat');
     vi.stubGlobal(
       'fetch',
       vi.fn(async (input: RequestInfo | URL) => {
         const requestUrl =
           typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+
+        if (requestUrl.includes('/api/conversations/') && requestUrl.endsWith('/messages')) {
+          const conversationId =
+            requestUrl.match(/\/api\/conversations\/([^/]+)\/messages/)?.[1] ?? '';
+
+          return new Response(
+            JSON.stringify({
+              isSuccess: true,
+              code: 200,
+              message: '메시지 이력 조회 성공',
+              data: {
+                conversationId,
+                messages: mockMessagesByConversationId[conversationId] ?? [],
+              },
+            }),
+            {
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              status: 200,
+            },
+          );
+        }
 
         if (requestUrl.includes('/api/conversations')) {
           return new Response(
@@ -61,7 +106,8 @@ describe('feature8 SCR-400 Chat main screen', () => {
   });
 
   it('renders the SCR-400 Chat shell with collapsed sidebar, settings entry, and profile affordances', async () => {
-    const wrapper = mount(ChatPage);
+    const wrapper = mountChatPage();
+    await new Promise((resolve) => window.setTimeout(resolve, 0));
     await new Promise((resolve) => window.setTimeout(resolve, 0));
 
     expect(wrapper.get('[data-testid="chat-page"]').classes()).toContain('bg-bg-100');
@@ -90,10 +136,11 @@ describe('feature8 SCR-400 Chat main screen', () => {
     expect(wrapper.get('[data-testid="floating-help-button"]').attributes('aria-label')).toBe(
       '도움말 열기',
     );
-    expect(wrapper.get('[data-testid="chat-main"]').text()).toContain('LINA');
-    expect(wrapper.get('[data-testid="profile-entry"]').attributes('aria-label')).toBe(
-      '계정 관리',
-    );
+    expect(wrapper.find('[data-testid="conversation-title"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="conversation-menu-button"]').exists()).toBe(false);
+    expect(wrapper.get('header').text()).toContain('LINA');
+    expect(wrapper.get('header').classes()).toContain('border-transparent');
+    expect(wrapper.get('[data-testid="profile-entry"]').attributes('aria-label')).toBe('계정 관리');
     expect(wrapper.get('[data-testid="profile-entry-image"]').attributes('src')).toBe(
       mockCurrentUser.profileImageUrl,
     );
@@ -103,7 +150,7 @@ describe('feature8 SCR-400 Chat main screen', () => {
   });
 
   it('falls back to the profile icon when the profile image fails to load', async () => {
-    const wrapper = mount(ChatPage);
+    const wrapper = mountChatPage();
     await new Promise((resolve) => window.setTimeout(resolve, 0));
 
     await wrapper.get('[data-testid="profile-entry-image"]').trigger('error');
@@ -133,14 +180,14 @@ describe('feature8 SCR-400 Chat main screen', () => {
       }),
     );
 
-    const wrapper = mount(ChatPage);
+    const wrapper = mountChatPage();
     await new Promise((resolve) => window.setTimeout(resolve, 0));
 
     expect(wrapper.find('[data-testid="profile-entry-icon"]').exists()).toBe(true);
   });
 
   it('opens and closes the Sidebar inline without changing the reference panel placeholder', async () => {
-    const wrapper = mount(ChatPage);
+    const wrapper = mountChatPage();
     await new Promise((resolve) => window.setTimeout(resolve, 0));
 
     await wrapper.get('[data-testid="sidebar-mascot-toggle"]').trigger('mouseenter');
@@ -151,9 +198,11 @@ describe('feature8 SCR-400 Chat main screen', () => {
     );
 
     await wrapper.get('[data-testid="sidebar-mascot-toggle"]').trigger('click');
+    await new Promise((resolve) => window.setTimeout(resolve, 200));
 
     expect(wrapper.get('[data-testid="chat-sidebar"]').attributes('data-state')).toBe('expanded');
     expect(wrapper.get('[data-testid="chat-sidebar"]').classes()).toContain('w-[264px]');
+    expect(wrapper.get('[data-testid="chat-sidebar"]').classes()).toContain('bg-bg-100');
     expect(wrapper.get('[data-testid="sidebar-close-toggle"]').attributes('aria-label')).toBe(
       '사이드바 닫기',
     );
@@ -170,7 +219,6 @@ describe('feature8 SCR-400 Chat main screen', () => {
     expect(wrapper.get('[data-testid="expanded-new-chat-button"]').text()).toContain('새 채팅');
     expect(wrapper.text()).toContain('고정 채팅');
     expect(wrapper.text()).toContain('최근 채팅');
-    expect(wrapper.text()).toContain('고정 채팅 준비 중');
     expect(wrapper.text()).toContain(mockConversations[0].title);
     expect(wrapper.text()).toContain(mockConversations[1].title);
     expect(wrapper.get('[data-testid="settings-entry-label"]').classes()).toEqual(
@@ -184,7 +232,7 @@ describe('feature8 SCR-400 Chat main screen', () => {
   });
 
   it('adds tooltip semantics to all icon-only controls on SCR-400', () => {
-    const wrapper = mount(ChatPage);
+    const wrapper = mountChatPage();
 
     const tooltips = wrapper.findAll('[data-testid="base-tooltip"]');
     const tooltipLabels = tooltips.map((tooltip) => tooltip.attributes('aria-label'));

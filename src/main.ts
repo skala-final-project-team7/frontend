@@ -6,6 +6,7 @@
  * 작성일 : 2026-05-18
  * 변경사항 내역 (날짜, 변경목적, 변경내용 순)
  *   - 2026-05-18, 최초 작성, Vue 앱 기본 부팅 처리 추가
+ *   - 2026-05-21, feature9 보강, Pinia plugin 등록
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -13,6 +14,7 @@
  * --------------------------------------------------
  */
 import { createApp } from 'vue';
+import { createPinia } from 'pinia';
 
 import App from './App.vue';
 import { isMockApiEnabled } from './mocks';
@@ -32,5 +34,5 @@ async function enableMockApi(): Promise<void> {
 }
 
 enableMockApi().then(() => {
-  createApp(App).use(router).mount('#app');
+  createApp(App).use(createPinia()).use(router).mount('#app');
 });
