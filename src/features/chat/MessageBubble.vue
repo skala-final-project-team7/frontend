@@ -8,6 +8,9 @@
   - 2026-05-21, feature9 보강, ChatPage에서 MessageBubble 컴포넌트 분리
   - 2026-05-22, feature9 보강, streaming status text 렌더링을 store getter 입력으로 변경
   - 2026-05-22, feature9 SSE 보강, message.statusMessage 직접 렌더링으로 변경
+  - 2026-05-22, SCR-420 보강, 사용자 메시지 inline edit bubble UI 개선
+  - 2026-05-22, SCR-420 보강, 사용자 메시지 하단 hover action과 수정본 indicator 추가
+  - 2026-05-22, SCR-420 보강, 사용자 메시지 수정본 이전/다음 선택 이벤트 추가
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -15,8 +18,16 @@
 --------------------------------------------------
 -->
 <script setup lang="ts">
-import { Copy, Pencil, RefreshCcw, ThumbsDown, ThumbsUp } from '@lucide/vue';
-import { computed } from 'vue';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Copy,
+  Pencil,
+  RefreshCcw,
+  ThumbsDown,
+  ThumbsUp,
+} from '@lucide/vue';
+import { computed, nextTick, ref, watch } from 'vue';
 
 import { BaseSpinner, BaseTooltip } from '@/shared';
 import type { Message, Source } from '@/types/api';
@@ -27,6 +38,9 @@ const props = defineProps<{
   editingContent: string;
   isStreaming: boolean;
   streamingMessageId: string;
+  showUserVersionIndicator?: boolean;
+  userVersionActiveIndex?: number;
+  userVersionTotal?: number;
 }>();
 
 const emit = defineEmits<{
@@ -34,6 +48,7 @@ const emit = defineEmits<{
   cancelEdit: [];
   submitEdit: [messageId: string];
   updateEditingContent: [content: string];
+  selectUserMessageVersion: [messageId: string, versionIndex: number];
   openSources: [sources: Source[] | undefined];
 }>();
 
@@ -45,6 +60,42 @@ const isStreamingAssistantMessage = computed(
     props.message.role === 'assistant' &&
     props.isStreaming &&
     props.streamingMessageId === props.message.messageId,
+);
+const userVersionActiveIndex = computed(() => props.userVersionActiveIndex ?? 0);
+const userVersionTotal = computed(() => props.userVersionTotal ?? 1);
+const userVersionLabel = computed(
+  () => `${userVersionActiveIndex.value + 1}/${userVersionTotal.value}`,
+);
+const canShowPreviousUserVersion = computed(() => userVersionActiveIndex.value > 0);
+const canShowNextUserVersion = computed(
+  () => userVersionActiveIndex.value < userVersionTotal.value - 1,
+);
+const editTextarea = ref<HTMLTextAreaElement | null>(null);
+
+/**
+ * 편집 textarea 높이를 현재 내용에 맞춰 갱신하되 CSS max-height 이상은 내부 스크롤로 넘긴다.
+ */
+function resizeEditTextarea() {
+  const textarea = editTextarea.value;
+
+  if (!textarea) {
+    return;
+  }
+
+  textarea.style.height = 'auto';
+  textarea.style.height = `${textarea.scrollHeight}px`;
+}
+
+watch(
+  () => [isEditing.value, props.editingContent],
+  async () => {
+    if (!isEditing.value) {
+      return;
+    }
+
+    await nextTick();
+    resizeEditTextarea();
+  },
 );
 
 /**
@@ -63,13 +114,33 @@ function sourceLabel() {
  */
 function updateEditingContent(event: Event) {
   emit('updateEditingContent', (event.target as HTMLTextAreaElement).value);
+  resizeEditTextarea();
+}
+
+/**
+ * Enter는 수정 전송, Shift+Enter는 textarea 기본 줄바꿈으로 처리한다.
+ *
+ * @param event textarea keydown 이벤트
+ */
+function handleEditTextareaKeydown(event: KeyboardEvent) {
+  event.preventDefault();
+  emit('submitEdit', props.message.messageId);
+}
+
+/**
+ * 사용자 메시지 수정본 내비게이션 선택을 상위로 전달한다.
+ *
+ * @param versionIndex 선택할 version index
+ */
+function selectUserMessageVersion(versionIndex: number) {
+  emit('selectUserMessageVersion', props.message.messageId, versionIndex);
 }
 </script>
 
 <template>
   <article
     data-testid="message-bubble"
-    class="flex flex-col"
+    class="group/message flex flex-col"
     :class="message.role === 'user' ? 'items-end' : 'items-start'"
   >
     <div
@@ -84,11 +155,13 @@ function updateEditingContent(event: Event) {
       <template v-if="message.role === 'user'">
         <div v-if="isEditing" class="space-y-3">
           <textarea
+            ref="editTextarea"
             :value="editingContent"
             data-testid="message-edit-textarea"
-            rows="3"
-            class="w-full resize-none rounded-button border border-bg-300 bg-primary-white p-3 outline-none focus:shadow-focus"
+            rows="1"
+            class="max-h-40 min-h-7 w-full resize-none overflow-y-auto bg-transparent p-0 font-lina text-body leading-7 text-overlay-dark-80 outline-none placeholder:text-overlay-dark-40"
             @input="updateEditingContent"
+            @keydown.enter.exact="handleEditTextareaKeydown"
           />
           <div class="flex justify-end gap-2">
             <button
@@ -102,7 +175,7 @@ function updateEditingContent(event: Event) {
             <button
               data-testid="message-edit-submit"
               type="button"
-              class="rounded-button bg-primary px-3 py-1.5 text-small font-bold text-primary-white"
+              class="rounded-button bg-overlay-dark-80 px-3 py-1.5 text-small font-bold text-primary-white transition hover:brightness-110 focus-visible:outline-none focus-visible:shadow-focus"
               @click="emit('submitEdit', message.messageId)"
             >
               보내기
@@ -133,29 +206,66 @@ function updateEditingContent(event: Event) {
     <div
       v-if="message.role === 'user' && !isEditing"
       data-testid="message-action-row-user"
-      class="mt-2 flex items-center gap-3 text-overlay-dark-80"
+      class="mt-2 flex min-h-5 items-center justify-end gap-3 text-overlay-dark-80"
     >
-      <BaseTooltip label="메시지 복사" placement="bottom">
+      <div
+        data-testid="message-action-icons-user"
+        class="flex items-center gap-3 opacity-0 transition-opacity group-hover/message:opacity-100 group-focus-within/message:opacity-100"
+      >
+        <BaseTooltip label="메시지 복사" placement="bottom">
+          <button
+            data-testid="message-copy-button"
+            type="button"
+            aria-label="메시지 복사"
+            class="inline-flex size-5 items-center justify-center rounded-button transition hover:bg-bg-200 focus-visible:outline-none focus-visible:shadow-focus"
+          >
+            <Copy aria-hidden="true" class="size-4" />
+          </button>
+        </BaseTooltip>
+        <BaseTooltip label="메시지 수정" placement="bottom">
+          <button
+            data-testid="message-edit-button"
+            type="button"
+            aria-label="메시지 수정"
+            class="inline-flex size-5 items-center justify-center rounded-button transition hover:bg-bg-200 focus-visible:outline-none focus-visible:shadow-focus"
+            @click="emit('startEdit', message)"
+          >
+            <Pencil aria-hidden="true" class="size-4" />
+          </button>
+        </BaseTooltip>
+      </div>
+      <div
+        v-if="showUserVersionIndicator"
+        data-testid="message-version-navigation"
+        class="flex items-center gap-2 opacity-0 transition-opacity group-hover/message:opacity-100 group-focus-within/message:opacity-100"
+      >
         <button
-          data-testid="message-copy-button"
+          data-testid="message-version-control"
           type="button"
-          aria-label="메시지 복사"
-          class="inline-flex size-5 items-center justify-center rounded-button transition hover:bg-bg-200 focus-visible:outline-none focus-visible:shadow-focus"
+          aria-label="이전 수정본 보기"
+          :disabled="!canShowPreviousUserVersion"
+          class="inline-flex size-8 items-center justify-center rounded-button bg-bg-200 text-overlay-dark-80 transition hover:bg-bg-300 focus-visible:outline-none focus-visible:shadow-focus disabled:cursor-not-allowed disabled:bg-transparent disabled:text-overlay-dark-40 disabled:hover:bg-transparent"
+          @click="selectUserMessageVersion(userVersionActiveIndex - 1)"
         >
-          <Copy aria-hidden="true" class="size-4" />
+          <ChevronLeft aria-hidden="true" class="size-5" />
         </button>
-      </BaseTooltip>
-      <BaseTooltip label="메시지 수정" placement="bottom">
+        <span
+          data-testid="message-version-indicator"
+          class="font-lina text-body font-semibold leading-none text-overlay-dark-80"
+        >
+          {{ userVersionLabel }}
+        </span>
         <button
-          data-testid="message-edit-button"
+          data-testid="message-version-control"
           type="button"
-          aria-label="메시지 수정"
-          class="inline-flex size-5 items-center justify-center rounded-button transition hover:bg-bg-200 focus-visible:outline-none focus-visible:shadow-focus"
-          @click="emit('startEdit', message)"
+          aria-label="다음 수정본 보기"
+          :disabled="!canShowNextUserVersion"
+          class="inline-flex size-8 items-center justify-center rounded-button bg-bg-200 text-overlay-dark-80 transition hover:bg-bg-300 focus-visible:outline-none focus-visible:shadow-focus disabled:cursor-not-allowed disabled:bg-transparent disabled:text-overlay-dark-40 disabled:hover:bg-transparent"
+          @click="selectUserMessageVersion(userVersionActiveIndex + 1)"
         >
-          <Pencil aria-hidden="true" class="size-4" />
+          <ChevronRight aria-hidden="true" class="size-5" />
         </button>
-      </BaseTooltip>
+      </div>
     </div>
 
     <div

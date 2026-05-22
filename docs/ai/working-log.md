@@ -1237,3 +1237,174 @@
 ### Results
 
 - 관련 테스트: passed, 2 test files and 17 tests passed
+
+## 2026-05-22 - feature9: SSE meta.title 및 API 명세 보강
+
+### Scope
+
+- RAG streaming `meta` 이벤트의 현재 구현 필드(`intent`, `used_llm`, `feedback_enabled`, `latency_ms`)를 API 명세에 정리
+- 채팅 제목은 별도 이벤트를 늘리지 않고 `meta.title`로 수신하도록 타입과 store 상태 반영
+- `docs/api-spec.md`를 v2.1.0으로 버전업하고, BE 조정 명세의 변경점을 현행 FE 명세에 반영
+- mock SSE stream에 `meta.title`을 추가해 대화 제목 갱신 흐름을 검증 가능하게 정리
+
+### Test Cases
+
+- `meta.title` 수신 시 conversation title이 갱신된다.
+- `meta` 이벤트가 기존 token/source/verification/done 누적 흐름을 깨지 않는다.
+
+### Changed Files
+
+- `docs/api-spec.md`: RAG streaming status/meta 이벤트 계약과 v2.1.0 버전 반영
+- `src/types/api.ts`: `ChatMetaEvent.data.title` optional 필드 추가
+- `src/stores/chat.ts`: `conversationTitlesById` 상태와 `meta.title` 반영 처리 추가
+- `src/pages/ChatPage.vue`: store의 streaming title을 현재 대화 제목과 sidebar 대화 목록에 반영
+- `src/mocks/handlers.ts`: mock SSE `meta.title` 추가
+- `src/__tests__/feature9.chat-sse-store.test.ts`, `src/__tests__/feature9.chat-conversation.test.ts`: meta title 회귀 테스트 추가
+
+### Commands
+
+- `npm test -- src/__tests__/feature9.chat-sse-store.test.ts src/__tests__/feature9.chat-conversation.test.ts`
+- `npm run typecheck`
+- `npm run lint`
+- `./scripts/verify.sh`
+
+### Results
+
+- 관련 테스트: passed
+- 전체 검증: passed
+
+## 2026-05-22 - feature9: Chat scroll owner 및 scrollbar layout shift 보강
+
+### Scope
+
+- Chat 화면에서 내부 스크롤을 만드는 실제 scroll owner를 추적
+- `overflow-x-hidden`이 computed `overflow-y: auto`를 만들던 원인을 제거하고, Chat content wrapper/message list는 `overflow-x-clip`을 사용하도록 변경
+- 메시지 목록은 내부 scrollbar 없이 document/body scroll을 유지
+- body scrollbar가 생길 때 viewport 폭 변화로 좌우 layout shift가 발생하지 않도록 전역 `scrollbar-gutter: stable` 적용
+
+### Test Cases
+
+- `chat-scroll-region`과 `message-list`에 `overflow-y-auto`, `overflow-y-scroll`, `overflow-x-hidden`, `flex-1`이 남아 있지 않다.
+- 전역 CSS에 `scrollbar-gutter: stable`, `body overflow-y: auto`, `body overflow-x: hidden`이 유지된다.
+
+### Changed Files
+
+- `src/pages/ChatPage.vue`: Chat page/main scroll region의 `overflow-x-hidden`을 `overflow-x-clip`으로 변경
+- `src/features/chat/ChatConversationView.vue`: message list overflow/flex class 정리
+- `src/styles/main.css`: `html { scrollbar-gutter: stable; }`, body scroll 기본값 보강
+- `src/__tests__/feature9.chat-conversation.test.ts`: 내부 스크롤 제거 회귀 테스트 보강
+- `src/__tests__/feature4.design-tokens.test.ts`: 전역 scrollbar-gutter 회귀 테스트 추가
+
+### Commands
+
+- `npm test -- src/__tests__/feature4.design-tokens.test.ts src/__tests__/feature9.chat-conversation.test.ts`
+- `npm run typecheck`
+- `npm run lint`
+- `./scripts/verify.sh`
+
+### Results
+
+- 관련 테스트: passed
+- 브라우저 확인: forced tall content 기준 document/html만 scroll owner로 동작
+- 전체 검증: passed, 9 test files and 68 tests passed
+
+## 2026-05-22 - feature9: MessageInput streaming stop button UI
+
+### Scope
+
+- 스트리밍 중 별도 `취소` 텍스트 버튼을 제거
+- 기존 원형 전송 버튼이 스트리밍 중 `CircleStop` 아이콘을 렌더링하고 cancel action을 수행하도록 통합
+- 스트리밍 중 원형 버튼은 disabled 색상 계열로 보이되 클릭 가능한 중단 버튼으로 유지
+
+### Test Cases
+
+- 스트리밍 중 textarea는 disabled 상태다.
+- 별도 `message-cancel-button`은 렌더링되지 않는다.
+- 원형 action button의 aria-label은 `응답 중단`이며 click 시 `cancel` 이벤트를 emit한다.
+- 스트리밍 중 icon은 `circle-stop` 형태로 렌더링된다.
+
+### Changed Files
+
+- `src/features/chat/MessageInput.vue`: send/stop action button 상태 통합 및 `CircleStop` 아이콘 적용
+- `src/__tests__/feature8.chat-main.test.ts`: streaming stop action UI 회귀 테스트 갱신
+
+### Commands
+
+- `npm test -- src/__tests__/feature8.chat-main.test.ts src/__tests__/feature9.chat-conversation.test.ts`
+- `npm run typecheck`
+- `npm run lint`
+- `./scripts/verify.sh`
+
+### Results
+
+- 관련 테스트: passed, 2 test files and 25 tests passed
+- 전체 검증: passed, 9 test files and 68 tests passed
+
+## 2026-05-22 - feature9: 사용자 메시지 inline edit bubble UI 보강
+
+### Scope
+
+- 사용자 메시지 수정 UI가 별도 카드처럼 보이지 않도록 기존 user bubble 안에서 inline edit 형태로 렌더링
+- textarea를 user bubble 배경과 자연스럽게 이어지는 `bg-transparent` 스타일로 변경
+- textarea 자동 높이 조절과 최대 높이 내부 스크롤을 추가
+- Enter는 수정 전송, Shift+Enter는 줄바꿈으로 처리
+- 수정 모드의 `보내기` 버튼을 이미지 기준에 맞춰 검정 계열 pill 버튼으로 변경
+
+### Test Cases
+
+- edit textarea는 기존 user bubble 안에서 렌더링되고 `bg-primary-white`/강한 border를 사용하지 않는다.
+- textarea는 기존 메시지 내용으로 초기화된다.
+- Shift+Enter 줄바꿈과 Enter 전송이 유지된다.
+- `보내기` 버튼은 `bg-overlay-dark-80`과 `text-primary-white`를 사용하며 `bg-primary`를 쓰지 않는다.
+
+### Changed Files
+
+- `src/features/chat/MessageBubble.vue`: inline edit textarea 스타일, 자동 높이, keyboard submit 처리, 검정 submit 버튼 적용
+- `src/__tests__/feature9.chat-conversation.test.ts`: inline edit bubble, Enter/Shift+Enter, submit button style 테스트 보강
+
+### Commands
+
+- `npm test -- src/__tests__/feature9.chat-conversation.test.ts`
+- `npm test -- src/__tests__/feature8.chat-main.test.ts src/__tests__/feature9.chat-conversation.test.ts`
+- `npm run typecheck`
+- `npm run lint`
+- `./scripts/verify.sh`
+
+### Results
+
+- 관련 테스트: passed, 2 test files and 25 tests passed
+- 전체 검증: passed, 9 test files and 68 tests passed
+
+## 2026-05-22 - feature9: 사용자 메시지 하단 hover action 및 수정본 indicator
+
+### Scope
+
+- 사용자 메시지 하단 copy/edit 아이콘은 기본 숨김 처리하고, 메시지 hover/focus 시 해당 위치에 보이도록 변경
+- 사용자 메시지를 수정 후 다시 보내면 하단 action row에 `2/2` indicator와 좌우 chevron control을 표시
+- 현재는 서버/도메인에 메시지 version 목록이 없으므로, 수정 재전송된 메시지를 로컬 표시 상태로만 관리
+
+### Test Cases
+
+- 사용자 메시지 하단 action icon wrapper는 `opacity-0`과 `group-hover/message:opacity-100`을 가진다.
+- 수정 전송 후 `message-version-indicator`에 `2/2`가 표시된다.
+- 좌우 version control 버튼 2개가 렌더링된다.
+
+### Changed Files
+
+- `src/pages/ChatPage.vue`: 수정 재전송된 메시지 ID를 로컬 상태로 기록하고 conversation 변경 시 초기화
+- `src/features/chat/ChatConversationView.vue`: 수정 재전송 여부를 MessageBubble에 전달
+- `src/features/chat/MessageBubble.vue`: hover action wrapper와 `2/2` version navigation UI 추가
+- `src/__tests__/feature9.chat-conversation.test.ts`: hover action 및 version indicator 회귀 테스트 추가
+
+### Commands
+
+- `npm test -- src/__tests__/feature9.chat-conversation.test.ts`
+- `npm test -- src/__tests__/feature8.chat-main.test.ts src/__tests__/feature9.chat-conversation.test.ts`
+- `npm run typecheck`
+- `npm run lint`
+- `./scripts/verify.sh`
+
+### Results
+
+- 관련 테스트: passed, 2 test files and 25 tests passed
+- 전체 검증: passed, 9 test files and 68 tests passed

@@ -9,6 +9,7 @@
   - 2026-05-20, feature8 구현, SCR-400 기본 채팅 화면으로 placeholder 교체
   - 2026-05-22, feature9 보강, SSE submit route fallback, 실패 toast, page-level scroll layout 적용
   - 2026-05-22, feature9 SSE 보강, meta.title 기반 대화 제목 갱신 추가
+  - 2026-05-22, SCR-420 보강, 사용자 메시지 수정본 이전/현재 표시 전환 추가
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -40,6 +41,17 @@ import { useToast } from '@/composables/useToast';
 import { useChatStore } from '@/stores';
 import type { Conversation, Message, Source } from '@/types/api';
 
+type UserMessageVersion = {
+  userContent: string;
+  assistantMessageId?: string;
+  assistantContent?: string;
+};
+
+type UserMessageVersionState = {
+  activeIndex: number;
+  versions: UserMessageVersion[];
+};
+
 const isSidebarOpen = ref(false);
 const isSidebarMascotHovered = ref(false);
 const isSidebarContentVisible = ref(false);
@@ -51,6 +63,8 @@ const hasProfileImageLoadFailed = ref(false);
 const conversations = ref<Conversation[]>([]);
 const editingMessageId = ref('');
 const editingContent = ref('');
+const resentMessageIds = ref<Set<string>>(new Set());
+const userMessageVersionsById = ref<Record<string, UserMessageVersionState>>({});
 const chatStore = useChatStore();
 const { showToast } = useToast();
 let sidebarContentTimer: number | undefined;
@@ -69,7 +83,48 @@ const routeConversationId = computed(() => {
 const hasActiveConversation = computed(
   () => routeConversationId.value.length > 0 || chatStore.activeConversationId.length > 0,
 );
-const activeMessages = computed(() => chatStore.activeMessages);
+const activeMessages = computed(() => {
+  const messages = chatStore.activeMessages.map((message) => ({ ...message }));
+
+  Object.entries(userMessageVersionsById.value).forEach(([messageId, versionState]) => {
+    const version = versionState.versions[versionState.activeIndex];
+
+    if (!version) {
+      return;
+    }
+
+    const userMessage = messages.find((message) => message.messageId === messageId);
+
+    if (userMessage) {
+      userMessage.content = version.userContent;
+    }
+
+    if (!version.assistantMessageId) {
+      return;
+    }
+
+    const assistantMessage = messages.find(
+      (message) => message.messageId === version.assistantMessageId,
+    );
+
+    if (assistantMessage && version.assistantContent !== undefined) {
+      assistantMessage.content = version.assistantContent;
+    }
+  });
+
+  return messages;
+});
+const userMessageVersionIndicators = computed(() =>
+  Object.fromEntries(
+    Object.entries(userMessageVersionsById.value).map(([messageId, versionState]) => [
+      messageId,
+      {
+        activeIndex: versionState.activeIndex,
+        total: versionState.versions.length,
+      },
+    ]),
+  ),
+);
 const currentConversationTitle = computed(() => {
   const conversationId = routeConversationId.value || chatStore.activeConversationId;
   const streamingTitle = chatStore.conversationTitlesById[conversationId];
@@ -152,6 +207,8 @@ async function selectConversation(conversationId: string) {
 async function loadConversationMessages(conversationId: string) {
   editingMessageId.value = '';
   editingContent.value = '';
+  resentMessageIds.value = new Set();
+  userMessageVersionsById.value = {};
 
   try {
     await chatStore.loadConversationMessages(conversationId);
@@ -242,8 +299,62 @@ function submitEditedMessage(messageId: string) {
     return;
   }
 
+  const messages = chatStore.activeMessages;
+  const messageIndex = messages.findIndex((message) => message.messageId === messageId);
+  const currentUserMessage = messages[messageIndex];
+  const nextAssistantMessage = messages
+    .slice(messageIndex + 1)
+    .find((message) => message.role === 'assistant');
+
+  if (!currentUserMessage) {
+    return;
+  }
+
+  const previousVersion = userMessageVersionsById.value[messageId]?.versions[0] ?? {
+    userContent: currentUserMessage.content,
+    assistantMessageId: nextAssistantMessage?.messageId,
+    assistantContent: nextAssistantMessage?.content,
+  };
+  const nextVersion = {
+    userContent: nextContent,
+    assistantMessageId: nextAssistantMessage?.messageId,
+    assistantContent: nextAssistantMessage?.content,
+  };
+
   chatStore.updateUserMessage(messageId, nextContent);
+  userMessageVersionsById.value = {
+    ...userMessageVersionsById.value,
+    [messageId]: {
+      activeIndex: 1,
+      versions: [previousVersion, nextVersion],
+    },
+  };
+  resentMessageIds.value = new Set([...resentMessageIds.value, messageId]);
   cancelEditing();
+}
+
+/**
+ * 사용자 메시지 수정본 내비게이션에서 선택된 버전으로 화면 표시를 전환한다.
+ *
+ * @param messageId version을 전환할 사용자 메시지 ID
+ * @param versionIndex 선택할 version index
+ */
+function selectUserMessageVersion(messageId: string, versionIndex: number) {
+  const versionState = userMessageVersionsById.value[messageId];
+
+  if (!versionState) {
+    return;
+  }
+
+  const nextIndex = Math.min(Math.max(versionIndex, 0), versionState.versions.length - 1);
+
+  userMessageVersionsById.value = {
+    ...userMessageVersionsById.value,
+    [messageId]: {
+      ...versionState,
+      activeIndex: nextIndex,
+    },
+  };
 }
 
 /**
@@ -287,6 +398,8 @@ watch(
       chatStore.clearActiveConversation();
       editingMessageId.value = '';
       editingContent.value = '';
+      resentMessageIds.value = new Set();
+      userMessageVersionsById.value = {};
       return;
     }
 
@@ -610,10 +723,13 @@ watch(
               :editing-content="editingContent"
               :is-streaming="chatStore.isStreaming"
               :streaming-message-id="chatStore.streamingMessageId"
+              :resent-message-ids="[...resentMessageIds]"
+              :user-message-version-indicators="userMessageVersionIndicators"
               @start-edit="startEditing"
               @cancel-edit="cancelEditing"
               @submit-edit="submitEditedMessage"
               @update-editing-content="editingContent = $event"
+              @select-user-message-version="selectUserMessageVersion"
               @open-sources="openReferencePanelFromSourceButton"
             />
           </div>
