@@ -127,6 +127,8 @@ function handleEditTextareaKeydown(event: KeyboardEvent) {
   emit('submitEdit', props.message.messageId);
 }
 
+//TODO: backend version 목록 계약이 없어서 messageBubble 수정 전/후 2개 버전을 프론트 로컬 상태로만 관리 중 -> 백엔드와 협의 후 구현
+//TODO: 메시지 복사 구현 -> 클립보드 API 사용, 복사 완료 토스트 UI 연결
 /**
  * 사용자 메시지 수정본 내비게이션 선택을 상위로 전달한다.
  *

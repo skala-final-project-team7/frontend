@@ -110,6 +110,7 @@
 [x] 사용자 메시지 인라인 수정 모드 구현
 [x] 사이드바에서 conversation list에 나오는 제목과 conversation 각각 채팅 내용 연결되도록 구현
 [x] conversation list 불러올 시, isPinned - 고정된 채팅 정보도 넘어오게 반영(api-spec.md, src/types/api.ts, src/mocks/data.ts 등)
+[ ] backend version 목록 계약이 없어서 messageBubble 수정 전/후 2개 버전을 프론트 로컬 상태로만 관리 중 -> 백엔드와 협의 후 구현
 
 # feature10: 출처 패널 구현 (SCR-500, SCR-510)
 

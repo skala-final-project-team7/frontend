@@ -1349,6 +1349,9 @@
 - textarea 자동 높이 조절과 최대 높이 내부 스크롤을 추가
 - Enter는 수정 전송, Shift+Enter는 줄바꿈으로 처리
 - 수정 모드의 `보내기` 버튼을 이미지 기준에 맞춰 검정 계열 pill 버튼으로 변경
+- 수정 전/후 사용자 메시지와 바로 뒤 assistant 답변을 로컬 version 상태로 보관
+- < 클릭 시 이전 사용자 메시지와 해당 답변이 다시 표시되도록 표시용 메시지 배열을 매핑
+- 메시지별 version indicator 상태와 version 선택 이벤트 전달
 
 ### Test Cases
 
