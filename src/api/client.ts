@@ -6,6 +6,7 @@
  * 작성일 : 2026-05-18
  * 변경사항 내역 (날짜, 변경목적, 변경내용 순)
  *   - 2026-05-18, feature5 구현, apiRequest 및 streamRequest 추가
+ *   - 2026-05-22, feature9 보강, SSE chat request에 AbortSignal 전달 추가
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -54,20 +55,28 @@ export async function apiRequest<TData>(
  *
  * @param conversationId 대화 ID
  * @param request 사용자 질문 payload
+ * @param signal 스트림 취소에 사용할 AbortSignal
  * @returns text/event-stream Response
  */
 export async function streamChatRequest(
   conversationId: string,
   request: ChatQuestionRequest,
+  signal?: AbortSignal,
 ): Promise<Response> {
-  return fetch(`/api/conversations/${encodeURIComponent(conversationId)}/chat`, {
+  const requestInit: RequestInit = {
     method: 'POST',
     headers: {
       Accept: 'text/event-stream',
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(request),
-  });
+  };
+
+  if (signal) {
+    requestInit.signal = signal;
+  }
+
+  return fetch(`/api/conversations/${encodeURIComponent(conversationId)}/chat`, requestInit);
 }
 
 export class ApiClientError extends Error {

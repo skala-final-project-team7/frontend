@@ -6,6 +6,7 @@
 작성일 : 2026-05-20
 변경사항 내역 (날짜, 변경목적, 변경내용 순)
   - 2026-05-20, feature8 구현, MessageInput 최초 작성
+  - 2026-05-22, feature9 보강, IME 조합 중 Enter 전송 방지 처리 추가
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -36,10 +37,42 @@ const emit = defineEmits<{
 }>();
 
 const message = ref('');
+const isComposing = ref(false);
 
 const isSendDisabled = computed(
   () => props.disabled || props.isStreaming || message.value.trim().length === 0,
 );
+
+/**
+ * 한글/일본어 등 IME 조합 시작 상태를 기록한다.
+ */
+function startComposition() {
+  isComposing.value = true;
+}
+
+/**
+ * IME 조합 종료 후 textarea의 확정 문자열을 local state에 반영한다.
+ *
+ * @param event textarea compositionend 이벤트
+ */
+function endComposition(event: Event) {
+  isComposing.value = false;
+  message.value = (event.target as HTMLTextAreaElement).value;
+}
+
+/**
+ * Enter 전송을 처리하되, IME 조합 중 Enter는 문자 확정 동작으로 남긴다.
+ *
+ * @param event textarea keydown 이벤트
+ */
+function handleTextareaKeydown(event: KeyboardEvent) {
+  if (event.isComposing || event.keyCode === 229 || isComposing.value) {
+    return;
+  }
+
+  event.preventDefault();
+  submitMessage();
+}
 
 /**
  * 현재 입력된 메시지를 제출하고 입력값을 초기화한다.
@@ -75,7 +108,9 @@ function submitMessage() {
         rows="1"
         placeholder="무엇이든 물어보세요..."
         class="min-h-10 flex-1 resize-none bg-transparent font-lina text-body text-overlay-dark-80 outline-none placeholder:text-overlay-dark-40 disabled:cursor-not-allowed"
-        @keydown.enter.exact.prevent="submitMessage"
+        @compositionstart="startComposition"
+        @compositionend="endComposition"
+        @keydown.enter.exact="handleTextareaKeydown"
       />
       <BaseTooltip label="메시지 보내기" placement="top">
         <button

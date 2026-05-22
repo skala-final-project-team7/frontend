@@ -6,6 +6,8 @@
  * 작성일 : 2026-05-21
  * 변경사항 내역 (날짜, 변경목적, 변경내용 순)
  *   - 2026-05-21, feature9 보강, useSSE 기반 메시지 누적 store 추가
+ *   - 2026-05-22, feature9 보강, streaming phase/status, abort, error event 처리 추가
+ *   - 2026-05-22, feature9 SSE 보강, backend status.message 직접 렌더링 상태 추가
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -16,13 +18,16 @@ import { defineStore } from 'pinia';
 
 import { getConversationMessages, streamConversationChat } from '@/api';
 import { useSSE } from '@/composables/useSSE';
-import type { ChatSseEvent, Message } from '@/types/api';
+import type { ChatSseEvent, ChatStreamingPhase, Message } from '@/types/api';
+
+let activeStreamAbortController: AbortController | null = null;
 
 type ChatState = {
   activeConversationId: string;
   messagesByConversationId: Record<string, Message[]>;
   isStreaming: boolean;
   streamingMessageId: string;
+  streamingPhase: ChatStreamingPhase;
 };
 
 export const useChatStore = defineStore('chat', {
@@ -31,6 +36,7 @@ export const useChatStore = defineStore('chat', {
     messagesByConversationId: {},
     isStreaming: false,
     streamingMessageId: '',
+    streamingPhase: 'idle',
   }),
 
   getters: {
@@ -39,6 +45,23 @@ export const useChatStore = defineStore('chat', {
         ? (state.messagesByConversationId[state.activeConversationId] ?? [])
         : [];
     },
+
+    /**
+     * 현재 스트리밍 assistant 메시지에 저장된 backend status message를 반환한다.
+     *
+     * @param state chat store state
+     * @returns backend status 이벤트가 전달한 화면 표시용 메시지
+     */
+    streamingStatusText(state): string {
+      const activeMessages = state.activeConversationId
+        ? (state.messagesByConversationId[state.activeConversationId] ?? [])
+        : [];
+      const streamingMessage = activeMessages.find(
+        (message) => message.messageId === state.streamingMessageId,
+      );
+
+      return streamingMessage?.statusMessage ?? '';
+    },
   },
 
   actions: {
@@ -46,8 +69,11 @@ export const useChatStore = defineStore('chat', {
      * 현재 보고 있는 대화 컨텍스트만 비우고, 로컬 스트리밍 식별자도 초기화한다.
      */
     clearActiveConversation() {
+      activeStreamAbortController?.abort();
+      activeStreamAbortController = null;
       this.activeConversationId = '';
       this.streamingMessageId = '';
+      this.streamingPhase = 'idle';
     },
 
     /**
@@ -97,6 +123,11 @@ export const useChatStore = defineStore('chat', {
      * @param question 사용자 질문 본문
      */
     async streamMessage(conversationId: string, question: string) {
+      activeStreamAbortController?.abort();
+      const streamAbortController = new AbortController();
+
+      activeStreamAbortController = streamAbortController;
+
       const userMessage: Message = {
         messageId: `msg-local-user-${Date.now()}`,
         role: 'user',
@@ -108,6 +139,8 @@ export const useChatStore = defineStore('chat', {
         role: 'assistant',
         content: '',
         createdAt: new Date().toISOString(),
+        phase: 'connecting',
+        statusMessage: '',
         sources: [],
       };
 
@@ -119,18 +152,36 @@ export const useChatStore = defineStore('chat', {
       ];
       this.isStreaming = true;
       this.streamingMessageId = assistantMessage.messageId;
+      this.streamingPhase = 'connecting';
 
       const { stream } = useSSE();
 
       try {
-        await stream(() => streamConversationChat(conversationId, { question }), {
-          onEvent: (event) => {
-            this.applySseEvent(conversationId, assistantMessage.messageId, event);
+        await stream(
+          (signal) => streamConversationChat(conversationId, { question }, signal),
+          {
+            onEvent: (event) => {
+              this.applySseEvent(conversationId, assistantMessage.messageId, event);
+
+              if (event.event === 'error') {
+                throw new Error(event.data.message);
+              }
+            },
           },
-        });
+          streamAbortController.signal,
+        );
+      } catch (error) {
+        if (!isAbortError(error)) {
+          this.applyStreamFailure(conversationId, assistantMessage.messageId, error);
+        }
       } finally {
         this.isStreaming = false;
         this.streamingMessageId = '';
+        this.streamingPhase = 'idle';
+
+        if (activeStreamAbortController === streamAbortController) {
+          activeStreamAbortController = null;
+        }
       }
     },
 
@@ -138,8 +189,11 @@ export const useChatStore = defineStore('chat', {
      * 현재 진행 중인 스트리밍 상태를 취소 표시로만 정리한다.
      */
     cancelStreaming() {
+      activeStreamAbortController?.abort();
+      activeStreamAbortController = null;
       this.isStreaming = false;
       this.streamingMessageId = '';
+      this.streamingPhase = 'idle';
     },
 
     /**
@@ -147,7 +201,7 @@ export const useChatStore = defineStore('chat', {
      *
      * @param conversationId 메시지를 갱신할 대화 ID
      * @param messageId 이벤트를 반영할 assistant 메시지 ID
-     * @param event SSE에서 수신한 token/sources/verification/done 이벤트
+     * @param event SSE에서 수신한 status/token/sources/verification/done/error 이벤트
      */
     applySseEvent(conversationId: string, messageId: string, event: ChatSseEvent) {
       this.messagesByConversationId[conversationId] = (
@@ -158,9 +212,24 @@ export const useChatStore = defineStore('chat', {
         }
 
         if (event.event === 'token') {
+          if (message.content.length === 0) {
+            this.streamingPhase = 'streaming';
+          }
+
           return {
             ...message,
+            phase: 'streaming',
             content: `${message.content}${event.data.content}`,
+          };
+        }
+
+        if (event.event === 'status') {
+          this.streamingPhase = event.data.phase;
+
+          return {
+            ...message,
+            phase: event.data.phase,
+            statusMessage: event.data.message,
           };
         }
 
@@ -180,14 +249,67 @@ export const useChatStore = defineStore('chat', {
         }
 
         if (event.event === 'done') {
+          this.streamingPhase = 'done';
+
           return {
             ...message,
             messageId: event.data.messageId,
+            phase: 'done',
+            statusMessage: '',
+          };
+        }
+
+        if (event.event === 'error') {
+          this.streamingPhase = 'error';
+
+          return {
+            ...message,
+            phase: 'error',
+            statusMessage: '',
+            error: event.data.message,
+            content: event.data.message,
           };
         }
 
         return message;
       });
     },
+
+    /**
+     * SSE transport 또는 backend error 이벤트 실패를 assistant placeholder에 표시한다.
+     *
+     * @param conversationId 메시지를 갱신할 대화 ID
+     * @param messageId 실패 문구를 반영할 assistant 메시지 ID
+     * @param error 수신 또는 파싱 중 발생한 오류
+     */
+    applyStreamFailure(conversationId: string, messageId: string, error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : '답변 생성 중 오류가 발생했습니다';
+
+      this.messagesByConversationId[conversationId] = (
+        this.messagesByConversationId[conversationId] ?? []
+      ).map((message) => {
+        if (message.messageId !== messageId) {
+          return message;
+        }
+
+        return {
+          ...message,
+          phase: 'error',
+          statusMessage: '',
+          error: errorMessage,
+          content: errorMessage,
+        };
+      });
+    },
   },
 });
+
+function isAbortError(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'name' in error &&
+    (error as { name: unknown }).name === 'AbortError'
+  );
+}

@@ -7,6 +7,7 @@
 변경사항 내역 (날짜, 변경목적, 변경내용 순)
   - 2026-05-18, feature3 구현, Chat shell placeholder 영역 추가
   - 2026-05-20, feature8 구현, SCR-400 기본 채팅 화면으로 placeholder 교체
+  - 2026-05-22, feature9 보강, SSE submit route fallback, 실패 toast, page-level scroll layout 적용
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -34,6 +35,7 @@ import ChatEmptyState from '@/features/chat/ChatEmptyState.vue';
 import MessageInput from '@/features/chat/MessageInput.vue';
 import { mascotImageUrl } from '@/shared/assets';
 import { BaseFloatingIconButton, BaseTooltip } from '@/shared';
+import { useToast } from '@/composables/useToast';
 import { useChatStore } from '@/stores';
 import type { Conversation, Message, Source } from '@/types/api';
 
@@ -49,6 +51,7 @@ const conversations = ref<Conversation[]>([]);
 const editingMessageId = ref('');
 const editingContent = ref('');
 const chatStore = useChatStore();
+const { showToast } = useToast();
 let sidebarContentTimer: number | undefined;
 
 const pinnedConversations = computed(() =>
@@ -156,37 +159,43 @@ async function loadConversationMessages(conversationId: string) {
  * @param question MessageInput에서 제출된 사용자 질문
  */
 async function submitMessage(question: string) {
-  let conversationId = chatStore.activeConversationId;
+  let conversationId = chatStore.activeConversationId || routeConversationId.value;
 
   if (chatStore.isStreaming) {
     return;
   }
 
-  if (!conversationId) {
-    const createdConversation = await createConversation();
-    conversationId = createdConversation.conversationId;
+  try {
+    if (!conversationId) {
+      const createdConversation = await createConversation();
+      conversationId = createdConversation.conversationId;
 
-    if (
-      !conversations.value.some((conversation) => conversation.conversationId === conversationId)
-    ) {
-      conversations.value = [
-        {
-          ...createdConversation,
-          messageCount: 0,
+      if (
+        !conversations.value.some((conversation) => conversation.conversationId === conversationId)
+      ) {
+        conversations.value = [
+          {
+            ...createdConversation,
+            messageCount: 0,
+          },
+          ...conversations.value,
+        ];
+      }
+
+      await router.push({
+        name: 'chat-conversation',
+        params: {
+          conversationId,
         },
-        ...conversations.value,
-      ];
+      });
     }
 
-    await router.push({
-      name: 'chat-conversation',
-      params: {
-        conversationId,
-      },
+    await chatStore.streamMessage(conversationId, question);
+  } catch {
+    showToast('메시지를 전송하지 못했습니다. 연결 상태를 확인해 주세요.', {
+      variant: 'error',
     });
   }
-
-  await chatStore.streamMessage(conversationId, question);
 }
 
 /**
@@ -284,12 +293,12 @@ watch(
 
 <template>
   <main data-testid="chat-page" class="lina-app-layout min-h-screen overflow-x-hidden bg-bg-100">
-    <div class="flex min-h-screen">
+    <div class="flex min-h-screen items-start">
       <aside
         data-testid="chat-sidebar"
         :data-state="isSidebarOpen ? 'expanded' : 'collapsed'"
         aria-label="Chat sidebar"
-        class="flex shrink-0 flex-col border-r border-bg-300 transition-[width] duration-200"
+        class="sticky top-0 flex h-screen shrink-0 flex-col border-r border-bg-300 transition-[width] duration-200"
         :class="isSidebarOpen ? 'w-[264px] bg-bg-100' : 'w-[76px] bg-primary-white'"
       >
         <div
@@ -504,10 +513,10 @@ watch(
       <section
         data-testid="chat-main"
         aria-label="Chat main"
-        class="relative flex min-w-0 flex-1 flex-col"
+        class="relative flex min-h-screen min-w-0 flex-1 flex-col"
       >
         <header
-          class="sticky top-0 z-30 flex h-[76px] items-center justify-between bg-bg-100/95 px-6 backdrop-blur"
+          class="sticky top-0 z-30 flex h-[76px] shrink-0 items-center justify-between bg-bg-100/95 px-6 backdrop-blur"
           :class="hasActiveConversation ? 'border-b border-bg-300' : 'border-b border-transparent'"
         >
           <template v-if="hasActiveConversation">
@@ -573,23 +582,27 @@ watch(
           </template>
         </header>
 
-        <div class="flex min-h-0 flex-1 flex-col">
-          <ChatEmptyState v-if="!hasActiveConversation" :user-name="userName" />
-          <ChatConversationView
-            v-else
-            :messages="activeMessages"
-            :editing-message-id="editingMessageId"
-            :editing-content="editingContent"
-            :is-streaming="chatStore.isStreaming"
-            :streaming-message-id="chatStore.streamingMessageId"
-            @start-edit="startEditing"
-            @cancel-edit="cancelEditing"
-            @submit-edit="submitEditedMessage"
-            @update-editing-content="editingContent = $event"
-            @open-sources="openReferencePanelFromSourceButton"
-          />
+        <div class="flex flex-1 flex-col">
+          <div data-testid="chat-scroll-region" class="flex-1 overflow-x-hidden pb-[180px]">
+            <ChatEmptyState v-if="!hasActiveConversation" :user-name="userName" />
+            <ChatConversationView
+              v-else
+              :messages="activeMessages"
+              :editing-message-id="editingMessageId"
+              :editing-content="editingContent"
+              :is-streaming="chatStore.isStreaming"
+              :streaming-message-id="chatStore.streamingMessageId"
+              @start-edit="startEditing"
+              @cancel-edit="cancelEditing"
+              @submit-edit="submitEditedMessage"
+              @update-editing-content="editingContent = $event"
+              @open-sources="openReferencePanelFromSourceButton"
+            />
+          </div>
           <div
-            class="sticky bottom-0 z-20 bg-gradient-to-t from-bg-100 via-bg-100 to-transparent pt-4"
+            data-testid="chat-input-region"
+            class="fixed bottom-0 right-0 z-20 shrink-0 bg-gradient-to-t from-bg-100 via-bg-100 to-transparent pt-4 transition-[left] duration-200"
+            :class="isSidebarOpen ? 'left-[264px]' : 'left-[76px]'"
           >
             <MessageInput
               :is-streaming="chatStore.isStreaming"

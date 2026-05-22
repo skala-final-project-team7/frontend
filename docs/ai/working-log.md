@@ -983,6 +983,38 @@
 
 - 관련 테스트: passed, 2 test files and 20 tests passed
 
+## 2026-05-21 - feature9: SSE phase placeholder state 반영
+
+### Scope
+
+- SSE 스트리밍 중 `검색 중... -> 검증 중... -> 답변 생성 중... -> token 누적` 단계가 화면에서 보이도록 상태를 명시적으로 분리
+- `chat` store에 `streamingPhase` state 추가
+- `MessageBubble`의 streaming placeholder가 phase label을 표시하도록 수정
+- MSW mock SSE 이벤트 순서를 `sources -> verification -> token...`으로 바꿔 stage placeholder가 먼저 보이도록 조정
+
+### Test Cases
+
+- streaming placeholder는 `검색 중...` 라벨부터 시작한다.
+- `sources` / `verification` 이벤트 이후에는 phase label이 변경된다.
+- 스트림 종료 후 `streamingPhase`는 `idle`로 초기화된다.
+
+### Changed Files
+
+- `src/stores/chat.ts`: `streamingPhase` state와 event 기반 phase 전환 추가
+- `src/features/chat/MessageBubble.vue`: streaming phase label 렌더링 추가
+- `src/features/chat/ChatConversationView.vue`: streaming phase prop 전달
+- `src/mocks/handlers.ts`: SSE mock event 순서 변경
+- `src/types/api.ts`: `ChatStreamingPhase` 타입 추가
+- `src/__tests__/feature9.chat-conversation.test.ts`, `src/__tests__/feature9.chat-sse-store.test.ts`: phase label/state 테스트 추가
+
+### Commands
+
+- `npm test -- --run src/__tests__/feature9.chat-conversation.test.ts src/__tests__/feature9.chat-sse-store.test.ts`
+
+### Results
+
+- 관련 테스트: passed, 2 test files and 10 tests passed
+
 ## 2026-05-21 - feature9: empty state header / conversation header 분리
 
 ### Scope
@@ -1009,3 +1041,164 @@
 ### Results
 
 - 관련 테스트: passed, 2 test files and 20 tests passed
+
+## 2026-05-21 - feature9: streaming phase label store 이동
+
+### Scope
+
+- `MessageBubble.vue`의 phase-to-label 분기 로직을 제거하고, 화면 표시용 자연어 문구를 `chat` store getter로 이동
+- 스트리밍 상태 제어는 기존 `streamingPhase` enum을 유지하고, UI는 `streamingStatusText`만 렌더링하도록 분리
+
+### Test Cases
+
+- `streamingPhase`가 `searching / verifying / answering / streaming / idle`일 때 store getter가 각각 올바른 표시 문구를 반환한다.
+- `MessageBubble`은 label 계산 없이 전달받은 status text만 렌더링한다.
+
+### Changed Files
+
+- `src/stores/chat.ts`: `streamingStatusText` getter 및 phase-to-label helper 추가
+- `src/features/chat/MessageBubble.vue`: phase 기반 label computed 제거, 전달받은 text만 렌더링
+- `src/features/chat/ChatConversationView.vue`: status text prop 전달로 변경
+- `src/pages/ChatPage.vue`: chat store getter를 conversation view에 전달
+- `src/__tests__/feature9.chat-conversation.test.ts`, `src/__tests__/feature9.chat-sse-store.test.ts`: status text prop/getter 테스트 갱신
+
+### Commands
+
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- 관련 테스트: passed, 9 test files and 60 tests passed
+
+## 2026-05-21 - feature9: SSE stream 동작 점검 및 abort 보강
+
+### Scope
+
+- SSE token 누적 경로를 `mock handler -> useSSE -> chat store -> MessageBubble` 순서로 재점검
+- `cancelStreaming()`이 UI 상태만 내리던 문제를 수정해 실제 fetch stream을 `AbortController`로 중단
+- backend 호환성을 위해 `useSSE` parser가 CRLF(`\r\n`) frame과 여러 `data:` line을 처리하도록 보강
+- SSE `error` 이벤트 수신 시 assistant placeholder에 오류 문구를 반영하고 버튼 상태를 복구
+
+### Test Cases
+
+- `streamConversationChat()` 호출에 `AbortSignal`이 전달되고, cancel 시 signal이 abort된다.
+- CRLF SSE frame도 token/done 이벤트로 정상 파싱된다.
+- backend `error` 이벤트 수신 시 assistant 메시지에 오류 문구가 표시되고 streaming 상태가 초기화된다.
+
+### Changed Files
+
+- `src/api/client.ts`, `src/api/index.ts`: SSE request에 선택적 `AbortSignal` 전달 추가
+- `src/composables/useSSE.ts`: CRLF/multi-data frame parser 및 reader cancel 처리 추가
+- `src/stores/chat.ts`: active stream abort controller, cancel abort, error event 처리 추가
+- `src/__tests__/feature9.chat-sse-store.test.ts`: abort/CRLF/error 이벤트 재현 테스트 추가
+
+### Commands
+
+- `npm test -- --run src/__tests__/feature9.chat-sse-store.test.ts src/__tests__/feature9.chat-conversation.test.ts src/__tests__/feature5.api-client.test.ts`
+
+### Results
+
+- 관련 테스트: passed, 3 test files and 20 tests passed
+
+## 2026-05-22 - feature9: empty/conversation submit SSE 경로 보강
+
+### Scope
+
+- 메시지 제출 시 store active conversation이 아직 비어 있어도 현재 route conversation ID를 우선 사용하도록 수정
+- 대화 이력 로딩 중 바로 질문을 입력해도 새 대화를 만들지 않고 현재 대화의 SSE endpoint로 전송되도록 보강
+- 새 대화 생성 또는 전송 실패 시 사용자에게 error toast를 표시해 입력 후 무반응처럼 보이지 않도록 처리
+
+### Test Cases
+
+- `/chat/:conversationId` 진입 직후 메시지 이력 로딩이 끝나기 전에 입력해도 `POST /api/conversations`를 호출하지 않는다.
+- 같은 상황에서 `/api/conversations/{conversationId}/chat` SSE endpoint로 질문이 전송되고 사용자 메시지와 누적 답변이 렌더링된다.
+
+### Changed Files
+
+- `src/pages/ChatPage.vue`: submit 경로의 conversation ID 결정과 실패 toast 처리 보강
+- `src/__tests__/feature9.chat-conversation.test.ts`: route ID fallback SSE submit 회귀 테스트 추가
+- `docs/ai/working-log.md`: 작업 로그 갱신
+
+### Commands
+
+- `npm test -- src/__tests__/feature9.chat-conversation.test.ts src/__tests__/feature9.chat-sse-store.test.ts`
+- `npm run typecheck`
+- `npm run lint`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- 관련 테스트: passed, 2 test files and 17 tests passed
+- 전체 검증: passed, 9 test files and 66 tests passed
+
+## 2026-05-22 - feature9: chat page-level scroll layout
+
+### Scope
+
+- 대화 메시지 영역 내부 스크롤(`overflow-y-auto`)을 제거하고, 브라우저 문서 레벨의 세로 스크롤을 사용하도록 변경
+- header는 상단 sticky, message input은 viewport 하단 fixed로 유지해 메시지가 많아질 때 본문만 자연스럽게 위로 흐르도록 조정
+- sidebar는 viewport 높이에 고정되도록 `sticky top-0 h-screen` 처리
+
+### Test Cases
+
+- `chat-scroll-region`이 내부 세로 스크롤을 만들지 않는다.
+- conversation header는 `sticky top-0`으로 유지된다.
+- message input region은 `fixed bottom-0`으로 하단에 유지된다.
+
+### Changed Files
+
+- `src/pages/ChatPage.vue`: page-level scroll + sticky header/fixed input layout으로 변경
+- `src/__tests__/feature9.chat-conversation.test.ts`: 내부 스크롤 제거와 fixed input layout 기대값 갱신
+- `docs/ai/working-log.md`: 작업 로그 갱신
+
+### Commands
+
+- `npm test -- src/__tests__/feature9.chat-conversation.test.ts src/__tests__/feature8.chat-main.test.ts`
+- `npm run typecheck`
+- `npm run lint`
+- `./scripts/format.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- 관련 테스트: passed, 2 test files and 24 tests passed
+- 전체 검증: passed, 9 test files and 66 tests passed
+
+## 2026-05-22 - feature9: backend status.message 기반 SSE 상태 표시
+
+### Scope
+
+- SSE `status` 이벤트 타입을 추가하고, backend가 내려주는 `message`를 assistant 메시지의 `statusMessage`에 그대로 저장
+- phase 값을 프론트에서 정적 문구로 변환하던 store helper 제거
+- MessageBubble은 store getter label 대신 메시지별 `statusMessage`를 렌더링
+- mock SSE stream과 API 명세에 `status` 이벤트를 반영
+
+### Test Cases
+
+- `status` 이벤트 수신 시 `phase`와 `statusMessage`가 현재 assistant 메시지에 반영된다.
+- `status.message`가 MessageBubble의 streaming loading 영역에 그대로 표시된다.
+- `done`/`error`/cancel 처리 시 `statusMessage`가 초기화된다.
+
+### Changed Files
+
+- `src/types/api.ts`: `ChatStatusEvent`, 확장 `ChatStreamingPhase`, 메시지 status 상태 타입 추가
+- `src/stores/chat.ts`: phase-to-label 변환 제거, `status.message` 저장 및 종료 시 초기화
+- `src/features/chat/MessageBubble.vue`, `src/features/chat/ChatConversationView.vue`, `src/pages/ChatPage.vue`: 메시지별 `statusMessage` 렌더링 경로로 정리
+- `src/mocks/handlers.ts`: mock SSE에 `status` 이벤트 순서 추가
+- `docs/api-spec.md`: SSE `status` 이벤트 문서화
+- `src/__tests__/feature9.chat-sse-store.test.ts`, `src/__tests__/feature9.chat-conversation.test.ts`: status event 회귀 테스트 추가
+
+### Commands
+
+- `npm test -- src/__tests__/feature9.chat-sse-store.test.ts src/__tests__/feature9.chat-conversation.test.ts`
+
+### Results
+
+- 관련 테스트: passed, 2 test files and 17 tests passed

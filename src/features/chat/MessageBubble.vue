@@ -6,6 +6,8 @@
 작성일 : 2026-05-21
 변경사항 내역 (날짜, 변경목적, 변경내용 순)
   - 2026-05-21, feature9 보강, ChatPage에서 MessageBubble 컴포넌트 분리
+  - 2026-05-22, feature9 보강, streaming status text 렌더링을 store getter 입력으로 변경
+  - 2026-05-22, feature9 SSE 보강, message.statusMessage 직접 렌더링으로 변경
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -112,7 +114,7 @@ function updateEditingContent(event: Event) {
 
       <template v-else>
         <div v-if="isStreamingAssistantMessage" data-testid="assistant-stream-loading" class="mb-3">
-          <BaseSpinner label="답변 생성 중" />
+          <BaseSpinner :label="message.statusMessage ?? ''" />
         </div>
         <p v-if="message.content.length > 0">{{ message.content }}</p>
         <div class="mt-4 flex flex-wrap items-center gap-2 text-small">

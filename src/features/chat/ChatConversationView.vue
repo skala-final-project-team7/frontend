@@ -6,6 +6,8 @@
 작성일 : 2026-05-21
 변경사항 내역 (날짜, 변경목적, 변경내용 순)
   - 2026-05-21, feature9 보강, ChatConversationView 최초 작성
+  - 2026-05-22, feature9 보강, store에서 계산한 streaming status text 전달 추가
+  - 2026-05-22, feature9 SSE 보강, 메시지별 statusMessage 렌더링으로 prop 제거
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+

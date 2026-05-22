@@ -6,6 +6,7 @@
  * 작성일 : 2026-05-21
  * 변경사항 내역 (날짜, 변경목적, 변경내용 순)
  *   - 2026-05-21, feature9 보강, useSSE composable 최초 작성
+ *   - 2026-05-22, feature9 보강, AbortSignal 취소와 CRLF/multi-data SSE frame 파싱 추가
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -33,6 +34,8 @@ type SseHandlers = {
   onComplete?: () => void;
 };
 
+type SseRequest = (signal?: AbortSignal) => Promise<Response>;
+
 /**
  * SSE Response를 chunk 단위로 읽고 `event:`/`data:` frame을 ChatSseEvent로 변환한다.
  *
@@ -44,10 +47,15 @@ export function useSSE() {
    *
    * @param request text/event-stream Response를 반환하는 함수
    * @param handlers 이벤트/에러/완료 콜백 묶음
+   * @param signal 스트림 읽기 취소에 사용할 AbortSignal
    */
-  async function stream(request: () => Promise<Response>, handlers: SseHandlers): Promise<void> {
+  async function stream(
+    request: SseRequest,
+    handlers: SseHandlers,
+    signal?: AbortSignal,
+  ): Promise<void> {
     try {
-      const response = await request();
+      const response = await request(signal);
 
       if (!response.ok) {
         throw new Error(`SSE request failed with status ${response.status}`);
@@ -66,6 +74,11 @@ export function useSSE() {
 
       while (!readerResult.done) {
         const { value } = readerResult;
+
+        if (signal?.aborted) {
+          await reader.cancel();
+          return;
+        }
 
         buffer += decoder.decode(value, { stream: true });
         buffer = flushCompleteFrames(buffer, handlers.onEvent);
@@ -87,7 +100,8 @@ export function useSSE() {
 }
 
 function flushCompleteFrames(buffer: string, onEvent: (event: ChatSseEvent) => void): string {
-  const frames = buffer.split('\n\n');
+  const normalizedBuffer = buffer.replace(/\r\n/g, '\n');
+  const frames = normalizedBuffer.split('\n\n');
   const incompleteFrame = frames.pop() ?? '';
 
   parseSseText(frames.join('\n\n'), onEvent);
@@ -97,12 +111,17 @@ function flushCompleteFrames(buffer: string, onEvent: (event: ChatSseEvent) => v
 
 function parseSseText(streamText: string, onEvent: (event: ChatSseEvent) => void) {
   streamText
+    .replace(/\r\n/g, '\n')
     .split('\n\n')
     .map((chunk) => chunk.trim())
     .filter(Boolean)
     .forEach((chunk) => {
       const eventName = chunk.match(/^event:\s*(.+)$/m)?.[1];
-      const eventData = chunk.match(/^data:\s*(.+)$/m)?.[1];
+      const eventData = chunk
+        .split('\n')
+        .filter((line) => line.startsWith('data:'))
+        .map((line) => line.replace(/^data:\s?/, ''))
+        .join('\n');
 
       if (!eventName || !eventData) {
         return;

@@ -9,6 +9,8 @@
  *   - 2026-05-18, feature5 구현, Common Response 및 Chat API 타입 추가
  *   - 2026-05-18, feature6 보강, Confluence 페이지 미리보기 타입 추가
  *   - 2026-05-21, feature9 구현, Conversation 고정 상태 필드 추가
+ *   - 2026-05-22, feature9 보강, ChatStreamingPhase 타입 추가
+ *   - 2026-05-22, feature9 SSE 보강, status event와 message status state 추가
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -94,6 +96,9 @@ export type Message = {
   role: MessageRole;
   content: string;
   createdAt: string;
+  phase?: ChatStreamingPhase;
+  statusMessage?: string;
+  error?: string;
   sources?: Source[];
   confidenceScore?: number;
   verificationResult?: VerificationResult;
@@ -138,6 +143,29 @@ export type SubmitFeedbackRequest = {
   comment?: string;
 };
 
+export type ChatStreamingPhase =
+  | 'idle'
+  | 'connecting'
+  | 'acl_filtering'
+  | 'checking_history'
+  | 'routing_query'
+  | 'searching'
+  | 'reranking'
+  | 'answering'
+  | 'streaming'
+  | 'verifying'
+  | 'formatting'
+  | 'done'
+  | 'error';
+
+export type ChatStatusEvent = {
+  event: 'status';
+  data: {
+    phase: ChatStreamingPhase;
+    message: string;
+  };
+};
+
 export type ChatTokenEvent = {
   event: 'token';
   data: {
@@ -176,6 +204,7 @@ export type ChatErrorEvent = {
 };
 
 export type ChatSseEvent =
+  | ChatStatusEvent
   | ChatTokenEvent
   | ChatSourcesEvent
   | ChatVerificationEvent

@@ -57,6 +57,9 @@
 
 **Response (SSE 이벤트 스트림)** — Wrapper 미적용
 ```
+event: status
+data: {"phase":"acl_filtering","message":"사용자 권한 범위 내에서 접근 가능한 문서를 확인하고 있습니다."}
+
 event: token
 data: {"content": "S3 권한 오류는"}
 
@@ -92,11 +95,26 @@ data: {"code": "ML_SERVER_ERROR", "message": "답변 생성 중 오류가 발생
 ```
 
 **이벤트 타입**
+- `status` — RAG 파이프라인 진행 상태 메시지 (`message`는 프론트 표시 문구로 그대로 사용)
 - `token` — 답변 청크 (스트리밍)
 - `sources` — RAG 참조 문서 목록
 - `verification` — 답변 신뢰도 검증 결과 (`SUPPORTED` / `PARTIALLY_SUPPORTED` / `NOT_SUPPORTED`)
 - `done` — 스트림 종료, `messageId` 반환
 - `error` — ML 서버 오류 발생 시 에러 정보 전달, 스트림 종료
+
+**status 이벤트 phase**
+- `connecting`
+- `acl_filtering`
+- `checking_history`
+- `routing_query`
+- `searching`
+- `reranking`
+- `answering`
+- `streaming`
+- `verifying`
+- `formatting`
+- `done`
+- `error`
 
 > **Gateway 설정**: SSE 특성상 타임아웃 60초로 별도 설정 필요.
 

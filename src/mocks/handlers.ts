@@ -7,6 +7,8 @@
  * 변경사항 내역 (날짜, 변경목적, 변경내용 순)
  *   - 2026-05-18, feature6 구현, conversations/messages/chat mock handler 추가
  *   - 2026-05-21, feature9 보강, SSE mock 응답을 ReadableStream chunk 방식으로 변경
+ *   - 2026-05-22, feature9 보강, RAG phase placeholder 검증용 SSE event 순서 조정
+ *   - 2026-05-22, feature9 SSE 보강, status 이벤트 mock 추가
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -136,19 +138,47 @@ export const mockHandlers = [
 ];
 
 /**
- * token/sources/verification/done 이벤트를 순차 전송하는 mock SSE 스트림을 생성한다.
+ * status/token/sources/verification/done 이벤트를 순차 전송하는 mock SSE 스트림을 생성한다.
  *
  * @returns MSW HttpResponse에 전달할 ReadableStream
  */
 function createMockSseStream(): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder();
   const events = [
+    createSseEvent('status', {
+      phase: 'acl_filtering',
+      message: '사용자 권한 범위 내에서 접근 가능한 문서를 확인하고 있습니다.',
+    }),
+    createSseEvent('status', {
+      phase: 'checking_history',
+      message: '이전 대화와 연결된 질문인지 확인하고 있습니다.',
+    }),
+    createSseEvent('status', {
+      phase: 'routing_query',
+      message: '질문의 의도와 검색 조건을 분석하고 있습니다.',
+    }),
+    createSseEvent('status', {
+      phase: 'searching',
+      message: '관련 문서를 검색하고 있습니다.',
+    }),
+    createSseEvent('status', {
+      phase: 'reranking',
+      message: '검색된 문서의 관련도를 재정렬하고 있습니다.',
+    }),
+    createSseEvent('status', {
+      phase: 'answering',
+      message: '상위 문서를 기반으로 답변을 생성하고 있습니다.',
+    }),
     createSseEvent('token', { content: 'S3 권한 ' }),
     createSseEvent('token', { content: '오류는 ' }),
     createSseEvent('token', { content: 'IAM 정책과 ' }),
     createSseEvent('token', { content: '버킷 정책을 ' }),
     createSseEvent('token', { content: '함께 점검해 ' }),
     createSseEvent('token', { content: '해결했습니다.' }),
+    createSseEvent('status', {
+      phase: 'verifying',
+      message: '답변이 출처 문서에 근거하는지 검증하고 있습니다.',
+    }),
     createSseEvent('sources', { sources: mockSources }),
     createSseEvent('verification', {
       confidenceScore: 0.85,
