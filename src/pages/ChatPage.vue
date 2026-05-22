@@ -310,7 +310,7 @@ watch(
 </script>
 
 <template>
-  <main data-testid="chat-page" class="lina-app-layout min-h-screen overflow-x-hidden bg-bg-100">
+  <main data-testid="chat-page" class="lina-app-layout min-h-screen overflow-x-clip bg-bg-100">
     <div class="flex min-h-screen items-start">
       <aside
         data-testid="chat-sidebar"
@@ -600,8 +600,8 @@ watch(
           </template>
         </header>
 
-        <div class="flex flex-1 flex-col">
-          <div data-testid="chat-scroll-region" class="flex-1 overflow-x-hidden pb-[180px]">
+        <div class="flex flex-col">
+          <div data-testid="chat-scroll-region" class="w-full overflow-x-clip pb-[220px]">
             <ChatEmptyState v-if="!hasActiveConversation" :user-name="userName" />
             <ChatConversationView
               v-else

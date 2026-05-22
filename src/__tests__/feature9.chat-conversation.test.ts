@@ -485,11 +485,26 @@ describe('feature9 SCR-410, SCR-420, SCR-600 Chat conversation screen', () => {
     );
     expect(wrapper.get('header').classes()).toEqual(expect.arrayContaining(['sticky', 'top-0']));
     expect(wrapper.get('[data-testid="chat-scroll-region"]').classes()).toEqual(
-      expect.arrayContaining(['flex-1', 'overflow-x-hidden', 'pb-[180px]']),
+      expect.arrayContaining(['w-full', 'overflow-x-clip', 'pb-[220px]']),
+    );
+    expect(wrapper.get('[data-testid="chat-page"]').classes()).toContain('overflow-x-clip');
+    expect(wrapper.get('[data-testid="chat-page"]').classes()).not.toContain('overflow-x-hidden');
+    expect(wrapper.get('[data-testid="chat-scroll-region"]').classes()).not.toContain('flex-1');
+    expect(wrapper.get('[data-testid="chat-scroll-region"]').classes()).not.toContain(
+      'overflow-x-hidden',
     );
     expect(wrapper.get('[data-testid="chat-scroll-region"]').classes()).not.toContain(
       'overflow-y-auto',
     );
+    expect(wrapper.get('[data-testid="chat-scroll-region"]').classes()).not.toContain(
+      'overflow-y-scroll',
+    );
+    expect(wrapper.get('[data-testid="message-list"]').classes()).not.toContain('flex-1');
+    expect(wrapper.get('[data-testid="message-list"]').classes()).toContain('overflow-x-clip');
+    expect(wrapper.get('[data-testid="message-list"]').classes()).not.toContain(
+      'overflow-x-hidden',
+    );
+    expect(wrapper.get('[data-testid="message-list"]').classes()).not.toContain('overflow-y-auto');
     expect(wrapper.get('[data-testid="chat-input-region"]').classes()).toEqual(
       expect.arrayContaining(['fixed', 'bottom-0', 'right-0', 'shrink-0']),
     );

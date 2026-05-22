@@ -38,7 +38,7 @@ defineEmits<{
 <template>
   <div
     data-testid="message-list"
-    class="mx-auto flex w-full max-w-[900px] flex-1 min-w-0 flex-col gap-5 overflow-x-hidden px-6 py-6"
+    class="mx-auto flex w-full max-w-[900px] min-w-0 flex-col gap-5 overflow-x-clip px-6 py-6"
     aria-live="polite"
   >
     <MessageBubble
