@@ -1,6 +1,6 @@
 # LINA API Spec
 
-> 버전: v2.0.0
+> 버전: v2.1.0
 > 기준: 중간 발표(4주차) 데모 범위 + 이후 확장 계획
 > 전제: 중간 발표 시 인증 하드코딩, 스페이스 고정, 로그인 제외
 > 기획서 버전: v2.1.7 (Authorization Server 분리, 사용자 단위 검색 반영)
@@ -117,7 +117,7 @@ data: {
 }
 
 event: meta
-data: {"intent":"운영가이드","used_llm":"gpt-4o","feedback_enabled":true,"latency_ms":1234}
+data: {"intent":"운영가이드","used_llm":"gpt-4o","feedback_enabled":true,"latency_ms":1234,"title":"S3 권한 오류 해결 방법"}
 
 event: done
 data: {"messageId": "msg-uuid-001"}
@@ -165,18 +165,21 @@ data: {"code": "ML_SERVER_ERROR", "message": "답변 생성 중 오류가 발생
   "intent": "운영가이드",
   "used_llm": "gpt-4o",
   "feedback_enabled": true,
-  "latency_ms": 1234
+  "latency_ms": 1234,
+  "title": "S3 권한 오류 해결 방법"
 }
 ```
 
-| Field              | Type    | Description                                   |
-| ------------------ | ------- | --------------------------------------------- |
-| `intent`           | string  | 질의 라우터가 분류한 질문 의도                |
-| `used_llm`         | string  | 실제 답변 생성에 사용한 모델명                |
-| `feedback_enabled` | boolean | 이 답변에 피드백 UI를 노출할지 여부           |
-| `latency_ms`       | number  | 그래프 진입부터 응답 산출까지의 처리 지연(ms) |
+| Field              | Type    | Required | Description                                   |
+| ------------------ | ------- | -------- | --------------------------------------------- |
+| `intent`           | string  | Y        | 질의 라우터가 분류한 질문 의도                |
+| `used_llm`         | string  | Y        | 실제 답변 생성에 사용한 모델명                |
+| `feedback_enabled` | boolean | Y        | 이 답변에 피드백 UI를 노출할지 여부           |
+| `latency_ms`       | number  | Y        | 그래프 진입부터 응답 산출까지의 처리 지연(ms) |
+| `title`            | string  | N        | LLM이 생성한 현재 대화 제목                   |
 
-> `meta`는 현재 RAG 구현에서 송신되므로 프론트 파서는 수신 가능해야 한다. 다만 FE는 현재 UI 상태에 반영하지 않고 무시하며, feature13 코드 마이그레이션 이후 이벤트 계약에서 제거될 수 있다.
+> `meta`는 현재 RAG 구현에서 송신되므로 프론트 파서는 수신 가능해야 한다. FE는 현재 `title`만 대화 제목 갱신에 사용하고 나머지 필드는 UI 상태에 반영하지 않는다. feature13 코드 마이그레이션 이후 이벤트 계약에서 제거될 수 있다.
+> +) 나머지 필드는 필요하다면 관리자 화면에 적용되도록 설정
 
 > **Gateway 설정**: SSE 특성상 타임아웃 60초로 별도 설정 필요.
 

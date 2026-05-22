@@ -79,7 +79,7 @@ function createSseResponse(): Response {
         );
         controller.enqueue(
           encoder.encode(
-            'event: meta\ndata: {"intent":"운영가이드","used_llm":"gpt-4o","feedback_enabled":true,"latency_ms":1234}\n\n',
+            'event: meta\ndata: {"intent":"운영가이드","used_llm":"gpt-4o","feedback_enabled":true,"latency_ms":1234,"title":"S3 권한 오류 해결 방법"}\n\n',
           ),
         );
         controller.enqueue(encoder.encode('event: done\ndata: {"messageId":"msg-done-001"}\n\n'));
@@ -166,6 +166,7 @@ describe('feature9 chat SSE store integration', () => {
       statusMessage: '',
     });
     expect(chatStore.activeMessages[1].sources?.[0].title).toBe('S3 트러블슈팅 가이드');
+    expect(chatStore.conversationTitlesById['conv-mock-001']).toBe('S3 권한 오류 해결 방법');
   });
 
   it('stores backend status event messages without generating text from phase', () => {

@@ -190,6 +190,7 @@ function createMockSseStream(): ReadableStream<Uint8Array> {
       used_llm: 'gpt-4o',
       feedback_enabled: true,
       latency_ms: 1234,
+      title: 'S3 권한 오류 해결 방법',
     }),
     createSseEvent('done', { messageId: 'msg-mock-assistant-stream' }),
   ];

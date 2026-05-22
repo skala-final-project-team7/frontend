@@ -8,6 +8,7 @@
   - 2026-05-18, feature3 구현, Chat shell placeholder 영역 추가
   - 2026-05-20, feature8 구현, SCR-400 기본 채팅 화면으로 placeholder 교체
   - 2026-05-22, feature9 보강, SSE submit route fallback, 실패 toast, page-level scroll layout 적용
+  - 2026-05-22, feature9 SSE 보강, meta.title 기반 대화 제목 갱신 추가
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -71,6 +72,12 @@ const hasActiveConversation = computed(
 const activeMessages = computed(() => chatStore.activeMessages);
 const currentConversationTitle = computed(() => {
   const conversationId = routeConversationId.value || chatStore.activeConversationId;
+  const streamingTitle = chatStore.conversationTitlesById[conversationId];
+
+  if (streamingTitle) {
+    return streamingTitle;
+  }
+
   const currentConversation = conversations.value.find(
     (conversation) => conversation.conversationId === conversationId,
   );
@@ -287,6 +294,17 @@ watch(
   },
   {
     immediate: true,
+  },
+);
+
+watch(
+  () => ({ ...chatStore.conversationTitlesById }),
+  (conversationTitlesById) => {
+    conversations.value = conversations.value.map((conversation) => {
+      const title = conversationTitlesById[conversation.conversationId];
+
+      return title ? { ...conversation, title } : conversation;
+    });
   },
 );
 </script>

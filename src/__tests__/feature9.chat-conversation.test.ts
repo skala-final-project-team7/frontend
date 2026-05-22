@@ -68,6 +68,8 @@ function createSseResponse(): Response {
       'data: {"content":"IAM 정책과 "}\n\n',
       'event: token\n',
       'data: {"content":"버킷 정책을 함께 점검했습니다."}\n\n',
+      'event: meta\n',
+      'data: {"intent":"운영가이드","used_llm":"gpt-4o","feedback_enabled":true,"latency_ms":1234,"title":"SSE가 생성한 대화 제목"}\n\n',
       'event: done\n',
       'data: {"messageId":"msg-streamed-assistant"}\n\n',
     ].join(''),
@@ -328,6 +330,17 @@ describe('feature9 SCR-410, SCR-420, SCR-600 Chat conversation screen', () => {
     expect(wrapper.find('[data-testid="source-button"]').exists()).toBe(true);
     expect(wrapper.text()).not.toContain('Check Reference');
     expect(wrapper.text()).not.toContain('S3 트러블슈팅 가이드');
+  });
+
+  it('updates the current conversation title from meta.title', async () => {
+    const wrapper = mountChatPage();
+    await flushAsyncUpdates();
+
+    await wrapper.get('textarea').setValue('S3 권한 오류를 다시 정리해줘');
+    await wrapper.get('textarea').trigger('keydown.enter');
+    await flushAsyncUpdates();
+
+    expect(wrapper.get('[data-testid="conversation-title"]').text()).toBe('SSE가 생성한 대화 제목');
   });
 
   it('uses the route conversation id when submitting before message history finishes loading', async () => {

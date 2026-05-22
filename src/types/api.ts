@@ -193,6 +193,7 @@ export type ChatMetaEvent = {
     used_llm: string;
     feedback_enabled: boolean;
     latency_ms: number;
+    title?: string;
   };
 };
 

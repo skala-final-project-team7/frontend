@@ -39,6 +39,7 @@ const KNOWN_STREAMING_PHASES = new Set<ChatStreamingPhase>([
 type ChatState = {
   activeConversationId: string;
   messagesByConversationId: Record<string, Message[]>;
+  conversationTitlesById: Record<string, string>;
   isStreaming: boolean;
   streamingMessageId: string;
   streamingPhase: ChatStreamingPhase;
@@ -48,6 +49,7 @@ export const useChatStore = defineStore('chat', {
   state: (): ChatState => ({
     activeConversationId: '',
     messagesByConversationId: {},
+    conversationTitlesById: {},
     isStreaming: false,
     streamingMessageId: '',
     streamingPhase: 'idle',
@@ -267,6 +269,12 @@ export const useChatStore = defineStore('chat', {
         }
 
         if (event.event === 'meta') {
+          const title = event.data.title?.trim();
+
+          if (title) {
+            this.conversationTitlesById[conversationId] = title;
+          }
+
           // 현재 RAG 구현 호환용 이벤트이며, feature13 계약 정리 후 제거될 수 있어 UI 상태에는 반영하지 않는다.
           return message;
         }
