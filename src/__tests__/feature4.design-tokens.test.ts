@@ -93,6 +93,9 @@ describe('feature4 design tokens and base styles', () => {
     expect(mainCss).toContain('.lina-button-primary');
     expect(mainCss).toContain('.lina-button-ghost');
     expect(mainCss).toContain('.lina-panel');
+    expect(mainCss).toContain('scrollbar-gutter: stable;');
+    expect(mainCss).toContain('overflow-y: auto;');
+    expect(mainCss).toContain('overflow-x: hidden;');
   });
 
   it('keeps Chat shell placeholder styling on project tokens instead of arbitrary palettes', () => {

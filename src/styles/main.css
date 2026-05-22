@@ -6,6 +6,7 @@
 작성일 : 2026-05-18
 변경사항 내역 (날짜, 변경목적, 변경내용 순)
   - 2026-05-18, 최초 작성, Tailwind 레이어와 기본 전역 스타일 추가
+  - 2026-05-22, Chat page-level scroll 안정화, scrollbar-gutter로 layout shift 방지
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, CSS3
@@ -74,10 +75,22 @@
     box-sizing: border-box;
   }
 
+  html {
+    scrollbar-gutter: stable;
+  }
+
+  html,
+  body,
+  #app {
+    min-height: 100%;
+  }
+
   body {
     min-width: 320px;
     min-height: 100vh;
     margin: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   button,
