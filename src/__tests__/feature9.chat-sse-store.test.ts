@@ -7,6 +7,7 @@
  * 변경사항 내역 (날짜, 변경목적, 변경내용 순)
  *   - 2026-05-21, feature9 구현, SSE token 누적 store 테스트 추가
  *   - 2026-05-22, feature9 보강, streaming status, AbortSignal, CRLF, error event 회귀 테스트 추가
+ *   - 2026-05-22, RAG status 계약 반영, 확정 phase 순서와 meta/unknown phase 테스트 추가
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -19,7 +20,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useChatStore } from '@/stores';
 
 /**
- * status/token/sources/verification/done 이벤트를 한 번에 흘려주는 테스트용 SSE 응답을 만든다.
+ * status/token/sources/verification/meta/done 이벤트를 한 번에 흘려주는 테스트용 SSE 응답을 만든다.
  *
  * @returns 테스트용 text/event-stream Response
  */
@@ -31,7 +32,39 @@ function createSseResponse(): Response {
 
         controller.enqueue(
           encoder.encode(
-            'event: status\ndata: {"phase":"acl_filtering","message":"사용자 권한 범위 내에서 접근 가능한 문서를 확인하고 있습니다."}\n\n',
+            'event: status\ndata: {"phase":"connecting","message":"연결 중이에요"}\n\n',
+          ),
+        );
+        controller.enqueue(
+          encoder.encode(
+            'event: status\ndata: {"phase":"acl_filtering","message":"접근 권한을 확인하고 있어요"}\n\n',
+          ),
+        );
+        controller.enqueue(
+          encoder.encode(
+            'event: status\ndata: {"phase":"searching","message":"관련 문서를 검색하고 있어요"}\n\n',
+          ),
+        );
+        controller.enqueue(
+          encoder.encode(
+            'event: status\ndata: {"phase":"answering","message":"답변을 준비하고 있어요"}\n\n',
+          ),
+        );
+        controller.enqueue(
+          encoder.encode(
+            'event: status\ndata: {"phase":"streaming","message":"답변을 작성하고 있어요"}\n\n',
+          ),
+        );
+        controller.enqueue(encoder.encode('event: token\ndata: {"content":"첫 chunk "}\n\n'));
+        controller.enqueue(encoder.encode('event: token\ndata: {"content":"두 번째 chunk"}\n\n'));
+        controller.enqueue(
+          encoder.encode(
+            'event: status\ndata: {"phase":"verifying","message":"답변 근거를 검증하고 있어요"}\n\n',
+          ),
+        );
+        controller.enqueue(
+          encoder.encode(
+            'event: status\ndata: {"phase":"formatting","message":"답변을 정리하고 있어요"}\n\n',
           ),
         );
         controller.enqueue(
@@ -39,16 +72,14 @@ function createSseResponse(): Response {
             'event: sources\ndata: {"sources":[{"title":"S3 트러블슈팅 가이드","pageId":"12345","spaceId":"98310","spaceName":"Cloud Control Center","url":"https://confluence.example.com/pages/12345","updatedAt":"2026-04-15T09:30:00Z","relevanceScore":0.92}]}\n\n',
           ),
         );
-        controller.enqueue(encoder.encode('event: token\ndata: {"content":"첫 chunk "}\n\n'));
-        controller.enqueue(encoder.encode('event: token\ndata: {"content":"두 번째 chunk"}\n\n'));
         controller.enqueue(
           encoder.encode(
-            'event: status\ndata: {"phase":"verifying","message":"답변이 출처 문서에 근거하는지 검증하고 있습니다."}\n\n',
+            'event: verification\ndata: {"confidenceScore":0.91,"verificationResult":"SUPPORTED"}\n\n',
           ),
         );
         controller.enqueue(
           encoder.encode(
-            'event: verification\ndata: {"confidenceScore":0.91,"verificationResult":"SUPPORTED"}\n\n',
+            'event: meta\ndata: {"intent":"운영가이드","used_llm":"gpt-4o","feedback_enabled":true,"latency_ms":1234}\n\n',
           ),
         );
         controller.enqueue(encoder.encode('event: done\ndata: {"messageId":"msg-done-001"}\n\n'));
@@ -153,14 +184,45 @@ describe('feature9 chat SSE store integration', () => {
     chatStore.applySseEvent('conv-mock-001', 'msg-local-assistant-status', {
       event: 'status',
       data: {
-        phase: 'reranking',
-        message: '검색된 문서의 관련도를 재정렬하고 있습니다.',
+        phase: 'searching',
+        message: '관련 문서를 검색하고 있어요',
       },
     });
 
-    expect(chatStore.streamingPhase).toBe('reranking');
+    expect(chatStore.streamingPhase).toBe('searching');
     expect(chatStore.activeMessages[0]).toMatchObject({
-      statusMessage: '검색된 문서의 관련도를 재정렬하고 있습니다.',
+      statusMessage: '관련 문서를 검색하고 있어요',
+    });
+  });
+
+  it('ignores unknown status phase values and keeps the previous status', () => {
+    const chatStore = useChatStore();
+    chatStore.activeConversationId = 'conv-mock-001';
+    chatStore.streamingPhase = 'searching';
+    chatStore.messagesByConversationId['conv-mock-001'] = [
+      {
+        messageId: 'msg-local-assistant-status',
+        role: 'assistant',
+        content: '',
+        createdAt: '2026-05-22T00:00:00Z',
+        phase: 'searching',
+        statusMessage: '관련 문서를 검색하고 있어요',
+        sources: [],
+      },
+    ];
+
+    chatStore.applySseEvent('conv-mock-001', 'msg-local-assistant-status', {
+      event: 'status',
+      data: {
+        phase: 'planning_next_step',
+        message: '새 단계 메시지',
+      },
+    });
+
+    expect(chatStore.streamingPhase).toBe('searching');
+    expect(chatStore.activeMessages[0]).toMatchObject({
+      phase: 'searching',
+      statusMessage: '관련 문서를 검색하고 있어요',
     });
   });
 

@@ -1135,6 +1135,41 @@
 ### Results
 
 - 관련 테스트: passed, 2 test files and 17 tests passed
+
+## 2026-05-22 - feature9: RAG status 이벤트 계약 반영
+
+### Scope
+
+- RAG streaming status phase를 `connecting → acl_filtering → searching → answering → streaming → verifying → formatting` 구조로 정리
+- 기존 SSE 이벤트 흐름에 `meta` 이벤트 타입을 추가하고 store에서는 현재 UI에 영향 없이 무시
+- 알 수 없는 `status.phase`가 오면 기존 phase/statusMessage를 유지하도록 방어 처리
+- mock SSE stream을 status 추가 이벤트와 기존 token/sources/verification/meta/done 순서가 맞물리도록 갱신
+- `docs/api-spec.md`에 `stream=true` RAG streaming mode, status phase 처리 규칙, 0건 단축 흐름, 비-streaming 모드 주의사항 반영
+
+### Test Cases
+
+- `status` 이벤트 message는 그대로 저장하되 UI 분기는 message에 의존하지 않는다.
+- `meta` 이벤트가 와도 기존 token/source/verification 누적 동작이 깨지지 않는다.
+- 알 수 없는 phase는 무시하고 직전 상태를 유지한다.
+
+### Changed Files
+
+- `docs/api-spec.md`: RAG status 이벤트 phase/처리 규칙 및 `meta` 이벤트 문서화
+- `src/types/api.ts`: `ChatMetaEvent` 추가, status phase를 확장 가능한 문자열로 수신
+- `src/stores/chat.ts`: known phase guard와 `meta` no-op 처리 추가
+- `src/mocks/handlers.ts`: RAG status phase 순서와 `meta` mock 추가
+- `src/composables/useSSE.ts`: SSE 이벤트 목록 주석에 `meta` 반영
+- `src/__tests__/feature9.chat-sse-store.test.ts`: meta/unknown phase 회귀 테스트 추가
+
+### Commands
+
+- `npm test -- src/__tests__/feature9.chat-sse-store.test.ts src/__tests__/feature9.chat-conversation.test.ts`
+- `npm run typecheck`
+
+### Results
+
+- 관련 테스트: passed, 2 test files and 18 tests passed
+- typecheck: passed
 - 전체 검증: passed, 9 test files and 66 tests passed
 
 ## 2026-05-22 - feature9: chat page-level scroll layout

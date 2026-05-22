@@ -11,6 +11,7 @@
  *   - 2026-05-21, feature9 구현, Conversation 고정 상태 필드 추가
  *   - 2026-05-22, feature9 보강, ChatStreamingPhase 타입 추가
  *   - 2026-05-22, feature9 SSE 보강, status event와 message status state 추가
+ *   - 2026-05-22, RAG status 계약 반영, meta event와 확장 가능한 status phase 처리 추가
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -147,10 +148,7 @@ export type ChatStreamingPhase =
   | 'idle'
   | 'connecting'
   | 'acl_filtering'
-  | 'checking_history'
-  | 'routing_query'
   | 'searching'
-  | 'reranking'
   | 'answering'
   | 'streaming'
   | 'verifying'
@@ -161,7 +159,7 @@ export type ChatStreamingPhase =
 export type ChatStatusEvent = {
   event: 'status';
   data: {
-    phase: ChatStreamingPhase;
+    phase: ChatStreamingPhase | string;
     message: string;
   };
 };
@@ -188,6 +186,16 @@ export type ChatVerificationEvent = {
   };
 };
 
+export type ChatMetaEvent = {
+  event: 'meta';
+  data: {
+    intent: string;
+    used_llm: string;
+    feedback_enabled: boolean;
+    latency_ms: number;
+  };
+};
+
 export type ChatDoneEvent = {
   event: 'done';
   data: {
@@ -208,5 +216,6 @@ export type ChatSseEvent =
   | ChatTokenEvent
   | ChatSourcesEvent
   | ChatVerificationEvent
+  | ChatMetaEvent
   | ChatDoneEvent
   | ChatErrorEvent;

@@ -8,6 +8,7 @@
  *   - 2026-05-21, feature9 보강, useSSE 기반 메시지 누적 store 추가
  *   - 2026-05-22, feature9 보강, streaming phase/status, abort, error event 처리 추가
  *   - 2026-05-22, feature9 SSE 보강, backend status.message 직접 렌더링 상태 추가
+ *   - 2026-05-22, RAG status 계약 반영, 알 수 없는 status phase 무시 처리 추가
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -21,6 +22,19 @@ import { useSSE } from '@/composables/useSSE';
 import type { ChatSseEvent, ChatStreamingPhase, Message } from '@/types/api';
 
 let activeStreamAbortController: AbortController | null = null;
+
+const KNOWN_STREAMING_PHASES = new Set<ChatStreamingPhase>([
+  'idle',
+  'connecting',
+  'acl_filtering',
+  'searching',
+  'answering',
+  'streaming',
+  'verifying',
+  'formatting',
+  'done',
+  'error',
+]);
 
 type ChatState = {
   activeConversationId: string;
@@ -117,7 +131,7 @@ export const useChatStore = defineStore('chat', {
     },
 
     /**
-     * 사용자 질문을 서버 SSE endpoint로 전송하고 token/sources/verification/done 이벤트를 누적한다.
+     * 사용자 질문을 서버 SSE endpoint로 전송하고 status/token/sources/verification/meta/done 이벤트를 누적한다.
      *
      * @param conversationId 스트리밍할 대화 ID
      * @param question 사용자 질문 본문
@@ -201,7 +215,7 @@ export const useChatStore = defineStore('chat', {
      *
      * @param conversationId 메시지를 갱신할 대화 ID
      * @param messageId 이벤트를 반영할 assistant 메시지 ID
-     * @param event SSE에서 수신한 status/token/sources/verification/done/error 이벤트
+     * @param event SSE에서 수신한 status/token/sources/verification/meta/done/error 이벤트
      */
     applySseEvent(conversationId: string, messageId: string, event: ChatSseEvent) {
       this.messagesByConversationId[conversationId] = (
@@ -224,6 +238,10 @@ export const useChatStore = defineStore('chat', {
         }
 
         if (event.event === 'status') {
+          if (!isKnownStreamingPhase(event.data.phase)) {
+            return message;
+          }
+
           this.streamingPhase = event.data.phase;
 
           return {
@@ -246,6 +264,11 @@ export const useChatStore = defineStore('chat', {
             confidenceScore: event.data.confidenceScore,
             verificationResult: event.data.verificationResult,
           };
+        }
+
+        if (event.event === 'meta') {
+          // 현재 RAG 구현 호환용 이벤트이며, feature13 계약 정리 후 제거될 수 있어 UI 상태에는 반영하지 않는다.
+          return message;
         }
 
         if (event.event === 'done') {
@@ -304,6 +327,10 @@ export const useChatStore = defineStore('chat', {
     },
   },
 });
+
+function isKnownStreamingPhase(phase: string): phase is ChatStreamingPhase {
+  return KNOWN_STREAMING_PHASES.has(phase as ChatStreamingPhase);
+}
 
 function isAbortError(error: unknown): boolean {
   return (
