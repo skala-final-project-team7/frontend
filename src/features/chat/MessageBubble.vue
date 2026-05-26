@@ -11,6 +11,7 @@
   - 2026-05-22, SCR-420 보강, 사용자 메시지 inline edit bubble UI 개선
   - 2026-05-22, SCR-420 보강, 사용자 메시지 하단 hover action과 수정본 indicator 추가
   - 2026-05-22, SCR-420 보강, 사용자 메시지 수정본 이전/다음 선택 이벤트 추가
+  - 2026-05-26, SCR-420 보류, backend version 계약 확정 전 사용자 수정 action 비노출
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -71,6 +72,8 @@ const canShowNextUserVersion = computed(
   () => userVersionActiveIndex.value < userVersionTotal.value - 1,
 );
 const editTextarea = ref<HTMLTextAreaElement | null>(null);
+// TODO(SCR-420): backend message version list/regeneration 계약 확정 후 사용자 수정 UI를 활성화한다.
+const isUserMessageRevisionEnabled = false;
 
 /**
  * 편집 textarea 높이를 현재 내용에 맞춰 갱신하되 CSS max-height 이상은 내부 스크롤로 넘긴다.
@@ -127,7 +130,6 @@ function handleEditTextareaKeydown(event: KeyboardEvent) {
   emit('submitEdit', props.message.messageId);
 }
 
-//TODO: backend version 목록 계약이 없어서 messageBubble 수정 전/후 2개 버전을 프론트 로컬 상태로만 관리 중 -> 백엔드와 협의 후 구현
 //TODO: 메시지 복사 구현 -> 클립보드 API 사용, 복사 완료 토스트 UI 연결
 /**
  * 사용자 메시지 수정본 내비게이션 선택을 상위로 전달한다.
@@ -206,7 +208,7 @@ function selectUserMessageVersion(versionIndex: number) {
     </div>
 
     <div
-      v-if="message.role === 'user' && !isEditing"
+      v-if="isUserMessageRevisionEnabled && message.role === 'user' && !isEditing"
       data-testid="message-action-row-user"
       class="mt-2 flex min-h-5 items-center justify-end gap-3 text-overlay-dark-80"
     >

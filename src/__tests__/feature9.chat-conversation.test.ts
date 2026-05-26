@@ -210,11 +210,10 @@ describe('feature9 SCR-410, SCR-420, SCR-600 Chat conversation screen', () => {
     expect(wrapper.text()).not.toContain('S3 트러블슈팅 가이드');
     expect(wrapper.text()).not.toContain('답변 생성');
     expect(wrapper.text()).not.toContain('근거 검증');
-    expect(wrapper.find('[data-testid="message-action-row-user"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="message-action-row-user"]').exists()).toBe(false);
     expect(wrapper.find('[data-testid="message-action-row-assistant"]').exists()).toBe(true);
-    expect(wrapper.get('[data-testid="message-copy-button"]').attributes('aria-label')).toBe(
-      '메시지 복사',
-    );
+    expect(wrapper.find('[data-testid="message-copy-button"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="message-edit-button"]').exists()).toBe(false);
     expect(wrapper.get('[data-testid="assistant-copy-button"]').attributes('aria-label')).toBe(
       '응답 복사',
     );
@@ -233,14 +232,7 @@ describe('feature9 SCR-410, SCR-420, SCR-600 Chat conversation screen', () => {
       .map((tooltip) => tooltip.attributes('aria-label'));
 
     expect(tooltipLabels).toEqual(
-      expect.arrayContaining([
-        '메시지 복사',
-        '메시지 수정',
-        '응답 복사',
-        '좋은 응답',
-        '별로인 응답',
-        '다시 시도',
-      ]),
+      expect.arrayContaining(['응답 복사', '좋은 응답', '별로인 응답', '다시 시도']),
     );
   });
 
@@ -510,63 +502,14 @@ describe('feature9 SCR-410, SCR-420, SCR-600 Chat conversation screen', () => {
     );
   });
 
-  it('supports inline editing for user messages without changing public API signatures', async () => {
+  it('hides user message editing until backend version history contract is defined', async () => {
     const wrapper = mountChatPage();
     await flushAsyncUpdates();
 
-    const userActionIcons = wrapper.get('[data-testid="message-action-icons-user"]');
-
-    expect(userActionIcons.classes()).toEqual(
-      expect.arrayContaining(['opacity-0', 'group-hover/message:opacity-100']),
-    );
-
-    await wrapper.get('[data-testid="message-edit-button"]').trigger('click');
-
-    const userBubble = wrapper.get('[data-testid="message-bubble-user"]');
-    const textarea = wrapper.get('[data-testid="message-edit-textarea"]');
-
-    expect(userBubble.classes()).toEqual(expect.arrayContaining(['bg-bg-200', 'rounded-card']));
-    expect(textarea.classes()).toEqual(expect.arrayContaining(['bg-transparent', 'max-h-40']));
-    expect(textarea.classes()).not.toContain('bg-primary-white');
-    expect(textarea.classes()).not.toContain('border');
-    expect(wrapper.get('[data-testid="message-edit-textarea"]').element).toHaveProperty(
-      'value',
-      mockMessagesByConversationId['conv-mock-001'][0].content,
-    );
-
-    await textarea.setValue('첫 줄');
-    await textarea.trigger('keydown.enter.shift');
-    await textarea.setValue('첫 줄\n두 번째 줄');
-
-    const submitButton = wrapper.get('[data-testid="message-edit-submit"]');
-
-    expect(wrapper.text()).toContain('취소');
-    expect(wrapper.text()).toContain('보내기');
-    expect(wrapper.text()).not.toContain('수정된 질문입니다');
-    expect(submitButton.classes()).toEqual(
-      expect.arrayContaining(['bg-overlay-dark-80', 'text-primary-white']),
-    );
-    expect(submitButton.classes()).not.toContain('bg-primary');
-
-    await textarea.trigger('keydown.enter');
-
-    expect(wrapper.text()).toContain('첫 줄');
-    expect(wrapper.text()).toContain('두 번째 줄');
+    expect(wrapper.find('[data-testid="message-action-icons-user"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="message-edit-button"]').exists()).toBe(false);
     expect(wrapper.find('[data-testid="message-edit-textarea"]').exists()).toBe(false);
-    expect(wrapper.get('[data-testid="message-version-navigation"]').classes()).toEqual(
-      expect.arrayContaining(['opacity-0', 'group-hover/message:opacity-100']),
-    );
-    expect(wrapper.get('[data-testid="message-version-indicator"]').text()).toBe('2/2');
-    expect(wrapper.findAll('[data-testid="message-version-control"]')).toHaveLength(2);
-
-    await wrapper.findAll('[data-testid="message-version-control"]')[0].trigger('click');
-
-    expect(wrapper.get('[data-testid="message-version-indicator"]').text()).toBe('1/2');
-    expect(wrapper.text()).toContain('지난번 S3 버킷 권한 오류 때 어떻게 해결했어?');
-    expect(wrapper.text()).toContain(
-      'S3 권한 오류는 IAM 정책의 버킷 접근 권한을 보강해 해결했습니다.',
-    );
-    expect(wrapper.text()).not.toContain('첫 줄');
+    expect(wrapper.find('[data-testid="message-version-navigation"]').exists()).toBe(false);
   });
 
   it('connects sidebar conversation titles to each conversation message history and pinned state', async () => {

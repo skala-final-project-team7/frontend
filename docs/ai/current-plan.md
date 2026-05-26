@@ -107,17 +107,17 @@
 [x] enter - 전송 / shift+enter - 사용자 메시지 안에서 '\n' 구현
 [x] SSE 청크 누적 표시와 RAG 단계 라벨 placeholder 구현
 [x] 답변 하단 출처 버튼 구현
-[x] 사용자 메시지 인라인 수정 모드 구현
+[x] 사용자 메시지 인라인 수정 모드는 feature15에서 backend version/re-generation 계약 확정 후 재개
 [x] 사이드바에서 conversation list에 나오는 제목과 conversation 각각 채팅 내용 연결되도록 구현
 [x] conversation list 불러올 시, isPinned - 고정된 채팅 정보도 넘어오게 반영(api-spec.md, src/types/api.ts, src/mocks/data.ts 등)
-[ ] backend version 목록 계약이 없어서 messageBubble 수정 전/후 2개 버전을 프론트 로컬 상태로만 관리 중 -> 백엔드와 협의 후 구현
+[x] backend message version 목록 및 수정 이후 답변 재생성 계약 협의는 feature15 범위로 이관
 
 # feature10: 출처 패널 구현 (SCR-500, SCR-510)
 
 [ ] Check Reference 클릭 시 우측 슬라이드 패널 표시
 [ ] ReferenceCard에 Title / Path / 작성자 / 작성일자 / 출처 URL 액션 표시
 [ ] 오래된 문서 badge와 키워드 하이라이트 기준 구현
-[ ] Graph view placeholder와 List/Graph 토글 구현
+[ ] 후속 feature16 실제 그래프 렌더링 전까지 Graph view placeholder와 List/Graph 토글 구현
 
 # feature10.5: ChatPage 책임 분리 리팩토링 (feature11 전 선행 고려)
 
@@ -135,6 +135,12 @@
 [ ] `VITE_USE_MOCK=false` 환경에서 `/api/conversations` 대화 목록 조회 연결
 [ ] `VITE_USE_MOCK=false` 환경에서 `/api/conversations/{conversationId}/messages` 메시지 이력 조회 연결
 [ ] `VITE_USE_MOCK=false` 환경에서 `/api/conversations/{conversationId}/chat` SSE 스트리밍 연결
+[ ] 일반 API 조회/생성 실패를 사용자 안내와 재시도 가능한 error state로 연결
+[ ] SSE 연결 실패, stream 중단, backend error 이벤트를 구분해 assistant 오류 표시와 재시도 동작 구현
+[ ] 사용자 취소(`AbortError`)는 오류 안내에서 제외하고 정상 중단으로 처리
+[ ] API/SSE 실패 유형별 UI 및 store 회귀 테스트 작성
+[ ] assistant `ThumbsUp` / `ThumbsDown`을 feedback API와 연결하고 실제 assistant `messageId` 기준 전송 처리
+[ ] feedback 버튼의 노출/선택/loading/실패 상태와 request 회귀 테스트 구현
 [ ] Chat 화면의 Loading / Error / Empty / Success 상태가 실제 API 실패와 빈 응답에서도 동작하는지 확인
 [ ] 답변과 검색 결과의 출처 / 작성일자 / 작성자 표시가 실제 응답에서도 유지되는지 확인
 [ ] 실제 API 전환 후 불필요한 `TODO(MOCK)` 마커 제거 또는 후속 mock 유지 사유 기록
@@ -173,7 +179,25 @@
 [ ] 일반 설정의 히스토리 관리 UI 구현
 [ ] 계정 관리와 데이터 관리 UI 구현
 
-# feature15: 테스트 및 검증 기반 확장
+# feature15: Chat 후속 기능 - 인라인 수정 backend 연결
+
+[ ] feature11 완료 후 message version/답변 재생성 API 계약을 확정하고 `docs/api-spec.md` 및 FE 타입을 갱신
+[ ] 사용자 메시지 inline edit와 version navigation을 backend version 응답 기준으로 활성화
+[ ] 수정 version 전환 핵심 플로우 테스트 작성
+
+# feature16: 출처 패널 그래프 뷰 후속 구현
+
+[ ] feature10 출처 패널 및 List/Graph 토글 기본 UI 구현 완료 후 진행
+[ ] backend 또는 RAG와 출처 graph node/edge 데이터 계약 확정
+[ ] 계약 확정 시 `docs/api-spec.md`를 먼저 갱신하고 graph response 타입과 mock 데이터를 반영
+[ ] ReferencePanel Graph view에서 source 관계를 실제 node/edge 그래프로 렌더링
+[ ] 그래프 node 클릭 시 선택 강조와 해당 Confluence 문서 미리보기 연결
+[ ] 그래프 줌/팬 및 viewport 내 초기 framing 동작 구현
+[ ] source 목록과 graph 선택 상태가 동일 문서를 기준으로 동기화되도록 처리
+[ ] 그래프 loading/error/empty 상태와 접근성 대체 표시를 구현
+[ ] 그래프 렌더링 및 node 선택/줌/팬 동작을 관련 테스트로 검증
+
+# feature17: 테스트 및 검증 기반 확장
 
 [ ] App 기본 렌더링 테스트 작성
 [ ] Chat shell Empty 상태 테스트 작성

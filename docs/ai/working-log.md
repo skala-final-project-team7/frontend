@@ -1411,3 +1411,40 @@
 
 - 관련 테스트: passed, 2 test files and 25 tests passed
 - 전체 검증: passed, 9 test files and 68 tests passed
+
+## 2026-05-26 - feature9: MessageEdit/version navigation 노출 보류
+
+### Scope
+
+- backend message version 목록과 수정 이후 답변 재생성 계약을 추후 협의하기로 결정
+- 계약 확정 전까지 사용자 메시지 하단의 수정/복사/version navigation action row를 화면에 노출하지 않도록 feature gate 적용
+- inline edit/version 전환 구현 코드는 후속 계약 연결을 위해 유지하되 사용자 진입점은 닫음
+- 화면 사양과 current plan을 “계약 확정 후 활성화” TODO 상태로 갱신
+
+### Test Cases
+
+- 대화 화면에서 사용자 메시지 action row와 수정 버튼이 렌더링되지 않는다.
+- edit textarea 및 version navigation이 노출되지 않는다.
+- assistant 하단 액션과 기존 채팅 흐름은 유지된다.
+
+### Changed Files
+
+- `src/features/chat/MessageBubble.vue`: `isUserMessageRevisionEnabled` gate와 backend 계약 TODO 추가
+- `src/__tests__/feature9.chat-conversation.test.ts`: 사용자 수정/version UI 비노출 회귀 테스트로 변경
+- `frontend/docs/components.md`: MessageEdit를 backend 계약 확정 후 구현할 TODO로 전환
+- `docs/ai/current-plan.md`: 인라인 수정 완료 표시를 후속 작업 상태로 변경
+- `docs/ai/working-log.md`: 보류 결정과 검증 내용 기록
+
+### Commands
+
+- `npm test -- src/__tests__/feature9.chat-conversation.test.ts src/__tests__/feature8.chat-main.test.ts`
+- `npm run typecheck`
+- `npm run lint`
+- `./scripts/verify.sh`
+
+### Results
+
+- 관련 테스트: passed, 2 test files and 25 tests passed
+- typecheck: passed
+- lint: passed
+- 전체 검증: passed, 9 test files and 68 tests passed
