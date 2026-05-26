@@ -11,6 +11,7 @@
   - 2026-05-22, feature9 SSE 보강, meta.title 기반 대화 제목 갱신 추가
   - 2026-05-22, SCR-420 보강, 사용자 메시지 수정본 이전/현재 표시 전환 추가
   - 2026-05-26, feature9 회귀 수정, 지연된 메시지 이력 실패 시 현재 대화/스트림 보존
+  - 2026-05-26, feature10 구현, 출처 패널 열기와 sidebar 닫기 상태 연결
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -22,7 +23,7 @@ import {
   HelpCircle,
   MessageCircle,
   MoreVertical,
-  PanelLeft,
+  PanelRightClose,
   PanelLeftClose,
   Search,
   Settings,
@@ -36,6 +37,7 @@ import { createConversation, getCurrentUser, listConversations } from '@/api';
 import ChatConversationView from '@/features/chat/ChatConversationView.vue';
 import ChatEmptyState from '@/features/chat/ChatEmptyState.vue';
 import MessageInput from '@/features/chat/MessageInput.vue';
+import ReferencePanel from '@/features/chat/ReferencePanel.vue';
 import { mascotImageUrl } from '@/shared/assets';
 import { BaseFloatingIconButton, BaseTooltip } from '@/shared';
 import { useToast } from '@/composables/useToast';
@@ -66,6 +68,9 @@ const editingMessageId = ref('');
 const editingContent = ref('');
 const resentMessageIds = ref<Set<string>>(new Set());
 const userMessageVersionsById = ref<Record<string, UserMessageVersionState>>({});
+const isReferencePanelOpen = ref(false);
+const referenceSources = ref<Source[]>([]);
+const referenceKeyword = ref('');
 const chatStore = useChatStore();
 const { showToast } = useToast();
 let sidebarContentTimer: number | undefined;
@@ -368,7 +373,23 @@ function openReferencePanelFromSourceButton(sources: Source[] | undefined) {
     return;
   }
 
-  // TODO(feature10): 출처 버튼 클릭 시 ReferencePanel을 열고 sources를 전달한다.
+  const latestUserMessage = [...activeMessages.value]
+    .reverse()
+    .find((message) => message.role === 'user');
+
+  referenceSources.value = sources;
+  referenceKeyword.value = latestUserMessage?.content ?? '';
+  isReferencePanelOpen.value = true;
+  isSidebarOpen.value = false;
+}
+
+/**
+ * 열린 출처 패널을 닫고 표시 중인 source 선택을 초기화한다.
+ */
+function closeReferencePanel() {
+  isReferencePanelOpen.value = false;
+  referenceSources.value = [];
+  referenceKeyword.value = '';
 }
 
 // 현재 사용자와 대화 목록을 초기에 불러와 사이드바와 상단 프로필을 채운다.
@@ -478,7 +499,7 @@ watch(
                 class="absolute size-10 object-contain transition-opacity"
                 :class="isSidebarMascotHovered ? 'opacity-0' : 'opacity-100'"
               />
-              <PanelLeft
+              <PanelRightClose
                 data-testid="sidebar-hover-toggle-icon"
                 aria-hidden="true"
                 class="absolute size-4 text-overlay-dark-80 transition-opacity"
@@ -736,8 +757,11 @@ watch(
           </div>
           <div
             data-testid="chat-input-region"
-            class="fixed bottom-0 right-0 z-20 shrink-0 bg-gradient-to-t from-bg-100 via-bg-100 to-transparent pt-4 transition-[left] duration-200"
-            :class="isSidebarOpen ? 'left-[264px]' : 'left-[76px]'"
+            class="fixed bottom-0 z-20 shrink-0 bg-gradient-to-t from-bg-100 via-bg-100 to-transparent pt-4 transition-[left,right] duration-200"
+            :class="[
+              isSidebarOpen ? 'left-[264px]' : 'left-[76px]',
+              isReferencePanelOpen ? 'right-[376px]' : 'right-0',
+            ]"
           >
             <MessageInput
               :is-streaming="chatStore.isStreaming"
@@ -759,7 +783,14 @@ watch(
         </div>
       </section>
 
+      <ReferencePanel
+        v-if="isReferencePanelOpen"
+        :sources="referenceSources"
+        :keyword="referenceKeyword"
+        @close="closeReferencePanel"
+      />
       <aside
+        v-else
         data-testid="reference-panel"
         aria-label="Reference panel"
         aria-hidden="true"

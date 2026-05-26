@@ -1549,3 +1549,60 @@
 - 구현 전 계약 회귀 테스트는 `errorCode` 미전달, UTC mock timestamp, preview 실패 payload 불일치로 실패했다.
 - 관련 테스트 및 typecheck: passed
 - 전체 테스트: passed, 9 test files and 71 tests passed
+
+## 2026-05-26 - feature10: 출처 패널 구현 (SCR-500, SCR-510)
+
+### Scope
+
+- assistant 답변의 출처 버튼에서 우측 ReferencePanel을 열고 열린 sidebar를 자동으로 닫는 흐름 구현
+- 기존 Confluence preview API를 이용해 검색 결과형 list item에 제목, breadcrumb path, 작성자, 수정일, URL 동작 표시
+- list item hover/focus 시 패널 왼쪽에 기존 `PreviewPageCard`를 popover로 표시
+- 수정일이 30일을 초과한 문서 badge와 질문 keyword 강조 표시 구현
+- feature16 전까지 List/Graph 토글과 Graph placeholder 제공
+
+### Test Cases
+
+- 출처 버튼 클릭 시 우측 패널이 표시되고 열린 sidebar가 닫힌다.
+- list item이 title/path/author/date와 각 metadata 아이콘, URL 복사 및 원본 열기 action을 표시한다.
+- list item hover 시 패널 왼쪽에 해당 페이지의 `PreviewPageCard`가 나타난다.
+- 30일 초과 source가 오래된 문서 badge를 표시하고 질문 keyword가 강조된다.
+- Graph 탭은 실제 graph 대신 placeholder를 표시하고 List 탭으로 복귀할 수 있다.
+
+### Changed Files
+
+- `src/__tests__/feature10.reference-panel.test.ts`: SCR-500/510 acceptance 및 회귀 테스트 추가
+- `src/features/chat/ReferencePanel.vue`: 우측 패널, 목록형 source item, 기존 `PreviewPageCard` 기반 hover preview, List/Graph 토글 구현
+- `src/pages/ChatPage.vue`: 출처 버튼에서 패널 상태 연결과 열린 패널 폭을 반영한 입력 영역 배치 추가
+- `docs/ai/current-plan.md`: feature10 완료 체크 처리
+- `docs/ai/working-log.md`: feature10 구현 및 검증 기록
+
+### Commands
+
+- `npm test -- src/__tests__/feature10.reference-panel.test.ts` (구현 전 실패 확인)
+- `npm test -- src/__tests__/feature10.reference-panel.test.ts`
+- `npm test -- src/__tests__/feature10.reference-panel.test.ts` (목록형 UI 보정 전 실패 확인)
+- `npm test -- src/__tests__/feature8.chat-main.test.ts src/__tests__/feature9.chat-conversation.test.ts src/__tests__/feature10.reference-panel.test.ts`
+- `npm run typecheck`
+- `npm run lint`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- 구현 전 feature10 테스트: failed, `ReferencePanel.vue` 미존재 확인
+- 목록형 UI 보정 테스트: failed, 기존 boxed `reference-card`가 list item/hover preview 조건을 충족하지 않음
+- 구현 후 feature10 테스트: passed, 4 tests passed
+- 연관 Chat 테스트: passed, 3 test files and 31 tests passed
+- `npm run typecheck`: passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed, 10 test files and 75 tests passed
+- `./scripts/verify.sh`: passed, 10 test files and 75 tests passed
+
+### Notes / Remaining Issues
+
+- API 계약은 변경하지 않고 기존 preview endpoint를 사용했으므로 `docs/api-spec.md` 추가 수정은 필요하지 않다.
+- 실제 graph node/edge 렌더링과 상호작용은 계획된 feature16 범위로 유지한다.
+- boxed ReferenceCard는 사용자 피드백에 따라 별도 컴포넌트로 유지하지 않고 목록형 item으로 대체했다.
