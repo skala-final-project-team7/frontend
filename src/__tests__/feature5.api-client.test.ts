@@ -38,7 +38,7 @@ describe('feature5 API types and client skeleton', () => {
       spaceId: '98310',
       spaceName: 'Cloud Control Center',
       url: 'https://confluence.example.com/pages/12345',
-      updatedAt: '2026-04-15T09:30:00Z',
+      sourceUpdatedAt: '2026-04-15T18:30:00+09:00',
       relevanceScore: 0.92,
     };
 
@@ -49,14 +49,14 @@ describe('feature5 API types and client skeleton', () => {
       sources: [source],
       confidenceScore: 0.85,
       verificationResult: 'SUPPORTED',
-      createdAt: '2026-05-06T10:00:05Z',
+      createdAt: '2026-05-06T19:00:05+09:00',
     };
 
     const conversation: Conversation = {
       conversationId: 'conv-uuid-001',
       title: 'S3 권한 오류 해결 방법',
-      createdAt: '2026-05-06T10:00:00Z',
-      lastMessageAt: '2026-05-06T10:05:00Z',
+      createdAt: '2026-05-06T19:00:00+09:00',
+      lastMessageAt: '2026-05-06T19:05:00+09:00',
       messageCount: 4,
     };
     const listParams: ListConversationsParams = {
@@ -69,7 +69,7 @@ describe('feature5 API types and client skeleton', () => {
       feedbackId: 'fb-uuid-001',
       messageId: assistantMessage.messageId,
       rating: 'like',
-      createdAt: '2026-05-06T10:06:00Z',
+      createdAt: '2026-05-06T19:06:00+09:00',
     };
 
     const successResponse: ApiSuccessResponse<Conversation> = {
@@ -81,8 +81,8 @@ describe('feature5 API types and client skeleton', () => {
     const errorResponse: ApiErrorResponse = {
       isSuccess: false,
       code: 404,
+      errorCode: 'RESOURCE_NOT_FOUND',
       message: '해당 대화를 찾을 수 없습니다',
-      data: null,
     };
     const sseEvent: ChatSseEvent = {
       event: 'sources',
@@ -95,7 +95,7 @@ describe('feature5 API types and client skeleton', () => {
       title: 'S3 트러블슈팅 가이드',
       spaceName: 'Cloud Control Center',
       authorName: 'Platform Team',
-      updatedAt: '2026-04-15T09:30:00Z',
+      updatedAt: '2026-04-15T18:30:00+09:00',
       breadcrumbs: ['Cloud Control Center', 'AWS', 'S3', 'S3 트러블슈팅 가이드'],
       pageUrl: 'https://confluence.example.com/pages/12345',
       bodyViewValue: '<h1>S3 트러블슈팅 가이드</h1>',
@@ -106,11 +106,11 @@ describe('feature5 API types and client skeleton', () => {
       email: 'dayeon@example.com',
       role: 'USER',
       profileImageUrl: 'https://example.com/profile/dayeon.png',
-      lastLoginAt: '2026-05-20T09:00:00Z',
+      lastLoginAt: '2026-05-20T18:00:00+09:00',
     };
 
     expect(successResponse.data.conversationId).toBe('conv-uuid-001');
-    expect(errorResponse.data).toBeNull();
+    expect(errorResponse.errorCode).toBe('RESOURCE_NOT_FOUND');
     expect(assistantMessage.sources).toEqual([source]);
     expect(listParams).toEqual({ page: 1, size: 10 });
     expect(deleteResponse).toBeNull();
@@ -134,7 +134,7 @@ describe('feature5 API types and client skeleton', () => {
           data: {
             conversationId: 'conv-uuid-001',
             title: '새 대화',
-            createdAt: '2026-05-06T10:00:00Z',
+            createdAt: '2026-05-06T19:00:00+09:00',
           },
         });
       }
@@ -169,8 +169,8 @@ describe('feature5 API types and client skeleton', () => {
         {
           isSuccess: false,
           code: 404,
+          errorCode: 'RESOURCE_NOT_FOUND',
           message: `Unexpected request: ${method} ${requestUrl}`,
-          data: null,
         },
         404,
       );
@@ -192,6 +192,29 @@ describe('feature5 API types and client skeleton', () => {
     });
   });
 
+  it('preserves the Common Response errorCode on API request failures', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        jsonResponse(
+          {
+            isSuccess: false,
+            code: 404,
+            errorCode: 'RESOURCE_NOT_FOUND',
+            message: '해당 대화를 찾을 수 없습니다',
+          },
+          404,
+        ),
+      ),
+    );
+
+    await expect(getConversationMessages('missing-conversation')).rejects.toMatchObject({
+      name: 'ApiClientError',
+      code: 404,
+      errorCode: 'RESOURCE_NOT_FOUND',
+    });
+  });
+
   it('creates update, delete, and feedback API requests with JSON bodies', async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const requestUrl = String(input);
@@ -207,7 +230,7 @@ describe('feature5 API types and client skeleton', () => {
           data: {
             conversationId: 'conv-uuid-001',
             title: 'S3 권한 오류 트러블슈팅',
-            updatedAt: '2026-05-06T10:10:00Z',
+            updatedAt: '2026-05-06T19:10:00+09:00',
           },
         });
       }
@@ -235,7 +258,7 @@ describe('feature5 API types and client skeleton', () => {
             feedbackId: 'fb-uuid-001',
             messageId: 'msg-uuid-002',
             rating: 'like',
-            createdAt: '2026-05-06T10:06:00Z',
+            createdAt: '2026-05-06T19:06:00+09:00',
           },
         });
       }
@@ -244,8 +267,8 @@ describe('feature5 API types and client skeleton', () => {
         {
           isSuccess: false,
           code: 404,
+          errorCode: 'RESOURCE_NOT_FOUND',
           message: `Unexpected request: ${method} ${requestUrl}`,
-          data: null,
         },
         404,
       );
@@ -319,7 +342,7 @@ describe('feature5 API types and client skeleton', () => {
             title: 'S3 트러블슈팅 가이드',
             spaceName: 'Cloud Control Center',
             authorName: 'Platform Team',
-            updatedAt: '2026-04-15T09:30:00Z',
+            updatedAt: '2026-04-15T18:30:00+09:00',
             breadcrumbs: ['Cloud Control Center', 'AWS', 'S3', 'S3 트러블슈팅 가이드'],
             pageUrl: 'https://confluence.example.com/pages/12345',
             bodyViewValue: '<h1>S3 트러블슈팅 가이드</h1>',
@@ -331,8 +354,8 @@ describe('feature5 API types and client skeleton', () => {
         {
           isSuccess: false,
           code: 404,
+          errorCode: 'RESOURCE_NOT_FOUND',
           message: `Unexpected request: ${method} ${requestUrl}`,
-          data: null,
         },
         404,
       );
@@ -364,7 +387,7 @@ describe('feature5 API types and client skeleton', () => {
             email: 'dayeon@example.com',
             role: 'USER',
             profileImageUrl: 'https://example.com/profile/dayeon.png',
-            lastLoginAt: '2026-05-20T09:00:00Z',
+            lastLoginAt: '2026-05-20T18:00:00+09:00',
           } satisfies CurrentUser,
         });
       }
@@ -373,8 +396,8 @@ describe('feature5 API types and client skeleton', () => {
         {
           isSuccess: false,
           code: 404,
+          errorCode: 'RESOURCE_NOT_FOUND',
           message: `Unexpected request: ${method} ${requestUrl}`,
-          data: null,
         },
         404,
       );

@@ -8,6 +8,7 @@
  *   - 2026-05-18, feature2 구현, API 레이어 경계 상수 추가
  *   - 2026-05-18, feature5 구현, conversations/messages/chat API 함수 골격 추가
  *   - 2026-05-18, feature6 보강, Confluence 페이지 미리보기 API 함수 추가
+ *   - 2026-05-22, feature9 보강, SSE chat API에 AbortSignal 전달 경로 추가
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -150,13 +151,15 @@ export function getConfluencePagePreview(pageId: string): Promise<ConfluencePage
  *
  * @param conversationId 대화 ID
  * @param request 사용자 질문 payload
+ * @param signal 스트림 취소에 사용할 AbortSignal
  * @returns wrapper를 적용하지 않은 text/event-stream Response
  */
 export function streamConversationChat(
   conversationId: string,
   request: ChatQuestionRequest,
+  signal?: AbortSignal,
 ): Promise<Response> {
-  return streamChatRequest(conversationId, request);
+  return streamChatRequest(conversationId, request, signal);
 }
 
 export { ApiClientError, apiRequest, streamChatRequest } from './client';

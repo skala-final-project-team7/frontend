@@ -6,6 +6,9 @@
  * 작성일 : 2026-05-18
  * 변경사항 내역 (날짜, 변경목적, 변경내용 순)
  *   - 2026-05-18, feature6 구현, Chat mock response seed data 추가
+ *   - 2026-05-21, feature9 구현, conversation pinned 상태 mock data 추가
+ *   - 2026-05-26, API 계약 정합성 수정, source 수정일 mock 필드를 sourceUpdatedAt으로 변경
+ *   - 2026-05-26, API 계약 정합성 수정, response timestamp mock을 KST 표기로 통일
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -27,7 +30,7 @@ export const mockCurrentUser: CurrentUser = {
   role: 'USER',
   profileImageUrl:
     'https://mblogthumb-phinf.pstatic.net/MjAyNTA5MDNfMzEg/MDAxNzU2ODk5ODI4NTYx.VzhqoiUeu5-JgOSajxHFRO4o5Bh8LrowuEfxEPKVG6cg.RurBKZOGbgkY5ROekysZZSBL0fgKAB6itfMC3kGU-DIg.JPEG/IMG%EF%BC%BF3630.JPG?type=w800',
-  lastLoginAt: '2026-05-20T09:00:00Z',
+  lastLoginAt: '2026-05-20T18:00:00+09:00',
 };
 
 export const mockSources: Source[] = [
@@ -37,7 +40,7 @@ export const mockSources: Source[] = [
     spaceId: '98310',
     spaceName: 'Cloud Control Center',
     url: 'https://yhlee0332.atlassian.net/wiki/spaces/ai27Rev1/pages/557209/macOS',
-    updatedAt: '2026-04-15T09:30:00Z',
+    sourceUpdatedAt: '2026-04-15T18:30:00+09:00',
     relevanceScore: 0.92,
   },
 ];
@@ -48,7 +51,7 @@ export const mockConfluencePreviewPages: Record<string, ConfluencePagePreview> =
     title: 'S3 트러블슈팅 가이드',
     spaceName: 'Cloud Control Center',
     authorName: 'Platform Team',
-    updatedAt: '2026-04-15T09:30:00Z',
+    updatedAt: '2026-04-15T18:30:00+09:00',
     breadcrumbs: ['Cloud Control Center', 'AWS', 'S3', 'S3 트러블슈팅 가이드'],
     pageUrl: 'https://yhlee0332.atlassian.net/wiki/spaces/ai27Rev1/pages/491961/FAQ+-',
     bodyViewValue: [
@@ -69,7 +72,7 @@ export const mockConfluencePreviewPages: Record<string, ConfluencePagePreview> =
     title: 'Confluence 문서 동기화 운영 Runbook',
     spaceName: 'LINA Operations',
     authorName: 'Search Platform Team',
-    updatedAt: '2026-05-07T09:10:00Z',
+    updatedAt: '2026-05-07T18:10:00+09:00',
     breadcrumbs: ['LINA Operations', '데이터 파이프라인', '동기화 운영 Runbook'],
     pageUrl: 'https://yhlee0332.atlassian.net/wiki/spaces/ai27Rev1/pages/557209/macOS',
     bodyViewValue: [
@@ -92,7 +95,7 @@ export const mockHomeConfluencePages: ConfluencePagePreview[] = [
     title: '자주 묻는 질문 (FAQ) - 인프라 운영',
     spaceName: 'Cloud Control Center',
     authorName: '이현서',
-    updatedAt: '2026-05-19T09:30:00Z',
+    updatedAt: '2026-05-19T18:30:00+09:00',
     breadcrumbs: ['Cloud Control Center', 'AWS', 'FAQ', '자주 묻는 질문 (FAQ) - 인프라 운영'],
     pageUrl: 'https://yhlee0332.atlassian.net/wiki/spaces/ai27Rev1/pages/491961/FAQ+-',
     bodyViewValue: [
@@ -110,7 +113,7 @@ export const mockHomeConfluencePages: ConfluencePagePreview[] = [
     title: '자주 묻는 질문 (FAQ) - 인프라 운영',
     spaceName: 'LINA Operations',
     authorName: '김민준',
-    updatedAt: '2026-05-19T10:00:00Z',
+    updatedAt: '2026-05-19T19:00:00+09:00',
     breadcrumbs: ['LINA Operations', '접속', '자주 묻는 질문 (FAQ) - 인프라 운영'],
     pageUrl: 'https://yhlee0332.atlassian.net/wiki/spaces/ai27Rev1/pages/491961/FAQ+-',
     bodyViewValue: [
@@ -129,16 +132,18 @@ export const mockConversations: Conversation[] = [
   {
     conversationId: 'conv-mock-001',
     title: 'S3 권한 오류 해결 방법',
-    createdAt: '2026-05-06T10:00:00Z',
-    lastMessageAt: '2026-05-06T10:05:00Z',
+    createdAt: '2026-05-06T19:00:00+09:00',
+    lastMessageAt: '2026-05-06T19:05:00+09:00',
     messageCount: 4,
+    isPinned: true,
   },
   {
     conversationId: 'conv-mock-002',
     title: 'Confluence 문서 동기화 상태 확인',
-    createdAt: '2026-05-07T09:00:00Z',
-    lastMessageAt: '2026-05-07T09:12:00Z',
+    createdAt: '2026-05-07T18:00:00+09:00',
+    lastMessageAt: '2026-05-07T18:12:00+09:00',
     messageCount: 2,
+    isPinned: false,
   },
 ];
 
@@ -148,7 +153,7 @@ export const mockMessagesByConversationId: Record<string, Message[]> = {
       messageId: 'msg-mock-user-001',
       role: 'user',
       content: '지난번 S3 버킷 권한 오류 때 어떻게 해결했어?',
-      createdAt: '2026-05-06T10:00:00Z',
+      createdAt: '2026-05-06T19:00:00+09:00',
     },
     {
       messageId: 'msg-mock-assistant-001',
@@ -157,7 +162,7 @@ export const mockMessagesByConversationId: Record<string, Message[]> = {
       sources: mockSources,
       confidenceScore: 0.85,
       verificationResult: 'SUPPORTED',
-      createdAt: '2026-05-06T10:00:05Z',
+      createdAt: '2026-05-06T19:00:05+09:00',
     },
   ],
   'conv-mock-002': [
@@ -165,7 +170,7 @@ export const mockMessagesByConversationId: Record<string, Message[]> = {
       messageId: 'msg-mock-user-002',
       role: 'user',
       content: '문서 동기화가 마지막으로 언제 성공했어?',
-      createdAt: '2026-05-07T09:00:00Z',
+      createdAt: '2026-05-07T18:00:00+09:00',
     },
     {
       messageId: 'msg-mock-assistant-002',
@@ -174,7 +179,7 @@ export const mockMessagesByConversationId: Record<string, Message[]> = {
       sources: mockSources,
       confidenceScore: 0.78,
       verificationResult: 'PARTIALLY_SUPPORTED',
-      createdAt: '2026-05-07T09:12:00Z',
+      createdAt: '2026-05-07T18:12:00+09:00',
     },
   ],
 };

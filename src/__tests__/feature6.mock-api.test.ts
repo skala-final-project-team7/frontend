@@ -3,7 +3,7 @@ import { join } from 'node:path';
 
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
-import { getCurrentUser, listConversations } from '@/api';
+import { createConversation, getCurrentUser, listConversations } from '@/api';
 import { mockServer } from '@/mocks/server';
 import { mockWorker } from '@/mocks/browser';
 import { isMockApiEnabled } from '@/mocks';
@@ -52,6 +52,16 @@ describe('feature6 Chat mock API foundation', () => {
     });
   });
 
+  it('mocks POST /api/conversations for creating a new chat session', async () => {
+    const createdConversation = await createConversation();
+
+    expect(createdConversation).toMatchObject({
+      conversationId: 'conv-mock-003',
+      title: '새 대화',
+      createdAt: '2026-05-21T19:00:00+09:00',
+    });
+  });
+
   it('mocks GET /api/users/me with the current user profile', async () => {
     const currentUser = await getCurrentUser();
 
@@ -62,6 +72,7 @@ describe('feature6 Chat mock API foundation', () => {
       email: 'dayeon@example.com',
       role: 'USER',
       profileImageUrl: mockCurrentUser.profileImageUrl,
+      lastLoginAt: '2026-05-20T18:00:00+09:00',
     });
   });
 
@@ -89,7 +100,12 @@ describe('feature6 Chat mock API foundation', () => {
     expect(body.data.messages[1].sources[0]).toMatchObject({
       title: 'S3 트러블슈팅 가이드',
       pageId: '12345',
+      sourceUpdatedAt: '2026-04-15T18:30:00+09:00',
     });
+    expect(body.data.messages.map((message: { createdAt: string }) => message.createdAt)).toEqual([
+      '2026-05-06T19:00:00+09:00',
+      '2026-05-06T19:00:05+09:00',
+    ]);
   });
 
   it('prepares POST /api/conversations/{conversationId}/chat as a mock SSE stream', async () => {
@@ -123,8 +139,9 @@ describe('feature6 Chat mock API foundation', () => {
       data: {
         pageId: '12345',
         title: 'S3 트러블슈팅 가이드',
+        updatedAt: '2026-04-15T18:30:00+09:00',
         breadcrumbs: ['Cloud Control Center', 'AWS', 'S3', 'S3 트러블슈팅 가이드'],
-        pageUrl: 'https://confluence.example.com/pages/12345',
+        pageUrl: 'https://yhlee0332.atlassian.net/wiki/spaces/ai27Rev1/pages/491961/FAQ+-',
       },
     });
     expect(body.data.bodyViewValue).toContain('<h1>S3 트러블슈팅 가이드</h1>');
@@ -139,8 +156,8 @@ describe('feature6 Chat mock API foundation', () => {
     expect(body).toEqual({
       isSuccess: false,
       code: 404,
+      errorCode: 'RESOURCE_NOT_FOUND',
       message: 'Confluence 페이지 미리보기를 찾을 수 없습니다',
-      data: null,
     });
   });
 
@@ -152,7 +169,7 @@ describe('feature6 Chat mock API foundation', () => {
       title: '자주 묻는 질문 (FAQ) - 인프라 운영',
       authorName: '이현서',
       breadcrumbs: ['Cloud Control Center', 'AWS', 'FAQ', '자주 묻는 질문 (FAQ) - 인프라 운영'],
-      pageUrl: 'https://confluence.example.com/pages/home-preview-001',
+      pageUrl: 'https://yhlee0332.atlassian.net/wiki/spaces/ai27Rev1/pages/491961/FAQ+-',
     });
   });
 
@@ -160,6 +177,7 @@ describe('feature6 Chat mock API foundation', () => {
     const handlersSource = readFileSync(join(process.cwd(), 'src/mocks/handlers.ts'), 'utf8');
 
     expect(handlersSource).toContain('TODO(MOCK): GET /api/conversations');
+    expect(handlersSource).toContain('TODO(MOCK): POST /api/conversations');
     expect(handlersSource).toContain('TODO(MOCK): GET /api/users/me');
     expect(handlersSource).toContain(
       'TODO(MOCK): GET /api/conversations/{conversationId}/messages',

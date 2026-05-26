@@ -6,6 +6,11 @@
  * 작성일 : 2026-05-18
  * 변경사항 내역 (날짜, 변경목적, 변경내용 순)
  *   - 2026-05-18, feature6 구현, conversations/messages/chat mock handler 추가
+ *   - 2026-05-21, feature9 보강, SSE mock 응답을 ReadableStream chunk 방식으로 변경
+ *   - 2026-05-22, feature9 보강, RAG phase placeholder 검증용 SSE event 순서 조정
+ *   - 2026-05-22, feature9 SSE 보강, status 이벤트 mock 추가
+ *   - 2026-05-22, RAG status 계약 반영, 확정 phase 순서와 meta 이벤트 mock 추가
+ *   - 2026-05-26, API 계약 정합성 수정, KST timestamp 및 errorCode 실패 응답 반영
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -22,11 +27,16 @@ import {
   mockSources,
 } from './data';
 import type {
+  ApiErrorResponse,
   ApiSuccessResponse,
+  CreateConversationResponse,
   ConversationList,
   ConversationMessages,
   CurrentUser,
 } from '@/types/api';
+
+// TODO(MOCK): 3초 mock SSE 지연은 token streaming 확인용이므로 backend 연결 전 제거하거나 단축한다.
+const MOCK_SSE_DEMO_DELAY_MS = import.meta.env.MODE === 'test' ? 0 : 375;
 
 export const mockHandlers = [
   // TODO(MOCK): GET /api/users/me
@@ -56,6 +66,20 @@ export const mockHandlers = [
         totalCount: mockConversations.length,
         page,
         size,
+      },
+    });
+  }),
+
+  // TODO(MOCK): POST /api/conversations
+  http.post('*/api/conversations', () => {
+    return HttpResponse.json<ApiSuccessResponse<CreateConversationResponse>>({
+      isSuccess: true,
+      code: 201,
+      message: '새 대화 생성 성공',
+      data: {
+        conversationId: 'conv-mock-003',
+        title: '새 대화',
+        createdAt: '2026-05-21T19:00:00+09:00',
       },
     });
   }),
@@ -94,12 +118,12 @@ export const mockHandlers = [
     const previewPage = mockConfluencePreviewPages[pageId];
 
     if (!previewPage) {
-      return HttpResponse.json(
+      return HttpResponse.json<ApiErrorResponse>(
         {
           isSuccess: false,
           code: 404,
+          errorCode: 'RESOURCE_NOT_FOUND',
           message: 'Confluence 페이지 미리보기를 찾을 수 없습니다',
-          data: null,
         },
         {
           status: 404,
@@ -116,19 +140,82 @@ export const mockHandlers = [
   }),
 ];
 
-function createMockSseStream(): string {
-  return [
-    createSseEvent('token', { content: 'S3 권한 오류는' }),
-    createSseEvent('token', { content: ' IAM 정책을 수정하여 해결했습니다.' }),
+/**
+ * status/token/sources/verification/meta/done 이벤트를 순차 전송하는 mock SSE 스트림을 생성한다.
+ *
+ * @returns MSW HttpResponse에 전달할 ReadableStream
+ */
+function createMockSseStream(): ReadableStream<Uint8Array> {
+  const encoder = new TextEncoder();
+  const events = [
+    createSseEvent('status', {
+      phase: 'connecting',
+      message: '연결 중이에요',
+    }),
+    createSseEvent('status', {
+      phase: 'acl_filtering',
+      message: '접근 권한을 확인하고 있어요',
+    }),
+    createSseEvent('status', {
+      phase: 'searching',
+      message: '관련 문서를 검색하고 있어요',
+    }),
+    createSseEvent('status', {
+      phase: 'answering',
+      message: '답변을 준비하고 있어요',
+    }),
+    createSseEvent('status', {
+      phase: 'streaming',
+      message: '답변을 작성하고 있어요',
+    }),
+    createSseEvent('token', { content: 'S3 권한 ' }),
+    createSseEvent('token', { content: '오류는 ' }),
+    createSseEvent('token', { content: 'IAM 정책과 ' }),
+    createSseEvent('token', { content: '버킷 정책을 ' }),
+    createSseEvent('token', { content: '함께 점검해 ' }),
+    createSseEvent('token', { content: '해결했습니다.' }),
+    createSseEvent('status', {
+      phase: 'verifying',
+      message: '답변 근거를 검증하고 있어요',
+    }),
+    createSseEvent('status', {
+      phase: 'formatting',
+      message: '답변을 정리하고 있어요',
+    }),
     createSseEvent('sources', { sources: mockSources }),
     createSseEvent('verification', {
       confidenceScore: 0.85,
       verificationResult: 'SUPPORTED',
     }),
+    createSseEvent('meta', {
+      intent: '운영가이드',
+      used_llm: 'gpt-4o',
+      feedback_enabled: true,
+      latency_ms: 1234,
+      title: 'S3 권한 오류 해결 방법',
+    }),
     createSseEvent('done', { messageId: 'msg-mock-assistant-stream' }),
-  ].join('');
+  ];
+
+  return new ReadableStream({
+    async start(controller) {
+      for (const event of events) {
+        await new Promise((resolve) => globalThis.setTimeout(resolve, MOCK_SSE_DEMO_DELAY_MS));
+        controller.enqueue(encoder.encode(event));
+      }
+
+      controller.close();
+    },
+  });
 }
 
+/**
+ * SSE frame을 `event:` / `data:` 줄 구성으로 인코딩한다.
+ *
+ * @param event SSE 이벤트 이름
+ * @param data JSON 직렬화할 payload
+ * @returns 한 개의 SSE frame 문자열
+ */
 function createSseEvent(event: string, data: unknown): string {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 }

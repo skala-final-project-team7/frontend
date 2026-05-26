@@ -103,20 +103,31 @@
 
 # feature9: Chat 대화 화면 구현 (SCR-410, SCR-420, SCR-600)
 
-[ ] 메시지 목록과 사용자(테두리 존재o)/LINA(테두리 존재x) MessageBubble 시각 구분 구현
-[ ] enter - 전송 / shift+enter - 사용자 메시지 안에서 '\n' 구현
-[ ] SSE 청크 누적 표시와 RAG 단계 라벨 placeholder 구현
-[ ] 답변 하단 출처 / Check Reference 버튼 구현
-[ ] 사용자 메시지 인라인 수정 모드 구현
-[ ] FollowUpSuggestions 추천 칩 UI 구현
-[ ] 사이드바에서 conversation list에 나오는 제목과 conversation 각각 채팅 내용 연결되도록 구현
+[x] 메시지 목록과 사용자(테두리 존재o)/LINA(테두리 존재x) MessageBubble 시각 구분 구현
+[x] enter - 전송 / shift+enter - 사용자 메시지 안에서 '\n' 구현
+[x] SSE 청크 누적 표시와 RAG 단계 라벨 placeholder 구현
+[x] 답변 하단 출처 버튼 구현
+[x] 사용자 메시지 인라인 수정 모드는 feature15에서 backend version/re-generation 계약 확정 후 재개
+[x] 사이드바에서 conversation list에 나오는 제목과 conversation 각각 채팅 내용 연결되도록 구현
+[x] conversation list 불러올 시, isPinned - 고정된 채팅 정보도 넘어오게 반영(api-spec.md, src/types/api.ts, src/mocks/data.ts 등)
+[x] backend message version 목록 및 수정 이후 답변 재생성 계약 협의는 feature15 범위로 이관
 
 # feature10: 출처 패널 구현 (SCR-500, SCR-510)
 
 [ ] Check Reference 클릭 시 우측 슬라이드 패널 표시
 [ ] ReferenceCard에 Title / Path / 작성자 / 작성일자 / 출처 URL 액션 표시
 [ ] 오래된 문서 badge와 키워드 하이라이트 기준 구현
-[ ] Graph view placeholder와 List/Graph 토글 구현
+[ ] 후속 feature16 실제 그래프 렌더링 전까지 Graph view placeholder와 List/Graph 토글 구현
+
+# feature10.5: ChatPage 책임 분리 리팩토링 (feature11 전 선행 고려)
+
+[ ] `ChatPage.vue`는 route/page shell 조립 중심으로 남기고 sidebar/header/submission/route sync 책임을 작게 분리
+[ ] `ChatSidebar` 또는 동등한 feature 컴포넌트로 sidebar 렌더링과 열림/닫힘 UI 상태 분리
+[ ] `ChatHeader` 또는 동등한 feature 컴포넌트로 empty/conversation header 분기 분리
+[ ] `useChatSubmission` 또는 동등한 composable로 새 대화 생성, route conversation fallback, SSE submit, 실패 toast 처리 이동
+[ ] `useChatRouteSync` 또는 동등한 composable로 route watcher, 메시지 이력 로딩, active conversation clear 처리 이동
+[ ] Public API, SSE 이벤트 계약, store action signature는 변경하지 않고 기존 feature8/feature9 테스트가 그대로 통과해야 함
+[ ] 리팩토링 후 `ChatPage.vue` 변경 범위가 UI 동작 변경이 아닌 책임 분리임을 `docs/ai/working-log.md`에 기록
 
 # feature11: Chat 백엔드 연결 전환
 
@@ -124,6 +135,12 @@
 [ ] `VITE_USE_MOCK=false` 환경에서 `/api/conversations` 대화 목록 조회 연결
 [ ] `VITE_USE_MOCK=false` 환경에서 `/api/conversations/{conversationId}/messages` 메시지 이력 조회 연결
 [ ] `VITE_USE_MOCK=false` 환경에서 `/api/conversations/{conversationId}/chat` SSE 스트리밍 연결
+[ ] 일반 API 조회/생성 실패를 사용자 안내와 재시도 가능한 error state로 연결
+[ ] SSE 연결 실패, stream 중단, backend error 이벤트를 구분해 assistant 오류 표시와 재시도 동작 구현
+[ ] 사용자 취소(`AbortError`)는 오류 안내에서 제외하고 정상 중단으로 처리
+[ ] API/SSE 실패 유형별 UI 및 store 회귀 테스트 작성
+[ ] assistant `ThumbsUp` / `ThumbsDown`을 feedback API와 연결하고 실제 assistant `messageId` 기준 전송 처리
+[ ] feedback 버튼의 노출/선택/loading/실패 상태와 request 회귀 테스트 구현
 [ ] Chat 화면의 Loading / Error / Empty / Success 상태가 실제 API 실패와 빈 응답에서도 동작하는지 확인
 [ ] 답변과 검색 결과의 출처 / 작성일자 / 작성자 표시가 실제 응답에서도 유지되는지 확인
 [ ] 실제 API 전환 후 불필요한 `TODO(MOCK)` 마커 제거 또는 후속 mock 유지 사유 기록
@@ -136,6 +153,12 @@
 - [ ] SSE 스트리밍이 mock과 실제 응답 모두에서 동일하게 처리되는가
 - [ ] 인증 전 임시 토큰/하드코딩이 필요한 경우 `.env` 또는 secret을 커밋하지 않았는가
 - [ ] 백엔드 응답 구조가 `docs/api-spec.md`와 다르면 API 명세를 먼저 갱신했는가
+
+# feature11.5: Chat 스트리밍 중단 backend 처리 고려
+
+[ ] stop 버튼의 FE `AbortController` SSE 중단 이후 BFF/RAG downstream 작업 취소 전파 필요 여부 확인
+[ ] 사용자 중단 시 partial assistant 응답 저장/폐기와 대화 이력 복원 정책을 backend와 합의
+[ ] 별도 cancel API가 필요한 구조로 결정된 경우에만 `docs/api-spec.md` 갱신 후 구현 범위 확정
 
 # feature12: Auth / Onboarding 화면 구현 (SCR-100~310)
 
@@ -162,7 +185,25 @@
 [ ] 일반 설정의 히스토리 관리 UI 구현
 [ ] 계정 관리와 데이터 관리 UI 구현
 
-# feature15: 테스트 및 검증 기반 확장
+# feature15: Chat 후속 기능 - 인라인 수정 backend 연결
+
+[ ] feature11 완료 후 message version/답변 재생성 API 계약을 확정하고 `docs/api-spec.md` 및 FE 타입을 갱신
+[ ] 사용자 메시지 inline edit와 version navigation을 backend version 응답 기준으로 활성화
+[ ] 수정 version 전환 핵심 플로우 테스트 작성
+
+# feature16: 출처 패널 그래프 뷰 후속 구현
+
+[ ] feature10 출처 패널 및 List/Graph 토글 기본 UI 구현 완료 후 진행
+[ ] backend 또는 RAG와 출처 graph node/edge 데이터 계약 확정
+[ ] 계약 확정 시 `docs/api-spec.md`를 먼저 갱신하고 graph response 타입과 mock 데이터를 반영
+[ ] ReferencePanel Graph view에서 source 관계를 실제 node/edge 그래프로 렌더링
+[ ] 그래프 node 클릭 시 선택 강조와 해당 Confluence 문서 미리보기 연결
+[ ] 그래프 줌/팬 및 viewport 내 초기 framing 동작 구현
+[ ] source 목록과 graph 선택 상태가 동일 문서를 기준으로 동기화되도록 처리
+[ ] 그래프 loading/error/empty 상태와 접근성 대체 표시를 구현
+[ ] 그래프 렌더링 및 node 선택/줌/팬 동작을 관련 테스트로 검증
+
+# feature17: 테스트 및 검증 기반 확장
 
 [ ] App 기본 렌더링 테스트 작성
 [ ] Chat shell Empty 상태 테스트 작성
