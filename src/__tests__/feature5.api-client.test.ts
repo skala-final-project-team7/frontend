@@ -38,7 +38,7 @@ describe('feature5 API types and client skeleton', () => {
       spaceId: '98310',
       spaceName: 'Cloud Control Center',
       url: 'https://confluence.example.com/pages/12345',
-      updatedAt: '2026-04-15T09:30:00Z',
+      sourceUpdatedAt: '2026-04-15T18:30:00+09:00',
       relevanceScore: 0.92,
     };
 

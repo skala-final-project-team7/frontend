@@ -69,7 +69,7 @@ function createSseResponse(): Response {
         );
         controller.enqueue(
           encoder.encode(
-            'event: sources\ndata: {"sources":[{"title":"S3 트러블슈팅 가이드","pageId":"12345","spaceId":"98310","spaceName":"Cloud Control Center","url":"https://confluence.example.com/pages/12345","updatedAt":"2026-04-15T09:30:00Z","relevanceScore":0.92}]}\n\n',
+            'event: sources\ndata: {"sources":[{"title":"S3 트러블슈팅 가이드","pageId":"12345","spaceId":"98310","spaceName":"Cloud Control Center","url":"https://confluence.example.com/pages/12345","sourceUpdatedAt":"2026-04-15T18:30:00+09:00","relevanceScore":0.92}]}\n\n',
           ),
         );
         controller.enqueue(
@@ -166,6 +166,9 @@ describe('feature9 chat SSE store integration', () => {
       statusMessage: '',
     });
     expect(chatStore.activeMessages[1].sources?.[0].title).toBe('S3 트러블슈팅 가이드');
+    expect(chatStore.activeMessages[1].sources?.[0].sourceUpdatedAt).toBe(
+      '2026-04-15T18:30:00+09:00',
+    );
     expect(chatStore.conversationTitlesById['conv-mock-001']).toBe('S3 권한 오류 해결 방법');
   });
 

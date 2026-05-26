@@ -7,6 +7,7 @@
  * 변경사항 내역 (날짜, 변경목적, 변경내용 순)
  *   - 2026-05-21, feature9 구현, 대화 화면 렌더링과 입력 플로우 테스트 추가
  *   - 2026-05-22, feature9 보강, streaming status, IME, route fallback, page-level scroll 회귀 테스트 추가
+ *   - 2026-05-26, feature9 회귀 보강, 지연된 메시지 이력 실패가 새 스트림을 제거하지 않는지 검증
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -61,7 +62,7 @@ function createSseResponse(): Response {
   return new Response(
     [
       'event: sources\n',
-      'data: {"sources":[{"title":"S3 트러블슈팅 가이드","pageId":"12345","spaceId":"98310","spaceName":"Cloud Control Center","url":"https://confluence.example.com/pages/12345","updatedAt":"2026-04-15T09:30:00Z","relevanceScore":0.92}]}\n\n',
+      'data: {"sources":[{"title":"S3 트러블슈팅 가이드","pageId":"12345","spaceId":"98310","spaceName":"Cloud Control Center","url":"https://confluence.example.com/pages/12345","sourceUpdatedAt":"2026-04-15T18:30:00+09:00","relevanceScore":0.92}]}\n\n',
       'event: verification\n',
       'data: {"confidenceScore":0.85,"verificationResult":"SUPPORTED"}\n\n',
       'event: token\n',
@@ -426,6 +427,76 @@ describe('feature9 SCR-410, SCR-420, SCR-600 Chat conversation screen', () => {
     await flushAsyncUpdates();
   });
 
+  it('preserves a streamed reply when a pending message history request fails afterward', async () => {
+    let rejectMessages: ((error: Error) => void) | undefined;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const requestUrl =
+        typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+      const method = init?.method ?? 'GET';
+
+      if (requestUrl.includes('/api/users/me')) {
+        return createJsonResponse({
+          isSuccess: true,
+          code: 200,
+          message: '사용자 정보 조회 성공',
+          data: mockCurrentUser,
+        });
+      }
+
+      if (requestUrl.includes('/api/conversations/') && requestUrl.endsWith('/messages')) {
+        return new Promise<Response>((_resolve, reject) => {
+          rejectMessages = reject;
+        });
+      }
+
+      if (requestUrl.includes('/api/conversations/') && requestUrl.endsWith('/chat')) {
+        expect(method).toBe('POST');
+        return createSseResponse();
+      }
+
+      if (requestUrl.includes('/api/conversations')) {
+        return createJsonResponse({
+          isSuccess: true,
+          code: 200,
+          message: '대화 목록 조회 성공',
+          data: {
+            conversations: mockConversations,
+            totalCount: mockConversations.length,
+            page: 0,
+            size: 20,
+          },
+        });
+      }
+
+      return createJsonResponse(
+        {
+          isSuccess: false,
+          code: 404,
+          message: 'not found',
+          data: null,
+        },
+        404,
+      );
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const wrapper = mountChatPage();
+    await new Promise((resolve) => window.setTimeout(resolve, 0));
+
+    await wrapper.get('textarea').setValue('이력 로딩 중 전송한 질문');
+    await wrapper.get('textarea').trigger('keydown.enter');
+    await flushAsyncUpdates();
+
+    expect(wrapper.text()).toContain('이력 로딩 중 전송한 질문');
+    expect(wrapper.text()).toContain('IAM 정책과 버킷 정책을 함께 점검했습니다.');
+
+    rejectMessages?.(new Error('message history request failed'));
+    await flushAsyncUpdates();
+
+    expect(wrapper.text()).toContain('이력 로딩 중 전송한 질문');
+    expect(wrapper.text()).toContain('IAM 정책과 버킷 정책을 함께 점검했습니다.');
+  });
+
   it('renders loading spinner for an empty assistant placeholder while streaming', () => {
     const wrapper = mount(MessageBubble, {
       props: {
@@ -448,6 +519,50 @@ describe('feature9 SCR-410, SCR-420, SCR-600 Chat conversation screen', () => {
       '관련 문서를 검색하고 있습니다.',
     );
     expect(wrapper.findAll('[data-testid="base-spinner-dot"]')).toHaveLength(3);
+    expect(wrapper.find('[data-testid="source-button"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="message-action-row-assistant"]').exists()).toBe(false);
+  });
+
+  it('hides answer actions for cancelled empty placeholders and error responses', () => {
+    const cancelledWrapper = mount(MessageBubble, {
+      props: {
+        message: {
+          messageId: 'msg-local-assistant-cancelled',
+          role: 'assistant',
+          content: '',
+          createdAt: '2026-05-21T00:00:00Z',
+          sources: [],
+        },
+        editingMessageId: '',
+        editingContent: '',
+        isStreaming: false,
+        streamingMessageId: '',
+      },
+    });
+    const errorWrapper = mount(MessageBubble, {
+      props: {
+        message: {
+          messageId: 'msg-local-assistant-error',
+          role: 'assistant',
+          content: '답변 생성 중 오류가 발생했습니다',
+          createdAt: '2026-05-21T00:00:00Z',
+          phase: 'error',
+          error: '답변 생성 중 오류가 발생했습니다',
+          sources: [],
+        },
+        editingMessageId: '',
+        editingContent: '',
+        isStreaming: false,
+        streamingMessageId: '',
+      },
+    });
+
+    expect(cancelledWrapper.find('[data-testid="source-button"]').exists()).toBe(false);
+    expect(cancelledWrapper.find('[data-testid="message-action-row-assistant"]').exists()).toBe(
+      false,
+    );
+    expect(errorWrapper.find('[data-testid="source-button"]').exists()).toBe(false);
+    expect(errorWrapper.find('[data-testid="message-action-row-assistant"]').exists()).toBe(false);
   });
 
   it('keeps the first streamed answer visible when entering chat from /chat', async () => {

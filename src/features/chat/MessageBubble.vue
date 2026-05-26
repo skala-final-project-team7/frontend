@@ -12,6 +12,7 @@
   - 2026-05-22, SCR-420 보강, 사용자 메시지 하단 hover action과 수정본 indicator 추가
   - 2026-05-22, SCR-420 보강, 사용자 메시지 수정본 이전/다음 선택 이벤트 추가
   - 2026-05-26, SCR-420 보류, backend version 계약 확정 전 사용자 수정 action 비노출
+  - 2026-05-26, feature9 회귀 수정, 빈/오류/진행 중 assistant 액션 비노출 처리
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -61,6 +62,16 @@ const isStreamingAssistantMessage = computed(
     props.message.role === 'assistant' &&
     props.isStreaming &&
     props.streamingMessageId === props.message.messageId,
+);
+const canShowAssistantActions = computed(
+  () =>
+    props.message.role === 'assistant' &&
+    props.message.content.trim().length > 0 &&
+    props.message.phase !== 'error' &&
+    !isStreamingAssistantMessage.value,
+);
+const canShowSourceButton = computed(
+  () => canShowAssistantActions.value && (props.message.sources?.length ?? 0) > 0,
 );
 const userVersionActiveIndex = computed(() => props.userVersionActiveIndex ?? 0);
 const userVersionTotal = computed(() => props.userVersionTotal ?? 1);
@@ -194,7 +205,7 @@ function selectUserMessageVersion(versionIndex: number) {
           <BaseSpinner :label="message.statusMessage ?? ''" />
         </div>
         <p v-if="message.content.length > 0">{{ message.content }}</p>
-        <div class="mt-4 flex flex-wrap items-center gap-2 text-small">
+        <div v-if="canShowSourceButton" class="mt-4 flex flex-wrap items-center gap-2 text-small">
           <button
             data-testid="source-button"
             type="button"
@@ -273,7 +284,7 @@ function selectUserMessageVersion(versionIndex: number) {
     </div>
 
     <div
-      v-if="message.role === 'assistant'"
+      v-if="canShowAssistantActions"
       data-testid="message-action-row-assistant"
       class="mt-3 flex items-center gap-4 text-overlay-dark-80"
     >

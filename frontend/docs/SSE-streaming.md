@@ -179,7 +179,7 @@ data: {
       "spaceId": "98310",
       "spaceName": "Cloud Control Center",
       "url": "https://confluence.example.com/pages/12345",
-      "updatedAt": "2026-04-15T09:30:00Z",
+      "sourceUpdatedAt": "2026-04-15T18:30:00+09:00",
       "relevanceScore": 0.92
     }
   ]
@@ -207,7 +207,7 @@ export type ChatSource = {
   spaceId: string;
   spaceName: string;
   url: string;
-  updatedAt: string;
+  sourceUpdatedAt: string;
   relevanceScore: number;
 };
 ```
@@ -221,7 +221,7 @@ export type ChatSource = {
   spaceId: string;
   spaceName: string;
   url: string;
-  updatedAt: string;
+  sourceUpdatedAt: string;
   relevanceScore: number;
 
   // future extension
@@ -369,7 +369,7 @@ export type ChatSource = {
   spaceId: string;
   spaceName: string;
   url: string;
-  updatedAt: string;
+  sourceUpdatedAt: string;
   relevanceScore: number;
 
   // future extension
@@ -621,7 +621,7 @@ data: {"content":"S3 권한 오류는"}
 
 ```text
 event: sources
-data: {"sources":[{"title":"S3 트러블슈팅 가이드","pageId":"12345","spaceId":"98310","spaceName":"Cloud Control Center","url":"https://confluence.example.com/pages/12345","updatedAt":"2026-04-15T09:30:00Z","relevanceScore":0.92}]}
+data: {"sources":[{"title":"S3 트러블슈팅 가이드","pageId":"12345","spaceId":"98310","spaceName":"Cloud Control Center","url":"https://confluence.example.com/pages/12345","sourceUpdatedAt":"2026-04-15T18:30:00+09:00","relevanceScore":0.92}]}
 ```
 
 파서 구현 예시:
@@ -696,7 +696,7 @@ event: status
 data: {"phase":"verifying","message":"답변이 출처 문서에 근거하는지 검증하고 있습니다."}
 
 event: sources
-data: {"sources":[{"title":"OAuth 인증 가이드","pageId":"12345","spaceId":"98310","spaceName":"Cloud Control Center","url":"https://confluence.example.com/pages/12345","updatedAt":"2026-04-15T09:30:00Z","relevanceScore":0.92}]}
+data: {"sources":[{"title":"OAuth 인증 가이드","pageId":"12345","spaceId":"98310","spaceName":"Cloud Control Center","url":"https://confluence.example.com/pages/12345","sourceUpdatedAt":"2026-04-15T18:30:00+09:00","relevanceScore":0.92}]}
 
 event: verification
 data: {"confidenceScore":0.85,"verificationResult":"SUPPORTED"}
@@ -721,4 +721,3 @@ data: {"messageId":"msg-uuid-001"}
 * `error` 이벤트 수신 시 오류 메시지를 표시하고 streaming 상태가 종료된다.
 * 아직 완성되지 않은 SSE chunk는 buffer에 남기고, 완성된 이벤트만 처리한다.
 * 이미 처리한 SSE chunk가 중복 렌더링되지 않는다.
-

@@ -99,6 +99,7 @@ describe('feature6 Chat mock API foundation', () => {
     expect(body.data.messages[1].sources[0]).toMatchObject({
       title: 'S3 트러블슈팅 가이드',
       pageId: '12345',
+      sourceUpdatedAt: '2026-04-15T18:30:00+09:00',
     });
   });
 

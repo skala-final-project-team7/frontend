@@ -7,6 +7,7 @@
  * 변경사항 내역 (날짜, 변경목적, 변경내용 순)
  *   - 2026-05-18, feature6 구현, Chat mock response seed data 추가
  *   - 2026-05-21, feature9 구현, conversation pinned 상태 mock data 추가
+ *   - 2026-05-26, API 계약 정합성 수정, source 수정일 mock 필드를 sourceUpdatedAt으로 변경
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -38,7 +39,7 @@ export const mockSources: Source[] = [
     spaceId: '98310',
     spaceName: 'Cloud Control Center',
     url: 'https://yhlee0332.atlassian.net/wiki/spaces/ai27Rev1/pages/557209/macOS',
-    updatedAt: '2026-04-15T09:30:00Z',
+    sourceUpdatedAt: '2026-04-15T18:30:00+09:00',
     relevanceScore: 0.92,
   },
 ];

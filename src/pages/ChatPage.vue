@@ -10,6 +10,7 @@
   - 2026-05-22, feature9 보강, SSE submit route fallback, 실패 toast, page-level scroll layout 적용
   - 2026-05-22, feature9 SSE 보강, meta.title 기반 대화 제목 갱신 추가
   - 2026-05-22, SCR-420 보강, 사용자 메시지 수정본 이전/현재 표시 전환 추가
+  - 2026-05-26, feature9 회귀 수정, 지연된 메시지 이력 실패 시 현재 대화/스트림 보존
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -213,7 +214,7 @@ async function loadConversationMessages(conversationId: string) {
   try {
     await chatStore.loadConversationMessages(conversationId);
   } catch {
-    chatStore.clearActiveConversation();
+    // 지연된 조회 실패가 현재 화면에 이미 추가된 로컬/SSE 메시지를 제거하지 않도록 보존한다.
   }
 }
 

@@ -1448,3 +1448,43 @@
 - typecheck: passed
 - lint: passed
 - 전체 검증: passed, 9 test files and 68 tests passed
+
+## 2026-05-26 - feature9: Chat 로딩 경쟁 조건, Source 계약, assistant action 회귀 수정
+
+### Scope
+
+- 지연된 메시지 이력 조회 실패가 이미 표시된 로컬 질문/SSE 답변을 초기화하지 않도록 보존
+- API 명세에 맞춰 RAG `Source` 수정 시각 필드를 `sourceUpdatedAt`으로 통일
+- 스트리밍 시작 직후, 취소로 남은 빈 assistant placeholder, error 응답에서 출처/일반 assistant action 비노출
+
+### Test Cases
+
+- 메시지 이력 요청이 늦게 실패해도 먼저 완료된 SSE 질문/답변이 화면에 유지된다.
+- 타입, mock history, SSE event fixture가 `sourceUpdatedAt`을 사용한다.
+- 빈 streaming/cancel placeholder와 error 응답에는 출처/assistant action row가 표시되지 않는다.
+
+### Changed Files
+
+- `src/pages/ChatPage.vue`: message history 조회 실패 시 현재 표시 메시지를 파괴적으로 초기화하지 않도록 수정
+- `src/features/chat/MessageBubble.vue`: 완료된 유효 답변과 실제 sources가 있을 때만 하단 액션/출처 버튼 표시
+- `src/types/api.ts`, `src/mocks/data.ts`: `Source.sourceUpdatedAt` 계약과 mock payload 반영
+- `src/__tests__/feature5.api-client.test.ts`, `src/__tests__/feature6.mock-api.test.ts`: source 계약 회귀 검증 갱신
+- `src/__tests__/feature9.chat-conversation.test.ts`, `src/__tests__/feature9.chat-sse-store.test.ts`: stale load 실패, source field, action 노출 조건 검증 추가
+- `frontend/docs/SSE-streaming.md`: canonical source field 예시와 타입을 `sourceUpdatedAt` 기준으로 정렬
+
+### Commands
+
+- `npm test -- --run src/__tests__/feature9.chat-conversation.test.ts` (회귀 테스트 실패 확인 후 수정 검증)
+- `npm test -- --run src/__tests__/feature6.mock-api.test.ts src/__tests__/feature9.chat-sse-store.test.ts` (계약 테스트 실패 확인)
+- `npm run typecheck` (계약 타입 실패 확인 후 수정 검증)
+- `npm test -- --run src/__tests__/feature5.api-client.test.ts src/__tests__/feature6.mock-api.test.ts src/__tests__/feature9.chat-sse-store.test.ts src/__tests__/feature9.chat-conversation.test.ts`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- 각 회귀 테스트는 구현 변경 전 예상 실패를 확인했다.
+- 대상 테스트와 typecheck는 수정 후 통과했다.
+- 전체 검증: passed, 9 test files and 70 tests passed
