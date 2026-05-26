@@ -1488,3 +1488,25 @@
 - 각 회귀 테스트는 구현 변경 전 예상 실패를 확인했다.
 - 대상 테스트와 typecheck는 수정 후 통과했다.
 - 전체 검증: passed, 9 test files and 70 tests passed
+
+## 2026-05-26 - feature11.5: 스트리밍 stop backend 처리 정책 TODO 기록
+
+### Scope
+
+- 현재 FE stop 버튼이 SSE 요청 abort까지만 수행한다는 점을 유지
+- BFF/RAG downstream 취소 전파와 partial assistant 응답 저장 정책은 backend 협의 후 결정할 TODO로 기록
+- 새 cancel endpoint를 미리 정의하지 않고, 필요 구조로 확정된 경우에만 API 명세를 갱신하도록 계획에 분리
+
+### Changed Files
+
+- `src/features/chat/MessageInput.vue`: stop 버튼 cancel 발생 위치에 backend 중단 정책 TODO 기록
+- `docs/ai/current-plan.md`: 실제 Chat 연결 이후 고려할 `feature11.5` 추가
+- `docs/ai/working-log.md`: 결정 사항과 변경 범위 기록
+
+### Commands
+
+- `./scripts/verify.sh`
+
+### Results
+
+- 전체 검증: passed, 9 test files and 70 tests passed

@@ -8,6 +8,7 @@
   - 2026-05-20, feature8 구현, MessageInput 최초 작성
   - 2026-05-22, feature9 보강, IME 조합 중 Enter 전송 방지 처리 추가
   - 2026-05-22, 스트리밍 중 원형 중단 버튼으로 cancel 동작 통합
+  - 2026-05-26, feature11.5 고려, backend streaming 중단 정책 확정 TODO 기록
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -108,6 +109,7 @@ function handleActionButtonClick() {
     return;
   }
 
+  // TODO(feature11.5): SSE abort 이후 BFF/RAG 취소 전파와 partial assistant 응답 저장 정책을 확정한다.
   emit('cancel');
 }
 </script>
