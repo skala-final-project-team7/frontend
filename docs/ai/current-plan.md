@@ -114,7 +114,7 @@
 
 # feature10: 출처 패널 구현 (SCR-500, SCR-510)
 
-[ ] Check Reference 클릭 시 우측 슬라이드 패널 표시
+[ ] 출처 버튼 클릭 시 우측 슬라이드 패널 표시
 [ ] ReferenceCard에 Title / Path / 작성자 / 작성일자 / 출처 URL 액션 표시
 [ ] 오래된 문서 badge와 키워드 하이라이트 기준 구현
 [ ] 후속 feature16 실제 그래프 렌더링 전까지 Graph view placeholder와 List/Graph 토글 구현
