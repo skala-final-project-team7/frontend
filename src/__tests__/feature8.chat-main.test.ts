@@ -332,7 +332,7 @@ describe('feature8 SCR-400 Chat main screen', () => {
           title: '자주 묻는 질문 (FAQ) - 인프라 운영',
           spaceName: 'Cloud Control Center',
           authorName: '이현서',
-          updatedAt: '2026-05-19T09:30:00Z',
+          updatedAt: '2026-05-19T18:30:00+09:00',
           breadcrumbs: ['Cloud Control Center', 'AWS', 'FAQ'],
           pageUrl: 'https://confluence.example.com/pages/home-preview-999',
           bodyViewValue: [

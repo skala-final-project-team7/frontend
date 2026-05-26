@@ -7,6 +7,7 @@
  * 변경사항 내역 (날짜, 변경목적, 변경내용 순)
  *   - 2026-05-18, feature5 구현, apiRequest 및 streamRequest 추가
  *   - 2026-05-22, feature9 보강, SSE chat request에 AbortSignal 전달 추가
+ *   - 2026-05-26, API 계약 정합성 수정, Common Response errorCode 예외 전달 추가
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -44,7 +45,9 @@ export async function apiRequest<TData>(
   const responseBody = (await response.json()) as ApiResponse<TData>;
 
   if (!response.ok || !responseBody.isSuccess) {
-    throw new ApiClientError(responseBody.message, responseBody.code, response.status);
+    const errorCode = responseBody.isSuccess ? 'HTTP_ERROR' : responseBody.errorCode;
+
+    throw new ApiClientError(responseBody.message, responseBody.code, errorCode, response.status);
   }
 
   return responseBody.data;
@@ -82,12 +85,15 @@ export async function streamChatRequest(
 export class ApiClientError extends Error {
   public readonly code: number;
 
+  public readonly errorCode: string;
+
   public readonly status: number;
 
-  constructor(message: string, code: number, status: number) {
+  constructor(message: string, code: number, errorCode: string, status: number) {
     super(message);
     this.name = 'ApiClientError';
     this.code = code;
+    this.errorCode = errorCode;
     this.status = status;
   }
 }

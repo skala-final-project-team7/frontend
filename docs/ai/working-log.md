@@ -1510,3 +1510,42 @@
 ### Results
 
 - 전체 검증: passed, 9 test files and 70 tests passed
+
+## 2026-05-26 - API 명세 정합성: Common Error, KST timestamp, SSE phase 정렬
+
+### Scope
+
+- `docs/api-spec.md`의 Common Response 실패 계약을 기준으로 FE 에러 타입과 API client 예외 전달을 정렬
+- API 응답 mock 및 계약 테스트 timestamp를 KST(`+09:00`) 표기로 통일
+- `frontend/docs/SSE-streaming.md`의 status phase 목록과 예시 sequence를 canonical API 명세 기준으로 정리
+- Confluence preview는 후속 기능 상태를 유지하며, 해당 섹션의 실패 응답 예시만 공통 wrapper와 일치하도록 정정
+
+### Test Cases
+
+- Common Response 실패 응답의 `errorCode`가 `ApiClientError`에 보존된다.
+- mock create/user/history/preview 응답 timestamp가 KST 형식으로 반환된다.
+- preview mock 실패 응답이 `errorCode` 기반 Common Response 형식을 따른다.
+
+### Changed Files
+
+- `docs/api-spec.md`: preview 실패 예시를 공통 실패 wrapper와 정렬하고 명세 버전을 `v2.2.1`로 갱신
+- `frontend/docs/SSE-streaming.md`: status phase 타입/표/sequence를 canonical phase 집합으로 정리
+- `src/types/api.ts`, `src/api/client.ts`: `ApiErrorResponse.errorCode`와 `ApiClientError.errorCode` 전달 구현
+- `src/mocks/data.ts`, `src/mocks/handlers.ts`: KST timestamp와 공통 실패 payload 반영
+- `src/__tests__/feature5.api-client.test.ts`, `src/__tests__/feature6.mock-api.test.ts`, `src/__tests__/feature8.chat-main.test.ts`, `src/__tests__/feature9.chat-conversation.test.ts`: 계약 fixture 및 회귀 검증 갱신
+
+### Commands
+
+- `npm test -- --run src/__tests__/feature5.api-client.test.ts src/__tests__/feature6.mock-api.test.ts` (구현 전 회귀 테스트 실패 확인)
+- `npm test -- --run src/__tests__/feature5.api-client.test.ts src/__tests__/feature6.mock-api.test.ts`
+- `npm run typecheck`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- 구현 전 계약 회귀 테스트는 `errorCode` 미전달, UTC mock timestamp, preview 실패 payload 불일치로 실패했다.
+- 관련 테스트 및 typecheck: passed
+- 전체 테스트: passed, 9 test files and 71 tests passed

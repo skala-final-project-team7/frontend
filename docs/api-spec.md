@@ -1,6 +1,6 @@
 # LINA API Spec
 
-> 버전: v2.2.0
+> 버전: v2.2.1
 > 기준: 중간 발표(4주차) 데모 범위 + 이후 확장 계획
 > 전제: 중간 발표 시 인증 하드코딩, 스페이스 고정, 로그인 제외
 > 기획서 버전: v2.1.7 (Authorization Server 분리, 사용자 단위 검색 반영)
@@ -765,8 +765,8 @@ BFF → Authorization Server 위임 구조 (기획서 v2.1.7 반영)
 {
   "isSuccess": false,
   "code": 404,
-  "message": "Confluence 페이지 미리보기를 찾을 수 없습니다",
-  "data": null
+  "errorCode": "RESOURCE_NOT_FOUND",
+  "message": "Confluence 페이지 미리보기를 찾을 수 없습니다"
 }
 ```
 

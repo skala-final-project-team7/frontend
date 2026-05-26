@@ -58,7 +58,7 @@ describe('feature6 Chat mock API foundation', () => {
     expect(createdConversation).toMatchObject({
       conversationId: 'conv-mock-003',
       title: '새 대화',
-      createdAt: '2026-05-21T10:00:00Z',
+      createdAt: '2026-05-21T19:00:00+09:00',
     });
   });
 
@@ -72,6 +72,7 @@ describe('feature6 Chat mock API foundation', () => {
       email: 'dayeon@example.com',
       role: 'USER',
       profileImageUrl: mockCurrentUser.profileImageUrl,
+      lastLoginAt: '2026-05-20T18:00:00+09:00',
     });
   });
 
@@ -101,6 +102,10 @@ describe('feature6 Chat mock API foundation', () => {
       pageId: '12345',
       sourceUpdatedAt: '2026-04-15T18:30:00+09:00',
     });
+    expect(body.data.messages.map((message: { createdAt: string }) => message.createdAt)).toEqual([
+      '2026-05-06T19:00:00+09:00',
+      '2026-05-06T19:00:05+09:00',
+    ]);
   });
 
   it('prepares POST /api/conversations/{conversationId}/chat as a mock SSE stream', async () => {
@@ -134,6 +139,7 @@ describe('feature6 Chat mock API foundation', () => {
       data: {
         pageId: '12345',
         title: 'S3 트러블슈팅 가이드',
+        updatedAt: '2026-04-15T18:30:00+09:00',
         breadcrumbs: ['Cloud Control Center', 'AWS', 'S3', 'S3 트러블슈팅 가이드'],
         pageUrl: 'https://yhlee0332.atlassian.net/wiki/spaces/ai27Rev1/pages/491961/FAQ+-',
       },
@@ -150,8 +156,8 @@ describe('feature6 Chat mock API foundation', () => {
     expect(body).toEqual({
       isSuccess: false,
       code: 404,
+      errorCode: 'RESOURCE_NOT_FOUND',
       message: 'Confluence 페이지 미리보기를 찾을 수 없습니다',
-      data: null,
     });
   });
 

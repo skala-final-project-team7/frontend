@@ -10,6 +10,7 @@
  *   - 2026-05-22, feature9 보강, RAG phase placeholder 검증용 SSE event 순서 조정
  *   - 2026-05-22, feature9 SSE 보강, status 이벤트 mock 추가
  *   - 2026-05-22, RAG status 계약 반영, 확정 phase 순서와 meta 이벤트 mock 추가
+ *   - 2026-05-26, API 계약 정합성 수정, KST timestamp 및 errorCode 실패 응답 반영
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -26,6 +27,7 @@ import {
   mockSources,
 } from './data';
 import type {
+  ApiErrorResponse,
   ApiSuccessResponse,
   CreateConversationResponse,
   ConversationList,
@@ -77,7 +79,7 @@ export const mockHandlers = [
       data: {
         conversationId: 'conv-mock-003',
         title: '새 대화',
-        createdAt: '2026-05-21T10:00:00Z',
+        createdAt: '2026-05-21T19:00:00+09:00',
       },
     });
   }),
@@ -116,12 +118,12 @@ export const mockHandlers = [
     const previewPage = mockConfluencePreviewPages[pageId];
 
     if (!previewPage) {
-      return HttpResponse.json(
+      return HttpResponse.json<ApiErrorResponse>(
         {
           isSuccess: false,
           code: 404,
+          errorCode: 'RESOURCE_NOT_FOUND',
           message: 'Confluence 페이지 미리보기를 찾을 수 없습니다',
-          data: null,
         },
         {
           status: 404,

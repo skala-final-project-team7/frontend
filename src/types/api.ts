@@ -13,6 +13,7 @@
  *   - 2026-05-22, feature9 SSE 보강, status event와 message status state 추가
  *   - 2026-05-22, RAG status 계약 반영, meta event와 확장 가능한 status phase 처리 추가
  *   - 2026-05-26, API 계약 정합성 수정, Source 수정일 필드를 sourceUpdatedAt으로 일치
+ *   - 2026-05-26, API 계약 정합성 수정, Common Response 실패 payload의 errorCode 반영
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -29,8 +30,8 @@ export type ApiSuccessResponse<TData> = {
 export type ApiErrorResponse = {
   isSuccess: false;
   code: number;
+  errorCode: string;
   message: string;
-  data: null;
 };
 
 export type ApiResponse<TData> = ApiSuccessResponse<TData> | ApiErrorResponse;

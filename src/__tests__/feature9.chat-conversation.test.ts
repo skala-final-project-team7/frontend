@@ -103,7 +103,7 @@ function installFeature9FetchMock() {
           data: {
             conversationId: 'conv-mock-created',
             title: '새 대화',
-            createdAt: '2026-05-21T10:00:00Z',
+            createdAt: '2026-05-21T19:00:00+09:00',
           },
         },
         201,
