@@ -7,6 +7,10 @@
  * 변경사항 내역 (날짜, 변경목적, 변경내용 순)
  *   - 2026-05-26, feature10 구현, 출처 패널 acceptance criteria 테스트 추가
  *   - 2026-05-26, feature10 UI 보정, 목록 행과 hover preview card 동작 검증 추가
+ *   - 2026-05-26, feature10 UI 보정, preview affordance 유지와 새 채팅 초기화 검증 추가
+ *   - 2026-05-26, feature10 UI 보정, URL action과 path hover를 preview card에만 제한
+ *   - 2026-05-26, feature10 UI 보정, 기본 카드 구조를 보존한 preview 전용 hover scope 검증 추가
+ *   - 2026-05-26, feature10 UI 보정, 공통 named hover scope와 팝오버 이동 영역 검증 추가
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -136,7 +140,7 @@ describe('feature10 SCR-500, SCR-510 Reference panel', () => {
     expect(wrapper.get('[data-testid="reference-panel"]').text()).toContain('검색 결과 (1개)');
   });
 
-  it('renders compact list metadata with icons, URL actions, stale badge, and highlighted keywords', async () => {
+  it('renders compact list metadata without stale badge or preview-only URL actions', async () => {
     const wrapper = mount(ReferencePanel, {
       props: {
         sources: mockSources,
@@ -152,20 +156,19 @@ describe('feature10 SCR-500, SCR-510 Reference panel', () => {
     expect(sourceItem.text()).toContain('Cloud Control Center > AWS > S3 > S3 트러블슈팅 가이드');
     expect(sourceItem.text()).toContain('Platform Team');
     expect(sourceItem.text()).toContain('2026.04.15');
-    expect(sourceItem.text()).toContain('오래된 문서');
+    expect(sourceItem.text()).not.toContain('오래된 문서');
+    expect(sourceItem.find('[data-testid="reference-stale-badge"]').exists()).toBe(false);
     expect(sourceItem.find('[data-testid="reference-source-icon"]').exists()).toBe(true);
     expect(sourceItem.find('[data-testid="reference-author-icon"]').exists()).toBe(true);
     expect(sourceItem.find('[data-testid="reference-date-icon"]').exists()).toBe(true);
     expect(sourceItem.findAll('mark').some((mark) => mark.text() === 'S3')).toBe(true);
-    expect(sourceItem.get('[data-testid="reference-copy-url"]').attributes('aria-label')).toBe(
-      '원본 URL 복사',
-    );
-    expect(sourceItem.get('[data-testid="reference-open-url"]').attributes('href')).toBe(
-      mockSources[0].url,
-    );
+    expect(sourceItem.find('[data-testid="reference-copy-url"]').exists()).toBe(false);
+    expect(sourceItem.find('[data-testid="reference-open-url"]').exists()).toBe(false);
+    expect(sourceItem.find('[data-testid="preview-page-card-actions"]').exists()).toBe(false);
+    expect(sourceItem.find('[data-testid="preview-page-card-breadcrumbs"]').exists()).toBe(false);
   });
 
-  it('shows the existing PreviewPageCard to the left of a hovered source row', async () => {
+  it('shows the existing shadowed PreviewPageCard with its hover affordances beside a source row', async () => {
     const wrapper = mount(ReferencePanel, {
       props: {
         sources: mockSources,
@@ -179,14 +182,47 @@ describe('feature10 SCR-500, SCR-510 Reference panel', () => {
     await wrapper.get('[data-testid="reference-list-item"]').trigger('mouseenter');
 
     const preview = wrapper.get('[data-testid="reference-hover-preview"]');
+    const previewComponent = preview.getComponent({ name: 'PreviewPageCard' });
+    const previewCard = preview.get('[data-testid="preview-page-card"]');
+    const previewActions = preview.get('[data-testid="preview-page-card-actions"]');
+    const previewBreadcrumbs = preview.get('[data-testid="preview-page-card-breadcrumbs"]');
 
-    expect(preview.classes()).toEqual(expect.arrayContaining(['absolute', 'right-full']));
-    expect(preview.find('[data-testid="preview-page-card"]').exists()).toBe(true);
+    expect(preview.classes()).toEqual(expect.arrayContaining(['absolute', 'right-full', 'pr-5']));
+    expect(preview.classes()).not.toContain('mr-5');
+    expect(previewComponent.props('isolateHover')).toBeUndefined();
+    expect(previewComponent.classes()).toContain('group/preview-page');
+    expect(previewCard.classes()).toContain('shadow-floating');
+    expect(previewActions.classes()).toContain('group-hover/preview-page:opacity-100');
+    expect(previewActions.classes()).not.toContain('group-hover:opacity-100');
+    expect(previewBreadcrumbs.classes()).toContain('group-hover/preview-page:opacity-100');
+    expect(previewBreadcrumbs.classes()).not.toContain('group-hover:opacity-100');
+    expect(preview.find('[data-testid="preview-page-card-copy"]').exists()).toBe(true);
+    expect(preview.find('[data-testid="preview-page-card-external"]').exists()).toBe(true);
     expect(preview.text()).toContain('Platform Team');
 
     await wrapper.get('[data-testid="reference-list-item"]').trigger('mouseleave');
 
     expect(wrapper.find('[data-testid="reference-hover-preview"]').exists()).toBe(false);
+  });
+
+  it('closes the prior conversation reference panel when starting a new chat', async () => {
+    const wrapper = mount(ChatPage, {
+      global: {
+        plugins: [createPinia(), router],
+      },
+    });
+    await flushAsyncUpdates();
+
+    await wrapper.get('[data-testid="source-button"]').trigger('click');
+    await flushAsyncUpdates();
+
+    expect(wrapper.get('[data-testid="reference-panel"]').attributes('aria-hidden')).toBe('false');
+
+    await wrapper.findAll('[data-testid="collapsed-sidebar-action"]')[0].trigger('click');
+    await flushAsyncUpdates();
+
+    expect(router.currentRoute.value.fullPath).toBe('/chat');
+    expect(wrapper.get('[data-testid="reference-panel"]').attributes('aria-hidden')).toBe('true');
   });
 
   it('switches between the source list and graph placeholder without rendering a graph early', async () => {

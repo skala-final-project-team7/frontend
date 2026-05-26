@@ -351,7 +351,12 @@ describe('feature8 SCR-400 Chat main screen', () => {
       'aspect-[166/191]',
     );
     expect(wrapper.get('[data-testid="preview-page-card"]').classes()).toEqual(
-      expect.arrayContaining(['w-[208px]', 'sm:w-[272px]']),
+      expect.arrayContaining(['w-[208px]', 'sm:w-[272px]', 'shadow-floating']),
+    );
+    expect(wrapper.classes()).toContain('group/preview-page');
+    expect(wrapper.find('[data-testid="preview-page-card-surface"]').exists()).toBe(false);
+    expect(wrapper.get('[data-testid="preview-page-card-actions"]').classes()).toContain(
+      'group-hover/preview-page:opacity-100',
     );
     expect(wrapper.text()).toContain('2026.05.19 게시됨');
     expect(wrapper.text()).toContain('이현서');

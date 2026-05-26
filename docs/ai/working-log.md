@@ -1555,24 +1555,34 @@
 ### Scope
 
 - assistant 답변의 출처 버튼에서 우측 ReferencePanel을 열고 열린 sidebar를 자동으로 닫는 흐름 구현
-- 기존 Confluence preview API를 이용해 검색 결과형 list item에 제목, breadcrumb path, 작성자, 수정일, URL 동작 표시
-- list item hover/focus 시 패널 왼쪽에 기존 `PreviewPageCard`를 popover로 표시
-- 수정일이 30일을 초과한 문서 badge와 질문 keyword 강조 표시 구현
+- 기존 Confluence preview API를 이용해 검색 결과형 list item에 제목, breadcrumb path, 작성자, 수정일 표시
+- list item hover/focus 시 패널 왼쪽에 `PreviewPageCard`를 popover로 표시
+- `PreviewPageCard`는 모든 사용 위치에서 자체 named hover group을 사용해 카드 자체 hover/focus에서만 URL action/path 표현 노출
+- list item 자체의 URL action은 제거해 hover preview card에서만 아이콘과 경로가 노출되도록 정리
+- 사용자 피드백에 따라 오래된 문서 badge를 제거하고 질문 keyword 강조만 유지
+- 새 채팅 진입 시 이전 conversation에서 열린 출처 패널 상태 초기화
+- 공통 카드 기본 레이아웃과 shadow를 유지하면서 새 채팅 화면과 출처 패널의 hover 기준 통일
+- list item과 팝오버 사이 간격을 팝오버 hover 영역으로 연결해 카드로 이동 중 preview 유지
 - feature16 전까지 List/Graph 토글과 Graph placeholder 제공
 
 ### Test Cases
 
 - 출처 버튼 클릭 시 우측 패널이 표시되고 열린 sidebar가 닫힌다.
-- list item이 title/path/author/date와 각 metadata 아이콘, URL 복사 및 원본 열기 action을 표시한다.
-- list item hover 시 패널 왼쪽에 해당 페이지의 `PreviewPageCard`가 나타난다.
-- 30일 초과 source가 오래된 문서 badge를 표시하고 질문 keyword가 강조된다.
+- list item이 title/path/author/date와 각 metadata 아이콘을 표시하되 URL action은 직접 표시하지 않는다.
+- list item hover 시 패널 왼쪽에 해당 페이지의 shadowed `PreviewPageCard`가 나타난다.
+- list item hover만으로 카드 action/path가 활성화되지 않고 카드 자체 hover/focus에서만 활성화된다.
+- ChatEmptyState의 기본 `PreviewPageCard`는 기존 shadow를 유지하고 자체 named hover scope를 사용한다.
+- list item과 popover card 사이의 시각 간격은 hover 이동 영역을 유지한다.
+- 목록에는 오래된 문서 badge가 표시되지 않고 질문 keyword는 강조된다.
+- 출처 패널이 열린 상태에서 새 채팅을 누르면 패널이 닫힌다.
 - Graph 탭은 실제 graph 대신 placeholder를 표시하고 List 탭으로 복귀할 수 있다.
 
 ### Changed Files
 
 - `src/__tests__/feature10.reference-panel.test.ts`: SCR-500/510 acceptance 및 회귀 테스트 추가
-- `src/features/chat/ReferencePanel.vue`: 우측 패널, 목록형 source item, 기존 `PreviewPageCard` 기반 hover preview, List/Graph 토글 구현
-- `src/pages/ChatPage.vue`: 출처 버튼에서 패널 상태 연결과 열린 패널 폭을 반영한 입력 영역 배치 추가
+- `src/features/chat/ReferencePanel.vue`: 목록형 source item, `PreviewPageCard` hover popover와 포인터 이동 bridge, stale badge 제거, List/Graph 토글 구현
+- `src/features/chat/PreviewPageCard.vue`: 기본 카드 구조 유지, 공통 named hover group으로 중첩 hover 전파 차단
+- `src/pages/ChatPage.vue`: 출처 버튼에서 패널 상태 연결, 열린 패널 폭 반영, 새 채팅 route에서 패널 상태 초기화 추가
 - `docs/ai/current-plan.md`: feature10 완료 체크 처리
 - `docs/ai/working-log.md`: feature10 구현 및 검증 기록
 
@@ -1581,6 +1591,11 @@
 - `npm test -- src/__tests__/feature10.reference-panel.test.ts` (구현 전 실패 확인)
 - `npm test -- src/__tests__/feature10.reference-panel.test.ts`
 - `npm test -- src/__tests__/feature10.reference-panel.test.ts` (목록형 UI 보정 전 실패 확인)
+- `npm test -- src/__tests__/feature10.reference-panel.test.ts` (badge 제거 및 새 채팅 초기화 전 실패 확인)
+- `npm test -- src/__tests__/feature10.reference-panel.test.ts` (목록 action 제거 전 실패 확인)
+- `npm test -- src/__tests__/feature10.reference-panel.test.ts` (preview hover scope 분리 전 실패 확인)
+- `npm test -- src/__tests__/feature8.chat-main.test.ts src/__tests__/feature10.reference-panel.test.ts` (메인 카드 회귀/팝오버 variant 복구 전 실패 확인)
+- `npm test -- src/__tests__/feature8.chat-main.test.ts src/__tests__/feature10.reference-panel.test.ts` (공통 named hover scope/팝오버 이동 bridge 구현 전 실패 확인)
 - `npm test -- src/__tests__/feature8.chat-main.test.ts src/__tests__/feature9.chat-conversation.test.ts src/__tests__/feature10.reference-panel.test.ts`
 - `npm run typecheck`
 - `npm run lint`
@@ -1593,16 +1608,22 @@
 
 - 구현 전 feature10 테스트: failed, `ReferencePanel.vue` 미존재 확인
 - 목록형 UI 보정 테스트: failed, 기존 boxed `reference-card`가 list item/hover preview 조건을 충족하지 않음
-- 구현 후 feature10 테스트: passed, 4 tests passed
-- 연관 Chat 테스트: passed, 3 test files and 31 tests passed
+- 후속 UI 보정 테스트: failed, 오래된 문서 badge가 노출되고 새 채팅에서도 패널이 유지됨
+- hover action 보정 테스트: failed, list item 자체에도 URL action이 렌더링됨
+- hover scope 보정 테스트: failed, `PreviewPageCard`의 일반 `group-hover`가 list item hover를 상속함
+- 메인 카드 회귀/팝오버 variant 테스트: failed, 공통 카드 기본 shadow 구조가 바뀌었고 팝오버 격리 prop이 없음
+- 공통 named hover scope/팝오버 이동 bridge 테스트: failed, 기본 카드는 일반 group을 사용하고 팝오버 간격은 hover 영역 밖임
+- 구현 후 feature10 테스트: passed, 5 tests passed
+- 연관 Chat 테스트: passed, 3 test files and 32 tests passed
 - `npm run typecheck`: passed
 - `./scripts/format.sh`: passed
+- hover scope 테스트 보정 후 `./scripts/lint.sh`: failed, 미사용 테스트 변수 제거 후 passed
 - `./scripts/lint.sh`: passed
-- `./scripts/test.sh`: passed, 10 test files and 75 tests passed
-- `./scripts/verify.sh`: passed, 10 test files and 75 tests passed
+- `./scripts/test.sh`: passed, 10 test files and 76 tests passed
+- `./scripts/verify.sh`: passed, 10 test files and 76 tests passed
 
 ### Notes / Remaining Issues
 
 - API 계약은 변경하지 않고 기존 preview endpoint를 사용했으므로 `docs/api-spec.md` 추가 수정은 필요하지 않다.
 - 실제 graph node/edge 렌더링과 상호작용은 계획된 feature16 범위로 유지한다.
-- boxed ReferenceCard는 사용자 피드백에 따라 별도 컴포넌트로 유지하지 않고 목록형 item으로 대체했다.
+- boxed ReferenceCard와 오래된 문서 badge는 사용자 피드백에 따라 유지하지 않고 목록형 item으로 대체했다.

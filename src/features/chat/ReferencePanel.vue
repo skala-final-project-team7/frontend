@@ -7,6 +7,9 @@
 변경사항 내역 (날짜, 변경목적, 변경내용 순)
   - 2026-05-26, feature10 구현, ReferencePanel 최초 작성
   - 2026-05-26, feature10 UI 보정, 목록 행과 왼쪽 hover PreviewPageCard 구성
+  - 2026-05-26, feature10 UI 보정, 오래된 문서 badge 제거
+  - 2026-05-26, feature10 UI 보정, source URL action은 hover PreviewPageCard로 한정
+  - 2026-05-26, feature10 UI 보정, 카드 공통 named hover scope 사용 및 팝오버 이동 hover 영역 연결
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -14,13 +17,11 @@
 --------------------------------------------------
 -->
 <script setup lang="ts">
-import { ArrowUpRight, Clock3, FileText, Link2, UserRound, X } from '@lucide/vue';
+import { Clock3, FileText, UserRound, X } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 
 import { getConfluencePagePreview } from '@/api';
-import { useToast } from '@/composables/useToast';
 import PreviewPageCard from '@/features/chat/PreviewPageCard.vue';
-import { BaseTooltip } from '@/shared';
 import type { ConfluencePagePreview, Source } from '@/types/api';
 
 type HighlightSegment = {
@@ -40,7 +41,6 @@ defineEmits<{
 const activeView = ref<'list' | 'graph'>('list');
 const previewsByPageId = ref<Record<string, ConfluencePagePreview>>({});
 const hoveredPageId = ref('');
-const { showToast } = useToast();
 
 const hoveredPreview = computed(() => previewsByPageId.value[hoveredPageId.value]);
 
@@ -90,12 +90,6 @@ function formatDate(value: string) {
   return `${year}.${month}.${day}`;
 }
 
-function isStaleDocument(source: Source) {
-  const updatedAt = new Date(source.sourceUpdatedAt).getTime();
-
-  return !Number.isNaN(updatedAt) && Date.now() - updatedAt > 30 * 24 * 60 * 60 * 1000;
-}
-
 function highlightSegments(value: string): HighlightSegment[] {
   const terms = [...new Set(props.keyword.trim().split(/\s+/).filter(Boolean))];
 
@@ -115,15 +109,6 @@ function highlightSegments(value: string): HighlightSegment[] {
       text: segment,
       isHighlighted: terms.some((term) => term.toLowerCase() === segment.toLowerCase()),
     }));
-}
-
-async function copySourceUrl(source: Source) {
-  try {
-    await navigator.clipboard.writeText(source.url);
-    showToast('원본 URL이 복사되었습니다');
-  } catch {
-    showToast('URL 복사에 실패했습니다', { variant: 'error' });
-  }
 }
 </script>
 
@@ -194,14 +179,14 @@ async function copySourceUrl(source: Source) {
         <div
           v-if="hoveredPageId === source.pageId && hoveredPreview"
           data-testid="reference-hover-preview"
-          class="absolute right-full top-0 z-40 mr-5"
+          class="absolute right-full top-0 z-40 pr-5"
         >
           <div class="relative">
             <PreviewPageCard :page="hoveredPreview" />
           </div>
         </div>
 
-        <div class="flex items-start justify-between gap-2">
+        <div>
           <div class="min-w-0">
             <div class="flex items-start gap-2">
               <FileText
@@ -233,16 +218,9 @@ async function copySourceUrl(source: Source) {
               </template>
             </p>
           </div>
-          <span
-            v-if="isStaleDocument(source)"
-            data-testid="reference-stale-badge"
-            class="shrink-0 rounded-full bg-bg-200 px-2 py-1 font-lina text-caption font-semibold text-overlay-dark-60"
-          >
-            오래된 문서
-          </span>
         </div>
 
-        <div class="mt-3 flex items-center justify-between pl-6">
+        <div class="mt-3 pl-6">
           <div class="flex items-center gap-3 font-lina text-small text-overlay-dark-40">
             <span class="inline-flex items-center gap-1">
               <UserRound data-testid="reference-author-icon" aria-hidden="true" class="size-3.5" />
@@ -254,33 +232,6 @@ async function copySourceUrl(source: Source) {
                 formatDate(source.sourceUpdatedAt)
               }}</time>
             </span>
-          </div>
-          <div
-            class="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
-          >
-            <BaseTooltip label="원본 URL 복사" placement="top">
-              <button
-                data-testid="reference-copy-url"
-                type="button"
-                aria-label="원본 URL 복사"
-                class="inline-flex size-7 items-center justify-center rounded-button text-overlay-dark-60 transition hover:bg-bg-200 focus-visible:outline-none focus-visible:shadow-focus"
-                @click="copySourceUrl(source)"
-              >
-                <Link2 aria-hidden="true" class="size-4" />
-              </button>
-            </BaseTooltip>
-            <BaseTooltip label="원본 새 탭으로 열기" placement="top">
-              <a
-                data-testid="reference-open-url"
-                :href="source.url"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="원본 새 탭으로 열기"
-                class="inline-flex size-7 items-center justify-center rounded-button text-overlay-dark-60 transition hover:bg-bg-200 focus-visible:outline-none focus-visible:shadow-focus"
-              >
-                <ArrowUpRight aria-hidden="true" class="size-4" />
-              </a>
-            </BaseTooltip>
           </div>
         </div>
       </article>

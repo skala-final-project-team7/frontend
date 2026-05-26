@@ -12,6 +12,7 @@
   - 2026-05-22, SCR-420 보강, 사용자 메시지 수정본 이전/현재 표시 전환 추가
   - 2026-05-26, feature9 회귀 수정, 지연된 메시지 이력 실패 시 현재 대화/스트림 보존
   - 2026-05-26, feature10 구현, 출처 패널 열기와 sidebar 닫기 상태 연결
+  - 2026-05-26, feature10 UI 보정, 새 채팅 진입 시 출처 패널 초기화
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -418,6 +419,7 @@ watch(
   async (conversationId) => {
     if (!conversationId) {
       chatStore.clearActiveConversation();
+      closeReferencePanel();
       editingMessageId.value = '';
       editingContent.value = '';
       resentMessageIds.value = new Set();
