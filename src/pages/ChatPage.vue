@@ -71,7 +71,6 @@ const resentMessageIds = ref<Set<string>>(new Set());
 const userMessageVersionsById = ref<Record<string, UserMessageVersionState>>({});
 const isReferencePanelOpen = ref(false);
 const referenceSources = ref<Source[]>([]);
-const referenceKeyword = ref('');
 const chatStore = useChatStore();
 const { showToast } = useToast();
 let sidebarContentTimer: number | undefined;
@@ -374,12 +373,7 @@ function openReferencePanelFromSourceButton(sources: Source[] | undefined) {
     return;
   }
 
-  const latestUserMessage = [...activeMessages.value]
-    .reverse()
-    .find((message) => message.role === 'user');
-
   referenceSources.value = sources;
-  referenceKeyword.value = latestUserMessage?.content ?? '';
   isReferencePanelOpen.value = true;
   isSidebarOpen.value = false;
 }
@@ -390,7 +384,6 @@ function openReferencePanelFromSourceButton(sources: Source[] | undefined) {
 function closeReferencePanel() {
   isReferencePanelOpen.value = false;
   referenceSources.value = [];
-  referenceKeyword.value = '';
 }
 
 // 현재 사용자와 대화 목록을 초기에 불러와 사이드바와 상단 프로필을 채운다.
@@ -788,7 +781,6 @@ watch(
       <ReferencePanel
         v-if="isReferencePanelOpen"
         :sources="referenceSources"
-        :keyword="referenceKeyword"
         @close="closeReferencePanel"
       />
       <aside

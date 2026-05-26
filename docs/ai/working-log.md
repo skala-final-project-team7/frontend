@@ -1559,7 +1559,7 @@
 - list item hover/focus 시 패널 왼쪽에 `PreviewPageCard`를 popover로 표시
 - `PreviewPageCard`는 모든 사용 위치에서 자체 named hover group을 사용해 카드 자체 hover/focus에서만 URL action/path 표현 노출
 - list item 자체의 URL action은 제거해 hover preview card에서만 아이콘과 경로가 노출되도록 정리
-- 사용자 피드백에 따라 오래된 문서 badge를 제거하고 질문 keyword 강조만 유지
+- 사용자 피드백에 따라 오래된 문서 badge와 질문 문자열 기반 keyword 강조를 제거
 - 새 채팅 진입 시 이전 conversation에서 열린 출처 패널 상태 초기화
 - 공통 카드 기본 레이아웃과 shadow를 유지하면서 새 채팅 화면과 출처 패널의 hover 기준 통일
 - list item과 팝오버 사이 간격을 팝오버 hover 영역으로 연결해 카드로 이동 중 preview 유지
@@ -1573,7 +1573,7 @@
 - list item hover만으로 카드 action/path가 활성화되지 않고 카드 자체 hover/focus에서만 활성화된다.
 - ChatEmptyState의 기본 `PreviewPageCard`는 기존 shadow를 유지하고 자체 named hover scope를 사용한다.
 - list item과 popover card 사이의 시각 간격은 hover 이동 영역을 유지한다.
-- 목록에는 오래된 문서 badge가 표시되지 않고 질문 keyword는 강조된다.
+- 목록에는 오래된 문서 badge와 단순 keyword 강조 markup이 표시되지 않는다.
 - 출처 패널이 열린 상태에서 새 채팅을 누르면 패널이 닫힌다.
 - Graph 탭은 실제 graph 대신 placeholder를 표시하고 List 탭으로 복귀할 수 있다.
 
@@ -1582,7 +1582,7 @@
 - `src/__tests__/feature10.reference-panel.test.ts`: SCR-500/510 acceptance 및 회귀 테스트 추가
 - `src/features/chat/ReferencePanel.vue`: 목록형 source item, `PreviewPageCard` hover popover와 포인터 이동 bridge, stale badge 제거, List/Graph 토글 구현
 - `src/features/chat/PreviewPageCard.vue`: 기본 카드 구조 유지, 공통 named hover group으로 중첩 hover 전파 차단
-- `src/pages/ChatPage.vue`: 출처 버튼에서 패널 상태 연결, 열린 패널 폭 반영, 새 채팅 route에서 패널 상태 초기화 추가
+- `src/pages/ChatPage.vue`: 출처 버튼에서 패널 상태 연결, 열린 패널 폭 반영, 새 채팅 route 초기화 및 불필요한 keyword 전달 상태 제거
 - `docs/ai/current-plan.md`: feature10 완료 체크 처리
 - `docs/ai/working-log.md`: feature10 구현 및 검증 기록
 
@@ -1626,7 +1626,7 @@
 
 - API 계약은 변경하지 않고 기존 preview endpoint를 사용했으므로 `docs/api-spec.md` 추가 수정은 필요하지 않다.
 - 실제 graph node/edge 렌더링과 상호작용은 계획된 feature16 범위로 유지한다.
-- boxed ReferenceCard와 오래된 문서 badge는 사용자 피드백에 따라 유지하지 않고 목록형 item으로 대체했다.
+- boxed ReferenceCard, 오래된 문서 badge, 단순 질문 keyword highlight는 사용자 피드백에 따라 유지하지 않고 목록형 item으로 정리했다.
 
 ## 2026-05-26 - SCR-400 UI 보정 (collapsed sidebar tooltip clipping)
 
@@ -1718,3 +1718,48 @@
 
 - 출처 목록 item의 작성자/작성일 표시는 변경하지 않았다.
 - API, DB, 인증/인가 계약 변경은 없다.
+
+## 2026-05-26 - feature10 UI 보정 (출처 keyword highlight 제거)
+
+### Scope
+
+- 출처 목록의 질문 문자열 단순 일치 highlight(`<mark>`) 제거
+- `ReferencePanel`의 `keyword` prop 및 `ChatPage`의 전달 상태 제거
+- 실제 검색 근거 강조는 backend/RAG snippet 또는 highlight metadata 계약 확정 후 별도 범위로 검토
+
+### Test Cases
+
+- 출처 목록은 제목/경로/작성자/작성일을 표시하되 `<mark>` highlight markup을 렌더링하지 않는다.
+- 출처 hover preview, 새 채팅 패널 초기화, Chat 기본/대화 화면 회귀가 유지된다.
+
+### Changed Files
+
+- `src/features/chat/ReferencePanel.vue`: keyword prop/helper 및 `<mark>` 분기 제거
+- `src/pages/ChatPage.vue`: `referenceKeyword` 상태와 패널 전달 제거
+- `src/__tests__/feature10.reference-panel.test.ts`: 단순 highlight 미노출 회귀 테스트 반영
+- `docs/ai/current-plan.md`: feature10 highlight 완료 항목 제거
+- `docs/ai/working-log.md`: UI 보정 기록
+
+### Commands
+
+- `npm test -- src/__tests__/feature10.reference-panel.test.ts` (구현 전 실패 확인)
+- `npm test -- src/__tests__/feature10.reference-panel.test.ts src/__tests__/feature8.chat-main.test.ts src/__tests__/feature9.chat-conversation.test.ts`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- 구현 전 관련 테스트: failed, `keyword` prop과 `highlightSegments()`가 여전히 필수이며 목록이 highlight markup을 렌더링함
+- 연관 Chat 테스트: passed, 3 test files and 34 tests passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `npm run typecheck`: passed
+- `./scripts/test.sh`: passed, 10 test files and 78 tests passed
+- `./scripts/verify.sh`: passed, 10 test files and 78 tests passed
+
+### Notes / Remaining Issues
+
+- 출처 목록의 title/path/작성자/작성일 및 hover preview 동작은 유지한다.
+- API response 계약은 변경하지 않았으며, 실제 highlight metadata를 도입할 때만 API 명세 갱신을 검토한다.

@@ -117,7 +117,6 @@
 [x] 출처 버튼 클릭 시 우측 슬라이드 패널 표시
 [x] 출처 List item에 Title / Path / 작성자 / 작성일자 표시
 [x] List item hover 시 PreviewPageCard 표시 및 카드로 포인터 이동 중 유지, 카드 자체 hover에서만 shadow / URL 액션 / Path 표시
-[x] 출처 List item 키워드 하이라이트 기준 구현
 [x] 새 채팅 진입 시 이전 conversation의 출처 패널 닫기
 [x] 후속 feature16 실제 그래프 렌더링 전까지 Graph view placeholder와 List/Graph 토글 구현
 

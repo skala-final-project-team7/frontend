@@ -12,6 +12,7 @@
  *   - 2026-05-26, feature10 UI 보정, 기본 카드 구조를 보존한 preview 전용 hover scope 검증 추가
  *   - 2026-05-26, feature10 UI 보정, 공통 named hover scope와 팝오버 이동 영역 검증 추가
  *   - 2026-05-26, feature10 UI 보정, hover preview 카드의 본문 전용 표시 검증 추가
+ *   - 2026-05-26, feature10 UI 보정, 단순 질문 keyword highlight 제거 검증 추가
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -141,11 +142,10 @@ describe('feature10 SCR-500, SCR-510 Reference panel', () => {
     expect(wrapper.get('[data-testid="reference-panel"]').text()).toContain('검색 결과 (1개)');
   });
 
-  it('renders compact list metadata without stale badge or preview-only URL actions', async () => {
+  it('renders compact list metadata without stale badge, keyword markup, or preview-only URL actions', async () => {
     const wrapper = mount(ReferencePanel, {
       props: {
         sources: mockSources,
-        keyword: 'S3 권한 오류',
       },
     });
     await flushAsyncUpdates();
@@ -162,7 +162,7 @@ describe('feature10 SCR-500, SCR-510 Reference panel', () => {
     expect(sourceItem.find('[data-testid="reference-source-icon"]').exists()).toBe(true);
     expect(sourceItem.find('[data-testid="reference-author-icon"]').exists()).toBe(true);
     expect(sourceItem.find('[data-testid="reference-date-icon"]').exists()).toBe(true);
-    expect(sourceItem.findAll('mark').some((mark) => mark.text() === 'S3')).toBe(true);
+    expect(sourceItem.find('mark').exists()).toBe(false);
     expect(sourceItem.find('[data-testid="reference-copy-url"]').exists()).toBe(false);
     expect(sourceItem.find('[data-testid="reference-open-url"]').exists()).toBe(false);
     expect(sourceItem.find('[data-testid="preview-page-card-actions"]').exists()).toBe(false);
@@ -173,7 +173,6 @@ describe('feature10 SCR-500, SCR-510 Reference panel', () => {
     const wrapper = mount(ReferencePanel, {
       props: {
         sources: mockSources,
-        keyword: 'S3',
       },
     });
     await flushAsyncUpdates();
@@ -232,7 +231,6 @@ describe('feature10 SCR-500, SCR-510 Reference panel', () => {
     const wrapper = mount(ReferencePanel, {
       props: {
         sources: mockSources,
-        keyword: '',
       },
     });
 

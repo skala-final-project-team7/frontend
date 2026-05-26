@@ -10,6 +10,7 @@
   - 2026-05-26, feature10 UI 보정, 오래된 문서 badge 제거
   - 2026-05-26, feature10 UI 보정, source URL action은 hover PreviewPageCard로 한정
   - 2026-05-26, feature10 UI 보정, 카드 공통 named hover scope 사용 및 팝오버 이동 hover 영역 연결
+  - 2026-05-26, feature10 UI 보정, 질문 문자열 기반 keyword highlight 제거
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -24,14 +25,8 @@ import { getConfluencePagePreview } from '@/api';
 import PreviewPageCard from '@/features/chat/PreviewPageCard.vue';
 import type { ConfluencePagePreview, Source } from '@/types/api';
 
-type HighlightSegment = {
-  text: string;
-  isHighlighted: boolean;
-};
-
 const props = defineProps<{
   sources: Source[];
-  keyword: string;
 }>();
 
 defineEmits<{
@@ -88,27 +83,6 @@ function formatDate(value: string) {
   const day = `${parsedDate.getDate()}`.padStart(2, '0');
 
   return `${year}.${month}.${day}`;
-}
-
-function highlightSegments(value: string): HighlightSegment[] {
-  const terms = [...new Set(props.keyword.trim().split(/\s+/).filter(Boolean))];
-
-  if (terms.length === 0) {
-    return [{ text: value, isHighlighted: false }];
-  }
-
-  const expression = new RegExp(
-    `(${terms.map((term) => term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`,
-    'gi',
-  );
-
-  return value
-    .split(expression)
-    .filter((segment) => segment.length > 0)
-    .map((segment) => ({
-      text: segment,
-      isHighlighted: terms.some((term) => term.toLowerCase() === segment.toLowerCase()),
-    }));
 }
 </script>
 
@@ -195,27 +169,11 @@ function highlightSegments(value: string): HighlightSegment[] {
                 class="mt-1 size-4 shrink-0 text-overlay-dark-40"
               />
               <p class="font-lina text-body font-semibold leading-6 text-overlay-dark-80">
-                <template
-                  v-for="(segment, index) in highlightSegments(source.title)"
-                  :key="`${segment.text}-${index}`"
-                >
-                  <mark v-if="segment.isHighlighted" class="rounded bg-primary-50 text-inherit">
-                    {{ segment.text }}
-                  </mark>
-                  <template v-else>{{ segment.text }}</template>
-                </template>
+                {{ source.title }}
               </p>
             </div>
             <p class="mt-2 truncate pl-6 font-lina text-small text-overlay-dark-40">
-              <template
-                v-for="(segment, index) in highlightSegments(sourcePath(source))"
-                :key="`${segment.text}-${index}`"
-              >
-                <mark v-if="segment.isHighlighted" class="rounded bg-primary-50 text-inherit">
-                  {{ segment.text }}
-                </mark>
-                <template v-else>{{ segment.text }}</template>
-              </template>
+              {{ sourcePath(source) }}
             </p>
           </div>
         </div>
