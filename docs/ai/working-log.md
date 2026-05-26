@@ -1627,3 +1627,94 @@
 - API 계약은 변경하지 않고 기존 preview endpoint를 사용했으므로 `docs/api-spec.md` 추가 수정은 필요하지 않다.
 - 실제 graph node/edge 렌더링과 상호작용은 계획된 feature16 범위로 유지한다.
 - boxed ReferenceCard와 오래된 문서 badge는 사용자 피드백에 따라 유지하지 않고 목록형 item으로 대체했다.
+
+## 2026-05-26 - SCR-400 UI 보정 (collapsed sidebar tooltip clipping)
+
+### Scope
+
+- 자체 `BaseTooltip` content를 body-level portal로 렌더링해 sidebar/layout overflow clipping 방지
+- 기본 tooltip을 trigger 우측 중앙, 12px offset으로 fixed 배치하고 높은 z-index 적용
+- 기존 `placement` prop 기반 top/right/bottom/left 호출 계약 유지
+- sidebar layout과 overflow 속성은 변경하지 않음
+
+### Test Cases
+
+- `BaseTooltip` hover 시 content가 `document.body` 아래에 렌더링된다.
+- 기본 tooltip은 `right`, `center`, `12px` offset metadata와 `z-[9999]`를 가진다.
+- collapsed sidebar의 `사이드바 열기` tooltip이 body portal의 오른쪽 tooltip으로 표시된다.
+- 기존 `placement="left"` tooltip은 trigger 왼쪽 바깥에 유지된다.
+
+### Changed Files
+
+- `src/shared/ui/BaseTooltip.vue`: Teleport, fixed positioning, hover/focus 표시 상태 및 resize/scroll 재배치 추가
+- `src/__tests__/feature8.chat-main.test.ts`: portal 기본 배치와 collapsed sidebar tooltip 회귀 테스트 추가
+- `docs/ai/working-log.md`: SCR-400 tooltip clipping 보정 기록
+
+### Commands
+
+- `npm test -- src/__tests__/feature8.chat-main.test.ts` (portal 구현 전 실패 확인)
+- `npm test -- src/__tests__/feature8.chat-main.test.ts src/__tests__/feature9.chat-conversation.test.ts src/__tests__/feature10.reference-panel.test.ts`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- portal 구현 전 테스트: failed, tooltip content가 trigger 내부에 렌더링되어 body portal 조건을 충족하지 않음
+- left placement 호환 테스트: failed, 포털 전환 후 왼쪽 tooltip의 가로 변환이 누락됨
+- 연관 Chat 테스트: passed, 3 test files and 34 tests passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `npm run typecheck`: passed
+- `./scripts/test.sh`: passed, 10 test files and 78 tests passed
+- `./scripts/verify.sh`: passed, 10 test files and 78 tests passed
+
+### Notes / Remaining Issues
+
+- Radix/shadcn 의존성이 없는 프로젝트이므로 기존 공통 `BaseTooltip`에 Vue `Teleport`로 동일 목적을 구현했다.
+- API, DB, 인증/인가 계약 변경은 없다.
+
+## 2026-05-26 - feature10 UI 보정 (PreviewPageCard 본문 전용 표시)
+
+### Scope
+
+- 새 채팅 화면과 출처 hover 팝오버에서 재사용하는 `PreviewPageCard`의 상단 게시일/작성자 문구 제거
+- 카드 안에는 sanitized body preview만 표시하고, 출처 목록의 작성자/작성일 metadata는 유지
+
+### Test Cases
+
+- 새 채팅 화면의 preview card에 게시일/작성자 문구가 표시되지 않는다.
+- 출처 hover preview card에 게시일/작성자 문구가 표시되지 않는다.
+- preview card body는 별도 상단 metadata 간격 없이 렌더링된다.
+
+### Changed Files
+
+- `src/features/chat/PreviewPageCard.vue`: 상단 metadata 렌더링 및 포맷 helper 제거, body 상단 margin 제거
+- `src/__tests__/feature8.chat-main.test.ts`: 새 채팅 preview 본문 전용 표시 회귀 테스트 반영
+- `src/__tests__/feature10.reference-panel.test.ts`: 출처 hover preview 본문 전용 표시 회귀 테스트 반영
+- `docs/ai/working-log.md`: UI 보정 기록
+
+### Commands
+
+- `npm test -- src/__tests__/feature8.chat-main.test.ts src/__tests__/feature10.reference-panel.test.ts` (구현 전 실패 확인)
+- `npm test -- src/__tests__/feature8.chat-main.test.ts src/__tests__/feature10.reference-panel.test.ts`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- 구현 전 관련 테스트: failed, PreviewPageCard가 상단 게시일/작성자 문구와 body margin을 렌더링함
+- 관련 preview 테스트: passed, 2 test files and 19 tests passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `npm run typecheck`: passed
+- `./scripts/test.sh`: passed, 10 test files and 78 tests passed
+- `./scripts/verify.sh`: passed, 10 test files and 78 tests passed
+
+### Notes / Remaining Issues
+
+- 출처 목록 item의 작성자/작성일 표시는 변경하지 않았다.
+- API, DB, 인증/인가 계약 변경은 없다.

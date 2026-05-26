@@ -9,6 +9,7 @@
   - 2026-05-20, feature8 보정, hover 시 URL 복사/외부 이동 액션과 breadcrumbs 표시 추가
   - 2026-05-20, feature8 보정, 툴팁이 카드 overflow-hidden에 잘리지 않도록 wrapper 분리
   - 2026-05-26, feature10 UI 보정, 배치 위치와 무관한 자체 named hover scope 적용 및 기본 카드 구조 보존
+  - 2026-05-26, feature10 UI 보정, 카드 상단 metadata 제거 및 본문 전용 preview 적용
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -32,20 +33,6 @@ const props = defineProps({
     required: true,
   },
 });
-
-const formatUpdatedLabel = (updatedAt: string) => {
-  const parsedDate = new Date(updatedAt);
-
-  if (Number.isNaN(parsedDate.getTime())) {
-    return '';
-  }
-
-  const year = parsedDate.getFullYear();
-  const month = `${parsedDate.getMonth() + 1}`.padStart(2, '0');
-  const day = `${parsedDate.getDate()}`.padStart(2, '0');
-
-  return `${year}.${month}.${day} 게시됨`;
-};
 
 const sanitizedBodyViewValue = computed(() =>
   DOMPurify.sanitize(props.page.bodyViewValue, {
@@ -73,13 +60,10 @@ async function copyPageUrl() {
       tabindex="0"
       class="aspect-[166/191] w-[208px] overflow-hidden rounded-item bg-primary-white p-5 text-overlay-dark-80 shadow-floating outline-none transition-shadow group-hover/preview-page:shadow-card-press focus-visible:shadow-focus sm:w-[272px]"
     >
-      <p class="text-small text-overlay-dark-40">
-        {{ formatUpdatedLabel(props.page.updatedAt) }} · {{ props.page.authorName }} 작성
-      </p>
       <!-- eslint-disable vue/no-v-html -->
       <div
         data-testid="preview-page-card-body"
-        class="preview-page-card-body mt-5 text-small"
+        class="preview-page-card-body text-small"
         v-html="sanitizedBodyViewValue"
       />
       <!-- eslint-enable vue/no-v-html -->

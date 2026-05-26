@@ -11,6 +11,7 @@
  *   - 2026-05-26, feature10 UI 보정, URL action과 path hover를 preview card에만 제한
  *   - 2026-05-26, feature10 UI 보정, 기본 카드 구조를 보존한 preview 전용 hover scope 검증 추가
  *   - 2026-05-26, feature10 UI 보정, 공통 named hover scope와 팝오버 이동 영역 검증 추가
+ *   - 2026-05-26, feature10 UI 보정, hover preview 카드의 본문 전용 표시 검증 추가
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -198,7 +199,9 @@ describe('feature10 SCR-500, SCR-510 Reference panel', () => {
     expect(previewBreadcrumbs.classes()).not.toContain('group-hover:opacity-100');
     expect(preview.find('[data-testid="preview-page-card-copy"]').exists()).toBe(true);
     expect(preview.find('[data-testid="preview-page-card-external"]').exists()).toBe(true);
-    expect(preview.text()).toContain('Platform Team');
+    expect(preview.text()).not.toContain('Platform Team');
+    expect(preview.text()).not.toContain('2026.04.15 게시됨');
+    expect(preview.get('[data-testid="preview-page-card-body"]').classes()).not.toContain('mt-5');
 
     await wrapper.get('[data-testid="reference-list-item"]').trigger('mouseleave');
 
