@@ -1549,3 +1549,217 @@
 - 구현 전 계약 회귀 테스트는 `errorCode` 미전달, UTC mock timestamp, preview 실패 payload 불일치로 실패했다.
 - 관련 테스트 및 typecheck: passed
 - 전체 테스트: passed, 9 test files and 71 tests passed
+
+## 2026-05-26 - feature10: 출처 패널 구현 (SCR-500, SCR-510)
+
+### Scope
+
+- assistant 답변의 출처 버튼에서 우측 ReferencePanel을 열고 열린 sidebar를 자동으로 닫는 흐름 구현
+- 기존 Confluence preview API를 이용해 검색 결과형 list item에 제목, breadcrumb path, 작성자, 수정일 표시
+- list item hover/focus 시 패널 왼쪽에 `PreviewPageCard`를 popover로 표시
+- `PreviewPageCard`는 모든 사용 위치에서 자체 named hover group을 사용해 카드 자체 hover/focus에서만 URL action/path 표현 노출
+- list item 자체의 URL action은 제거해 hover preview card에서만 아이콘과 경로가 노출되도록 정리
+- 사용자 피드백에 따라 오래된 문서 badge와 질문 문자열 기반 keyword 강조를 제거
+- 새 채팅 진입 시 이전 conversation에서 열린 출처 패널 상태 초기화
+- 공통 카드 기본 레이아웃과 shadow를 유지하면서 새 채팅 화면과 출처 패널의 hover 기준 통일
+- list item과 팝오버 사이 간격을 팝오버 hover 영역으로 연결해 카드로 이동 중 preview 유지
+- feature16 전까지 List/Graph 토글과 Graph placeholder 제공
+
+### Test Cases
+
+- 출처 버튼 클릭 시 우측 패널이 표시되고 열린 sidebar가 닫힌다.
+- list item이 title/path/author/date와 각 metadata 아이콘을 표시하되 URL action은 직접 표시하지 않는다.
+- list item hover 시 패널 왼쪽에 해당 페이지의 shadowed `PreviewPageCard`가 나타난다.
+- list item hover만으로 카드 action/path가 활성화되지 않고 카드 자체 hover/focus에서만 활성화된다.
+- ChatEmptyState의 기본 `PreviewPageCard`는 기존 shadow를 유지하고 자체 named hover scope를 사용한다.
+- list item과 popover card 사이의 시각 간격은 hover 이동 영역을 유지한다.
+- 목록에는 오래된 문서 badge와 단순 keyword 강조 markup이 표시되지 않는다.
+- 출처 패널이 열린 상태에서 새 채팅을 누르면 패널이 닫힌다.
+- Graph 탭은 실제 graph 대신 placeholder를 표시하고 List 탭으로 복귀할 수 있다.
+
+### Changed Files
+
+- `src/__tests__/feature10.reference-panel.test.ts`: SCR-500/510 acceptance 및 회귀 테스트 추가
+- `src/features/chat/ReferencePanel.vue`: 목록형 source item, `PreviewPageCard` hover popover와 포인터 이동 bridge, stale badge 제거, List/Graph 토글 구현
+- `src/features/chat/PreviewPageCard.vue`: 기본 카드 구조 유지, 공통 named hover group으로 중첩 hover 전파 차단
+- `src/pages/ChatPage.vue`: 출처 버튼에서 패널 상태 연결, 열린 패널 폭 반영, 새 채팅 route 초기화 및 불필요한 keyword 전달 상태 제거
+- `docs/ai/current-plan.md`: feature10 완료 체크 처리
+- `docs/ai/working-log.md`: feature10 구현 및 검증 기록
+
+### Commands
+
+- `npm test -- src/__tests__/feature10.reference-panel.test.ts` (구현 전 실패 확인)
+- `npm test -- src/__tests__/feature10.reference-panel.test.ts`
+- `npm test -- src/__tests__/feature10.reference-panel.test.ts` (목록형 UI 보정 전 실패 확인)
+- `npm test -- src/__tests__/feature10.reference-panel.test.ts` (badge 제거 및 새 채팅 초기화 전 실패 확인)
+- `npm test -- src/__tests__/feature10.reference-panel.test.ts` (목록 action 제거 전 실패 확인)
+- `npm test -- src/__tests__/feature10.reference-panel.test.ts` (preview hover scope 분리 전 실패 확인)
+- `npm test -- src/__tests__/feature8.chat-main.test.ts src/__tests__/feature10.reference-panel.test.ts` (메인 카드 회귀/팝오버 variant 복구 전 실패 확인)
+- `npm test -- src/__tests__/feature8.chat-main.test.ts src/__tests__/feature10.reference-panel.test.ts` (공통 named hover scope/팝오버 이동 bridge 구현 전 실패 확인)
+- `npm test -- src/__tests__/feature8.chat-main.test.ts src/__tests__/feature9.chat-conversation.test.ts src/__tests__/feature10.reference-panel.test.ts`
+- `npm run typecheck`
+- `npm run lint`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- 구현 전 feature10 테스트: failed, `ReferencePanel.vue` 미존재 확인
+- 목록형 UI 보정 테스트: failed, 기존 boxed `reference-card`가 list item/hover preview 조건을 충족하지 않음
+- 후속 UI 보정 테스트: failed, 오래된 문서 badge가 노출되고 새 채팅에서도 패널이 유지됨
+- hover action 보정 테스트: failed, list item 자체에도 URL action이 렌더링됨
+- hover scope 보정 테스트: failed, `PreviewPageCard`의 일반 `group-hover`가 list item hover를 상속함
+- 메인 카드 회귀/팝오버 variant 테스트: failed, 공통 카드 기본 shadow 구조가 바뀌었고 팝오버 격리 prop이 없음
+- 공통 named hover scope/팝오버 이동 bridge 테스트: failed, 기본 카드는 일반 group을 사용하고 팝오버 간격은 hover 영역 밖임
+- 구현 후 feature10 테스트: passed, 5 tests passed
+- 연관 Chat 테스트: passed, 3 test files and 32 tests passed
+- `npm run typecheck`: passed
+- `./scripts/format.sh`: passed
+- hover scope 테스트 보정 후 `./scripts/lint.sh`: failed, 미사용 테스트 변수 제거 후 passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed, 10 test files and 76 tests passed
+- `./scripts/verify.sh`: passed, 10 test files and 76 tests passed
+
+### Notes / Remaining Issues
+
+- API 계약은 변경하지 않고 기존 preview endpoint를 사용했으므로 `docs/api-spec.md` 추가 수정은 필요하지 않다.
+- 실제 graph node/edge 렌더링과 상호작용은 계획된 feature16 범위로 유지한다.
+- boxed ReferenceCard, 오래된 문서 badge, 단순 질문 keyword highlight는 사용자 피드백에 따라 유지하지 않고 목록형 item으로 정리했다.
+
+## 2026-05-26 - SCR-400 UI 보정 (collapsed sidebar tooltip clipping)
+
+### Scope
+
+- 자체 `BaseTooltip` content를 body-level portal로 렌더링해 sidebar/layout overflow clipping 방지
+- 기본 tooltip을 trigger 우측 중앙, 12px offset으로 fixed 배치하고 높은 z-index 적용
+- 기존 `placement` prop 기반 top/right/bottom/left 호출 계약 유지
+- sidebar layout과 overflow 속성은 변경하지 않음
+
+### Test Cases
+
+- `BaseTooltip` hover 시 content가 `document.body` 아래에 렌더링된다.
+- 기본 tooltip은 `right`, `center`, `12px` offset metadata와 `z-[9999]`를 가진다.
+- collapsed sidebar의 `사이드바 열기` tooltip이 body portal의 오른쪽 tooltip으로 표시된다.
+- 기존 `placement="left"` tooltip은 trigger 왼쪽 바깥에 유지된다.
+
+### Changed Files
+
+- `src/shared/ui/BaseTooltip.vue`: Teleport, fixed positioning, hover/focus 표시 상태 및 resize/scroll 재배치 추가
+- `src/__tests__/feature8.chat-main.test.ts`: portal 기본 배치와 collapsed sidebar tooltip 회귀 테스트 추가
+- `docs/ai/working-log.md`: SCR-400 tooltip clipping 보정 기록
+
+### Commands
+
+- `npm test -- src/__tests__/feature8.chat-main.test.ts` (portal 구현 전 실패 확인)
+- `npm test -- src/__tests__/feature8.chat-main.test.ts src/__tests__/feature9.chat-conversation.test.ts src/__tests__/feature10.reference-panel.test.ts`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- portal 구현 전 테스트: failed, tooltip content가 trigger 내부에 렌더링되어 body portal 조건을 충족하지 않음
+- left placement 호환 테스트: failed, 포털 전환 후 왼쪽 tooltip의 가로 변환이 누락됨
+- 연관 Chat 테스트: passed, 3 test files and 34 tests passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `npm run typecheck`: passed
+- `./scripts/test.sh`: passed, 10 test files and 78 tests passed
+- `./scripts/verify.sh`: passed, 10 test files and 78 tests passed
+
+### Notes / Remaining Issues
+
+- Radix/shadcn 의존성이 없는 프로젝트이므로 기존 공통 `BaseTooltip`에 Vue `Teleport`로 동일 목적을 구현했다.
+- API, DB, 인증/인가 계약 변경은 없다.
+
+## 2026-05-26 - feature10 UI 보정 (PreviewPageCard 본문 전용 표시)
+
+### Scope
+
+- 새 채팅 화면과 출처 hover 팝오버에서 재사용하는 `PreviewPageCard`의 상단 게시일/작성자 문구 제거
+- 카드 안에는 sanitized body preview만 표시하고, 출처 목록의 작성자/작성일 metadata는 유지
+
+### Test Cases
+
+- 새 채팅 화면의 preview card에 게시일/작성자 문구가 표시되지 않는다.
+- 출처 hover preview card에 게시일/작성자 문구가 표시되지 않는다.
+- preview card body는 별도 상단 metadata 간격 없이 렌더링된다.
+
+### Changed Files
+
+- `src/features/chat/PreviewPageCard.vue`: 상단 metadata 렌더링 및 포맷 helper 제거, body 상단 margin 제거
+- `src/__tests__/feature8.chat-main.test.ts`: 새 채팅 preview 본문 전용 표시 회귀 테스트 반영
+- `src/__tests__/feature10.reference-panel.test.ts`: 출처 hover preview 본문 전용 표시 회귀 테스트 반영
+- `docs/ai/working-log.md`: UI 보정 기록
+
+### Commands
+
+- `npm test -- src/__tests__/feature8.chat-main.test.ts src/__tests__/feature10.reference-panel.test.ts` (구현 전 실패 확인)
+- `npm test -- src/__tests__/feature8.chat-main.test.ts src/__tests__/feature10.reference-panel.test.ts`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- 구현 전 관련 테스트: failed, PreviewPageCard가 상단 게시일/작성자 문구와 body margin을 렌더링함
+- 관련 preview 테스트: passed, 2 test files and 19 tests passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `npm run typecheck`: passed
+- `./scripts/test.sh`: passed, 10 test files and 78 tests passed
+- `./scripts/verify.sh`: passed, 10 test files and 78 tests passed
+
+### Notes / Remaining Issues
+
+- 출처 목록 item의 작성자/작성일 표시는 변경하지 않았다.
+- API, DB, 인증/인가 계약 변경은 없다.
+
+## 2026-05-26 - feature10 UI 보정 (출처 keyword highlight 제거)
+
+### Scope
+
+- 출처 목록의 질문 문자열 단순 일치 highlight(`<mark>`) 제거
+- `ReferencePanel`의 `keyword` prop 및 `ChatPage`의 전달 상태 제거
+- 실제 검색 근거 강조는 backend/RAG snippet 또는 highlight metadata 계약 확정 후 별도 범위로 검토
+
+### Test Cases
+
+- 출처 목록은 제목/경로/작성자/작성일을 표시하되 `<mark>` highlight markup을 렌더링하지 않는다.
+- 출처 hover preview, 새 채팅 패널 초기화, Chat 기본/대화 화면 회귀가 유지된다.
+
+### Changed Files
+
+- `src/features/chat/ReferencePanel.vue`: keyword prop/helper 및 `<mark>` 분기 제거
+- `src/pages/ChatPage.vue`: `referenceKeyword` 상태와 패널 전달 제거
+- `src/__tests__/feature10.reference-panel.test.ts`: 단순 highlight 미노출 회귀 테스트 반영
+- `docs/ai/current-plan.md`: feature10 highlight 완료 항목 제거
+- `docs/ai/working-log.md`: UI 보정 기록
+
+### Commands
+
+- `npm test -- src/__tests__/feature10.reference-panel.test.ts` (구현 전 실패 확인)
+- `npm test -- src/__tests__/feature10.reference-panel.test.ts src/__tests__/feature8.chat-main.test.ts src/__tests__/feature9.chat-conversation.test.ts`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- 구현 전 관련 테스트: failed, `keyword` prop과 `highlightSegments()`가 여전히 필수이며 목록이 highlight markup을 렌더링함
+- 연관 Chat 테스트: passed, 3 test files and 34 tests passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `npm run typecheck`: passed
+- `./scripts/test.sh`: passed, 10 test files and 78 tests passed
+- `./scripts/verify.sh`: passed, 10 test files and 78 tests passed
+
+### Notes / Remaining Issues
+
+- 출처 목록의 title/path/작성자/작성일 및 hover preview 동작은 유지한다.
+- API response 계약은 변경하지 않았으며, 실제 highlight metadata를 도입할 때만 API 명세 갱신을 검토한다.

@@ -239,7 +239,7 @@ data: {"code": "ML_SERVER_ERROR", "message": "답변 생성 중 오류가 발생
         "title": "S3 권한 오류 해결 방법",
         "lastMessageAt": "2026-05-06T19:05:00+09:00",
         "messageCount": 4,
-        "isPinned": true
+        //"isPinned": true // 추후 기능 추가 
       }
     ],
     "totalCount": 15,

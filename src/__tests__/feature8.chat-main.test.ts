@@ -267,8 +267,9 @@ describe('feature8 SCR-400 Chat main screen', () => {
     );
   });
 
-  it('renders BaseTooltip with accessible tooltip content', () => {
+  it('portals BaseTooltip content with unclipped right-side placement defaults', async () => {
     const wrapper = mount(BaseTooltip, {
+      attachTo: document.body,
       props: {
         label: '채팅 검색',
       },
@@ -278,9 +279,65 @@ describe('feature8 SCR-400 Chat main screen', () => {
     });
 
     expect(wrapper.get('[data-testid="base-tooltip"]').attributes('aria-label')).toBe('채팅 검색');
-    expect(wrapper.get('[role="tooltip"]').text()).toBe('채팅 검색');
-    expect(wrapper.get('[role="tooltip"]').classes()).toContain('opacity-0');
     expect(wrapper.get('button').text()).toBe('S');
+
+    await wrapper.get('[data-testid="base-tooltip"]').trigger('mouseenter');
+
+    const tooltip = document.body.querySelector('[role="tooltip"]');
+
+    expect(tooltip?.textContent).toBe('채팅 검색');
+    expect(tooltip?.parentElement).toBe(document.body);
+    expect(tooltip?.getAttribute('data-side')).toBe('right');
+    expect(tooltip?.getAttribute('data-align')).toBe('center');
+    expect(tooltip?.getAttribute('data-side-offset')).toBe('12');
+    expect(tooltip?.classList.contains('fixed')).toBe(true);
+    expect(tooltip?.classList.contains('z-[9999]')).toBe(true);
+
+    wrapper.unmount();
+  });
+
+  it('shows collapsed sidebar tooltips in a body-level right-side portal', async () => {
+    const wrapper = mountChatPage();
+    const sidebarTooltip = wrapper
+      .findAll('[data-testid="base-tooltip"]')
+      .find((tooltip) => tooltip.attributes('aria-label') === '사이드바 열기');
+
+    await sidebarTooltip?.trigger('mouseenter');
+
+    const tooltip = [...document.body.querySelectorAll('[role="tooltip"]')].find(
+      (content) => content.textContent === '사이드바 열기',
+    );
+
+    expect(tooltip?.parentElement).toBe(document.body);
+    expect(tooltip?.getAttribute('data-side')).toBe('right');
+    expect(tooltip?.getAttribute('data-align')).toBe('center');
+    expect(tooltip?.getAttribute('data-side-offset')).toBe('12');
+    expect(tooltip?.classList.contains('z-[9999]')).toBe(true);
+
+    wrapper.unmount();
+  });
+
+  it('keeps explicitly left-placed portal tooltips outside the trigger edge', async () => {
+    const wrapper = mount(BaseTooltip, {
+      props: {
+        label: '계정 관리',
+        placement: 'left',
+      },
+      slots: {
+        default: '<button type="button">P</button>',
+      },
+    });
+
+    await wrapper.get('[data-testid="base-tooltip"]').trigger('mouseenter');
+
+    const tooltip = [...document.body.querySelectorAll('[role="tooltip"]')].find(
+      (content) => content.textContent === '계정 관리',
+    );
+
+    expect(tooltip?.getAttribute('data-side')).toBe('left');
+    expect(tooltip?.classList.contains('-translate-x-full')).toBe(true);
+
+    wrapper.unmount();
   });
 
   it('renders ASK LINA, SKP symbol, welcome copy, mascot, and two preview page cards', () => {
@@ -319,8 +376,8 @@ describe('feature8 SCR-400 Chat main screen', () => {
 
     expect(cards).toHaveLength(2);
     expect(cards[0].html()).toContain('data-testid="preview-page-card-body"');
-    expect(cards[0].text()).toContain('2026.05.19 게시됨');
-    expect(cards[0].text()).toContain(mockHomeConfluencePages[0].authorName);
+    expect(cards[0].text()).not.toContain('2026.05.19 게시됨');
+    expect(cards[0].text()).not.toContain(mockHomeConfluencePages[0].authorName);
     expect(cards[1].text()).toContain(mockHomeConfluencePages[1].title);
   });
 
@@ -351,10 +408,16 @@ describe('feature8 SCR-400 Chat main screen', () => {
       'aspect-[166/191]',
     );
     expect(wrapper.get('[data-testid="preview-page-card"]').classes()).toEqual(
-      expect.arrayContaining(['w-[208px]', 'sm:w-[272px]']),
+      expect.arrayContaining(['w-[208px]', 'sm:w-[272px]', 'shadow-floating']),
     );
-    expect(wrapper.text()).toContain('2026.05.19 게시됨');
-    expect(wrapper.text()).toContain('이현서');
+    expect(wrapper.classes()).toContain('group/preview-page');
+    expect(wrapper.find('[data-testid="preview-page-card-surface"]').exists()).toBe(false);
+    expect(wrapper.get('[data-testid="preview-page-card-actions"]').classes()).toContain(
+      'group-hover/preview-page:opacity-100',
+    );
+    expect(wrapper.text()).not.toContain('2026.05.19 게시됨');
+    expect(wrapper.text()).not.toContain('이현서');
+    expect(wrapper.get('[data-testid="preview-page-card-body"]').classes()).not.toContain('mt-5');
     expect(wrapper.text()).toContain('Q. AWS 콘솔 접속은 어떻게 하나요?');
     expect(wrapper.html()).not.toContain('onerror=');
     expect(wrapper.html()).not.toContain('<script>');

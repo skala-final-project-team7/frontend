@@ -8,6 +8,8 @@
   - 2026-05-20, feature8 보정, PreviewPageCard 최초 작성
   - 2026-05-20, feature8 보정, hover 시 URL 복사/외부 이동 액션과 breadcrumbs 표시 추가
   - 2026-05-20, feature8 보정, 툴팁이 카드 overflow-hidden에 잘리지 않도록 wrapper 분리
+  - 2026-05-26, feature10 UI 보정, 배치 위치와 무관한 자체 named hover scope 적용 및 기본 카드 구조 보존
+  - 2026-05-26, feature10 UI 보정, 카드 상단 metadata 제거 및 본문 전용 preview 적용
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -32,20 +34,6 @@ const props = defineProps({
   },
 });
 
-const formatUpdatedLabel = (updatedAt: string) => {
-  const parsedDate = new Date(updatedAt);
-
-  if (Number.isNaN(parsedDate.getTime())) {
-    return '';
-  }
-
-  const year = parsedDate.getFullYear();
-  const month = `${parsedDate.getMonth() + 1}`.padStart(2, '0');
-  const day = `${parsedDate.getDate()}`.padStart(2, '0');
-
-  return `${year}.${month}.${day} 게시됨`;
-};
-
 const sanitizedBodyViewValue = computed(() =>
   DOMPurify.sanitize(props.page.bodyViewValue, {
     USE_PROFILES: {
@@ -65,20 +53,17 @@ async function copyPageUrl() {
 </script>
 
 <template>
-  <div class="group">
+  <div class="group/preview-page">
     <article
       data-testid="preview-page-card"
       role="article"
       tabindex="0"
-      class="aspect-[166/191] w-[208px] overflow-hidden rounded-item bg-primary-white p-5 text-overlay-dark-80 shadow-floating outline-none transition-shadow group-hover:shadow-card-press focus-visible:shadow-focus sm:w-[272px]"
+      class="aspect-[166/191] w-[208px] overflow-hidden rounded-item bg-primary-white p-5 text-overlay-dark-80 shadow-floating outline-none transition-shadow group-hover/preview-page:shadow-card-press focus-visible:shadow-focus sm:w-[272px]"
     >
-      <p class="text-small text-overlay-dark-40">
-        {{ formatUpdatedLabel(props.page.updatedAt) }} · {{ props.page.authorName }} 작성
-      </p>
       <!-- eslint-disable vue/no-v-html -->
       <div
         data-testid="preview-page-card-body"
-        class="preview-page-card-body mt-5 text-small"
+        class="preview-page-card-body text-small"
         v-html="sanitizedBodyViewValue"
       />
       <!-- eslint-enable vue/no-v-html -->
@@ -86,7 +71,7 @@ async function copyPageUrl() {
 
     <div
       data-testid="preview-page-card-actions"
-      class="absolute right-3 top-3 z-10 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+      class="absolute right-3 top-3 z-10 flex gap-1 opacity-0 transition-opacity group-hover/preview-page:opacity-100 group-focus-within/preview-page:opacity-100"
     >
       <BaseTooltip label="원본 URL 복사" placement="top">
         <button
@@ -118,7 +103,7 @@ async function copyPageUrl() {
       v-if="props.page.breadcrumbs.length > 0"
       data-testid="preview-page-card-breadcrumbs"
       aria-label="페이지 경로"
-      class="pointer-events-none absolute bottom-5 left-5 right-5 truncate text-small text-overlay-dark-40 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+      class="pointer-events-none absolute bottom-5 left-5 right-5 truncate text-small text-overlay-dark-40 opacity-0 transition-opacity group-hover/preview-page:opacity-100 group-focus-within/preview-page:opacity-100"
     >
       <template v-for="(crumb, index) in props.page.breadcrumbs" :key="`${index}-${crumb}`">
         <span v-if="index > 0" aria-hidden="true" class="mx-1">&gt;</span>
