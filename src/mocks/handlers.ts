@@ -79,6 +79,7 @@ export const mockHandlers = [
       data: {
         conversationId: 'conv-mock-003',
         title: '새 대화',
+        isPinned: false,
         createdAt: '2026-05-21T19:00:00+09:00',
       },
     });
@@ -111,10 +112,10 @@ export const mockHandlers = [
     });
   }),
 
-  // TODO(MOCK): GET /api/confluence/pages/preview?page_id={pageId}
+  // TODO(MOCK): GET /api/confluence/pages/preview?pageId={pageId}
   http.get('*/api/confluence/pages/preview', ({ request }) => {
     const url = new URL(request.url);
-    const pageId = url.searchParams.get('page_id') ?? '';
+    const pageId = url.searchParams.get('pageId') ?? '';
     const previewPage = mockConfluencePreviewPages[pageId];
 
     if (!previewPage) {

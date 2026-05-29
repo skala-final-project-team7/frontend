@@ -56,6 +56,7 @@ export type ConversationList = {
 export type ListConversationsParams = {
   page?: number;
   size?: number;
+  query?: string;
 };
 
 export type Source = {
@@ -92,7 +93,7 @@ export type CurrentUser = {
 
 export type VerificationResult = 'SUPPORTED' | 'PARTIALLY_SUPPORTED' | 'NOT_SUPPORTED';
 
-export type MessageRole = 'user' | 'assistant';
+export type MessageRole = 'USER' | 'ASSISTANT';
 
 export type Message = {
   messageId: string;
@@ -112,7 +113,7 @@ export type ConversationMessages = {
   messages: Message[];
 };
 
-export type FeedbackRating = 'like' | 'dislike';
+export type FeedbackRating = 'LIKE' | 'DISLIKE';
 
 export type Feedback = {
   feedbackId: string;
@@ -123,16 +124,17 @@ export type Feedback = {
 
 export type CreateConversationResponse = Pick<
   Conversation,
-  'conversationId' | 'title' | 'createdAt'
+  'conversationId' | 'title' | 'isPinned' | 'createdAt'
 >;
 
 export type UpdateConversationTitleRequest = {
-  title: string;
+  title?: string;
+  isPinned?: boolean;
 };
 
 export type UpdateConversationTitleResponse = Pick<
   Conversation,
-  'conversationId' | 'title' | 'updatedAt'
+  'conversationId' | 'title' | 'isPinned' | 'updatedAt'
 >;
 
 export type DeleteConversationResponse = null;
@@ -209,7 +211,7 @@ export type ChatDoneEvent = {
 export type ChatErrorEvent = {
   event: 'error';
   data: {
-    code: string;
+    errorCode: string;
     message: string;
   };
 };

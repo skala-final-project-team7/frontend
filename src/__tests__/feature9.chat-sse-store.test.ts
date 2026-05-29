@@ -124,7 +124,7 @@ function createCrLfSseResponse(): Response {
  */
 function createErrorSseResponse(): Response {
   return new Response(
-    'event: error\ndata: {"code":"ML_SERVER_ERROR","message":"답변 생성 중 오류가 발생했습니다"}\n\n',
+    'event: error\ndata: {"errorCode":"ML_SERVER_ERROR","message":"답변 생성 중 오류가 발생했습니다"}\n\n',
     {
       headers: {
         'Content-Type': 'text/event-stream',
@@ -154,12 +154,12 @@ describe('feature9 chat SSE store integration', () => {
     expect(chatStore.streamingPhase).toBe('idle');
     expect(chatStore.activeMessages).toHaveLength(2);
     expect(chatStore.activeMessages[0]).toMatchObject({
-      role: 'user',
+      role: 'USER',
       content: 'S3 권한 오류를 다시 정리해줘',
     });
     expect(chatStore.activeMessages[1]).toMatchObject({
       messageId: 'msg-done-001',
-      role: 'assistant',
+      role: 'ASSISTANT',
       content: '첫 chunk 두 번째 chunk',
       confidenceScore: 0.91,
       verificationResult: 'SUPPORTED',
@@ -178,7 +178,7 @@ describe('feature9 chat SSE store integration', () => {
     chatStore.messagesByConversationId['conv-mock-001'] = [
       {
         messageId: 'msg-local-assistant-status',
-        role: 'assistant',
+        role: 'ASSISTANT',
         content: '',
         createdAt: '2026-05-22T00:00:00Z',
         sources: [],
@@ -206,7 +206,7 @@ describe('feature9 chat SSE store integration', () => {
     chatStore.messagesByConversationId['conv-mock-001'] = [
       {
         messageId: 'msg-local-assistant-status',
-        role: 'assistant',
+        role: 'ASSISTANT',
         content: '',
         createdAt: '2026-05-22T00:00:00Z',
         phase: 'searching',
@@ -254,7 +254,7 @@ describe('feature9 chat SSE store integration', () => {
     expect(chatStore.isStreaming).toBe(false);
     expect(chatStore.streamingMessageId).toBe('');
     expect(chatStore.activeMessages[1]).toMatchObject({
-      role: 'assistant',
+      role: 'ASSISTANT',
       content: '',
       statusMessage: '',
     });
@@ -287,7 +287,7 @@ describe('feature9 chat SSE store integration', () => {
     expect(chatStore.isStreaming).toBe(false);
     expect(chatStore.streamingPhase).toBe('idle');
     expect(chatStore.activeMessages[1]).toMatchObject({
-      role: 'assistant',
+      role: 'ASSISTANT',
       content: '답변 생성 중 오류가 발생했습니다',
       statusMessage: '',
     });

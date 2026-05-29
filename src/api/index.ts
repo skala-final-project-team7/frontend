@@ -141,7 +141,7 @@ export function submitMessageFeedback(
 export function getConfluencePagePreview(pageId: string): Promise<ConfluencePagePreview> {
   return apiRequest<ConfluencePagePreview>('/api/confluence/pages/preview', {
     query: {
-      page_id: pageId,
+      pageId,
     },
   });
 }

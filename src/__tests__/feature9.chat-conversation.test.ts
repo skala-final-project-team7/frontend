@@ -242,7 +242,7 @@ describe('feature9 SCR-410, SCR-420, SCR-600 Chat conversation screen', () => {
       props: {
         message: {
           messageId: 'msg-local-assistant-phase',
-          role: 'assistant',
+          role: 'ASSISTANT',
           content: '',
           createdAt: '2026-05-21T00:00:00Z',
           sources: [],
@@ -502,7 +502,7 @@ describe('feature9 SCR-410, SCR-420, SCR-600 Chat conversation screen', () => {
       props: {
         message: {
           messageId: 'msg-local-assistant-loading',
-          role: 'assistant',
+          role: 'ASSISTANT',
           content: '',
           createdAt: '2026-05-21T00:00:00Z',
           sources: [],
@@ -528,7 +528,7 @@ describe('feature9 SCR-410, SCR-420, SCR-600 Chat conversation screen', () => {
       props: {
         message: {
           messageId: 'msg-local-assistant-cancelled',
-          role: 'assistant',
+          role: 'ASSISTANT',
           content: '',
           createdAt: '2026-05-21T00:00:00Z',
           sources: [],
@@ -543,7 +543,7 @@ describe('feature9 SCR-410, SCR-420, SCR-600 Chat conversation screen', () => {
       props: {
         message: {
           messageId: 'msg-local-assistant-error',
-          role: 'assistant',
+          role: 'ASSISTANT',
           content: '답변 생성 중 오류가 발생했습니다',
           createdAt: '2026-05-21T00:00:00Z',
           phase: 'error',

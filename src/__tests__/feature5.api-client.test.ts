@@ -44,7 +44,7 @@ describe('feature5 API types and client skeleton', () => {
 
     const assistantMessage: Message = {
       messageId: 'msg-uuid-002',
-      role: 'assistant',
+      role: 'ASSISTANT',
       content: 'S3 권한 오류는 IAM 정책을 수정하여 해결했습니다.',
       sources: [source],
       confidenceScore: 0.85,
@@ -68,7 +68,7 @@ describe('feature5 API types and client skeleton', () => {
     const feedback: Feedback = {
       feedbackId: 'fb-uuid-001',
       messageId: assistantMessage.messageId,
-      rating: 'like',
+      rating: 'LIKE',
       createdAt: '2026-05-06T19:06:00+09:00',
     };
 
@@ -114,7 +114,7 @@ describe('feature5 API types and client skeleton', () => {
     expect(assistantMessage.sources).toEqual([source]);
     expect(listParams).toEqual({ page: 1, size: 10 });
     expect(deleteResponse).toBeNull();
-    expect(feedback.rating).toBe('like');
+    expect(feedback.rating).toBe('LIKE');
     expect(sseEvent.event).toBe('sources');
     expect(previewPage.bodyViewValue).toContain('<h1>');
     expect(currentUser.role).toBe('USER');
@@ -134,6 +134,7 @@ describe('feature5 API types and client skeleton', () => {
           data: {
             conversationId: 'conv-uuid-001',
             title: '새 대화',
+            isPinned: false,
             createdAt: '2026-05-06T19:00:00+09:00',
           },
         });
@@ -230,6 +231,7 @@ describe('feature5 API types and client skeleton', () => {
           data: {
             conversationId: 'conv-uuid-001',
             title: 'S3 권한 오류 트러블슈팅',
+            isPinned: true,
             updatedAt: '2026-05-06T19:10:00+09:00',
           },
         });
@@ -246,7 +248,7 @@ describe('feature5 API types and client skeleton', () => {
 
       if (requestUrl === '/api/messages/msg-uuid-002/feedback' && method === 'POST') {
         expect(JSON.parse(String(init?.body))).toEqual({
-          rating: 'like',
+          rating: 'LIKE',
           comment: '정확한 답변이었어요',
         });
 
@@ -257,7 +259,7 @@ describe('feature5 API types and client skeleton', () => {
           data: {
             feedbackId: 'fb-uuid-001',
             messageId: 'msg-uuid-002',
-            rating: 'like',
+            rating: 'LIKE',
             createdAt: '2026-05-06T19:06:00+09:00',
           },
         });
@@ -284,12 +286,12 @@ describe('feature5 API types and client skeleton', () => {
     await expect(deleteConversation('conv-uuid-001')).resolves.toBeNull();
     await expect(
       submitMessageFeedback('msg-uuid-002', {
-        rating: 'like',
+        rating: 'LIKE',
         comment: '정확한 답변이었어요',
       }),
     ).resolves.toMatchObject({
       feedbackId: 'fb-uuid-001',
-      rating: 'like',
+      rating: 'LIKE',
     });
   });
 
@@ -327,12 +329,12 @@ describe('feature5 API types and client skeleton', () => {
     expect(init.headers).not.toHaveProperty('X-Common-Response-Wrapper');
   });
 
-  it('unwraps Confluence page preview responses with a page_id query', async () => {
+  it('unwraps Confluence page preview responses with a pageId query', async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const requestUrl = String(input);
       const method = init?.method ?? 'GET';
 
-      if (requestUrl === '/api/confluence/pages/preview?page_id=12345' && method === 'GET') {
+      if (requestUrl === '/api/confluence/pages/preview?pageId=12345' && method === 'GET') {
         return jsonResponse({
           isSuccess: true,
           code: 200,

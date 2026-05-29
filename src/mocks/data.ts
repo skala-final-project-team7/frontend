@@ -151,13 +151,13 @@ export const mockMessagesByConversationId: Record<string, Message[]> = {
   'conv-mock-001': [
     {
       messageId: 'msg-mock-user-001',
-      role: 'user',
+      role: 'USER',
       content: '지난번 S3 버킷 권한 오류 때 어떻게 해결했어?',
       createdAt: '2026-05-06T19:00:00+09:00',
     },
     {
       messageId: 'msg-mock-assistant-001',
-      role: 'assistant',
+      role: 'ASSISTANT',
       content: 'S3 권한 오류는 IAM 정책의 버킷 접근 권한을 보강해 해결했습니다.',
       sources: mockSources,
       confidenceScore: 0.85,
@@ -168,13 +168,13 @@ export const mockMessagesByConversationId: Record<string, Message[]> = {
   'conv-mock-002': [
     {
       messageId: 'msg-mock-user-002',
-      role: 'user',
+      role: 'USER',
       content: '문서 동기화가 마지막으로 언제 성공했어?',
       createdAt: '2026-05-07T18:00:00+09:00',
     },
     {
       messageId: 'msg-mock-assistant-002',
-      role: 'assistant',
+      role: 'ASSISTANT',
       content: '최근 동기화는 2026-05-07 09:10 UTC에 성공했습니다.',
       sources: mockSources,
       confidenceScore: 0.78,

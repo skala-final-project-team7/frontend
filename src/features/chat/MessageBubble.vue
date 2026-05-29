@@ -55,17 +55,17 @@ const emit = defineEmits<{
 }>();
 
 const isEditing = computed(
-  () => props.message.role === 'user' && props.editingMessageId === props.message.messageId,
+  () => props.message.role === 'USER' && props.editingMessageId === props.message.messageId,
 );
 const isStreamingAssistantMessage = computed(
   () =>
-    props.message.role === 'assistant' &&
+    props.message.role === 'ASSISTANT' &&
     props.isStreaming &&
     props.streamingMessageId === props.message.messageId,
 );
 const canShowAssistantActions = computed(
   () =>
-    props.message.role === 'assistant' &&
+    props.message.role === 'ASSISTANT' &&
     props.message.content.trim().length > 0 &&
     props.message.phase !== 'error' &&
     !isStreamingAssistantMessage.value,
@@ -156,18 +156,18 @@ function selectUserMessageVersion(versionIndex: number) {
   <article
     data-testid="message-bubble"
     class="group/message flex flex-col"
-    :class="message.role === 'user' ? 'items-end' : 'items-start'"
+    :class="message.role === 'USER' ? 'items-end' : 'items-start'"
   >
     <div
-      :data-testid="message.role === 'user' ? 'message-bubble-user' : 'message-bubble-assistant'"
+      :data-testid="message.role === 'USER' ? 'message-bubble-user' : 'message-bubble-assistant'"
       class="min-w-0 max-w-[74%] whitespace-pre-line break-words font-lina text-body leading-7 text-overlay-dark-80"
       :class="
-        message.role === 'user'
+        message.role === 'USER'
           ? 'rounded-card border border-bg-300 bg-bg-200 px-5 py-4 shadow-sm'
           : 'px-0 py-0'
       "
     >
-      <template v-if="message.role === 'user'">
+      <template v-if="message.role === 'USER'">
         <div v-if="isEditing" class="space-y-3">
           <textarea
             ref="editTextarea"
@@ -219,7 +219,7 @@ function selectUserMessageVersion(versionIndex: number) {
     </div>
 
     <div
-      v-if="isUserMessageRevisionEnabled && message.role === 'user' && !isEditing"
+      v-if="isUserMessageRevisionEnabled && message.role === 'USER' && !isEditing"
       data-testid="message-action-row-user"
       class="mt-2 flex min-h-5 items-center justify-end gap-3 text-overlay-dark-80"
     >

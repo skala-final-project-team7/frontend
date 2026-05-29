@@ -87,11 +87,11 @@ describe('feature6 Chat mock API foundation', () => {
         conversationId: 'conv-mock-001',
         messages: [
           {
-            role: 'user',
+            role: 'USER',
             content: '지난번 S3 버킷 권한 오류 때 어떻게 해결했어?',
           },
           {
-            role: 'assistant',
+            role: 'ASSISTANT',
             verificationResult: 'SUPPORTED',
           },
         ],
@@ -129,8 +129,8 @@ describe('feature6 Chat mock API foundation', () => {
     expect(streamText).toContain('"messageId":"msg-mock-assistant-stream"');
   });
 
-  it('mocks GET /api/confluence/pages/preview?page_id={pageId} with sanitized-ready HTML', async () => {
-    const response = await fetch('http://localhost/api/confluence/pages/preview?page_id=12345');
+  it('mocks GET /api/confluence/pages/preview?pageId={pageId} with sanitized-ready HTML', async () => {
+    const response = await fetch('http://localhost/api/confluence/pages/preview?pageId=12345');
     const body = await response.json();
 
     expect(body).toMatchObject({
@@ -149,7 +149,7 @@ describe('feature6 Chat mock API foundation', () => {
   });
 
   it('returns a Common Response error for unknown Confluence preview pages', async () => {
-    const response = await fetch('http://localhost/api/confluence/pages/preview?page_id=unknown');
+    const response = await fetch('http://localhost/api/confluence/pages/preview?pageId=unknown');
     const body = await response.json();
 
     expect(response.status).toBe(404);
@@ -184,7 +184,7 @@ describe('feature6 Chat mock API foundation', () => {
     );
     expect(handlersSource).toContain('TODO(MOCK): POST /api/conversations/{conversationId}/chat');
     expect(handlersSource).toContain(
-      'TODO(MOCK): GET /api/confluence/pages/preview?page_id={pageId}',
+      'TODO(MOCK): GET /api/confluence/pages/preview?pageId={pageId}',
     );
   });
 });

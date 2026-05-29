@@ -1,9 +1,19 @@
 # LINA API Spec
 
-> 버전: v2.2.1
+> 버전: v2.2.0
 > 기준: 중간 발표(4주차) 데모 범위 + 이후 확장 계획
 > 전제: 중간 발표 시 인증 하드코딩, 스페이스 고정, 로그인 제외
 > 기획서 버전: v2.1.7 (Authorization Server 분리, 사용자 단위 검색 반영)
+
+---
+
+## 변경 이력
+
+> 상단 `버전` 은 본 API 명세 **문서 자체의 버전**이며, `기획서 버전`(v2.1.7)과 독립적으로 관리한다.
+
+| 버전   | 일자       | 주요 변경                                                                                                                                                                                                                                                                                                                                                                              |
+| ------ | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| v2.2.0 | 2026-05-29 | **SSE 계약 전면 정리**: `status`/`meta` 포함 **7종 이벤트 정본화**, 이벤트 순서 불변식·스트림 종료/영속·0건 처리·`error`(`errorCode` + 코드 enum) 명문화, idle 기준 타임아웃·`status` keep-alive, SSE 응답 헤더(`text/event-stream` 등), 재연결(`Last-Event-ID`) 미지원. 챗 엔드포인트는 항상 스트리밍(`stream=false` 모드 제거). `meta.title` → 첫 응답 1회 자동 제목 설정 규칙. **채팅방 고정 `isPinned`**(목록 응답·`PATCH` 확장·고정 우선 정렬). **Enum 값 `UPPER_SNAKE` 정책** 확정 및 `role`/`rating` 대문자 정정. 에러 응답 봉투 4필드 고정(`ErrorResponse` 정합). 스페이스 식별자(`spaceKey`/`spaceId`/`spaceName`) 구분 명시. ACL 질의 필드 `userId` camelCase 통일. `feature13` 미정의 마커 서술형 교체. `## 변경 이력` 신설·상단 이동. 미리보기 쿼리 파라미터 `page_id`→`pageId` 정합. |
 
 ---
 
@@ -33,6 +43,8 @@
 }
 ```
 
+> 에러 응답은 `isSuccess` / `code` / `errorCode` / `message` **4필드 고정**이며 `data` 를 포함하지 않는다(성공 응답만 `data` 포함). 구현: `common` 모듈 `ErrorResponse`(`@JsonInclude(ALWAYS)`) / `ApiResponse`. `errorCode` 값은 `ErrorCode` enum 을 따른다(`INVALID_REQUEST` / `UNAUTHORIZED` / `FORBIDDEN` / `RESOURCE_NOT_FOUND` / `EXTERNAL_SERVICE_ERROR` / `INTERNAL_ERROR`).
+
 > **예외**: SSE 스트리밍 응답(`/api/conversations/{id}/chat`)은 Wrapper 미적용, 이벤트 스트림으로 전달.
 
 **시간 표기 정책 (2026-05-21 확정)**
@@ -40,6 +52,20 @@
 - 저장은 UTC(`Instant`)로 통일하고, **응답 JSON 의 모든 timestamp 는 KST(`+09:00`) 로 절대 전환해 반환한다.**
 - 직렬화 예: `Instant` → `ZonedDateTime kst = instant.atZone(ZoneId.of("Asia/Seoul"))` → `2026-05-06T19:00:00+09:00`
 - 본 문서의 모든 응답 예시는 KST 표기로 작성한다.
+
+**Enum 값 표기 정책 (2026-05-29 확정)**
+
+- 도메인/저장 enum 값은 `UPPER_SNAKE_CASE` 로 표기하며 `docs/db-schema.md` 저장 값과 일치시킨다 — `role`(`USER`/`ASSISTANT`), `rating`(`LIKE`/`DISLIKE`), `verificationResult`(`SUPPORTED`/`PARTIALLY_SUPPORTED`/`NOT_SUPPORTED`), 수집·동기화 `status`(`STARTED`/`IN_PROGRESS`/…), 사용자 `role`(`USER`/`ADMIN`).
+- 예외: 수집 `mode`(`full`/`delta`), SSE `status.phase`(`acl_filtering` 등 `lower_snake`)는 관용/상태 토큰 표기를 따른다.
+- 필드 *이름* 표기(camelCase)와는 별개 규칙이다 — 이름은 camelCase(`verificationResult`), 값은 UPPER(`SUPPORTED`).
+
+**스페이스 식별자**
+
+한 Confluence 스페이스는 세 속성을 가지며 위치별로 다르게 쓰인다 — 혼용 금지(같은 스페이스라도 값이 다르다).
+
+- `spaceKey` (예 `"CPC"`): 사람이 정한 **짧은 고유 키**(불변). 질의·수집 **스코프 지정**에 사용 — `/ml/query`, `/ml/ingest`, `/api/admin/ingest`.
+- `spaceId` (예 `"98310"`): 숫자 **내부 ID**. 출처 메타데이터(`sources`)에 포함.
+- `spaceName` (예 `"Cloud Control Center"`): **표시용 이름**(변경 가능, 고유성 보장 안 됨). 출처·미리보기의 화면 라벨.
 
 **공통 Request Header**
 | Name | Type | Description | Required |
@@ -125,18 +151,20 @@ event: done
 data: {"messageId": "msg-uuid-001"}
 
 event: error
-data: {"code": "ML_SERVER_ERROR", "message": "답변 생성 중 오류가 발생했습니다"}
+data: {"errorCode": "ML_SERVER_ERROR", "message": "답변 생성 중 오류가 발생했습니다"}
 ```
 
 **이벤트 타입**
+
+> 아래 7종이 SSE 이벤트 **정본**이다. 내부 중계(§2-1)와 `backend/rules/rag-pipeline.md` §4 도 동일 집합을 따른다.
 
 - `status` — RAG 파이프라인 진행 상태 메시지 (`message`는 프론트 표시 문구로 그대로 사용)
 - `token` — 답변 청크 (스트리밍)
 - `sources` — RAG 참조 문서 목록
 - `verification` — 답변 신뢰도 검증 결과 (`SUPPORTED` / `PARTIALLY_SUPPORTED` / `NOT_SUPPORTED`)
-- `meta` — 현재 ML 구현 호환용 응답 메타데이터. 답변 본문이 아니며 `done` 직전 즈음 1회 송신된다. BE 통합 목표 계약에서는 제거 예정이며, `intent` / `used_llm` / `latency_ms`는 ML 내부 메트릭으로 관측하고 저신뢰 신호는 `verification.confidenceScore`로 표현한다.
-- `done` — 스트림 종료, `messageId` 반환
-- `error` — ML 서버 오류 발생 시 에러 정보 전달, 스트림 종료
+- `meta` — 현재 ML 구현 호환용 응답 메타데이터. 답변 본문이 아니며 `done` 직전 1회 송신된다. BE 통합 목표 계약에서는 제거 예정이며, `intent` / `used_llm` / `latency_ms`는 ML 내부 메트릭으로 관측하고 저신뢰 신호는 `verification.confidenceScore`로 표현한다.
+- `done` — 스트림 정상 종료, `messageId` 반환
+- `error` — 스트림 오류 종료. `errorCode` / `message` 전달 (코드는 아래 "`error` 이벤트 / 에러 코드" 표)
 
 **status 이벤트 phase**
 
@@ -157,8 +185,41 @@ data: {"code": "ML_SERVER_ERROR", "message": "답변 생성 중 오류가 발생
 - 검색 결과가 0건이면 `answering` / `streaming` / `verifying` phase가 오지 않을 수 있다. 이 경우 `connecting` → `acl_filtering` → `searching` → `formatting` 순으로 단축된다.
 - `done` / `error`는 별도 `status` 이벤트로 보내지 않고 기존 `done` / `error` 이벤트를 사용한다.
 - `message` 문구는 운영 중 변경될 수 있으므로 UI 분기 로직은 `message`가 아니라 `phase` 기준으로 처리한다.
-- 비-streaming(`stream=false`) 모드에는 `status` 이벤트가 오지 않는다.
+- 이 엔드포인트는 항상 SSE 스트리밍으로 응답한다 — 비-스트리밍 모드(`stream=false`)는 제공하지 않는다.
 - 알 수 없는 phase 값은 무시하거나 직전 상태를 유지한다.
+
+**이벤트 순서 보장**
+
+정상 흐름의 이벤트 순서는 다음 불변식을 따른다(클라이언트 상태머신은 이 순서에 의존해도 된다).
+
+1. `status` 이벤트는 phase 표 순서대로 진입 시 1회씩 송신된다(0건 단축은 위 처리 규칙 참조).
+2. `token` 이벤트들은 `streaming` phase 이후 ~ `verifying` phase 이전 사이에 **연속**으로 온다(중간에 `sources` / `verification` / `meta` 가 끼어들지 않는다).
+3. 본문 종료 후 `sources` → `verification` → `meta` 순으로 각 최대 1회 송신된다.
+4. 스트림은 `done` 또는 `error` 로 정확히 한 번 종료한다.
+5. 정의되지 않은/추가된 이벤트 타입은 무시한다(전방 호환).
+
+**스트림 종료 · 영속 규칙**
+
+- 모든 스트림은 `done` 또는 `error` **정확히 하나**로 종료된다(상호 배타). 클라이언트는 둘 중 하나 수신 시 연결을 닫는다.
+- user 메시지는 질의 시작 시 선저장한다. `done` 수신 시 BFF 가 assistant 메시지(+`sources`+`verification`)를 저장하고 그 `messageId` 를 `done` 으로 반환한다 (`backend/bff-server/current-plans.md` Feature 5).
+- `error` 로 종료되면 assistant 메시지는 저장하지 않는다(선저장된 user 메시지는 유지). 따라서 `error` 에는 `messageId` 가 없다.
+- `token` 청크는 수신 순서대로 **그대로 이어 붙인다**(트림·구분자 삽입 금지). 예: `"S3 권한 오류는"` + `" IAM 정책을"`.
+
+**0건(검색 결과 없음) 처리**
+
+- phase 단축은 위 "status 이벤트 처리 규칙" 참조(`answering` / `streaming` / `verifying` 생략).
+- `sources` 는 **빈 배열로 1회** 전송하고, `verification` 은 생략한다(검증할 근거 없음).
+- 고정 안내 문구를 `token` 으로 보낼 수 있다(문구·전송 여부는 ML 구현). 0건도 `done` + `messageId` 로 **정상 종료**하며 assistant 메시지(빈 `sources`)를 저장한다.
+
+**`error` 이벤트 / 에러 코드**
+
+`error.data` 는 `{ "errorCode": string, "message": string }` 이다. `errorCode` 는 공통 Wrapper 의 `errorCode` 와 동일한 문자열 체계를 따른다(SSE 에는 HTTP 정수 `code` 가 없다 — Wrapper 의 `code`(int)와 혼동 금지).
+
+| errorCode             | 의미                                            |
+| --------------------- | ----------------------------------------------- |
+| `ML_SERVER_ERROR`     | ML 서버 5xx·내부 처리 오류                      |
+| `ML_TIMEOUT`          | ML 응답/스트림 타임아웃 (`lina.rag.sse-timeout-ms`) |
+| `ML_CONNECTION_ERROR` | ML 연결 실패·스트림 중단                        |
 
 **meta 이벤트 payload (현재 구현 호환용, 추후 제거 예정)**
 
@@ -180,10 +241,21 @@ data: {"code": "ML_SERVER_ERROR", "message": "답변 생성 중 오류가 발생
 | `latency_ms`       | number  | Y        | 그래프 진입부터 응답 산출까지의 처리 지연(ms) |
 | `title`            | string  | N        | LLM이 생성한 현재 대화 제목                   |
 
-> `meta`는 현재 RAG 구현에서 송신되므로 프론트 파서는 수신 가능해야 한다. FE는 현재 `title`만 대화 제목 갱신에 사용하고 나머지 필드는 UI 상태에 반영하지 않는다. feature13 코드 마이그레이션 이후 이벤트 계약에서 제거될 수 있다.
+> `meta`는 현재 RAG 구현에서 송신되므로 프론트 파서는 수신 가능해야 한다. FE는 현재 `title`만 대화 제목 갱신에 사용하고 나머지 필드는 UI 상태에 반영하지 않는다. ML(RAG) 응답을 BE 통합 목표 계약으로 마이그레이션한 이후 이벤트 계약에서 제거될 수 있다.
 > +) 나머지 필드는 필요하다면 관리자 화면에 적용되도록 설정
 
-> **Gateway 설정**: SSE 특성상 타임아웃 60초로 별도 설정 필요.
+**대화 제목 자동 설정 규칙**
+
+- 새 대화는 `title = "새 대화"`(기본값)로 생성된다(§1-2 새 대화 생성).
+- BFF 는 **첫 assistant 응답**을 저장할 때 현재 `title` 이 기본값(`"새 대화"`)이면 `meta.title` 로 제목을 1회 자동 설정한다.
+- 제목이 이미 변경돼 있으면(자동·수동 불문) `meta.title` 을 무시한다 → 사용자의 `PATCH /api/conversations/{conversationId}` 제목 수정이 항상 우선한다.
+
+**연결 · 타임아웃 · keep-alive · 재연결**
+
+- **응답 헤더**: `Content-Type: text/event-stream; charset=utf-8`, `Cache-Control: no-cache`, `Connection: keep-alive`, `X-Accel-Buffering: no`(프록시 버퍼링 비활성).
+- **타임아웃은 idle 기준**(총 처리 시간 제한이 아니다). BFF↔ML 스트림은 `lina.rag.sse-timeout-ms`(기본 60s) 동안 **이벤트가 하나도 없으면** `error`(`ML_TIMEOUT`)로 종료한다. Gateway/프록시의 SSE idle 타임아웃도 ≥60s 로 맞춘다.
+- **keep-alive**: 장시간 phase(검색·LLM 생성 등) 동안 연결 유지를 위해 진행 중 `status` 이벤트(또는 SSE 주석 라인 `:keep-alive`)를 idle 타임아웃 내 1회 이상 보낸다.
+- **재연결 미지원**: 이벤트에 `id:` 를 부여하지 않으며 `Last-Event-ID` 기반 재개를 지원하지 않는다(응답 스트림은 비멱등). 연결이 끊기면 클라이언트가 질의를 새로 요청한다.
 
 ---
 
@@ -206,6 +278,7 @@ data: {"code": "ML_SERVER_ERROR", "message": "답변 생성 중 오류가 발생
   "data": {
     "conversationId": "conv-uuid-001",
     "title": "새 대화",
+    "isPinned": false,
     "createdAt": "2026-05-06T19:00:00+09:00"
   }
 }
@@ -239,7 +312,7 @@ data: {"code": "ML_SERVER_ERROR", "message": "답변 생성 중 오류가 발생
         "title": "S3 권한 오류 해결 방법",
         "lastMessageAt": "2026-05-06T19:05:00+09:00",
         "messageCount": 4,
-        //"isPinned": true // 추후 기능 추가 
+        "isPinned": true
       }
     ],
     "totalCount": 15,
@@ -248,6 +321,9 @@ data: {"code": "ML_SERVER_ERROR", "message": "답변 생성 중 오류가 발생
   }
 }
 ```
+
+- 정렬: 고정(`isPinned`) 우선 → `lastMessageAt` 최신순으로 페이징한다(고정 대화는 항상 상단).
+- `isPinned`: 채팅방 고정 여부. 기본 `false`. 토글은 `PATCH /api/conversations/{conversationId}` 참조.
 
 ### 대화 메시지 이력 조회
 
@@ -269,13 +345,13 @@ data: {"code": "ML_SERVER_ERROR", "message": "답변 생성 중 오류가 발생
     "messages": [
       {
         "messageId": "msg-uuid-001",
-        "role": "user",
+        "role": "USER",
         "content": "지난번 S3 버킷 권한 오류 때 어떻게 해결했어?",
         "createdAt": "2026-05-06T19:00:00+09:00"
       },
       {
         "messageId": "msg-uuid-002",
-        "role": "assistant",
+        "role": "ASSISTANT",
         "content": "S3 권한 오류는 IAM 정책을 수정하여 해결했습니다...",
         "sources": [
           {
@@ -297,17 +373,22 @@ data: {"code": "ML_SERVER_ERROR", "message": "답변 생성 중 오류가 발생
 }
 ```
 
-### 대화 제목 수정
+### 대화 수정 (제목 / 고정)
 
-| 항목   | 내용                                  |
-| ------ | ------------------------------------- |
-| Method | `PATCH`                               |
-| URL    | `/api/conversations/{conversationId}` |
+| 항목   | 내용                                   |
+| ------ | -------------------------------------- |
+| Method | `PATCH`                                |
+| URL    | `/api/conversations/{conversationId}`  |
+| 설명   | 제목 변경·채팅방 고정 토글 (부분 수정) |
 
-**Request Body**
+**Request Body** — `title` / `isPinned` 각각 선택. 전달된 필드만 수정하며, 둘 중 하나 이상은 필수다.
 
 ```json
 { "title": "S3 권한 오류 트러블슈팅" }
+```
+
+```json
+{ "isPinned": true }
 ```
 
 **Response**
@@ -316,10 +397,11 @@ data: {"code": "ML_SERVER_ERROR", "message": "답변 생성 중 오류가 발생
 {
   "isSuccess": true,
   "code": 200,
-  "message": "대화 제목 수정 성공",
+  "message": "대화 수정 성공",
   "data": {
     "conversationId": "conv-uuid-001",
     "title": "S3 권한 오류 트러블슈팅",
+    "isPinned": true,
     "updatedAt": "2026-05-06T19:10:00+09:00"
   }
 }
@@ -357,12 +439,12 @@ data: {"code": "ML_SERVER_ERROR", "message": "답변 생성 중 오류가 발생
 
 ```json
 {
-  "rating": "like",
+  "rating": "LIKE",
   "comment": "정확한 답변이었어요"
 }
 ```
 
-- `rating`: `"like"` | `"dislike"`
+- `rating`: `"LIKE"` | `"DISLIKE"`
 - `comment`: 선택 사항
 
 **Response**
@@ -375,7 +457,7 @@ data: {"code": "ML_SERVER_ERROR", "message": "답변 생성 중 오류가 발생
   "data": {
     "feedbackId": "fb-uuid-001",
     "messageId": "msg-uuid-002",
-    "rating": "like",
+    "rating": "LIKE",
     "createdAt": "2026-05-06T19:06:00+09:00"
   }
 }
@@ -462,8 +544,8 @@ data: {"code": "ML_SERVER_ERROR", "message": "답변 생성 중 오류가 발생
   "question": "지난번 S3 버킷 권한 오류 때 어떻게 해결했어?",
   "conversationId": "conv-uuid-001",
   "history": [
-    { "role": "user", "content": "S3 관련 장애 이력 알려줘" },
-    { "role": "assistant", "content": "최근 S3 관련 장애는 3건이 있었습니다..." }
+    { "role": "USER", "content": "S3 관련 장애 이력 알려줘" },
+    { "role": "ASSISTANT", "content": "최근 S3 관련 장애는 3건이 있었습니다..." }
   ],
   "userId": "user-001",
   "groups": ["Cloud-Control-Center"],
@@ -471,12 +553,12 @@ data: {"code": "ML_SERVER_ERROR", "message": "답변 생성 중 오류가 발생
 }
 ```
 
-- `history`: BFF가 DB에서 이전 대화 이력을 꺼내서 전달 (멀티턴용)
-- `userId` / `groups`: ACL Pre-filtering, JWT 에서 추출 (2단계는 데모 고정값)
+- `history`: BFF가 DB에서 이전 대화 이력을 꺼내서 전달 (멀티턴용). `role` 값은 저장과 동일한 `USER`/`ASSISTANT`.
+- `userId` / `groups`: ACL Pre-filtering. JWT claim `userId`/`groups` 를 그대로 전달한다 — JWT claim·와이어 필드 모두 **camelCase** 로 통일(외부 API 및 같은 body 의 `conversationId` 와 정합). ML(FastAPI)은 Pydantic `alias`/`populate_by_name` 으로 camelCase 를 수신한다. 2단계는 데모 고정값.
 - `spaceKey`: 검색 대상 Confluence 스페이스. 2단계는 고정값(`lina.demo.fixed-space-key`)
-- 이 경로는 SSE streaming 모드로 응답하며 외부 API와 같은 `status` / `token` / `sources` / `verification` / `meta` / `done` 이벤트를 중계한다.
+- 이 경로는 SSE streaming 모드로 응답하며 외부 API와 같은 `status` / `token` / `sources` / `verification` / `meta` / `done` / `error` 이벤트를 그대로 중계한다(정본 §1-1).
 
-> **Confluence 토큰 미포함 (2026-05-22 변경):** 권한은 수집 시 Qdrant payload(`allowed_groups`/`allowed_users`)에 ACL로 저장되고, 질의 시 JWT의 `user_id`/`groups`로 필터링한다 (기획서 §6.4/§6.6). 따라서 RAG 질의 경로(`/ml/query`)는 라이브 Confluence 호출이 없어 `accessToken`/`cloudId`가 불필요하며, 토큰은 크롤하는 수집 단계(`/ml/ingest`, §2-2)에서만 전달한다.
+> **Confluence 토큰 미포함 (2026-05-22 변경):** 권한은 수집 시 Qdrant payload(`allowed_groups`/`allowed_users`)에 ACL로 저장되고, 질의 시 JWT의 `userId`/`groups`로 필터링한다 (기획서 §6.4/§6.6). 따라서 RAG 질의 경로(`/ml/query`)는 라이브 Confluence 호출이 없어 `accessToken`/`cloudId`가 불필요하며, 토큰은 크롤하는 수집 단계(`/ml/ingest`, §2-2)에서만 전달한다.
 >
 > ※ ML 확인 대기: `/ml/query`가 실시간 Confluence 호출을 일절 하지 않음을 ML 팀과 확인한 뒤 본 결정을 확정한다. 확인 결과에 따라 토큰 전달 경로가 다시 조정될 수 있다.
 
@@ -579,7 +661,7 @@ ML 서버는 책임이 다른 두 파이프라인으로 분리되어 있으며, 
   │                                                 └─ ML 응답을 DB 저장 + SSE 중계
   ├─ GET    /api/conversations                    → BFF → DB 대화 목록 조회
   ├─ GET    /api/conversations/{id}/messages      → BFF → DB 메시지 이력 조회
-  ├─ PATCH  /api/conversations/{id}               → BFF → DB 대화 제목 수정
+  ├─ PATCH  /api/conversations/{id}               → BFF → DB 대화 수정(제목/고정)
   ├─ DELETE /api/conversations/{id}               → BFF → DB 대화 삭제
   ├─ POST   /api/messages/{id}/feedback           → BFF → DB 피드백 저장
   └─ POST   /api/admin/ingest                     → BFF → POST /ml/ingest → ML 서버
@@ -726,11 +808,11 @@ BFF → Authorization Server 위임 구조 (기획서 v2.1.7 반영)
 **Query Parameter**
 | Key | Type | Required | Description |
 |-----|------|----------|-------------|
-| page_id | string | ✅ | Confluence page ID |
+| pageId | string | ✅ | Confluence page ID |
 
 **처리 방식**
 
-- Frontend는 출처 목록 문서 hover 시 `page_id`를 담아 BFF에 요청한다.
+- Frontend는 출처 목록 문서 hover 시 `pageId`를 담아 BFF에 요청한다.
 - BFF는 서버에 저장된 OAuth 토큰으로 Confluence REST API를 호출한다.
 - BFF는 Confluence 응답의 `body.view.value` HTML 문자열을 `bodyViewValue`로 변환해 반환한다.
 - BFF는 Confluence 응답의 `space.name`, `ancestors[].title`, `title`을 조합해 `breadcrumbs`를 파생한다.

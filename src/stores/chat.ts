@@ -146,13 +146,13 @@ export const useChatStore = defineStore('chat', {
 
       const userMessage: Message = {
         messageId: `msg-local-user-${Date.now()}`,
-        role: 'user',
+        role: 'USER',
         content: question,
         createdAt: new Date().toISOString(),
       };
       const assistantMessage: Message = {
         messageId: `msg-local-assistant-${Date.now()}`,
-        role: 'assistant',
+        role: 'ASSISTANT',
         content: '',
         createdAt: new Date().toISOString(),
         phase: 'connecting',

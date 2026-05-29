@@ -310,7 +310,7 @@ function submitEditedMessage(messageId: string) {
   const currentUserMessage = messages[messageIndex];
   const nextAssistantMessage = messages
     .slice(messageIndex + 1)
-    .find((message) => message.role === 'assistant');
+    .find((message) => message.role === 'ASSISTANT');
 
   if (!currentUserMessage) {
     return;
