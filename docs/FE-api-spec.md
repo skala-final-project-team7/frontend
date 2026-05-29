@@ -433,7 +433,7 @@ Query Parameters:
 - `query`가 있으면 backend가 저장소에서 채팅 제목과 메시지 본문을 검색해 반환한다.
 - 응답 구조는 일반 목록 조회와 동일하다.
 - 정렬은 고정(`isPinned`) 우선, 이후 `lastMessageAt` 최신순을 기본으로 한다.
-- FE는 sidebar search 입력값을 debounce한 뒤 `GET /api/conversations?query={keyword}&page=0&size=20`로 조회할 수 있다.
+- FE는 검색 입력 중 자동 호출하지 않고, Enter 키 입력 또는 검색 버튼 클릭 시 `GET /api/conversations?query={keyword}&page=0&size=20`로 조회한다.
 
 Response:
 
