@@ -154,6 +154,15 @@ async function openRecentConversationMenu(wrapper: ReturnType<typeof mount>) {
   return recentItem;
 }
 
+async function openPinnedConversationMenu(wrapper: ReturnType<typeof mount>) {
+  const pinnedItem = wrapper.get('[data-testid="pinned-conversation-list-item"]');
+
+  await pinnedItem.trigger('mouseenter');
+  await pinnedItem.get('[data-testid="conversation-menu-trigger"]').trigger('click');
+
+  return pinnedItem;
+}
+
 describe('feature10.1 conversation kebab menu', () => {
   beforeEach(async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
@@ -222,6 +231,27 @@ describe('feature10.1 conversation kebab menu', () => {
     expect(
       wrapper.findAllComponents({ name: 'ConversationActionMenu' }).length,
     ).toBeGreaterThanOrEqual(1);
+  });
+
+  it('shows the same kebab menu on pinned conversation rows', async () => {
+    const wrapper = await mountExpandedChatPage();
+    const pinnedItem = wrapper.get('[data-testid="pinned-conversation-list-item"]');
+
+    expect(pinnedItem.text()).toContain('S3 권한 오류 해결 방법');
+    expect(pinnedItem.find('[data-testid="conversation-menu-trigger"]').exists()).toBe(false);
+
+    await openPinnedConversationMenu(wrapper);
+
+    const pinnedMenu = wrapper.get('[data-testid="conversation-action-menu"]');
+
+    expect(pinnedMenu.text()).toContain('고정 해제');
+    expect(pinnedMenu.text()).toContain('이름 변경');
+    expect(pinnedMenu.text()).toContain('삭제');
+
+    await pinnedItem.trigger('mouseleave');
+
+    expect(pinnedItem.find('[data-testid="conversation-menu-trigger"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="conversation-action-menu"]').exists()).toBe(true);
   });
 
   it('closes the open menu with Escape or outside click and focuses the first menu item on open', async () => {

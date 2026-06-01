@@ -1811,3 +1811,46 @@
 - Public API와 기존 API 함수 시그니처는 변경하지 않았다.
 - API, DB, 인증/인가 계약 변경은 없다.
 - `feature10.5` 이후 항목은 수정하지 않았다.
+
+## 2026-06-01 - feature10.1 회귀 수정 (고정 채팅 메뉴 표시)
+
+### Scope
+
+- 고정 채팅 리스트 row에도 최근 채팅과 동일한 케밥 메뉴 trigger와 action menu 연결
+- 고정 채팅 hover/open 상태가 메뉴 표시와 충돌하지 않도록 회귀 테스트 추가
+
+### Test Cases
+
+- 고정 채팅 row hover 전에는 케밥 버튼이 표시되지 않는다.
+- 고정 채팅 row hover 후 케밥 메뉴를 열면 `고정 해제`, `이름 변경`, `삭제` 항목이 표시된다.
+- 메뉴 open 상태에서는 hover가 해제되어도 trigger와 menu가 유지된다.
+
+### Changed Files
+
+- `src/__tests__/feature10.1.conversation-menu.test.ts`: 고정 채팅 케밥 메뉴 회귀 테스트 추가
+- `src/pages/ChatPage.vue`: 고정 채팅 리스트 row에 `ConversationActionMenu` 연결
+- `docs/ai/working-log.md`: 회귀 수정 기록
+
+### Commands
+
+- `npm run test -- src/__tests__/feature10.1.conversation-menu.test.ts` (구현 전 실패 확인)
+- `npm run test -- src/__tests__/feature10.1.conversation-menu.test.ts`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- 구현 전 테스트: failed, 고정 채팅 row에 메뉴 test id와 trigger가 존재하지 않음
+- feature10.1 테스트: passed, 1 test file and 5 tests passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed, 11 test files and 83 tests passed
+- `./scripts/verify.sh`: passed, 11 test files and 83 tests passed
+
+### Follow-up Note
+
+- 고정 채팅과 최근 채팅 row가 `ConversationActionMenu`를 공유하지만, hover/open wrapper와 row button markup은 `ChatPage.vue`에 중복되어 있다.
+- `feature10.5`의 ChatPage 책임 분리 시 `ConversationListItem` 또는 동등한 row 컴포넌트로 추출하면 고정/최근 목록이 같은 row 계약을 재사용할 수 있다.
+- `ConversationActionMenu`는 메뉴 trigger와 menuitem 렌더링에 집중시키고, row hover/open 유지와 선택 버튼 배치는 row 컴포넌트가 담당하는 구조가 더 적절하다.

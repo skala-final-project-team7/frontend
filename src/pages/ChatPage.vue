@@ -738,11 +738,18 @@ watch(
                 고정 채팅 준비 중
               </p>
               <ul v-else data-testid="pinned-chat-list" class="mt-3 space-y-2">
-                <li v-for="conversation in pinnedConversations" :key="conversation.conversationId">
+                <li
+                  v-for="conversation in pinnedConversations"
+                  :key="conversation.conversationId"
+                  data-testid="pinned-conversation-list-item"
+                  class="relative"
+                  @mouseenter="hoveredConversationMenuId = conversation.conversationId"
+                  @mouseleave="hoveredConversationMenuId = ''"
+                >
                   <button
                     data-testid="conversation-list-item"
                     type="button"
-                    class="w-full rounded-button px-3 py-2 text-left font-lina text-small transition hover:bg-bg-200 focus-visible:outline-none focus-visible:shadow-focus"
+                    class="w-full rounded-button py-2 pl-3 pr-10 text-left font-lina text-small transition hover:bg-bg-200 focus-visible:outline-none focus-visible:shadow-focus"
                     :class="
                       chatStore.activeConversationId === conversation.conversationId
                         ? 'bg-primary-50 text-primary'
@@ -752,6 +759,26 @@ watch(
                   >
                     {{ conversation.title }}
                   </button>
+                  <div
+                    v-if="
+                      hoveredConversationMenuId === conversation.conversationId ||
+                      openConversationMenuId === conversation.conversationId
+                    "
+                    class="absolute right-1 top-1"
+                  >
+                    <ConversationActionMenu
+                      :is-open="openConversationMenuId === conversation.conversationId"
+                      :is-pinned="conversation.isPinned"
+                      menu-label="고정 채팅 메뉴"
+                      trigger-class="size-8 rounded-button"
+                      trigger-test-id="conversation-menu-trigger"
+                      @close="closeConversationMenu"
+                      @delete="removeConversation(conversation)"
+                      @pin="toggleConversationPin(conversation)"
+                      @rename="renameConversation(conversation)"
+                      @toggle="toggleConversationMenu(conversation.conversationId)"
+                    />
+                  </div>
                 </li>
               </ul>
             </section>
