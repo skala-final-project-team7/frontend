@@ -1763,3 +1763,51 @@
 
 - 출처 목록의 title/path/작성자/작성일 및 hover preview 동작은 유지한다.
 - API response 계약은 변경하지 않았으며, 실제 highlight metadata를 도입할 때만 API 명세 갱신을 검토한다.
+
+## 2026-06-01 - feature10.1 케밥 아이콘 메뉴 컴포넌트
+
+### Scope
+
+- 최근 채팅 리스트와 채팅 헤더에서 공유하는 대화 케밥 메뉴 컴포넌트 구현
+- 메뉴 열림/닫힘, ESC 닫힘, 외부 클릭 닫힘, open 시 첫 menuitem 포커스 이동 구현
+- 고정/이름 변경/삭제 액션을 기존 `updateConversationTitle`, `deleteConversation` API 함수로 연결
+- 기존 별도 모달/다이얼로그 패턴이 없어 이름 변경은 `window.prompt`, 삭제 확인은 `window.confirm`으로 최소 적용
+
+### Test Cases
+
+- 최근 채팅 row hover 전/후 케밥 버튼 표시와 메뉴 open 유지 동작을 검증한다.
+- 최근 채팅과 헤더 메뉴가 동일한 `ConversationActionMenu` 컴포넌트 계약과 menuitem 구성을 공유한다.
+- 메뉴 open 시 첫 menuitem으로 포커스가 이동하고 ESC/외부 클릭으로 닫힌다.
+- 고정, 이름 변경, 삭제 액션이 기존 API 함수 시그니처에 맞는 PATCH/DELETE 요청을 보내고 UI를 갱신한다.
+
+### Changed Files
+
+- `src/__tests__/feature10.1.conversation-menu.test.ts`: feature10.1 메뉴 표시/접근성/API 액션 회귀 테스트 추가
+- `src/features/chat/ConversationActionMenu.vue`: 공유 케밥 메뉴 컴포넌트 추가
+- `src/pages/ChatPage.vue`: 최근 채팅/헤더 메뉴 연결 및 기존 API 액션 처리 추가
+- `docs/ai/current-plan.md`: feature10.1 완료 항목 체크
+- `docs/ai/working-log.md`: 변경 범위와 검증 결과 기록
+
+### Commands
+
+- `npm run test -- src/__tests__/feature10.1.conversation-menu.test.ts` (구현 전 실패 확인)
+- `npm run test -- src/__tests__/feature10.1.conversation-menu.test.ts`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- 구현 전 테스트: failed, 최근 채팅 row/menu 식별자와 메뉴 컴포넌트 및 액션 연결이 존재하지 않음
+- 신규 feature10.1 테스트: passed, 1 test file and 4 tests passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed, 11 test files and 82 tests passed
+- `./scripts/verify.sh`: passed, 11 test files and 82 tests passed
+
+### Notes / Remaining Issues
+
+- Public API와 기존 API 함수 시그니처는 변경하지 않았다.
+- API, DB, 인증/인가 계약 변경은 없다.
+- `feature10.5` 이후 항목은 수정하지 않았다.
