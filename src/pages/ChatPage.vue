@@ -13,6 +13,7 @@
   - 2026-05-26, feature9 회귀 수정, 지연된 메시지 이력 실패 시 현재 대화/스트림 보존
   - 2026-05-26, feature10 구현, 출처 패널 열기와 sidebar 닫기 상태 연결
   - 2026-05-26, feature10 UI 보정, 새 채팅 진입 시 출처 패널 초기화
+  - 2026-06-01, feature10.1 구현, 대화 케밥 메뉴 표시와 기존 API 액션 연결
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -23,7 +24,6 @@
 import {
   HelpCircle,
   MessageCircle,
-  MoreVertical,
   PanelRightClose,
   PanelLeftClose,
   Search,
@@ -34,9 +34,16 @@ import {
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
-import { createConversation, getCurrentUser, listConversations } from '@/api';
+import {
+  createConversation,
+  deleteConversation,
+  getCurrentUser,
+  listConversations,
+  updateConversationTitle,
+} from '@/api';
 import ChatConversationView from '@/features/chat/ChatConversationView.vue';
 import ChatEmptyState from '@/features/chat/ChatEmptyState.vue';
+import ConversationActionMenu from '@/features/chat/ConversationActionMenu.vue';
 import MessageInput from '@/features/chat/MessageInput.vue';
 import ReferencePanel from '@/features/chat/ReferencePanel.vue';
 import { mascotImageUrl } from '@/shared/assets';
@@ -71,6 +78,8 @@ const resentMessageIds = ref<Set<string>>(new Set());
 const userMessageVersionsById = ref<Record<string, UserMessageVersionState>>({});
 const isReferencePanelOpen = ref(false);
 const referenceSources = ref<Source[]>([]);
+const hoveredConversationMenuId = ref('');
+const openConversationMenuId = ref('');
 const chatStore = useChatStore();
 const { showToast } = useToast();
 let sidebarContentTimer: number | undefined;
@@ -145,6 +154,14 @@ const currentConversationTitle = computed(() => {
 
   return currentConversation?.title ?? '새 채팅';
 });
+const currentConversation = computed(() => {
+  const conversationId = routeConversationId.value || chatStore.activeConversationId;
+
+  return conversations.value.find((conversation) => conversation.conversationId === conversationId);
+});
+const currentConversationId = computed(
+  () => currentConversation.value?.conversationId ?? routeConversationId.value,
+);
 
 /**
  * 사이드바 open/close 상태를 토글한다.
@@ -170,12 +187,6 @@ watch(isSidebarOpen, (isOpen) => {
   }, 160);
 });
 
-onBeforeUnmount(() => {
-  if (sidebarContentTimer) {
-    window.clearTimeout(sidebarContentTimer);
-  }
-});
-
 // TODO: 채팅 검색 모달 구현 (feature 예정)
 /**
  * 채팅 검색 모달 진입점이다.
@@ -197,12 +208,144 @@ async function startNewChat() {
  * @param conversationId 이동할 대화 ID
  */
 async function selectConversation(conversationId: string) {
+  closeConversationMenu();
   await router.push({
     name: 'chat-conversation',
     params: {
       conversationId,
     },
   });
+}
+
+/**
+ * 열린 대화 메뉴를 닫는다.
+ */
+function closeConversationMenu() {
+  openConversationMenuId.value = '';
+}
+
+/**
+ * 대화 메뉴 열림 상태를 토글한다.
+ *
+ * @param conversationId 메뉴 대상 대화 ID
+ */
+function toggleConversationMenu(conversationId: string) {
+  openConversationMenuId.value =
+    openConversationMenuId.value === conversationId ? '' : conversationId;
+}
+
+/**
+ * body pointerdown으로 메뉴 바깥 클릭을 감지해 열린 메뉴를 닫는다.
+ *
+ * @param event pointerdown 이벤트
+ */
+function closeConversationMenuFromOutside(event: PointerEvent) {
+  const target = event.target;
+
+  if (!(target instanceof Element)) {
+    closeConversationMenu();
+    return;
+  }
+
+  if (target.closest('[data-conversation-menu-root]')) {
+    return;
+  }
+
+  closeConversationMenu();
+}
+
+/**
+ * 메뉴 액션 후 응답 conversation payload를 로컬 목록에 반영한다.
+ *
+ * @param nextConversation 갱신된 대화 정보
+ */
+function replaceConversation(nextConversation: Conversation) {
+  conversations.value = conversations.value.map((conversation) =>
+    conversation.conversationId === nextConversation.conversationId
+      ? {
+          ...conversation,
+          ...nextConversation,
+        }
+      : conversation,
+  );
+}
+
+/**
+ * 대화 고정 상태를 토글한다.
+ *
+ * @param conversation 메뉴 액션 대상 대화
+ */
+async function toggleConversationPin(conversation: Conversation) {
+  try {
+    const nextConversation = await updateConversationTitle(conversation.conversationId, {
+      isPinned: !conversation.isPinned,
+    });
+
+    replaceConversation(nextConversation);
+  } catch {
+    showToast('대화 고정 상태를 변경하지 못했습니다.', {
+      variant: 'error',
+    });
+  } finally {
+    closeConversationMenu();
+  }
+}
+
+/**
+ * 대화 이름 변경 입력을 받아 기존 PATCH API로 반영한다.
+ *
+ * @param conversation 메뉴 액션 대상 대화
+ */
+async function renameConversation(conversation: Conversation) {
+  const nextTitle = window.prompt('대화 이름을 입력하세요.', conversation.title)?.trim();
+
+  if (!nextTitle) {
+    closeConversationMenu();
+    return;
+  }
+
+  try {
+    const nextConversation = await updateConversationTitle(conversation.conversationId, {
+      title: nextTitle,
+    });
+
+    replaceConversation(nextConversation);
+  } catch {
+    showToast('대화 이름을 변경하지 못했습니다.', {
+      variant: 'error',
+    });
+  } finally {
+    closeConversationMenu();
+  }
+}
+
+/**
+ * 삭제 확인 후 기존 DELETE API로 대화를 삭제하고, 현재 대화 삭제 시 새 채팅으로 이동한다.
+ *
+ * @param conversation 메뉴 액션 대상 대화
+ */
+async function removeConversation(conversation: Conversation) {
+  if (!window.confirm('이 대화를 삭제할까요?')) {
+    closeConversationMenu();
+    return;
+  }
+
+  try {
+    await deleteConversation(conversation.conversationId);
+    conversations.value = conversations.value.filter(
+      (currentConversation) => currentConversation.conversationId !== conversation.conversationId,
+    );
+
+    if (currentConversationId.value === conversation.conversationId) {
+      await startNewChat();
+    }
+  } catch {
+    showToast('대화를 삭제하지 못했습니다.', {
+      variant: 'error',
+    });
+  } finally {
+    closeConversationMenu();
+  }
 }
 
 /**
@@ -388,6 +531,8 @@ function closeReferencePanel() {
 
 // 현재 사용자와 대화 목록을 초기에 불러와 사이드바와 상단 프로필을 채운다.
 onMounted(async () => {
+  document.addEventListener('pointerdown', closeConversationMenuFromOutside);
+
   try {
     const [currentUser, conversationList] = await Promise.all([
       getCurrentUser(),
@@ -406,6 +551,14 @@ onMounted(async () => {
   }
 });
 
+onBeforeUnmount(() => {
+  if (sidebarContentTimer) {
+    window.clearTimeout(sidebarContentTimer);
+  }
+
+  document.removeEventListener('pointerdown', closeConversationMenuFromOutside);
+});
+
 // route가 바뀔 때마다 해당 conversation의 메시지 이력을 다시 로드한다.
 watch(
   routeConversationId,
@@ -413,6 +566,7 @@ watch(
     if (!conversationId) {
       chatStore.clearActiveConversation();
       closeReferencePanel();
+      closeConversationMenu();
       editingMessageId.value = '';
       editingContent.value = '';
       resentMessageIds.value = new Set();
@@ -421,6 +575,7 @@ watch(
     }
 
     await loadConversationMessages(conversationId);
+    closeConversationMenu();
   },
   {
     immediate: true,
@@ -583,11 +738,18 @@ watch(
                 고정 채팅 준비 중
               </p>
               <ul v-else data-testid="pinned-chat-list" class="mt-3 space-y-2">
-                <li v-for="conversation in pinnedConversations" :key="conversation.conversationId">
+                <li
+                  v-for="conversation in pinnedConversations"
+                  :key="conversation.conversationId"
+                  data-testid="pinned-conversation-list-item"
+                  class="relative"
+                  @mouseenter="hoveredConversationMenuId = conversation.conversationId"
+                  @mouseleave="hoveredConversationMenuId = ''"
+                >
                   <button
                     data-testid="conversation-list-item"
                     type="button"
-                    class="w-full rounded-button px-3 py-2 text-left font-lina text-small transition hover:bg-bg-200 focus-visible:outline-none focus-visible:shadow-focus"
+                    class="w-full rounded-button py-2 pl-3 pr-10 text-left font-lina text-small transition hover:bg-bg-200 focus-visible:outline-none focus-visible:shadow-focus"
                     :class="
                       chatStore.activeConversationId === conversation.conversationId
                         ? 'bg-primary-50 text-primary'
@@ -597,6 +759,26 @@ watch(
                   >
                     {{ conversation.title }}
                   </button>
+                  <div
+                    v-if="
+                      hoveredConversationMenuId === conversation.conversationId ||
+                      openConversationMenuId === conversation.conversationId
+                    "
+                    class="absolute right-1 top-1"
+                  >
+                    <ConversationActionMenu
+                      :is-open="openConversationMenuId === conversation.conversationId"
+                      :is-pinned="conversation.isPinned"
+                      menu-label="고정 채팅 메뉴"
+                      trigger-class="size-8 rounded-button"
+                      trigger-test-id="conversation-menu-trigger"
+                      @close="closeConversationMenu"
+                      @delete="removeConversation(conversation)"
+                      @pin="toggleConversationPin(conversation)"
+                      @rename="renameConversation(conversation)"
+                      @toggle="toggleConversationMenu(conversation.conversationId)"
+                    />
+                  </div>
                 </li>
               </ul>
             </section>
@@ -609,11 +791,18 @@ watch(
                 새 대화를 시작하세요
               </p>
               <ul v-else class="mt-3 space-y-2">
-                <li v-for="conversation in recentConversations" :key="conversation.conversationId">
+                <li
+                  v-for="conversation in recentConversations"
+                  :key="conversation.conversationId"
+                  data-testid="recent-conversation-list-item"
+                  class="relative"
+                  @mouseenter="hoveredConversationMenuId = conversation.conversationId"
+                  @mouseleave="hoveredConversationMenuId = ''"
+                >
                   <button
                     data-testid="conversation-list-item"
                     type="button"
-                    class="w-full rounded-button px-3 py-2 text-left font-lina text-small transition hover:bg-bg-200 focus-visible:outline-none focus-visible:shadow-focus"
+                    class="w-full rounded-button py-2 pl-3 pr-10 text-left font-lina text-small transition hover:bg-bg-200 focus-visible:outline-none focus-visible:shadow-focus"
                     :class="
                       chatStore.activeConversationId === conversation.conversationId
                         ? 'bg-primary-50 text-primary'
@@ -623,6 +812,26 @@ watch(
                   >
                     {{ conversation.title }}
                   </button>
+                  <div
+                    v-if="
+                      hoveredConversationMenuId === conversation.conversationId ||
+                      openConversationMenuId === conversation.conversationId
+                    "
+                    class="absolute right-1 top-1"
+                  >
+                    <ConversationActionMenu
+                      :is-open="openConversationMenuId === conversation.conversationId"
+                      :is-pinned="conversation.isPinned"
+                      menu-label="최근 채팅 메뉴"
+                      trigger-class="size-8 rounded-button"
+                      trigger-test-id="conversation-menu-trigger"
+                      @close="closeConversationMenu"
+                      @delete="removeConversation(conversation)"
+                      @pin="toggleConversationPin(conversation)"
+                      @rename="renameConversation(conversation)"
+                      @toggle="toggleConversationMenu(conversation.conversationId)"
+                    />
+                  </div>
                 </li>
               </ul>
             </section>
@@ -677,16 +886,19 @@ watch(
               </p>
             </div>
             <div class="flex items-center gap-3">
-              <BaseTooltip label="더보기" placement="left">
-                <button
-                  data-testid="conversation-menu-button"
-                  type="button"
-                  aria-label="더보기"
-                  class="inline-flex size-10 items-center justify-center rounded-full text-overlay-dark-80 transition hover:bg-bg-200 focus-visible:outline-none focus-visible:shadow-focus"
-                >
-                  <MoreVertical aria-hidden="true" class="size-5" />
-                </button>
-              </BaseTooltip>
+              <ConversationActionMenu
+                v-if="currentConversation"
+                :is-open="openConversationMenuId === currentConversation.conversationId"
+                :is-pinned="currentConversation.isPinned"
+                menu-label="현재 대화 메뉴"
+                trigger-class="size-10 rounded-full"
+                trigger-test-id="conversation-menu-button"
+                @close="closeConversationMenu"
+                @delete="removeConversation(currentConversation)"
+                @pin="toggleConversationPin(currentConversation)"
+                @rename="renameConversation(currentConversation)"
+                @toggle="toggleConversationMenu(currentConversation.conversationId)"
+              />
               <BaseTooltip label="계정 관리" placement="left">
                 <button
                   data-testid="profile-entry"
