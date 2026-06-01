@@ -131,6 +131,15 @@
 [x] 최근 채팅 리스트 hover 상태와 메뉴 open 상태가 충돌하지 않도록 회귀 테스트 작성
 [x] 채팅 헤더 메뉴와 최근 채팅 리스트 메뉴가 동일 컴포넌트 또는 동일 동작 계약을 공유하도록 구성
 
+# feature10.4: FE/RAG SSE 스트리밍 계약 확인 (feature10.5 이전 선행)
+
+- [ ] FE가 `POST /api/conversations/{conversationId}/chat`를 일반 JSON API wrapper가 아니라 SSE/streaming fetch로 분리해서 읽는 구조인지 확인
+- [ ] RAG 운영 모드의 여러 `token`과 PoC fallback의 단일 `token`을 구분하지 않고 `token.data.content`를 순서대로 append하는지 확인
+- [ ] append 시 공백 trim, separator 삽입, 재정렬을 하지 않는지 확인
+- [ ] `sources`, `verification`, `meta`, `done`, `error` 이벤트를 각각 처리하는지 확인
+- [ ] `done` 수신 전까지 메시지를 임시 assistant bubble로 표시할지 확정
+- [ ] `error` 수신 시 이미 받은 partial token을 남길지/버릴지 확정
+
 # feature10.5: ChatPage 책임 분리 리팩토링 (feature11 전 선행 고려)
 
 [ ] `ChatPage.vue`는 route/page shell 조립 중심으로 남기고 sidebar/header/submission/route sync 책임을 작게 분리
