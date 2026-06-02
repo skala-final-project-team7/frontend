@@ -48,7 +48,6 @@ describe('feature6 Chat mock API foundation', () => {
     expect(conversationList.conversations[0]).toMatchObject({
       conversationId: 'conv-mock-001',
       title: 'S3 권한 오류 해결 방법',
-      messageCount: 4,
     });
   });
 
@@ -87,11 +86,11 @@ describe('feature6 Chat mock API foundation', () => {
         conversationId: 'conv-mock-001',
         messages: [
           {
-            role: 'USER',
+            role: 'user',
             content: '지난번 S3 버킷 권한 오류 때 어떻게 해결했어?',
           },
           {
-            role: 'ASSISTANT',
+            role: 'assistant',
             verificationResult: 'SUPPORTED',
           },
         ],

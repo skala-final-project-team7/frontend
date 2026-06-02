@@ -156,6 +156,36 @@ function createPartialTokenThenErrorSseResponse(): Response {
   );
 }
 
+/**
+ * terminal event 이후 서버가 stream을 닫지 않는 응답을 만든다.
+ *
+ * @param frames terminal event를 포함한 SSE frame 목록
+ * @param onCancel reader cancel 확인 callback
+ * @returns 닫히지 않는 text/event-stream Response
+ */
+function createHangingSseResponse(frames: string[], onCancel: () => void): Response {
+  return new Response(
+    new ReadableStream({
+      start(controller) {
+        const encoder = new TextEncoder();
+
+        frames.forEach((frame) => {
+          controller.enqueue(encoder.encode(frame));
+        });
+      },
+      cancel() {
+        onCancel();
+      },
+    }),
+    {
+      headers: {
+        'Content-Type': 'text/event-stream',
+      },
+      status: 200,
+    },
+  );
+}
+
 describe('feature9 chat SSE store integration', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
@@ -176,12 +206,12 @@ describe('feature9 chat SSE store integration', () => {
     expect(chatStore.streamingPhase).toBe('idle');
     expect(chatStore.activeMessages).toHaveLength(2);
     expect(chatStore.activeMessages[0]).toMatchObject({
-      role: 'USER',
+      role: 'user',
       content: 'S3 권한 오류를 다시 정리해줘',
     });
     expect(chatStore.activeMessages[1]).toMatchObject({
       messageId: 'msg-done-001',
-      role: 'ASSISTANT',
+      role: 'assistant',
       content: '첫 chunk 두 번째 chunk',
       confidenceScore: 0.91,
       verificationResult: 'SUPPORTED',
@@ -200,7 +230,7 @@ describe('feature9 chat SSE store integration', () => {
     chatStore.messagesByConversationId['conv-mock-001'] = [
       {
         messageId: 'msg-local-assistant-status',
-        role: 'ASSISTANT',
+        role: 'assistant',
         content: '',
         createdAt: '2026-05-22T00:00:00Z',
         sources: [],
@@ -228,7 +258,7 @@ describe('feature9 chat SSE store integration', () => {
     chatStore.messagesByConversationId['conv-mock-001'] = [
       {
         messageId: 'msg-local-assistant-status',
-        role: 'ASSISTANT',
+        role: 'assistant',
         content: '',
         createdAt: '2026-05-22T00:00:00Z',
         phase: 'searching',
@@ -276,7 +306,7 @@ describe('feature9 chat SSE store integration', () => {
     expect(chatStore.isStreaming).toBe(false);
     expect(chatStore.streamingMessageId).toBe('');
     expect(chatStore.activeMessages[1]).toMatchObject({
-      role: 'ASSISTANT',
+      role: 'assistant',
       content: '',
       statusMessage: '',
     });
@@ -309,7 +339,7 @@ describe('feature9 chat SSE store integration', () => {
     expect(chatStore.isStreaming).toBe(false);
     expect(chatStore.streamingPhase).toBe('idle');
     expect(chatStore.activeMessages[1]).toMatchObject({
-      role: 'ASSISTANT',
+      role: 'assistant',
       content: '답변 생성 중 오류가 발생했습니다',
       statusMessage: '',
     });
@@ -327,12 +357,74 @@ describe('feature9 chat SSE store integration', () => {
     expect(chatStore.isStreaming).toBe(false);
     expect(chatStore.streamingPhase).toBe('idle');
     expect(chatStore.activeMessages[1]).toMatchObject({
-      role: 'ASSISTANT',
+      role: 'assistant',
       phase: 'error',
       content: '답변 생성 중 오류가 발생했습니다',
       error: '답변 생성 중 오류가 발생했습니다',
       statusMessage: '',
     });
     expect(chatStore.activeMessages[1].content).not.toContain('partial 답변');
+  });
+
+  it('cancels the SSE reader after done even if the server keeps the stream open', async () => {
+    let isReaderCancelled = false;
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        createHangingSseResponse(
+          [
+            'event: token\ndata: {"content":"완료된 답변"}\n\n',
+            'event: done\ndata: {"messageId":"msg-done-hanging"}\n\n',
+          ],
+          () => {
+            isReaderCancelled = true;
+          },
+        ),
+      ),
+    );
+    const chatStore = useChatStore();
+
+    await chatStore.streamMessage('conv-mock-001', 'done cancel 테스트');
+
+    expect(isReaderCancelled).toBe(true);
+    expect(chatStore.isStreaming).toBe(false);
+    expect(chatStore.activeMessages[1]).toMatchObject({
+      messageId: 'msg-done-hanging',
+      role: 'assistant',
+      phase: 'done',
+      content: '완료된 답변',
+    });
+  });
+
+  it('cancels the SSE reader after error even if the server keeps the stream open', async () => {
+    let isReaderCancelled = false;
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        createHangingSseResponse(
+          [
+            'event: token\ndata: {"content":"버릴 partial 답변"}\n\n',
+            'event: error\ndata: {"errorCode":"ML_SERVER_ERROR","message":"답변 생성 중 오류가 발생했습니다"}\n\n',
+          ],
+          () => {
+            isReaderCancelled = true;
+          },
+        ),
+      ),
+    );
+    const chatStore = useChatStore();
+
+    await chatStore.streamMessage('conv-mock-001', 'error cancel 테스트');
+
+    expect(isReaderCancelled).toBe(true);
+    expect(chatStore.isStreaming).toBe(false);
+    expect(chatStore.activeMessages[1]).toMatchObject({
+      role: 'assistant',
+      phase: 'error',
+      content: '답변 생성 중 오류가 발생했습니다',
+      error: '답변 생성 중 오류가 발생했습니다',
+    });
   });
 });

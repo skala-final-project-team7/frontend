@@ -386,13 +386,7 @@ async function submitMessage(question: string) {
       if (
         !conversations.value.some((conversation) => conversation.conversationId === conversationId)
       ) {
-        conversations.value = [
-          {
-            ...createdConversation,
-            messageCount: 0,
-          },
-          ...conversations.value,
-        ];
+        conversations.value = [createdConversation, ...conversations.value];
       }
 
       await router.push({
@@ -453,7 +447,7 @@ function submitEditedMessage(messageId: string) {
   const currentUserMessage = messages[messageIndex];
   const nextAssistantMessage = messages
     .slice(messageIndex + 1)
-    .find((message) => message.role === 'ASSISTANT');
+    .find((message) => message.role === 'assistant');
 
   if (!currentUserMessage) {
     return;

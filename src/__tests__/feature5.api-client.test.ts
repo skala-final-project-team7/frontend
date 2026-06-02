@@ -44,7 +44,7 @@ describe('feature5 API types and client skeleton', () => {
 
     const assistantMessage: Message = {
       messageId: 'msg-uuid-002',
-      role: 'ASSISTANT',
+      role: 'assistant',
       content: 'S3 권한 오류는 IAM 정책을 수정하여 해결했습니다.',
       sources: [source],
       confidenceScore: 0.85,
@@ -57,7 +57,6 @@ describe('feature5 API types and client skeleton', () => {
       title: 'S3 권한 오류 해결 방법',
       createdAt: '2026-05-06T19:00:00+09:00',
       lastMessageAt: '2026-05-06T19:05:00+09:00',
-      messageCount: 4,
     };
     const listParams: ListConversationsParams = {
       page: 1,

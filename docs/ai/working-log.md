@@ -1911,3 +1911,66 @@
 ### Results
 
 - passed, 1 test file and 7 tests passed
+
+## 2026-06-02 - Frontend API v2.3.0 정합화
+
+### Scope
+
+- `docs/api-spec.md` v2.3.0 기준으로 Frontend 정의서와 실제 FE 타입/목 데이터를 대조
+- 메시지 `role` 값 체계를 API 명세의 `user` / `assistant` lowercase로 정합화
+- API v2.3.0에서 제거된 conversation `messageCount`를 FE 타입/목 데이터/로컬 생성 흐름에서 제거
+- 별도 FE-facing 검색 API가 없고, 자연어 검색/질의는 Chat SSE API로 수행한다는 내용을 Frontend 정의서에 명시
+
+### Changed Files
+
+- `FRONTEND_SPEC.md`: API v2.3.0 기준 Frontend 정의서 생성
+- `src/types/api.ts`: `MessageRole` lowercase 반영 및 `Conversation.messageCount` 제거
+- `src/stores/chat.ts`: local user/assistant message role을 lowercase로 생성
+- `src/features/chat/MessageBubble.vue`: 메시지 role 분기 조건을 lowercase로 변경
+- `src/pages/ChatPage.vue`: assistant message 탐색 조건 lowercase 반영 및 신규 대화 local `messageCount` 제거
+- `src/mocks/data.ts`: mock conversation/message payload를 API v2.3.0에 맞게 정리
+- `src/__tests__/feature5.api-client.test.ts`: API 타입 계약 테스트 갱신
+- `src/__tests__/feature6.mock-api.test.ts`: mock API response 계약 테스트 갱신
+- `src/__tests__/feature9.chat-sse-store.test.ts`: SSE store role 기대값 갱신
+- `src/__tests__/feature9.chat-conversation.test.ts`: MessageBubble role fixture 갱신
+
+### Commands
+
+- `npm run test -- src/__tests__/feature5.api-client.test.ts src/__tests__/feature6.mock-api.test.ts src/__tests__/feature9.chat-sse-store.test.ts src/__tests__/feature9.chat-conversation.test.ts` (구현 전 실패 확인)
+- `npm run typecheck`
+- `npm run test -- src/__tests__/feature5.api-client.test.ts src/__tests__/feature6.mock-api.test.ts src/__tests__/feature9.chat-sse-store.test.ts src/__tests__/feature9.chat-conversation.test.ts`
+
+### Results
+
+- 구현 전 테스트: failed, 기존 FE가 `USER` / `ASSISTANT` uppercase role을 생성/렌더링하고 mock response도 uppercase를 반환함
+- 관련 테스트: passed, 4 test files and 40 tests passed
+- `npm run typecheck`: passed
+
+### Notes / Remaining Issues
+
+- 인증 token 저장/Authorization header 자동 주입, auth refresh/logout API 구현은 feature13 범위로 남긴다.
+- 관리자 대시보드 API 구현은 현재 화면 feature 범위 밖이며, `FRONTEND_SPEC.md`에 API spec 기준 범위만 명시했다.
+
+## 2026-06-02 - SSE terminal event reader cancel 처리
+
+### Scope
+
+- API spec의 `done` / `error` terminal event 수신 후 클라이언트가 스트림을 종료하는 계약을 FE reader 동작에 반영
+- 서버가 `done` 또는 `error` 이벤트 이후 stream을 닫지 않아도 FE가 직접 `reader.cancel()`로 읽기를 중단하도록 구현
+
+### Changed Files
+
+- `src/composables/useSSE.ts`: 완성된 SSE frame 파싱 결과에 terminal event 여부를 반환하고, `done` 수신 시 `reader.cancel()` 후 정상 완료 처리
+- `src/composables/useSSE.ts`: `error` 이벤트 처리 중 store callback이 예외를 던지는 경우에도 reader를 cancel한 뒤 예외를 전파
+- `src/__tests__/feature9.chat-sse-store.test.ts`: 서버가 stream을 닫지 않는 `done` / `error` 응답에서도 reader cancel과 상태 정리가 되는 회귀 테스트 추가
+- `docs/ai/working-log.md`: 구현 내용과 검증 결과 기록
+
+### Commands
+
+- `npm run test -- src/__tests__/feature9.chat-sse-store.test.ts` (구현 전 실패 확인)
+- `npm run test -- src/__tests__/feature9.chat-sse-store.test.ts`
+
+### Results
+
+- 구현 전 테스트: failed, `done` 이후 stream이 열린 채로 남으면 테스트가 timeout되고 `error` 이후에도 reader cancel이 호출되지 않음
+- feature9 SSE store 테스트: passed, 1 test file and 9 tests passed
