@@ -134,6 +134,28 @@ function createErrorSseResponse(): Response {
   );
 }
 
+/**
+ * partial token 수신 후 backend error 이벤트로 종료되는 SSE 응답을 만든다.
+ *
+ * @returns token 이후 error event 기반 text/event-stream Response
+ */
+function createPartialTokenThenErrorSseResponse(): Response {
+  return new Response(
+    [
+      'event: token\n',
+      'data: {"content":"사용자에게 남기지 않을 partial 답변"}\n\n',
+      'event: error\n',
+      'data: {"errorCode":"ML_SERVER_ERROR","message":"답변 생성 중 오류가 발생했습니다"}\n\n',
+    ].join(''),
+    {
+      headers: {
+        'Content-Type': 'text/event-stream',
+      },
+      status: 200,
+    },
+  );
+}
+
 describe('feature9 chat SSE store integration', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
@@ -291,5 +313,26 @@ describe('feature9 chat SSE store integration', () => {
       content: '답변 생성 중 오류가 발생했습니다',
       statusMessage: '',
     });
+  });
+
+  it('discards partial token content when the stream terminates with backend error', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => createPartialTokenThenErrorSseResponse()),
+    );
+    const chatStore = useChatStore();
+
+    await chatStore.streamMessage('conv-mock-001', 'partial error 테스트');
+
+    expect(chatStore.isStreaming).toBe(false);
+    expect(chatStore.streamingPhase).toBe('idle');
+    expect(chatStore.activeMessages[1]).toMatchObject({
+      role: 'ASSISTANT',
+      phase: 'error',
+      content: '답변 생성 중 오류가 발생했습니다',
+      error: '답변 생성 중 오류가 발생했습니다',
+      statusMessage: '',
+    });
+    expect(chatStore.activeMessages[1].content).not.toContain('partial 답변');
   });
 });

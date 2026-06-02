@@ -133,12 +133,12 @@
 
 # feature10.4: FE/RAG SSE 스트리밍 계약 확인 (feature10.5 이전 선행)
 
-- [ ] FE가 `POST /api/conversations/{conversationId}/chat`를 일반 JSON API wrapper가 아니라 SSE/streaming fetch로 분리해서 읽는 구조인지 확인
-- [ ] RAG 운영 모드의 여러 `token`과 PoC fallback의 단일 `token`을 구분하지 않고 `token.data.content`를 순서대로 append하는지 확인
-- [ ] append 시 공백 trim, separator 삽입, 재정렬을 하지 않는지 확인
-- [ ] `sources`, `verification`, `meta`, `done`, `error` 이벤트를 각각 처리하는지 확인
-- [ ] `done` 수신 전까지 메시지를 임시 assistant bubble로 표시할지 확정
-- [ ] `error` 수신 시 이미 받은 partial token을 남길지/버릴지 확정
+[x] FE가 `POST /api/conversations/{conversationId}/chat`를 일반 JSON API wrapper가 아니라 SSE/streaming fetch로 분리해서 읽는 구조인지 확인
+[x] RAG 운영 모드의 여러 `token`과 PoC fallback의 단일 `token`을 구분하지 않고 `token.data.content`를 순서대로 append하는지 확인
+[x] append 시 공백 trim, separator 삽입, 재정렬을 하지 않는지 확인
+[x] `sources`, `verification`, `meta`, `done`, `error` 이벤트를 각각 처리하는지 확인
+[x] `done` 수신 전까지 메시지를 임시 assistant bubble로 표시할지 확정
+[x] `error` 수신 시 이미 받은 partial token을 남길지/버릴지 확정
 
 # feature10.5: ChatPage 책임 분리 리팩토링 (feature11 전 선행 고려)
 

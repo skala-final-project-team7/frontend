@@ -1854,3 +1854,60 @@
 - 고정 채팅과 최근 채팅 row가 `ConversationActionMenu`를 공유하지만, hover/open wrapper와 row button markup은 `ChatPage.vue`에 중복되어 있다.
 - `feature10.5`의 ChatPage 책임 분리 시 `ConversationListItem` 또는 동등한 row 컴포넌트로 추출하면 고정/최근 목록이 같은 row 계약을 재사용할 수 있다.
 - `ConversationActionMenu`는 메뉴 trigger와 menuitem 렌더링에 집중시키고, row hover/open 유지와 선택 버튼 배치는 row 컴포넌트가 담당하는 구조가 더 적절하다.
+
+## 2026-06-01 - feature10.4 SSE 임시 assistant bubble 정책 확인
+
+### Scope
+
+- `done` 수신 전까지 스트리밍 중인 답변을 임시 assistant bubble로 표시하는 현재 FE 정책 확인
+- 사용자가 질문을 보내면 `msg-local-assistant-*` 메시지를 먼저 추가하고, `done.messageId` 수신 시 backend message ID로 교체하는 흐름 확인
+
+### Decision
+
+- `done` 수신 전에도 임시 assistant bubble을 표시한다.
+- 임시 bubble은 streaming status/spinner와 수신된 token 누적 답변을 보여주는 단일 UI 자리로 사용한다.
+- `done` 수신 후에는 같은 메시지의 `messageId`를 backend가 반환한 실제 assistant message ID로 교체한다.
+
+### Evidence
+
+- `src/stores/chat.ts`: `streamMessage()`가 local user message와 local assistant placeholder를 먼저 active messages에 추가한다.
+- `src/stores/chat.ts`: `applySseEvent()`의 `done` branch가 `event.data.messageId`로 placeholder ID를 교체한다.
+- `src/features/chat/MessageBubble.vue`: streaming assistant message에 spinner/status를 렌더링한다.
+- `src/__tests__/feature9.chat-conversation.test.ts`: 빈 assistant placeholder가 streaming 중 loading spinner로 표시되는 동작을 검증한다.
+
+### Commands
+
+- 실행하지 않음. 이번 항목은 기존 구현과 테스트 근거를 확인하는 정책 확정 작업이다.
+
+## 2026-06-01 - feature10.4 SSE error partial token 폐기 정책 확인
+
+### Scope
+
+- `error` 수신 전 이미 append된 partial token을 화면에 남길지/버릴지 정책 확정
+- partial token 이후 backend `error` 이벤트가 오는 상황을 회귀 테스트로 고정
+
+### Decision
+
+- `error` 수신 시 partial token은 버린다.
+- assistant bubble은 partial 답변 대신 backend가 내려준 error message만 표시한다.
+- 이 정책은 `docs/api-spec.md`의 "`error` 로 종료되면 assistant 메시지는 저장하지 않는다" 계약에 맞춘다.
+
+### Logic
+
+- `token` 이벤트 수신 시 `src/stores/chat.ts`의 `applySseEvent()`가 현재 assistant placeholder의 `content` 뒤에 `event.data.content`를 append한다.
+- 이후 `error` 이벤트를 수신하면 같은 `applySseEvent()`의 `error` branch가 `phase: 'error'`, `error: event.data.message`, `content: event.data.message`로 메시지를 갱신한다.
+- 이때 `content`를 기존 content에 append하지 않고 오류 문구로 대체하므로, 이전 partial token은 화면 상태에서 제거된다.
+- `streamMessage()`는 `error` 이벤트 처리 직후 예외를 던지고, `finally`에서 streaming 상태를 종료한다.
+
+### Changed Files
+
+- `src/__tests__/feature9.chat-sse-store.test.ts`: token 일부 수신 후 `error`로 종료될 때 partial 답변이 남지 않는 회귀 테스트 추가
+- `docs/ai/working-log.md`: error partial token 폐기 정책과 동작 로직 기록
+
+### Commands
+
+- `npm run test -- src/__tests__/feature9.chat-sse-store.test.ts`
+
+### Results
+
+- passed, 1 test file and 7 tests passed

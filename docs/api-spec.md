@@ -1,6 +1,6 @@
 # LINA API Spec
 
-> 버전: v2.2.0
+> 버전: v2.3.0
 > 기준: 중간 발표(4주차) 데모 범위 + 이후 확장 계획
 > 전제: 중간 발표 시 인증 하드코딩, 스페이스 고정, 로그인 제외
 > 기획서 버전: v2.1.7 (Authorization Server 분리, 사용자 단위 검색 반영)
@@ -14,6 +14,7 @@
 | 버전   | 일자       | 주요 변경                                                                                                                                                                                                                                                                                                                                                                              |
 | ------ | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | v2.2.0 | 2026-05-29 | **SSE 계약 전면 정리**: `status`/`meta` 포함 **7종 이벤트 정본화**, 이벤트 순서 불변식·스트림 종료/영속·0건 처리·`error`(`errorCode` + 코드 enum) 명문화, idle 기준 타임아웃·`status` keep-alive, SSE 응답 헤더(`text/event-stream` 등), 재연결(`Last-Event-ID`) 미지원. 챗 엔드포인트는 항상 스트리밍(`stream=false` 모드 제거). `meta.title` → 첫 응답 1회 자동 제목 설정 규칙. **채팅방 고정 `isPinned`**(목록 응답·`PATCH` 확장·고정 우선 정렬). **Enum 값 `UPPER_SNAKE` 정책** 확정 및 `role`/`rating` 대문자 정정. 에러 응답 봉투 4필드 고정(`ErrorResponse` 정합). 스페이스 식별자(`spaceKey`/`spaceId`/`spaceName`) 구분 명시. ACL 질의 필드 `userId` camelCase 통일. `feature13` 미정의 마커 서술형 교체. `## 변경 이력` 신설·상단 이동. 미리보기 쿼리 파라미터 `page_id`→`pageId` 정합. |
+| v2.3.0 | 2026-05-29 | **§4(5~7주차) API 명세 작성** — 구현 전 명세 완성. 인증(`/api/auth/login`·`/api/auth/callback`·`/api/auth/refresh`·`/api/auth/logout`·`/api/users/me`)을 **FE-facing 계약**으로 작성: **`Authorization: Bearer` 세션 JWT**(로그인/갱신 응답으로 access+refresh 발급, HttpOnly 쿠키 미사용), Confluence OAuth 위임(기획서 §6.5), JWT 서명·access TTL·Refresh 저장은 `TBD(3단계)`. 관리자 대시보드: `GET /api/admin/feedback` 응답 신설(긍정/부정 비율·추이·부정 원문 QCA 매핑), `users` 에 접근 가능 스페이스/페이지/첨부 수 보강, `/api/admin/*` ADMIN 전용(미인증 401·일반 403), 공통 쿼리 파라미터(`period`/`from`/`to`/`page`/`size`, **제안**)(기획서 §6.7). `/api/admin/*` ADMIN 권한을 §1-4 수집 API 에도 명시. §3 호출 흐름 다이어그램을 §4(인증·관리자·미리보기)까지 포함해 진짜 '전체'로 확장. 대화 목록 응답에서 `messageCount` 제거(기획서·FE 실수요 근거 약함 — 필요 시 재도입). **§2-1 RAG 질의 입력 명세 정밀화**: 요청/응답 분리 표기, `Request Header` 표·필드 표(Required) 정형화, `stream`(기본 false, BFF는 항상 true) 필드 명시, `history[].role` 을 RAG 관용 **소문자**(`user`/`assistant`)로 매핑(Enum 정책 예외 추가, BFF boundary 변환), `groups`/`spaceKey` **fail-closed**, RAG `done: {}` → BFF `messageId` 채움(경계 가공). SSE `error` 이벤트는 RAG·BFF·FE 모두 `errorCode` 단일 키 동일 — passthrough(이전 "code→errorCode 매핑" 노트는 ML팀 spec의 generic placeholder를 잘못 읽은 것, 정정). 메시지 `role` 저장 표기를 `USER`/`ASSISTANT` → **`user`/`assistant`** (LLM/OpenAI 산업 표준)로 통일 — Enum 정책 예외 재분류, RAG boundary 매핑 제거. |
 
 ---
 
@@ -55,8 +56,8 @@
 
 **Enum 값 표기 정책 (2026-05-29 확정)**
 
-- 도메인/저장 enum 값은 `UPPER_SNAKE_CASE` 로 표기하며 `docs/db-schema.md` 저장 값과 일치시킨다 — `role`(`USER`/`ASSISTANT`), `rating`(`LIKE`/`DISLIKE`), `verificationResult`(`SUPPORTED`/`PARTIALLY_SUPPORTED`/`NOT_SUPPORTED`), 수집·동기화 `status`(`STARTED`/`IN_PROGRESS`/…), 사용자 `role`(`USER`/`ADMIN`).
-- 예외: 수집 `mode`(`full`/`delta`), SSE `status.phase`(`acl_filtering` 등 `lower_snake`)는 관용/상태 토큰 표기를 따른다.
+- 도메인/저장 enum 값은 기본적으로 `UPPER_SNAKE_CASE` 로 표기하며 `docs/db-schema.md` 저장 값과 일치시킨다 — `rating`(`LIKE`/`DISLIKE`), `verificationResult`(`SUPPORTED`/`PARTIALLY_SUPPORTED`/`NOT_SUPPORTED`), 수집·동기화 `status`(`STARTED`/`IN_PROGRESS`/…), 사용자 `role`(`USER`/`ADMIN`).
+- 예외(`lower`/`lower_snake`): 메시지 `role`(`user`/`assistant` — LLM/OpenAI 산업 표준, **저장·와이어 동일** — boundary 변환 없음), 수집 `mode`(`full`/`delta`), SSE `status.phase`(`acl_filtering` 등). 이들은 관용·외부 표준 표기를 그대로 따른다.
 - 필드 *이름* 표기(camelCase)와는 별개 규칙이다 — 이름은 camelCase(`verificationResult`), 값은 UPPER(`SUPPORTED`).
 
 **스페이스 식별자**
@@ -311,7 +312,6 @@ data: {"errorCode": "ML_SERVER_ERROR", "message": "답변 생성 중 오류가 �
         "conversationId": "conv-uuid-001",
         "title": "S3 권한 오류 해결 방법",
         "lastMessageAt": "2026-05-06T19:05:00+09:00",
-        "messageCount": 4,
         "isPinned": true
       }
     ],
@@ -345,13 +345,13 @@ data: {"errorCode": "ML_SERVER_ERROR", "message": "답변 생성 중 오류가 �
     "messages": [
       {
         "messageId": "msg-uuid-001",
-        "role": "USER",
+        "role": "user",
         "content": "지난번 S3 버킷 권한 오류 때 어떻게 해결했어?",
         "createdAt": "2026-05-06T19:00:00+09:00"
       },
       {
         "messageId": "msg-uuid-002",
-        "role": "ASSISTANT",
+        "role": "assistant",
         "content": "S3 권한 오류는 IAM 정책을 수정하여 해결했습니다...",
         "sources": [
           {
@@ -467,6 +467,8 @@ data: {"errorCode": "ML_SERVER_ERROR", "message": "답변 생성 중 오류가 �
 
 ## 1-4. 데이터 수집 (관리자용)
 
+> **권한**: `/api/admin/*` 는 ADMIN 역할 전용이다 — 미인증 `401`(`errorCode: UNAUTHORIZED`), 일반 사용자(USER) `403`(`errorCode: FORBIDDEN`). §4-2 공통 권한과 동일. 2단계 데모는 인증 비활성(Common Request Header 참조).
+
 ### 수집 트리거
 
 | 항목   | 내용                                             |
@@ -531,38 +533,71 @@ data: {"errorCode": "ML_SERVER_ERROR", "message": "답변 생성 중 오류가 �
 
 ## 2-1. RAG 질의
 
-| 항목   | 내용                                             |
-| ------ | ------------------------------------------------ |
-| Method | `POST`                                           |
-| URL    | `/ml/query`                                      |
-| 설명   | BFF가 ML 서버에 RAG 질의 요청, SSE 스트리밍 응답 |
+| 항목   | 내용                                                                                                  |
+| ------ | ----------------------------------------------------------------------------------------------------- |
+| Method | `POST`                                                                                                |
+| URL    | `/ml/query`                                                                                           |
+| 설명   | BFF 가 사용자 질의를 RAG(ML)로 전달하는 입력 API. 응답은 동일 요청에 대한 **SSE 스트림**으로 돌아온다 |
+
+> **엔드포인트는 `POST /ml/query` 하나다.** 본 절은 **요청(Request) 측**을 정의하며, 응답 이벤트 계약은 §1-1 의 SSE 7종 정본을 BFF 가 그대로 중계한다(아래 "Response" 참조).
+> ML 은 JWT 를 직접 검증하지 않는다 — BFF 가 JWT 에서 추출한 `userId`/`groups` 를 본문으로 넘겨 RAG 가 ACL Pre-filtering 을 시스템 단에서 강제한다. Confluence `accessToken`/`cloudId` 는 본 엔드포인트가 아니라 수집 단계(`/ml/ingest`, §2-2)에서만 사용한다.
+
+**Request Header**
+
+| Name           | Type   | Description        | Required |
+| -------------- | ------ | ------------------ | -------- |
+| `Content-Type` | String | `application/json` | ✅       |
 
 **Request Body**
 
 ```json
 {
   "question": "지난번 S3 버킷 권한 오류 때 어떻게 해결했어?",
-  "conversationId": "conv-uuid-001",
-  "history": [
-    { "role": "USER", "content": "S3 관련 장애 이력 알려줘" },
-    { "role": "ASSISTANT", "content": "최근 S3 관련 장애는 3건이 있었습니다..." }
-  ],
   "userId": "user-001",
   "groups": ["Cloud-Control-Center"],
-  "spaceKey": "CPC"
+  "spaceKey": "CPC",
+  "conversationId": "conv-uuid-001",
+  "history": [
+    { "role": "user", "content": "S3 관련 장애 이력 알려줘" },
+    { "role": "assistant", "content": "최근 S3 관련 장애는 3건이 있었습니다..." }
+  ],
+  "stream": true
 }
 ```
 
-- `history`: BFF가 DB에서 이전 대화 이력을 꺼내서 전달 (멀티턴용). `role` 값은 저장과 동일한 `USER`/`ASSISTANT`.
-- `userId` / `groups`: ACL Pre-filtering. JWT claim `userId`/`groups` 를 그대로 전달한다 — JWT claim·와이어 필드 모두 **camelCase** 로 통일(외부 API 및 같은 body 의 `conversationId` 와 정합). ML(FastAPI)은 Pydantic `alias`/`populate_by_name` 으로 camelCase 를 수신한다. 2단계는 데모 고정값.
-- `spaceKey`: 검색 대상 Confluence 스페이스. 2단계는 고정값(`lina.demo.fixed-space-key`)
-- 이 경로는 SSE streaming 모드로 응답하며 외부 API와 같은 `status` / `token` / `sources` / `verification` / `meta` / `done` / `error` 이벤트를 그대로 중계한다(정본 §1-1).
+| Name             | Type     | Required | Description                                                                                                                                                                                          |
+| ---------------- | -------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `question`       | String   | ✅       | 사용자 자연어 질문(최소 1자)                                                                                                                                                                         |
+| `userId`         | String   | ✅       | JWT `sub` 에서 추출한 사용자 식별자(ACL Pre-filtering)                                                                                                                                               |
+| `groups`         | String[] | ✅       | 사용자 그룹(ACL `should`-OR 필터). **빈 배열 금지** — BFF fail-closed                                                                                                                                |
+| `spaceKey`       | String   | ✅       | 검색 대상 스페이스. **빈 문자열 금지** — BFF fail-closed                                                                                                                                             |
+| `conversationId` | String   | —        | 대화 컨텍스트. 없으면 단발성 질의(new topic)로 처리                                                                                                                                                  |
+| `history`        | Object[] | —        | 이전 대화 이력(멀티턴). BFF 가 MongoDB `messages` 에서 `lina.rag.history-turns`(기본 10) 만큼 조회해 전달                                                                                            |
+| `stream`         | Boolean  | —        | 기본 `false`. **BFF 는 항상 `true` 로 호출**(토큰 스트리밍). PoC 환경(OpenAI 키/generator 없음)에서는 `true` 라도 자동 비-streaming fallback 으로 `token` 이벤트가 1회로 내려올 수 있음 — §1-1 참조 |
 
-> **Confluence 토큰 미포함 (2026-05-22 변경):** 권한은 수집 시 Qdrant payload(`allowed_groups`/`allowed_users`)에 ACL로 저장되고, 질의 시 JWT의 `userId`/`groups`로 필터링한다 (기획서 §6.4/§6.6). 따라서 RAG 질의 경로(`/ml/query`)는 라이브 Confluence 호출이 없어 `accessToken`/`cloudId`가 불필요하며, 토큰은 크롤하는 수집 단계(`/ml/ingest`, §2-2)에서만 전달한다.
+**`history[]` 객체**
+
+| Name      | Type   | Required | Description                                            |
+| --------- | ------ | -------- | ------------------------------------------------------ |
+| `role`    | String | ✅       | `"user"` / `"assistant"` (lowercase — RAG/OpenAI 관용) |
+| `content` | String | ✅       | 발화 내용                                              |
+
+> **`history[].role` 값 체계**: 메시지 `role` 은 저장(`messages.role`)·외부 응답(§1-2)·RAG 와이어(`/ml/query` `history[].role`) 모두 `user`/`assistant` lowercase 로 통일한다 — LLM/OpenAI 산업 표준(Common Enum 값 표기 정책의 명시된 예외). **boundary 변환 없음** — 저장값을 그대로 RAG 에 전달.
+
+> **ACL fail-closed (BFF 측 강제)**: `groups` 가 비어 있거나(`[]`) `spaceKey` 가 빈 문자열이면 BFF 는 `/ml/query` 호출을 **막고** SSE `error`(`errorCode: UNAUTHORIZED` 또는 `INVALID_REQUEST`)로 종료한다 (`backend/CLAUDE.md` §6 "ACL 필터 없이 RAG 호출 금지"). RAG 자체 검증이 빈 값을 허용하더라도 BFF 가 게이트한다.
+
+> **camelCase**: 와이어 필드는 모두 camelCase. RAG(FastAPI)는 `populate_by_name=True` 로 테스트 편의상 snake_case 도 허용하나, 생산 클라이언트(BFF)는 camelCase 만 사용한다.
+
+> **Confluence 토큰 미포함 (2026-05-22 결정)**: 권한은 수집 시 Qdrant payload(`allowed_groups`/`allowed_users`)에 ACL 로 저장되고, 질의 시 JWT 의 `userId`/`groups` 로 필터링한다 (기획서 §6.4/§6.6). 따라서 `/ml/query` 는 라이브 Confluence 호출이 없어 `accessToken`/`cloudId` 가 불필요하며, 토큰은 수집 단계(`/ml/ingest`, §2-2)에서만 전달한다.
 >
-> ※ ML 확인 대기: `/ml/query`가 실시간 Confluence 호출을 일절 하지 않음을 ML 팀과 확인한 뒤 본 결정을 확정한다. 확인 결과에 따라 토큰 전달 경로가 다시 조정될 수 있다.
+> ※ ML 확인 대기: `/ml/query` 가 실시간 Confluence 호출을 일절 하지 않음을 ML 팀과 확인한 뒤 본 결정을 확정한다.
 
-**Response**: SSE 스트리밍 (외부 API와 동일 형식, BFF가 그대로 중계)
+**Response: SSE 스트리밍**
+
+응답 이벤트 계약은 §1-1 의 SSE 7종 정본(`status` / `token` / `sources` / `verification` / `meta` / `done` / `error`)을 따른다. BFF 는 RAG 스트림을 외부 API(`POST /api/conversations/{conversationId}/chat`)로 그대로 중계하며, **한 곳에서만 boundary 가공**이 일어난다:
+
+- **`error` 이벤트**: RAG·BFF·FE 모두 `{ "errorCode": "...", "message": "..." }` 동일 키 사용 — BFF 는 키 매핑 없이 그대로 passthrough(`errorCode` 값이 §1-1 에러 코드 표와 일치하는지만 검증).
+- **`done` 이벤트**: RAG 는 `{}` (빈 객체)로 종료한다. BFF 가 assistant 메시지를 DB 저장 → 생성된 `messageId` 를 채워 FE 로 중계한다(`{ "messageId": "msg-uuid-..." }`).
 
 ## 2-2. 데이터 수집 트리거
 
@@ -655,16 +690,36 @@ ML 서버는 책임이 다른 두 파이프라인으로 분리되어 있으며, 
 ```
 [프론트엔드]
   │
-  ├─ POST /api/conversations                      → BFF → DB에 대화 생성
-  ├─ POST /api/conversations/{id}/chat            → BFF → POST /ml/query (SSE)
-  │                                                 ├─ DB에서 이전 이력 조회 → ML 전달
-  │                                                 └─ ML 응답을 DB 저장 + SSE 중계
-  ├─ GET    /api/conversations                    → BFF → DB 대화 목록 조회
-  ├─ GET    /api/conversations/{id}/messages      → BFF → DB 메시지 이력 조회
-  ├─ PATCH  /api/conversations/{id}               → BFF → DB 대화 수정(제목/고정)
-  ├─ DELETE /api/conversations/{id}               → BFF → DB 대화 삭제
-  ├─ POST   /api/messages/{id}/feedback           → BFF → DB 피드백 저장
-  └─ POST   /api/admin/ingest                     → BFF → POST /ml/ingest → ML 서버
+  │ ─── 2단계: 대화·피드백·수집 ───────────────────────────────
+  ├─ POST   /api/conversations                       → BFF → DB 대화 생성
+  ├─ GET    /api/conversations                       → BFF → DB 대화 목록 조회 (고정 우선·최신순)
+  ├─ GET    /api/conversations/{id}/messages         → BFF → DB 메시지 이력 조회
+  ├─ PATCH  /api/conversations/{id}                  → BFF → DB 대화 수정(제목/고정)
+  ├─ DELETE /api/conversations/{id}                  → BFF → DB 대화 삭제(soft)
+  ├─ POST   /api/conversations/{id}/chat             → BFF → POST /ml/query (SSE)
+  │                                                    ├─ DB 에서 이전 이력 조회 → ML 전달
+  │                                                    └─ ML 응답을 DB 저장 + SSE 중계
+  ├─ POST   /api/messages/{id}/feedback              → BFF → DB 피드백 저장(upsert)
+  ├─ POST   /api/admin/ingest                        → BFF → POST /ml/ingest → ML 서버
+  ├─ GET    /api/admin/ingest/status/{jobId}         → BFF → GET /ml/ingest/status/{jobId}
+  │
+  │ ─── §4-1 인증 (5주차, Confluence OAuth 2.0) ─────────────────
+  ├─ GET    /api/auth/login                          → BFF → 302 https://auth.atlassian.com/authorize
+  ├─ GET    /api/auth/callback                       → BFF → Auth Server: code 교환·ACL·JWT 발급
+  │                                                    └─ JSON 으로 access/refresh 토큰 반환(FE 보관)
+  ├─ POST   /api/auth/refresh                        → BFF → Auth Server: refresh 회전·새 JWT 발급
+  ├─ POST   /api/auth/logout                         → BFF → Auth Server: refresh 무효화
+  ├─ GET    /api/users/me                            → BFF → DB 사용자 정보 조회 (Bearer)
+  │
+  │ ─── §4-2 관리자 대시보드 (6주차, ADMIN 전용) ────────────────
+  ├─ GET    /api/admin/stats                         → BFF → MySQL 통계 집계
+  ├─ GET    /api/admin/users                         → BFF → MySQL 사용자 현황 + ACL 카운트
+  ├─ GET    /api/admin/data                          → BFF → MongoDB(읽기) 페이지·청크·동기화 현황
+  ├─ GET    /api/admin/feedback                      → BFF → MySQL 피드백 집계·부정 원문(QCA)
+  ├─ GET    /api/admin/sync                          → BFF → MongoDB(읽기) 동기화 이력
+  │
+  │ ─── §4-3 Confluence 미리보기 (5주차 이후) ───────────────────
+  └─ GET    /api/confluence/pages/preview            → BFF → Confluence REST (서버 보관 OAuth 토큰)
 ```
 
 ---
@@ -673,7 +728,9 @@ ML 서버는 책임이 다른 두 파이프라인으로 분리되어 있으며, 
 
 ## 4-1. 인증 (5주차)
 
-BFF → Authorization Server 위임 구조 (기획서 v2.1.7 반영)
+인증은 Confluence OAuth 2.0에 위임한다(별도 회원가입 없음). 전체 흐름·주체는 기획서 §6.5 / `backend/rules/auth.md` §1 참조. BFF는 토큰을 직접 교환하지 않고 Authorization Server에 위임한다.
+
+> **본 절은 FE-facing 계약을 정의한다.** 인증된 요청은 세션 JWT 를 **`Authorization: Bearer {accessToken}` 헤더**로 전송한다(HttpOnly 쿠키 미사용 — 공통 Request Header 참조). 로그인/갱신 응답 `data` 로 access JWT + refresh token 을 FE 에 전달하며 FE 가 보관한다. **Confluence OAuth 토큰(Atlassian access/refresh)은 FE 에 노출하지 않고 서버(MySQL)에만 보관**한다. JWT 서명 알고리즘·access TTL·Refresh Token 저장/회전 방식 등 Authorization Server 내부 구현은 **TBD**이며 3단계(`backend/auth-server/current-plans.md`)에서 확정한다. auth-server 내부 API(토큰 교환, `accessible-resources`, `confluence-token`)는 FE 계약 범위 밖이다.
 
 | API                      | 설명                               |
 | ------------------------ | ---------------------------------- |
@@ -683,7 +740,103 @@ BFF → Authorization Server 위임 구조 (기획서 v2.1.7 반영)
 | `POST /api/auth/logout`  | 로그아웃, JWT 무효화               |
 | `GET /api/users/me`      | 현재 로그인 사용자 정보 조회       |
 
-**`GET /api/users/me` Response**
+**세션 토큰 (공통)**
+
+- 인증이 필요한 모든 API 는 `Authorization: Bearer {accessToken}` 헤더의 세션 JWT 를 검증한다. JWT claim: `userId`, `groups`, `iss`, `exp`, `iat`(`backend/rules/auth.md` §2). 누락·만료·서명 오류 시 `401`(`errorCode: UNAUTHORIZED`).
+- 로그인 성공 시 BFF 는 **access JWT + refresh token** 을 응답 `data` 로 발급한다. FE 가 보관해 access JWT 는 Bearer 헤더로 전송하고, 만료 시 `POST /api/auth/refresh` 로 갱신한다. (여기서 `refreshToken` 은 LINA 발급 세션 토큰이며 Confluence OAuth 토큰이 아니다.)
+- (TBD, 3단계) JWT 서명 알고리즘 / access TTL / Refresh Token 저장·회전·전달 정책.
+
+### `GET /api/auth/login`
+
+Confluence OAuth 2.0 Authorization URL로 리다이렉트한다. CSRF 방지를 위해 `state`를 생성·저장한 뒤 전달한다.
+
+**Query Parameter**
+| Key | Type | Required | Description |
+|-----|------|----------|-------------|
+| `returnTo` | string | N | 로그인 완료 후 돌아갈 FE 내부 경로(기본 `/`). 오픈 리다이렉트 방지를 위해 **내부 경로만 허용**한다. |
+
+**Response** — `302 Found` (Wrapper 미적용)
+
+```
+Location: https://auth.atlassian.com/authorize?audience=api.atlassian.com&client_id=...&scope=...&redirect_uri=...&state=<csrf-state>&response_type=code&prompt=consent
+```
+
+### `GET /api/auth/callback`
+
+Confluence 인가 후 redirect_uri(FE 콜백 라우트)가 받은 `code`/`state` 로 세션을 교환한다. BFF → Auth Server 가 Confluence Access/Refresh Token 교환 → ACL(스페이스 접근 권한) 조회 → **세션 JWT 발급**을 수행하고, FE 가 보관할 access/refresh 토큰을 반환한다(기획서 §6.5). Confluence OAuth 토큰은 서버에만 보관하고 응답에 포함하지 않는다.
+
+**Query Parameter**
+| Key | Type | Required | Description |
+|-----|------|----------|-------------|
+| `code` | string | ✅ | Confluence Authorization Code |
+| `state` | string | ✅ | `login`에서 발급한 CSRF state. 불일치 시 거부 |
+
+**Response (성공 200)**
+
+```json
+{
+  "isSuccess": true,
+  "code": 200,
+  "message": "로그인 성공",
+  "data": {
+    "accessToken": "<jwt>",
+    "refreshToken": "<refresh-token>",
+    "expiresAt": "2026-05-20T19:00:00+09:00"
+  }
+}
+```
+
+- FE 는 `accessToken` 을 보관해 이후 요청에 `Authorization: Bearer` 로 전송한다.
+
+**Response (실패)** — `state` 불일치는 `400`(`errorCode: INVALID_REQUEST`), `code` 무효·Confluence 오류는 `401`(`errorCode: UNAUTHORIZED`). 토큰을 발급하지 않는다.
+
+### `POST /api/auth/refresh`
+
+세션 JWT 만료(임박) 시 refresh token 으로 새 access JWT 를 발급받는다. refresh token 은 요청 Body 로 전달한다. **Rotating**: 갱신 시 새 refresh token 이 발급되고 이전 것은 무효화된다(`backend/auth-server/current-plans.md` AUTH-03).
+
+**Request Body**
+
+```json
+{ "refreshToken": "<refresh-token>" }
+```
+
+**Response (성공 200)**
+
+```json
+{
+  "isSuccess": true,
+  "code": 200,
+  "message": "세션 갱신 성공",
+  "data": {
+    "accessToken": "<new-jwt>",
+    "refreshToken": "<new-refresh-token>",
+    "expiresAt": "2026-05-20T19:00:00+09:00"
+  }
+}
+```
+
+**Response (실패 401)** — Refresh Token 만료·무효 시 `401`(`errorCode: UNAUTHORIZED`). 재로그인이 필요하다.
+
+### `POST /api/auth/logout`
+
+FE 는 보관한 access/refresh 토큰을 폐기하고, BFF 는 Authorization Server 에 해당 refresh token 무효화를 요청한다. 요청은 `Authorization: Bearer {accessToken}` 로 식별한다.
+
+**Response (200)**
+
+```json
+{
+  "isSuccess": true,
+  "code": 200,
+  "message": "로그아웃 성공",
+  "data": null
+}
+```
+
+### `GET /api/users/me`
+
+현재 로그인 사용자 정보를 조회한다. 미인증 시 `401`(`errorCode: UNAUTHORIZED`).
+
+**Response (200)**
 
 ```json
 {
@@ -712,6 +865,18 @@ BFF → Authorization Server 위임 구조 (기획서 v2.1.7 반영)
 | `GET /api/admin/data`     | 스페이스/페이지 수, VectorDB 용량, 최종 동기화 일시 |
 | `GET /api/admin/feedback` | 긍정/부정 비율, 부정 피드백 원문, 피드백 추이       |
 | `GET /api/admin/sync`     | 동기화 이력 (성공/실패/소요 시간)                   |
+
+> **공통 — 권한**: `/api/admin/*` 는 **ADMIN 역할 전용**이다. 미인증 시 `401`(`errorCode: UNAUTHORIZED`), 일반 사용자(USER) 접근 시 `403`(`errorCode: FORBIDDEN`). 모든 응답은 공통 Wrapper 를 적용한다. 항목별 데이터 소스는 `backend/rules/domains.md` §4 참조(인원·사용추이·피드백=MySQL, 데이터=MongoDB 읽기). 기획서 §6.7 의 관리 항목(인원/데이터/사용추이/피드백)에 대응한다.
+
+**공통 Query Parameter (제안 — 6주차 확정)**
+
+| Key | Type | Required | Default | Description |
+|-----|------|----------|---------|-------------|
+| `period` | string | N | `daily` | 추이 집계 단위(`daily` / `hourly`) — `stats` / `feedback` |
+| `from` / `to` | string (ISO-8601, KST) | N | 최근 7일 | 기간 필터 — `stats` / `feedback` / `sync` |
+| `page` / `size` | int | N | `0` / `20` | 목록 페이지네이션 — `users` / `feedback` / `sync` |
+
+> 위 파라미터·기본값은 **제안**이며 6주차 구현 시 확정한다.
 
 **`GET /api/admin/stats` Response**
 
@@ -746,6 +911,9 @@ BFF → Authorization Server 위임 구조 (기획서 v2.1.7 반영)
       {
         "userId": "user-001",
         "name": "이다연",
+        "accessibleSpaceCount": 5,
+        "accessiblePageCount": 320,
+        "accessibleAttachmentCount": 48,
         "conversationCount": 35,
         "lastAccessAt": "2026-05-20T18:00:00+09:00"
       }
@@ -753,6 +921,8 @@ BFF → Authorization Server 위임 구조 (기획서 v2.1.7 반영)
   }
 }
 ```
+
+- `users` 는 `page` / `size` 페이지네이션 대상이다. `accessibleSpaceCount` / `accessiblePageCount` / `accessibleAttachmentCount` 는 사용자가 접근 가능한(ACL) 스페이스·페이지·첨부 수(기획서 §6.7 인원 관리).
 
 **`GET /api/admin/data` Response**
 
@@ -771,6 +941,41 @@ BFF → Authorization Server 위임 구조 (기획서 v2.1.7 반영)
   }
 }
 ```
+
+**`GET /api/admin/feedback` Response**
+
+```json
+{
+  "isSuccess": true,
+  "code": 200,
+  "message": "피드백 현황 조회 성공",
+  "data": {
+    "totalCount": 320,
+    "likeCount": 256,
+    "dislikeCount": 64,
+    "positiveRatio": 0.8,
+    "trend": [
+      { "date": "2026-05-19", "likeCount": 40, "dislikeCount": 8 },
+      { "date": "2026-05-20", "likeCount": 52, "dislikeCount": 11 }
+    ],
+    "negativeFeedbacks": [
+      {
+        "feedbackId": "fb-uuid-101",
+        "messageId": "msg-uuid-200",
+        "comment": "출처가 질문과 관련 없었어요",
+        "question": "S3 권한 오류 원인이 뭐야?",
+        "answer": "IAM 정책을 확인하세요...",
+        "createdAt": "2026-05-20T18:30:00+09:00"
+      }
+    ],
+    "page": 0,
+    "size": 20
+  }
+}
+```
+
+- 집계는 `LIKE` / `DISLIKE` 기준(§1-3). `positiveRatio` = `likeCount / totalCount`. `trend` 는 `period` / `from` / `to` 로 집계 단위·범위를 조정한다.
+- `negativeFeedbacks` 는 `DISLIKE` 원문 목록으로 `page` / `size` 페이지네이션한다. `question` / `answer` 는 QCA 추적(assistant `messageId` → 직전 `USER` 메시지, `backend/rules/domains.md` §2)으로 매핑한다.
 
 **`GET /api/admin/sync` Response**
 
