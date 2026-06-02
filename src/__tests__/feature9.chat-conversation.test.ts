@@ -138,6 +138,23 @@ function installFeature9FetchMock() {
       return createSseResponse();
     }
 
+    if (requestUrl.includes('/api/messages/') && requestUrl.endsWith('/feedback')) {
+      return createJsonResponse(
+        {
+          isSuccess: true,
+          code: 201,
+          message: '피드백 등록 성공',
+          data: {
+            feedbackId: 'fb-mock-001',
+            messageId: requestUrl.match(/\/api\/messages\/([^/]+)\/feedback/)?.[1] ?? '',
+            rating: JSON.parse(String(init?.body)).rating,
+            createdAt: '2026-05-21T19:10:00+09:00',
+          },
+        },
+        201,
+      );
+    }
+
     if (requestUrl.includes('/api/conversations')) {
       return createJsonResponse({
         isSuccess: true,
@@ -235,6 +252,69 @@ describe('feature9 SCR-410, SCR-420, SCR-600 Chat conversation screen', () => {
     expect(tooltipLabels).toEqual(
       expect.arrayContaining(['응답 복사', '좋은 응답', '별로인 응답', '다시 시도']),
     );
+  });
+
+  it('opens feedback modal from assistant thumbs down and submits reason with optional comment', async () => {
+    const fetchMock = installFeature9FetchMock();
+    const wrapper = mountChatPage();
+    await flushAsyncUpdates();
+
+    await wrapper.get('[data-testid="assistant-dislike-button"]').trigger('click');
+
+    expect(wrapper.get('[data-testid="feedback-modal"]').text()).toContain('피드백 공유');
+    expect(wrapper.get('[data-testid="feedback-close-button"]').classes()).toEqual(
+      expect.arrayContaining(['hover:border-status-error', 'focus-visible:border-status-error']),
+    );
+    expect(wrapper.get('[data-testid="feedback-submit-button"]').attributes('disabled')).toBe('');
+
+    await wrapper.get('[data-testid="feedback-reason-incorrect"]').trigger('click');
+    await wrapper
+      .get('[data-testid="feedback-comment-input"]')
+      .setValue('S3 해결 절차가 중간에 끊겼어요.');
+    await wrapper.get('[data-testid="feedback-submit-button"]').trigger('click');
+    await flushAsyncUpdates();
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/messages/msg-mock-assistant-001/feedback',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          rating: 'DISLIKE',
+          comment: '[올바르지 않거나 끝까지 작성되지 않음] S3 해결 절차가 중간에 끊겼어요.',
+        }),
+      }),
+    );
+    expect(wrapper.find('[data-testid="feedback-modal"]').exists()).toBe(false);
+  });
+
+  it('enables feedback submit when only the optional comment is filled', async () => {
+    const fetchMock = installFeature9FetchMock();
+    const wrapper = mountChatPage();
+    await flushAsyncUpdates();
+
+    await wrapper.get('[data-testid="assistant-like-button"]').trigger('click');
+    await wrapper
+      .get('[data-testid="feedback-comment-input"]')
+      .setValue('답변이 짧고 바로 적용할 수 있었어요.');
+
+    expect(wrapper.get('[data-testid="feedback-submit-button"]').attributes('disabled')).toBe(
+      undefined,
+    );
+
+    await wrapper.get('[data-testid="feedback-submit-button"]').trigger('click');
+    await flushAsyncUpdates();
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/messages/msg-mock-assistant-001/feedback',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          rating: 'LIKE',
+          comment: '답변이 짧고 바로 적용할 수 있었어요.',
+        }),
+      }),
+    );
+    expect(wrapper.find('[data-testid="feedback-modal"]').exists()).toBe(false);
   });
 
   it('shows backend status message before token chunks arrive', () => {

@@ -139,6 +139,8 @@
 [x] `sources`, `verification`, `meta`, `done`, `error` 이벤트를 각각 처리하는지 확인
 [x] `done` 수신 전까지 메시지를 임시 assistant bubble로 표시할지 확정
 [x] `error` 수신 시 이미 받은 partial token을 남길지/버릴지 확정
+[x] assistant 답변의 thumbs up/down 선택 시 피드백 사유와 comment를 입력하는 모달 표시
+[x] 피드백 모달 제출 시 기존 `submitMessageFeedback(messageId, { rating, comment })` API 함수로 전송
 
 # feature10.5: ChatPage 책임 분리 리팩토링 (feature11 전 선행 고려)
 

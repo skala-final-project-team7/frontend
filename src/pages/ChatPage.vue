@@ -14,6 +14,7 @@
   - 2026-05-26, feature10 구현, 출처 패널 열기와 sidebar 닫기 상태 연결
   - 2026-05-26, feature10 UI 보정, 새 채팅 진입 시 출처 패널 초기화
   - 2026-06-01, feature10.1 구현, 대화 케밥 메뉴 표시와 기존 API 액션 연결
+  - 2026-06-02, feature10.4 보강, assistant 피드백 모달과 submit API 연결
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -39,18 +40,20 @@ import {
   deleteConversation,
   getCurrentUser,
   listConversations,
+  submitMessageFeedback,
   updateConversationTitle,
 } from '@/api';
 import ChatConversationView from '@/features/chat/ChatConversationView.vue';
 import ChatEmptyState from '@/features/chat/ChatEmptyState.vue';
 import ConversationActionMenu from '@/features/chat/ConversationActionMenu.vue';
+import FeedbackModal from '@/features/chat/FeedbackModal.vue';
 import MessageInput from '@/features/chat/MessageInput.vue';
 import ReferencePanel from '@/features/chat/ReferencePanel.vue';
 import { mascotImageUrl } from '@/shared/assets';
 import { BaseFloatingIconButton, BaseTooltip } from '@/shared';
 import { useToast } from '@/composables/useToast';
 import { useChatStore } from '@/stores';
-import type { Conversation, Message, Source } from '@/types/api';
+import type { Conversation, FeedbackRating, Message, Source } from '@/types/api';
 
 type UserMessageVersion = {
   userContent: string;
@@ -61,6 +64,11 @@ type UserMessageVersion = {
 type UserMessageVersionState = {
   activeIndex: number;
   versions: UserMessageVersion[];
+};
+
+type FeedbackTarget = {
+  messageId: string;
+  rating: FeedbackRating;
 };
 
 const isSidebarOpen = ref(false);
@@ -80,6 +88,8 @@ const isReferencePanelOpen = ref(false);
 const referenceSources = ref<Source[]>([]);
 const hoveredConversationMenuId = ref('');
 const openConversationMenuId = ref('');
+const feedbackTarget = ref<FeedbackTarget | null>(null);
+const isFeedbackSubmitting = ref(false);
 const chatStore = useChatStore();
 const { showToast } = useToast();
 let sidebarContentTimer: number | undefined;
@@ -523,6 +533,43 @@ function closeReferencePanel() {
   referenceSources.value = [];
 }
 
+function openFeedbackModal(message: Message, rating: FeedbackRating) {
+  feedbackTarget.value = {
+    messageId: message.messageId,
+    rating,
+  };
+}
+
+function closeFeedbackModal() {
+  if (isFeedbackSubmitting.value) {
+    return;
+  }
+
+  feedbackTarget.value = null;
+}
+
+async function submitFeedback(comment: string) {
+  const target = feedbackTarget.value;
+
+  if (!target) {
+    return;
+  }
+
+  isFeedbackSubmitting.value = true;
+
+  try {
+    await submitMessageFeedback(target.messageId, {
+      rating: target.rating,
+      comment,
+    });
+    feedbackTarget.value = null;
+  } catch {
+    showToast('피드백 제출에 실패했습니다', { variant: 'error' });
+  } finally {
+    isFeedbackSubmitting.value = false;
+  }
+}
+
 // 현재 사용자와 대화 목록을 초기에 불러와 사이드바와 상단 프로필을 채운다.
 onMounted(async () => {
   document.addEventListener('pointerdown', closeConversationMenuFromOutside);
@@ -954,6 +1001,7 @@ watch(
               @update-editing-content="editingContent = $event"
               @select-user-message-version="selectUserMessageVersion"
               @open-sources="openReferencePanelFromSourceButton"
+              @open-feedback="openFeedbackModal"
             />
           </div>
           <div
@@ -998,6 +1046,13 @@ watch(
       >
         <p class="lina-body font-medium text-overlay-dark-80">Reference panel</p>
       </aside>
+      <FeedbackModal
+        v-if="feedbackTarget"
+        :rating="feedbackTarget.rating"
+        :is-submitting="isFeedbackSubmitting"
+        @close="closeFeedbackModal"
+        @submit="submitFeedback"
+      />
     </div>
   </main>
 </template>

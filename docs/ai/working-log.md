@@ -1974,3 +1974,117 @@
 
 - 구현 전 테스트: failed, `done` 이후 stream이 열린 채로 남으면 테스트가 timeout되고 `error` 이후에도 reader cancel이 호출되지 않음
 - feature9 SSE store 테스트: passed, 1 test file and 9 tests passed
+
+## 2026-06-02 - feature10.4 assistant feedback comment modal
+
+### Scope
+
+- assistant 답변의 thumbs up/down 선택 시 피드백 사유와 optional comment를 입력하는 모달 표시
+- 선택 사유와 세부 comment를 하나의 `comment` 문자열로 구성해 기존 `submitMessageFeedback(messageId, { rating, comment })` API 함수로 전송
+- API 함수 시그니처와 feedback endpoint 계약은 변경하지 않음
+
+### Test Cases
+
+- assistant thumbs down 클릭 시 피드백 모달이 열린다.
+- 사유를 선택하기 전에는 제출 버튼이 비활성화된다.
+- 사유와 comment를 입력하고 제출하면 `POST /api/messages/{messageId}/feedback`에 `DISLIKE`와 조합된 comment가 전송된다.
+- 제출 성공 후 모달이 닫힌다.
+
+### Changed Files
+
+- `docs/ai/current-plan.md`: feature10.4 피드백 모달 항목 추가 및 완료 체크
+- `src/features/chat/FeedbackModal.vue`: 피드백 사유/comment 입력 모달 추가
+- `src/features/chat/MessageBubble.vue`: thumbs up/down 클릭 시 feedback rating 이벤트 emit
+- `src/features/chat/ChatConversationView.vue`: feedback 이벤트를 ChatPage로 전달
+- `src/pages/ChatPage.vue`: 모달 상태, close/submit 처리, `submitMessageFeedback` API 연결
+- `src/__tests__/feature9.chat-conversation.test.ts`: feedback modal open/submit 회귀 테스트 추가
+- `docs/ai/working-log.md`: 작업 범위와 검증 결과 기록
+
+### Commands
+
+- `npm run test -- src/__tests__/feature9.chat-conversation.test.ts` (구현 전 실패 확인)
+- `npm run test -- src/__tests__/feature9.chat-conversation.test.ts`
+- `npm run typecheck`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- 구현 전 테스트: failed, thumbs down 클릭 후 `feedback-modal`이 렌더링되지 않음
+- feature9 chat conversation 테스트: passed, 1 test file and 16 tests passed
+- `npm run typecheck`: passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed, 11 test files and 87 tests passed
+- `./scripts/verify.sh`: passed, 11 test files and 87 tests passed
+
+### Notes / Remaining Issues
+
+- 현재 모달은 선택 사유를 필수로 하고 세부 comment는 선택으로 둔다.
+- API가 별도 reason 필드를 제공하지 않으므로 `[사유] 세부내용` 형식의 comment 문자열로 전송한다.
+
+## 2026-06-02 - feature10.4 feedback modal submit condition 보정
+
+### Scope
+
+- 피드백 API payload가 `rating`과 `comment`만 받는 구조에 맞춰 모달 제출 조건 조정
+- 사유 선택 없이 공유 세부 정보만 입력해도 제출 가능하도록 변경
+- 사유와 공유 세부 정보가 모두 있으면 기존처럼 `[사유] 세부내용` 형식으로 전송
+
+### Changed Files
+
+- `src/features/chat/FeedbackModal.vue`: 제출 가능 조건과 comment 조합 로직 수정
+- `src/__tests__/feature9.chat-conversation.test.ts`: 공유 세부 정보만 입력한 경우 제출 가능 및 API payload 검증 테스트 추가
+- `docs/ai/working-log.md`: 변경 내용과 검증 결과 기록
+
+### Commands
+
+- `npm run test -- src/__tests__/feature9.chat-conversation.test.ts` (구현 전 실패 확인)
+- `npm run test -- src/__tests__/feature9.chat-conversation.test.ts`
+- `npm run typecheck`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- 구현 전 테스트: failed, 공유 세부 정보만 입력하면 제출 버튼이 비활성 상태로 유지됨
+- feature9 chat conversation 테스트: passed, 1 test file and 17 tests passed
+- `npm run typecheck`: passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed, 11 test files and 88 tests passed
+- `./scripts/verify.sh`: passed, 11 test files and 88 tests passed
+
+## 2026-06-02 - feature10.4 feedback modal close focus border 보정
+
+### Scope
+
+- 피드백 모달 닫기 버튼 hover/focus-visible 상태에서 주황색 테두리가 보이도록 스타일 보정
+
+### Changed Files
+
+- `src/features/chat/FeedbackModal.vue`: 닫기 버튼에 `hover:border-status-error`, `focus-visible:border-status-error` 클래스 추가
+- `src/__tests__/feature9.chat-conversation.test.ts`: 닫기 버튼 hover/focus border 클래스 회귀 테스트 추가
+- `docs/ai/working-log.md`: 변경 내용과 검증 결과 기록
+
+### Commands
+
+- `npm run test -- src/__tests__/feature9.chat-conversation.test.ts` (구현 전 실패 확인)
+- `npm run test -- src/__tests__/feature9.chat-conversation.test.ts`
+- `npm run typecheck`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+
+### Results
+
+- 구현 전 테스트: failed, 닫기 버튼에 hover/focus-visible 주황색 border 클래스가 없음
+- feature9 chat conversation 테스트: passed, 1 test file and 17 tests passed
+- `npm run typecheck`: passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed, 11 test files and 88 tests passed

@@ -13,6 +13,7 @@
   - 2026-05-22, SCR-420 보강, 사용자 메시지 수정본 이전/다음 선택 이벤트 추가
   - 2026-05-26, SCR-420 보류, backend version 계약 확정 전 사용자 수정 action 비노출
   - 2026-05-26, feature9 회귀 수정, 빈/오류/진행 중 assistant 액션 비노출 처리
+  - 2026-06-02, feature10.4 보강, assistant 피드백 rating 선택 이벤트 추가
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -32,7 +33,7 @@ import {
 import { computed, nextTick, ref, watch } from 'vue';
 
 import { BaseSpinner, BaseTooltip } from '@/shared';
-import type { Message, Source } from '@/types/api';
+import type { FeedbackRating, Message, Source } from '@/types/api';
 
 const props = defineProps<{
   message: Message;
@@ -52,6 +53,7 @@ const emit = defineEmits<{
   updateEditingContent: [content: string];
   selectUserMessageVersion: [messageId: string, versionIndex: number];
   openSources: [sources: Source[] | undefined];
+  openFeedback: [message: Message, rating: FeedbackRating];
 }>();
 
 const isEditing = computed(
@@ -304,6 +306,7 @@ function selectUserMessageVersion(versionIndex: number) {
           type="button"
           aria-label="좋은 응답"
           class="inline-flex size-5 items-center justify-center rounded-button transition hover:bg-bg-200 focus-visible:outline-none focus-visible:shadow-focus"
+          @click="emit('openFeedback', message, 'LIKE')"
         >
           <ThumbsUp aria-hidden="true" class="size-4" />
         </button>
@@ -314,6 +317,7 @@ function selectUserMessageVersion(versionIndex: number) {
           type="button"
           aria-label="별로인 응답"
           class="inline-flex size-5 items-center justify-center rounded-button transition hover:bg-bg-200 focus-visible:outline-none focus-visible:shadow-focus"
+          @click="emit('openFeedback', message, 'DISLIKE')"
         >
           <ThumbsDown aria-hidden="true" class="size-4" />
         </button>
