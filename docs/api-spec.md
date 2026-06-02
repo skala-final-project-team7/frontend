@@ -14,7 +14,7 @@
 | 버전   | 일자       | 주요 변경                                                                                                                                                                                                                                                                                                                                                                              |
 | ------ | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | v2.2.0 | 2026-05-29 | **SSE 계약 전면 정리**: `status`/`meta` 포함 **7종 이벤트 정본화**, 이벤트 순서 불변식·스트림 종료/영속·0건 처리·`error`(`errorCode` + 코드 enum) 명문화, idle 기준 타임아웃·`status` keep-alive, SSE 응답 헤더(`text/event-stream` 등), 재연결(`Last-Event-ID`) 미지원. 챗 엔드포인트는 항상 스트리밍(`stream=false` 모드 제거). `meta.title` → 첫 응답 1회 자동 제목 설정 규칙. **채팅방 고정 `isPinned`**(목록 응답·`PATCH` 확장·고정 우선 정렬). **Enum 값 `UPPER_SNAKE` 정책** 확정 및 `role`/`rating` 대문자 정정. 에러 응답 봉투 4필드 고정(`ErrorResponse` 정합). 스페이스 식별자(`spaceKey`/`spaceId`/`spaceName`) 구분 명시. ACL 질의 필드 `userId` camelCase 통일. `feature13` 미정의 마커 서술형 교체. `## 변경 이력` 신설·상단 이동. 미리보기 쿼리 파라미터 `page_id`→`pageId` 정합. |
-| v2.3.0 | 2026-05-29 | **§4(5~7주차) API 명세 작성** — 구현 전 명세 완성. 인증(`/api/auth/login`·`/api/auth/callback`·`/api/auth/refresh`·`/api/auth/logout`·`/api/users/me`)을 **FE-facing 계약**으로 작성: **`Authorization: Bearer` 세션 JWT**(로그인/갱신 응답으로 access+refresh 발급, HttpOnly 쿠키 미사용), Confluence OAuth 위임(기획서 §6.5), JWT 서명·access TTL·Refresh 저장은 `TBD(3단계)`. 관리자 대시보드: `GET /api/admin/feedback` 응답 신설(긍정/부정 비율·추이·부정 원문 QCA 매핑), `users` 에 접근 가능 스페이스/페이지/첨부 수 보강, `/api/admin/*` ADMIN 전용(미인증 401·일반 403), 공통 쿼리 파라미터(`period`/`from`/`to`/`page`/`size`, **제안**)(기획서 §6.7). `/api/admin/*` ADMIN 권한을 §1-4 수집 API 에도 명시. §3 호출 흐름 다이어그램을 §4(인증·관리자·미리보기)까지 포함해 진짜 '전체'로 확장. 대화 목록 응답에서 `messageCount` 제거(기획서·FE 실수요 근거 약함 — 필요 시 재도입). **§2-1 RAG 질의 입력 명세 정밀화**: 요청/응답 분리 표기, `Request Header` 표·필드 표(Required) 정형화, `stream`(기본 false, BFF는 항상 true) 필드 명시, `history[].role` 을 RAG 관용 **소문자**(`user`/`assistant`)로 매핑(Enum 정책 예외 추가, BFF boundary 변환), `groups`/`spaceKey` **fail-closed**, RAG `done: {}` → BFF `messageId` 채움(경계 가공). SSE `error` 이벤트는 RAG·BFF·FE 모두 `errorCode` 단일 키 동일 — passthrough(이전 "code→errorCode 매핑" 노트는 ML팀 spec의 generic placeholder를 잘못 읽은 것, 정정). 메시지 `role` 저장 표기를 `USER`/`ASSISTANT` → **`user`/`assistant`** (LLM/OpenAI 산업 표준)로 통일 — Enum 정책 예외 재분류, RAG boundary 매핑 제거. |
+| v2.3.0 | 2026-05-29 | **§4(5~7주차) API 명세 작성** — 구현 전 명세 완성. 인증(`/api/auth/login`·`/api/auth/callback`·`/api/auth/refresh`·`/api/auth/logout`·`/api/users/me`)을 **FE-facing 계약**으로 작성: **`Authorization: Bearer` 세션 JWT**(로그인/갱신 응답으로 access+refresh 발급, HttpOnly 쿠키 미사용), Confluence OAuth 위임(기획서 §6.5), JWT 서명·access TTL·Refresh 저장은 `TBD(3단계)`. 관리자 대시보드: `GET /api/admin/feedback` 응답 신설(긍정/부정 비율·추이·부정 원문 QCA 매핑), `users` 에 접근 가능 스페이스/페이지/첨부 수 보강, `/api/admin/*` ADMIN 전용(미인증 401·일반 403), 공통 쿼리 파라미터(`period`/`from`/`to`/`page`/`size`, **제안**)(기획서 §6.7). `/api/admin/*` ADMIN 권한을 §1-4 수집 API 에도 명시. §3 호출 흐름 다이어그램을 §4(인증·관리자·미리보기)까지 포함해 진짜 '전체'로 확장. 대화 목록 응답에서 `messageCount` 제거(기획서·FE 실수요 근거 약함 — 필요 시 재도입). **§2-1 RAG 질의 입력 명세 정밀화**: 요청/응답 분리 표기, `Request Header` 표·필드 표(Required) 정형화, `stream`(기본 false, BFF는 항상 true) 필드 명시, `history[].role` 을 RAG 관용 **소문자**(`user`/`assistant`)로 매핑(Enum 정책 예외 추가, BFF boundary 변환), `groups`/`spaceKey` **fail-closed**, RAG `done: {}` → BFF `messageId` 채움(경계 가공). SSE `error` 이벤트는 RAG·BFF·FE 모두 `errorCode` 단일 키 동일 — passthrough(이전 "code→errorCode 매핑" 노트는 ML팀 spec의 generic placeholder를 잘못 읽은 것, 정정). 메시지 `role` 저장 표기를 `USER`/`ASSISTANT` → **`user`/`assistant`** (LLM/OpenAI 산업 표준)로 통일 — Enum 정책 예외 재분류, RAG boundary 매핑 제거. **admin-only ingestion 자격증명 모델 확정**: admin 도 동일 Confluence OAuth 로 로그인하고, ingestion 도 admin OAuth access_token + Atlassian Admin Key 헤더(`Atl-Confluence-With-Admin-Key: true`) 조합 사용. §1-4 에 `POST /api/admin/key/activate` (Admin Key 60분 활성화) 신설, §2-2 `/ml/ingest` `accessToken` 시맨틱을 "admin OAuth access_token" 으로 명확화. OAuth Bearer + Admin Key 헤더 동작은 3단계 구현 시 검증 게이트. **대화 검색 endpoint 신설**: `GET /api/conversations/search` (§1-2) — 본인 대화의 `messages.content` 본문 검색, 결과는 대화 단위로 묶고 매칭 메시지 샘플(최대 3개) + `matchCount` 동반. 하이라이트는 **plain `snippet` + `matchPositions: [[start, end]]`** (서버는 HTML 미생성, FE 렌더 책임 — XSS 안전성). `q` 검증: trim 후 길이 2~50 (미만/초과 시 `400 INVALID_SEARCH_QUERY`). Common `ErrorCode` enum 에 `INVALID_SEARCH_QUERY` 추가 (도메인 특화 코드 최초 사례 — 사용처 명확할 때만 허용 정책). |
 
 ---
 
@@ -44,7 +44,7 @@
 }
 ```
 
-> 에러 응답은 `isSuccess` / `code` / `errorCode` / `message` **4필드 고정**이며 `data` 를 포함하지 않는다(성공 응답만 `data` 포함). 구현: `common` 모듈 `ErrorResponse`(`@JsonInclude(ALWAYS)`) / `ApiResponse`. `errorCode` 값은 `ErrorCode` enum 을 따른다(`INVALID_REQUEST` / `UNAUTHORIZED` / `FORBIDDEN` / `RESOURCE_NOT_FOUND` / `EXTERNAL_SERVICE_ERROR` / `INTERNAL_ERROR`).
+> 에러 응답은 `isSuccess` / `code` / `errorCode` / `message` **4필드 고정**이며 `data` 를 포함하지 않는다(성공 응답만 `data` 포함). 구현: `common` 모듈 `ErrorResponse`(`@JsonInclude(ALWAYS)`) / `ApiResponse`. `errorCode` 값은 `ErrorCode` enum 을 따른다(`INVALID_REQUEST` / `INVALID_SEARCH_QUERY` / `UNAUTHORIZED` / `FORBIDDEN` / `RESOURCE_NOT_FOUND` / `EXTERNAL_SERVICE_ERROR` / `INTERNAL_ERROR`). 도메인 특화 코드는 사용처가 명확할 때만 추가(예: `INVALID_SEARCH_QUERY` 는 `GET /api/conversations/search` 의 `q` 검증 전용).
 
 > **예외**: SSE 스트리밍 응답(`/api/conversations/{id}/chat`)은 Wrapper 미적용, 이벤트 스트림으로 전달.
 
@@ -325,6 +325,78 @@ data: {"errorCode": "ML_SERVER_ERROR", "message": "답변 생성 중 오류가 �
 - 정렬: 고정(`isPinned`) 우선 → `lastMessageAt` 최신순으로 페이징한다(고정 대화는 항상 상단).
 - `isPinned`: 채팅방 고정 여부. 기본 `false`. 토글은 `PATCH /api/conversations/{conversationId}` 참조.
 
+### 대화 검색
+
+| 항목   | 내용                                                             |
+| ------ | ---------------------------------------------------------------- |
+| Method | `GET`                                                            |
+| URL    | `/api/conversations/search`                                      |
+| 설명   | 본인 대화 중 메시지 본문(`messages.content`)에 매칭되는 대화 검색 |
+
+**Query Parameter**
+
+| Key | Type | Required | Default | Description |
+|-----|------|----------|---------|-------------|
+| `q` | string | ✅ | — | 검색어. **trim 후 길이 2~50자**. 위반 시 `400`(`errorCode: INVALID_SEARCH_QUERY`) |
+| `page` | int | N | 0 | 0-based 페이지 번호 |
+| `size` | int | N | 20 | 페이지 크기 (최대 50) |
+
+**Response (성공 200)**
+
+```json
+{
+  "isSuccess": true,
+  "code": 200,
+  "message": "대화 검색 성공",
+  "data": {
+    "results": [
+      {
+        "conversationId": "conv-uuid-001",
+        "title": "S3 권한 오류 해결 방법",
+        "lastMessageAt": "2026-05-06T19:05:00+09:00",
+        "isPinned": false,
+        "matchedMessages": [
+          {
+            "messageId": "msg-uuid-002",
+            "role": "assistant",
+            "snippet": "...IAM 정책을 수정하여 S3 권한 오류를 해결했습니다...",
+            "matchPositions": [[14, 20]],
+            "createdAt": "2026-05-06T19:00:05+09:00"
+          }
+        ],
+        "matchCount": 3
+      }
+    ],
+    "totalCount": 5,
+    "page": 0,
+    "size": 20
+  }
+}
+```
+
+**필드 설명**
+
+- `results[]`: 매칭 대화. 정렬은 `lastMessageAt` 최신순 (PoC — 관련도 점수 미적용).
+- `results[].matchedMessages[]`: 매칭 메시지 샘플. **대화당 최대 3개**까지 노출하며, 더 많은 매칭은 `matchCount` 로 총수 표기.
+- `results[].matchedMessages[].snippet`: 매칭 위치 주변 발췌 (좌우 약 40자, **plain text**). 본문이 잘린 경우 `...` 부착 — `...` 도 `snippet` 문자열에 포함되며, 아래 `matchPositions` 인덱스는 이를 포함한 `snippet` 기준이다.
+- `results[].matchedMessages[].matchPositions`: `snippet` 문자열 내 매칭 구간 배열 `[[start, end], ...]`. 인덱스는 **UTF-16 code unit**, `end` 는 **exclusive** (JS `String.slice(start, end)` 호환). FE 가 이 구간을 하이라이트 표시. **하이라이트 HTML 은 서버가 만들지 않는다**(XSS 안전성).
+- `results[].matchedMessages[].role`: `user` / `assistant` 모두 검색 대상.
+- `results[].matchCount`: 해당 대화 내 매칭 메시지 총 개수 (`matchedMessages.length` 와 다를 수 있음 — 위 3개 cap).
+- `totalCount`: 검색 결과 대화 총 개수 (페이지 무관).
+
+**Response (실패)**
+
+- `400` — `errorCode: INVALID_SEARCH_QUERY` — `q` 누락 / trim 후 길이 < 2 / trim 후 길이 > 50 / `size` 범위 초과.
+- `401` — 미인증 (3단계 이후, 2단계 데모는 인증 비활성).
+
+**구현 노트 (PoC)**
+
+- **검색 범위**: 본인 대화의 `messages.content` 본문 — `role` 무관(user 질문·assistant 답변 모두 매칭).
+- **권한 격리**: `conversations.userId == 현재 사용자` 필터 필수 (2단계 데모는 `lina.demo.fixed-user-id`). 타 사용자 대화 노출 금지.
+- **soft delete**: `conversations.deletedAt == null` AND `messages.deletedAt == null`.
+- **매칭**: MongoDB `$regex` (case-insensitive) on `messages.content`. 검색어는 정규식 메타문자를 **escape** 한 뒤 사용. `messages.content` 텍스트 인덱스는 후속 도입(`docs/db-schema.md` §3.2).
+- **snippet 추출**: 첫 매칭 위치 기준 좌우 ~40자 잘라 ~80~100자 출력. 시작/끝에 잘림이 있으면 `...` prefix/suffix. `matchPositions` 는 추출된 `snippet` 기준 재계산.
+
 ### 대화 메시지 이력 조회
 
 | 항목   | 내용                                           |
@@ -468,6 +540,39 @@ data: {"errorCode": "ML_SERVER_ERROR", "message": "답변 생성 중 오류가 �
 ## 1-4. 데이터 수집 (관리자용)
 
 > **권한**: `/api/admin/*` 는 ADMIN 역할 전용이다 — 미인증 `401`(`errorCode: UNAUTHORIZED`), 일반 사용자(USER) `403`(`errorCode: FORBIDDEN`). §4-2 공통 권한과 동일. 2단계 데모는 인증 비활성(Common Request Header 참조).
+>
+> **수집 자격증명 모델 (2026-06-02 확정)**: admin 도 일반 사용자와 동일하게 Confluence OAuth 3LO 로 로그인하며(§4-1), ingestion 도 같은 admin OAuth access_token 을 사용한다(별도 API Token 미사용). page-level read restriction 우회를 위해 Atlassian **Admin Key** 를 사전 활성화하고(`POST /api/admin/key/activate` 60분 유효), Data Ingestion Pipeline 이 Atlassian REST 호출 시 `Atl-Confluence-With-Admin-Key: true` 헤더를 부여한다. 자세한 ACL 적재 흐름은 `docs/adr/0001-page-level-acl-source.md` §2.1 참조.
+
+### Admin Key 활성화
+
+| 항목   | 내용                                                                                                                              |
+| ------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| Method | `POST`                                                                                                                            |
+| URL    | `/api/admin/key/activate`                                                                                                         |
+| 설명   | admin 의 Confluence Admin Key 60분 활성화. 후속 ingestion 이 page-level restriction 을 우회해 admin 권한으로 페이지 수집 가능하게 함 |
+
+Request Body 없음 (admin 의 OAuth access_token 은 서버 측에서 사용).
+
+**Response (성공 200)**
+
+```json
+{
+  "isSuccess": true,
+  "code": 200,
+  "message": "Admin Key 활성화 성공",
+  "data": {
+    "activatedUntil": "2026-06-02T13:56:43+09:00"
+  }
+}
+```
+
+**흐름**
+
+- FE → `POST /api/admin/key/activate` (Bearer JWT, ADMIN 전용)
+- BFF → auth-server 내부 API 호출 → auth-server 가 admin 의 저장된 OAuth access_token 으로 Atlassian `POST /api/v2/admin-key` 활성화
+- 응답 `activatedUntil` 을 FE 가 표시(만료 시각·count-down). 만료 후 admin 이 재활성화
+
+> **검증 게이트 (3단계 구현 시):** OAuth Bearer + `Atl-Confluence-With-Admin-Key: true` 헤더 조합이 Atlassian 측에서 정상 작동하는지 첫 admin OAuth 토큰 확보 직후 curl 로 검증한다. 실패 시 admin API Token 을 별도 보관해 ingestion 자격증명을 분리하는 fallback 으로 전환(plan 한 행 정정). 팀 사전 테스트(`confluence_admin_key_test_summary.md`, 2026-06-02)는 API Token + Admin Key 조합으로 동작 확인됨.
 
 ### 수집 트리거
 
@@ -619,7 +724,7 @@ data: {"errorCode": "ML_SERVER_ERROR", "message": "답변 생성 중 오류가 �
 ```
 
 - `mode`: `"full"` (전체) | `"delta"` (변경분만)
-- `accessToken` / `cloudId` (**PoC 모드, 3단계 도입**): Confluence OAuth로 발급한 access token과 `accessible-resources`로 조회한 cloudId. BFF가 auth-server로부터 수신해 Data Ingestion Pipeline으로 전달하며, 수집 단계의 Confluence REST API 호출(페이지/첨부파일 크롤)에 사용한다. **추후 확장 단계에서 `connectionId` + `cloudId` 조합으로 교체 예정**이며, 이 경우 Data Ingestion 서버가 connectionId로 BFF/auth-server에 토큰을 재요청한다.
+- `accessToken` / `cloudId` (**PoC 모드, 3단계 도입**): **admin 의 Confluence OAuth access_token** (사용자 로그인 시 발급된 그 토큰, §4-1)과 `accessible-resources`로 조회한 cloudId. BFF가 auth-server로부터 수신(`GET /api/auth/confluence-token`)해 Data Ingestion Pipeline으로 전달하며, 수집 단계의 Confluence REST API 호출(페이지/첨부파일 크롤)에 사용한다. Data Ingestion Pipeline 은 Atlassian REST 호출 시 **`Atl-Confluence-With-Admin-Key: true` 헤더를 부여**해 page-level read restriction 을 우회한다(Admin Key 사전 활성화 필수, §1-4). **추후 확장 단계에서 `connectionId` + `cloudId` 조합으로 교체 예정**이며, 이 경우 Data Ingestion 서버가 connectionId로 BFF/auth-server에 토큰을 재요청한다.
 
 > **보안 주의 (PoC 모드 한정):** 요청 body에 access token이 평문으로 노출되므로 다음 운영 규칙을 함께 강제한다.
 >
@@ -693,6 +798,7 @@ ML 서버는 책임이 다른 두 파이프라인으로 분리되어 있으며, 
   │ ─── 2단계: 대화·피드백·수집 ───────────────────────────────
   ├─ POST   /api/conversations                       → BFF → DB 대화 생성
   ├─ GET    /api/conversations                       → BFF → DB 대화 목록 조회 (고정 우선·최신순)
+  ├─ GET    /api/conversations/search                → BFF → DB 메시지 본문 검색 (본인 대화·최신순)
   ├─ GET    /api/conversations/{id}/messages         → BFF → DB 메시지 이력 조회
   ├─ PATCH  /api/conversations/{id}                  → BFF → DB 대화 수정(제목/고정)
   ├─ DELETE /api/conversations/{id}                  → BFF → DB 대화 삭제(soft)
@@ -700,6 +806,7 @@ ML 서버는 책임이 다른 두 파이프라인으로 분리되어 있으며, 
   │                                                    ├─ DB 에서 이전 이력 조회 → ML 전달
   │                                                    └─ ML 응답을 DB 저장 + SSE 중계
   ├─ POST   /api/messages/{id}/feedback              → BFF → DB 피드백 저장(upsert)
+  ├─ POST   /api/admin/key/activate                  → BFF → Auth Server → Atlassian POST /api/v2/admin-key (60분)
   ├─ POST   /api/admin/ingest                        → BFF → POST /ml/ingest → ML 서버
   ├─ GET    /api/admin/ingest/status/{jobId}         → BFF → GET /ml/ingest/status/{jobId}
   │
@@ -742,7 +849,7 @@ ML 서버는 책임이 다른 두 파이프라인으로 분리되어 있으며, 
 
 **세션 토큰 (공통)**
 
-- 인증이 필요한 모든 API 는 `Authorization: Bearer {accessToken}` 헤더의 세션 JWT 를 검증한다. JWT claim: `userId`, `groups`, `iss`, `exp`, `iat`(`backend/rules/auth.md` §2). 누락·만료·서명 오류 시 `401`(`errorCode: UNAUTHORIZED`).
+- 인증이 필요한 모든 API 는 `Authorization: Bearer {accessToken}` 헤더의 세션 JWT 를 검증한다. JWT claim: `userId`(Confluence accountId), `groups`, `role`(`USER`/`ADMIN`, MySQL `users.role` 단일 source), `iss`, `exp`, `iat`(`backend/rules/auth.md` §2, `docs/db-schema.md` §6.1). 누락·만료·서명 오류 시 `401`(`errorCode: UNAUTHORIZED`). `/api/admin/*` 는 `role=ADMIN` 추가 검사.
 - 로그인 성공 시 BFF 는 **access JWT + refresh token** 을 응답 `data` 로 발급한다. FE 가 보관해 access JWT 는 Bearer 헤더로 전송하고, 만료 시 `POST /api/auth/refresh` 로 갱신한다. (여기서 `refreshToken` 은 LINA 발급 세션 토큰이며 Confluence OAuth 토큰이 아니다.)
 - (TBD, 3단계) JWT 서명 알고리즘 / access TTL / Refresh Token 저장·회전·전달 정책.
 
@@ -854,7 +961,7 @@ FE 는 보관한 access/refresh 토큰을 폐기하고, BFF 는 Authorization Se
 }
 ```
 
-- `role`: `"USER"` | `"ADMIN"`
+- `role`: `"USER"` | `"ADMIN"`. JWT `role` claim 과 응답 `role` 모두 MySQL `users.role` 컬럼에서 발급(단일 source). 최초 admin 은 마이그레이션 스크립트로 시드 — `docs/db-schema.md` §6.1·`backend/auth-server/current-plans.md` Feature A 참조.
 
 ## 4-2. 관리자 대시보드 (6주차)
 
