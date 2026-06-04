@@ -45,6 +45,7 @@ import {
 } from '@/api';
 import ChatConversationView from '@/features/chat/ChatConversationView.vue';
 import ChatEmptyState from '@/features/chat/ChatEmptyState.vue';
+import ConversationSearchModal from '@/features/chat/ConversationSearchModal.vue';
 import ConversationActionMenu from '@/features/chat/ConversationActionMenu.vue';
 import FeedbackModal from '@/features/chat/FeedbackModal.vue';
 import MessageInput from '@/features/chat/MessageInput.vue';
@@ -90,6 +91,8 @@ const hoveredConversationMenuId = ref('');
 const openConversationMenuId = ref('');
 const feedbackTarget = ref<FeedbackTarget | null>(null);
 const isFeedbackSubmitting = ref(false);
+const isSearchModalOpen = ref(false);
+const isCollapsedConversationPopoverOpen = ref(false);
 const chatStore = useChatStore();
 const { showToast } = useToast();
 let sidebarContentTimer: number | undefined;
@@ -100,6 +103,7 @@ const pinnedConversations = computed(() =>
 const recentConversations = computed(() =>
   conversations.value.filter((conversation) => !conversation.isPinned),
 );
+const collapsedConversationPreviewList = computed(() => conversations.value.slice(0, 10));
 const routeConversationId = computed(() => {
   const conversationId = route.params.conversationId;
 
@@ -187,6 +191,8 @@ watch(isSidebarOpen, (isOpen) => {
     sidebarContentTimer = undefined;
   }
 
+  closeCollapsedConversationPopover();
+
   if (!isOpen) {
     isSidebarContentVisible.value = false;
     return;
@@ -197,11 +203,34 @@ watch(isSidebarOpen, (isOpen) => {
   }, 160);
 });
 
-// TODO: 채팅 검색 모달 구현 (feature 예정)
 /**
  * 채팅 검색 모달 진입점이다.
  */
-function openSearchModal() {}
+function openSearchModal() {
+  isSearchModalOpen.value = true;
+}
+
+/**
+ * 채팅 검색 모달을 닫는다.
+ */
+function closeSearchModal() {
+  isSearchModalOpen.value = false;
+}
+
+/**
+ * 검색 결과로 선택한 대화 상세 라우트로 이동한다.
+ *
+ * @param conversationId 이동할 대화 ID
+ */
+async function selectSearchResult(conversationId: string) {
+  closeSearchModal();
+  await router.push({
+    name: 'chat-conversation',
+    params: {
+      conversationId,
+    },
+  });
+}
 
 /**
  * 새 채팅 시작 시 /chat 라우트로 이동한다.
@@ -219,6 +248,7 @@ async function startNewChat() {
  */
 async function selectConversation(conversationId: string) {
   closeConversationMenu();
+  closeCollapsedConversationPopover();
   await router.push({
     name: 'chat-conversation',
     params: {
@@ -232,6 +262,20 @@ async function selectConversation(conversationId: string) {
  */
 function closeConversationMenu() {
   openConversationMenuId.value = '';
+}
+
+/**
+ * 접힌 사이드바의 최근 대화 팝오버를 토글한다.
+ */
+function toggleCollapsedConversationPopover() {
+  isCollapsedConversationPopoverOpen.value = !isCollapsedConversationPopoverOpen.value;
+}
+
+/**
+ * 접힌 사이드바의 최근 대화 팝오버를 닫는다.
+ */
+function closeCollapsedConversationPopover() {
+  isCollapsedConversationPopoverOpen.value = false;
 }
 
 /**
@@ -254,6 +298,7 @@ function closeConversationMenuFromOutside(event: PointerEvent) {
 
   if (!(target instanceof Element)) {
     closeConversationMenu();
+    closeCollapsedConversationPopover();
     return;
   }
 
@@ -261,7 +306,23 @@ function closeConversationMenuFromOutside(event: PointerEvent) {
     return;
   }
 
+  if (target.closest('[data-collapsed-conversation-popover-root]')) {
+    return;
+  }
+
   closeConversationMenu();
+  closeCollapsedConversationPopover();
+}
+
+/**
+ * ESC 입력 시 접힌 사이드바의 최근 대화 팝오버를 닫는다.
+ *
+ * @param event keydown 이벤트
+ */
+function closeCollapsedConversationPopoverOnEscape(event: KeyboardEvent) {
+  if (event.key === 'Escape') {
+    closeCollapsedConversationPopover();
+  }
 }
 
 /**
@@ -573,6 +634,7 @@ async function submitFeedback(comment: string) {
 // 현재 사용자와 대화 목록을 초기에 불러와 사이드바와 상단 프로필을 채운다.
 onMounted(async () => {
   document.addEventListener('pointerdown', closeConversationMenuFromOutside);
+  document.addEventListener('keydown', closeCollapsedConversationPopoverOnEscape);
 
   try {
     const [currentUser, conversationList] = await Promise.all([
@@ -598,6 +660,7 @@ onBeforeUnmount(() => {
   }
 
   document.removeEventListener('pointerdown', closeConversationMenuFromOutside);
+  document.removeEventListener('keydown', closeCollapsedConversationPopoverOnEscape);
 });
 
 // route가 바뀔 때마다 해당 conversation의 메시지 이력을 다시 로드한다.
@@ -753,20 +816,57 @@ watch(
                 type="button"
                 aria-label="채팅 검색"
                 class="inline-flex size-8 shrink-0 items-center justify-center rounded-button border border-transparent bg-transparent text-overlay-dark-80 transition hover:bg-bg-200 active:scale-[0.96] focus-visible:outline-none focus-visible:shadow-focus"
+                @click="openSearchModal"
               >
                 <Search aria-hidden="true" class="size-4" />
               </button>
             </BaseTooltip>
-            <BaseTooltip label="채팅 목록">
-              <button
-                data-testid="collapsed-sidebar-action"
-                type="button"
-                aria-label="채팅 목록"
-                class="inline-flex size-8 shrink-0 items-center justify-center rounded-button border border-transparent bg-transparent text-overlay-dark-80 transition hover:bg-bg-200 active:scale-[0.96] focus-visible:outline-none focus-visible:shadow-focus"
+            <div data-collapsed-conversation-popover-root class="relative">
+              <BaseTooltip label="채팅 목록">
+                <button
+                  data-testid="collapsed-sidebar-action"
+                  type="button"
+                  aria-label="채팅 목록"
+                  aria-haspopup="menu"
+                  :aria-expanded="isCollapsedConversationPopoverOpen"
+                  class="inline-flex size-8 shrink-0 items-center justify-center rounded-button border border-transparent bg-transparent text-overlay-dark-80 transition hover:bg-bg-200 active:scale-[0.96] focus-visible:outline-none focus-visible:shadow-focus"
+                  @click="toggleCollapsedConversationPopover"
+                >
+                  <MessageCircle aria-hidden="true" class="size-4" />
+                </button>
+              </BaseTooltip>
+              <div
+                v-if="isCollapsedConversationPopoverOpen"
+                data-testid="collapsed-conversation-popover"
+                role="menu"
+                aria-label="최근 채팅"
+                class="absolute left-12 top-0 z-50 w-[264px] rounded-card border border-bg-300 bg-primary-white px-4 py-4 shadow-floating"
               >
-                <MessageCircle aria-hidden="true" class="size-4" />
-              </button>
-            </BaseTooltip>
+                <p class="mb-3 font-lina text-small font-bold text-overlay-dark-80">최근 채팅</p>
+                <p
+                  v-if="collapsedConversationPreviewList.length === 0"
+                  class="py-2 font-lina text-small text-overlay-dark-60"
+                >
+                  새 대화를 시작하세요
+                </p>
+                <ul v-else class="space-y-1">
+                  <li
+                    v-for="conversation in collapsedConversationPreviewList"
+                    :key="conversation.conversationId"
+                  >
+                    <button
+                      data-testid="collapsed-conversation-popover-item"
+                      type="button"
+                      role="menuitem"
+                      class="w-full truncate rounded-button px-2 py-2 text-left font-lina text-small text-overlay-dark-80 transition hover:bg-bg-100 focus-visible:outline-none focus-visible:shadow-focus"
+                      @click="selectConversation(conversation.conversationId)"
+                    >
+                      {{ conversation.title }}
+                    </button>
+                  </li>
+                </ul>
+              </div>
+            </div>
           </template>
 
           <div v-if="isSidebarOpen && isSidebarContentVisible" class="mt-6 space-y-7">
@@ -1052,6 +1152,11 @@ watch(
         :is-submitting="isFeedbackSubmitting"
         @close="closeFeedbackModal"
         @submit="submitFeedback"
+      />
+      <ConversationSearchModal
+        v-if="isSearchModalOpen"
+        @close="closeSearchModal"
+        @select="selectSearchResult"
       />
     </div>
   </main>

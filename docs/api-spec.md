@@ -1,6 +1,6 @@
 # LINA API Spec
 
-> 버전: v2.3.0
+> 버전: v2.4.0
 > 기준: 중간 발표(4주차) 데모 범위 + 이후 확장 계획
 > 전제: 중간 발표 시 인증 하드코딩, 스페이스 고정, 로그인 제외
 > 기획서 버전: v2.1.7 (Authorization Server 분리, 사용자 단위 검색 반영)
@@ -14,7 +14,8 @@
 | 버전   | 일자       | 주요 변경                                                                                                                                                                                                                                                                                                                                                                              |
 | ------ | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | v2.2.0 | 2026-05-29 | **SSE 계약 전면 정리**: `status`/`meta` 포함 **7종 이벤트 정본화**, 이벤트 순서 불변식·스트림 종료/영속·0건 처리·`error`(`errorCode` + 코드 enum) 명문화, idle 기준 타임아웃·`status` keep-alive, SSE 응답 헤더(`text/event-stream` 등), 재연결(`Last-Event-ID`) 미지원. 챗 엔드포인트는 항상 스트리밍(`stream=false` 모드 제거). `meta.title` → 첫 응답 1회 자동 제목 설정 규칙. **채팅방 고정 `isPinned`**(목록 응답·`PATCH` 확장·고정 우선 정렬). **Enum 값 `UPPER_SNAKE` 정책** 확정 및 `role`/`rating` 대문자 정정. 에러 응답 봉투 4필드 고정(`ErrorResponse` 정합). 스페이스 식별자(`spaceKey`/`spaceId`/`spaceName`) 구분 명시. ACL 질의 필드 `userId` camelCase 통일. `feature13` 미정의 마커 서술형 교체. `## 변경 이력` 신설·상단 이동. 미리보기 쿼리 파라미터 `page_id`→`pageId` 정합. |
-| v2.3.0 | 2026-05-29 | **§4(5~7주차) API 명세 작성** — 구현 전 명세 완성. 인증(`/api/auth/login`·`/api/auth/callback`·`/api/auth/refresh`·`/api/auth/logout`·`/api/users/me`)을 **FE-facing 계약**으로 작성: **`Authorization: Bearer` 세션 JWT**(로그인/갱신 응답으로 access+refresh 발급, HttpOnly 쿠키 미사용), Confluence OAuth 위임(기획서 §6.5), JWT 서명·access TTL·Refresh 저장은 `TBD(3단계)`. 관리자 대시보드: `GET /api/admin/feedback` 응답 신설(긍정/부정 비율·추이·부정 원문 QCA 매핑), `users` 에 접근 가능 스페이스/페이지/첨부 수 보강, `/api/admin/*` ADMIN 전용(미인증 401·일반 403), 공통 쿼리 파라미터(`period`/`from`/`to`/`page`/`size`, **제안**)(기획서 §6.7). `/api/admin/*` ADMIN 권한을 §1-4 수집 API 에도 명시. §3 호출 흐름 다이어그램을 §4(인증·관리자·미리보기)까지 포함해 진짜 '전체'로 확장. 대화 목록 응답에서 `messageCount` 제거(기획서·FE 실수요 근거 약함 — 필요 시 재도입). **§2-1 RAG 질의 입력 명세 정밀화**: 요청/응답 분리 표기, `Request Header` 표·필드 표(Required) 정형화, `stream`(기본 false, BFF는 항상 true) 필드 명시, `history[].role` 을 RAG 관용 **소문자**(`user`/`assistant`)로 매핑(Enum 정책 예외 추가, BFF boundary 변환), `groups`/`spaceKey` **fail-closed**, RAG `done: {}` → BFF `messageId` 채움(경계 가공). SSE `error` 이벤트는 RAG·BFF·FE 모두 `errorCode` 단일 키 동일 — passthrough(이전 "code→errorCode 매핑" 노트는 ML팀 spec의 generic placeholder를 잘못 읽은 것, 정정). 메시지 `role` 저장 표기를 `USER`/`ASSISTANT` → **`user`/`assistant`** (LLM/OpenAI 산업 표준)로 통일 — Enum 정책 예외 재분류, RAG boundary 매핑 제거. **admin-only ingestion 자격증명 모델 확정**: admin 도 동일 Confluence OAuth 로 로그인하고, ingestion 도 admin OAuth access_token + Atlassian Admin Key 헤더(`Atl-Confluence-With-Admin-Key: true`) 조합 사용. §1-4 에 `POST /api/admin/key/activate` (Admin Key 60분 활성화) 신설, §2-2 `/ml/ingest` `accessToken` 시맨틱을 "admin OAuth access_token" 으로 명확화. OAuth Bearer + Admin Key 헤더 동작은 3단계 구현 시 검증 게이트. **대화 검색 endpoint 신설**: `GET /api/conversations/search` (§1-2) — 본인 대화의 `messages.content` 본문 검색, 결과는 대화 단위로 묶고 매칭 메시지 샘플(최대 3개) + `matchCount` 동반. 하이라이트는 **plain `snippet` + `matchPositions: [[start, end]]`** (서버는 HTML 미생성, FE 렌더 책임 — XSS 안전성). `q` 검증: trim 후 길이 2~50 (미만/초과 시 `400 INVALID_SEARCH_QUERY`). Common `ErrorCode` enum 에 `INVALID_SEARCH_QUERY` 추가 (도메인 특화 코드 최초 사례 — 사용처 명확할 때만 허용 정책). |
+| v2.3.0 | 2026-05-29 | **§4(5~7주차) API 명세 작성** — 구현 전 명세 완성. 인증(`/api/auth/login`·`/api/auth/callback`·`/api/auth/refresh`·`/api/auth/logout`·`/api/users/me`)을 **FE-facing 계약**으로 작성: **`Authorization: Bearer` 세션 JWT**(로그인/갱신 응답으로 access+refresh 발급, HttpOnly 쿠키 미사용), Confluence OAuth 위임(기획서 §6.5), JWT 서명·access TTL·Refresh 저장은 `TBD(3단계)`. 관리자 대시보드: `GET /api/admin/feedback` 응답 신설(긍정/부정 비율·추이·부정 원문 QCA 매핑), `users` 에 접근 가능 스페이스/페이지/첨부 수 보강, `/api/admin/*` ADMIN 전용(미인증 401·일반 403), 공통 쿼리 파라미터(`period`/`from`/`to`/`page`/`size`, **제안**)(기획서 §6.7). `/api/admin/*` ADMIN 권한을 §1-4 수집 API 에도 명시. §3 호출 흐름 다이어그램을 §4(인증·관리자·미리보기)까지 포함해 진짜 '전체'로 확장. 대화 목록 응답에서 `messageCount` 제거(기획서·FE 실수요 근거 약함 — 필요 시 재도입). **§2-1 RAG 질의 입력 명세 정밀화**: 요청/응답 분리 표기, `Request Header` 표·필드 표(Required) 정형화, `stream`(기본 false, BFF는 항상 true) 필드 명시, `history[].role` 을 RAG 관용 **소문자**(`user`/`assistant`)로 매핑(Enum 정책 예외 추가, BFF boundary 변환), `groups`/`spaceKey` **fail-closed**, RAG `done: {}` → BFF `messageId` 채움(경계 가공). SSE `error` 이벤트는 RAG·BFF·FE 모두 `errorCode` 단일 키 동일 — passthrough(이전 "code→errorCode 매핑" 노트는 ML팀 spec의 generic placeholder를 잘못 읽은 것, 정정). 메시지 `role` 저장 표기를 `USER`/`ASSISTANT` → **`user`/`assistant`** (LLM/OpenAI 산업 표준)로 통일 — Enum 정책 예외 재분류, RAG boundary 매핑 제거. **admin-only ingestion 자격증명 모델 확정**: admin 도 동일 Confluence OAuth 로 로그인하고, ingestion 도 admin OAuth access_token + Atlassian Admin Key 헤더(`Atl-Confluence-With-Admin-Key: true`) 조합 사용. §1-4 에 `POST /api/admin/key/activate` (Admin Key 60분 활성화) 신설, §2-2 `/ml/ingest` `accessToken` 시맨틱을 "admin OAuth access_token" 으로 명확화. OAuth Bearer + Admin Key 헤더 동작은 3단계 구현 시 검증 게이트. **대화 검색 endpoint 신설**: `GET /api/conversations/search` (§1-2) — 본인 대화의 `messages.content` 본문 검색, 결과는 대화 단위로 묶고 매칭 메시지 샘플(최대 3개) + `matchCount` 동반. 하이라이트는 **plain `snippet` + `matchPositions: [[start, end]]`** (서버는 HTML 미생성, FE 렌더 책임 — XSS 안전성). `q` 검증: trim 후 길이 2~50 (미만/초과 시 `400 INVALID_SEARCH_QUERY`). Common `ErrorCode` enum 에 `INVALID_SEARCH_QUERY` 추가 (도메인 특화 코드 최초 사례 — 사용처 명확할 때만 허용 정책). **`/ml/query` `spaceKey` Required → Optional**: RAG 챗봇 UX 는 "사용자가 매번 스페이스를 고르지 않고, 질문만 던지면 알아서 권한 가능한 모든 콘텐츠에서 답변" 이 자연스러움. 따라서 `spaceKey` 는 누락 시 cross-space 검색(`userId`/`groups` ACL 만 적용), 지정 시 특정 스페이스로 좁힘. **ACL fail-closed 게이트에서 `spaceKey` 제거** — ACL 이 아닌 스코프 필드이므로 누락은 차단 사유가 아님. `userId`/`groups` 만 fail-closed. Common §spaceKey 정의에 질의(선택)/수집(필수) 차이 명시. `/ml/ingest`·`/api/admin/ingest` 의 `spaceKey` 는 admin 이 수집 대상 명시해야 하므로 **Required 유지**. 관련: ML 팀과 `/ml/query` body schema 변경 협의 필요 (2단계 demo 는 `lina.demo.fixed-space-key=CPC` 전달 유지 — 기존 색인 데이터와 정합). **2026-06-02 회의 결정 추가 반영**: (1) **`/api/admin/ingest` 가 내부적으로 key activate 묶음 처리** — admin "데이터 인제스천 파이프라인" 버튼 하나로 키 발급+수집 일괄 트리거(BFF 가 key 활성 미확인 시 자동 `POST /api/v2/admin-key` 호출 후 ingest). `/api/admin/key/activate` 는 수동/테스트용 endpoint 로 명시. (2) **Admin Key 말소 책임 = ML(Data Ingestion) 측** — ingestion 완료 직후 ML 이 Atlassian admin-key deactivate 호출, 60분 TTL 은 fallback. BE 는 deactivate 책임 없음 — ML 팀 협의 필요. (3) **`/api/auth/login?mode=admin` 쿼리 파라미터 도입** — FE "Continue with Confluence for Admin" 버튼이 `?mode=admin` 전달. callback 에서 `state` 에 보관된 mode 확인해 `users.role != ADMIN` 이면 `403 FORBIDDEN` 으로 차단(클라이언트 우회 방지 위해 BE 가 state 에 mode 직렬화). |
+| v2.4.0 | 2026-06-04 | **`spaceKey` 전면 제거 — LINA API 표면에서 사용 안 함**. v2.3.0 에서 `/ml/query` 를 Optional 로 만들었던 결정의 연장: 실제 검토 결과 `/ml/ingest`·`/api/admin/ingest` 도 admin Key 로 admin 이 접근 가능한 **모든 스페이스를 일괄 크롤**하는 모델이라 spaceKey 가 불필요(2026-06-04 결정). 결과: (1) `/ml/query` Request Body 에서 `spaceKey` 필드 삭제. cross-space 검색이 유일한 모드(`userId`/`groups` ACL 적용). (2) `/ml/ingest` Request Body 에서 `spaceKey` 필드 삭제. ML 이 `accessToken`+`cloudId` 와 Admin Key 헤더로 접근 가능 스페이스 iterate. (3) `/api/admin/ingest` Request Body 가 `{ mode }` 로 축소(생략 시 `"full"`). 버튼 1회 = 전체 수집. (4) Common §스페이스 식별자 갱신 — `spaceKey` 항목 제거, `spaceId`/`spaceName` 만 유지(messages.sources 출처 표시용). spaceKey 는 Confluence URL/내부 식별자로만 존재한다는 노트 추가. (5) `groups`/`spaceKey` fail-closed 표현 정리 — `userId`/`groups` 만 fail-closed. **ML 팀 협의 필요**: `/ml/query`·`/ml/ingest` body schema 변경(`spaceKey` 제거). ML PoC 의 `allowed_groups = ["space:{key}"]` 합성 모델은 ADR 0001 §2.1 의 페이지-단위 권한 모델로 자연스럽게 마이그레이션됨. 2단계 demo 영향: `lina.demo.fixed-space-key` 설정 deprecation. **Admin Key deactivate 책임 ML → BE 이동 (2026-06-04)**: 회의(2026-06-02) 에서 ML 담당으로 결정됐던 admin-key deactivate 호출을 BE 로 이전 — 깔끔한 책임 분리. 구현: BFF 가 `/api/admin/ingest` 트리거 직후 Virtual Thread watcher 를 띄워 `/ml/ingest/status/{jobId}` 를 폴링하다가(`lina.admin.ingest-watch-interval-ms`, 기본 30s) `COMPLETED`/`FAILED` 감지 시 auth-server 내부 `POST /internal/admin/key/deactivate` 호출. ML 인터페이스는 변경 없음. BFF 재시작 시 watcher 손실 — 60분 TTL 이 fallback (영속 watcher 는 PoC 범위 밖). |
 
 ---
 
@@ -62,11 +63,12 @@
 
 **스페이스 식별자**
 
-한 Confluence 스페이스는 세 속성을 가지며 위치별로 다르게 쓰인다 — 혼용 금지(같은 스페이스라도 값이 다르다).
+Confluence 페이지 출처 표시에 사용하는 스페이스 속성은 두 가지다 — 혼용 금지.
 
-- `spaceKey` (예 `"CPC"`): 사람이 정한 **짧은 고유 키**(불변). 질의·수집 **스코프 지정**에 사용 — `/ml/query`, `/ml/ingest`, `/api/admin/ingest`.
-- `spaceId` (예 `"98310"`): 숫자 **내부 ID**. 출처 메타데이터(`sources`)에 포함.
-- `spaceName` (예 `"Cloud Control Center"`): **표시용 이름**(변경 가능, 고유성 보장 안 됨). 출처·미리보기의 화면 라벨.
+- `spaceId` (예 `"98310"`): 숫자 **내부 ID**. 출처 메타데이터(`messages.sources[].spaceId`)에 저장.
+- `spaceName` (예 `"Cloud Control Center"`): **표시용 이름**(변경 가능, 고유성 보장 안 됨). 출처 카드 화면 라벨(`messages.sources[].spaceName`).
+
+> **`spaceKey` 는 LINA API 표면에서 사용하지 않는다 (2026-06-04 결정)**. 질의(`/ml/query`)는 ACL(`userId`/`groups`)만으로 cross-space 검색하며, 수집(`/ml/ingest`·`/api/admin/ingest`)은 admin Key 로 접근 가능한 모든 스페이스를 일괄 크롤한다. spaceKey 는 Confluence 내부 URL/식별자로만 존재 — Confluence REST API 호출 시 ML 측이 필요하면 spaceId 로부터 조회.
 
 **공통 Request Header**
 | Name | Type | Description | Required |
@@ -541,15 +543,21 @@ data: {"errorCode": "ML_SERVER_ERROR", "message": "답변 생성 중 오류가 �
 
 > **권한**: `/api/admin/*` 는 ADMIN 역할 전용이다 — 미인증 `401`(`errorCode: UNAUTHORIZED`), 일반 사용자(USER) `403`(`errorCode: FORBIDDEN`). §4-2 공통 권한과 동일. 2단계 데모는 인증 비활성(Common Request Header 참조).
 >
-> **수집 자격증명 모델 (2026-06-02 확정)**: admin 도 일반 사용자와 동일하게 Confluence OAuth 3LO 로 로그인하며(§4-1), ingestion 도 같은 admin OAuth access_token 을 사용한다(별도 API Token 미사용). page-level read restriction 우회를 위해 Atlassian **Admin Key** 를 사전 활성화하고(`POST /api/admin/key/activate` 60분 유효), Data Ingestion Pipeline 이 Atlassian REST 호출 시 `Atl-Confluence-With-Admin-Key: true` 헤더를 부여한다. 자세한 ACL 적재 흐름은 `docs/adr/0001-page-level-acl-source.md` §2.1 참조.
+> **수집 자격증명 모델 (2026-06-02 확정)**: admin 도 일반 사용자와 동일하게 Confluence OAuth 3LO 로 로그인하며(§4-1), ingestion 도 같은 admin OAuth access_token 을 사용한다(별도 API Token 미사용). page-level read restriction 우회를 위해 Atlassian **Admin Key** 가 활성화되어 있어야 하고, Data Ingestion Pipeline 이 Atlassian REST 호출 시 `Atl-Confluence-With-Admin-Key: true` 헤더를 부여한다. 자세한 ACL 적재 흐름은 `docs/adr/0001-page-level-acl-source.md` §2.1 참조.
+>
+> **Admin Key 활성화 시점 (2026-06-02 결정)**: 기본 동선은 **`POST /api/admin/ingest` 가 내부적으로 key activate 를 묶어 처리** — admin 이 "데이터 인제스천 파이프라인" 버튼 하나로 키 발급 + 수집 시작을 일괄 트리거. BFF/auth-server 가 key 활성 상태를 확인해 만료/미활성이면 자동 `POST /api/v2/admin-key` 호출 후 ingest 진행. 별도의 `POST /api/admin/key/activate` endpoint 는 **수동/테스트용** 으로 남긴다(검증·디버깅·운영 점검).
+>
+> **Admin Key 말소 (보안)**: ingestion job 완료 직후 **BE 가 Atlassian admin-key deactivate API 를 호출**해 키를 즉시 폐기한다 (2026-06-04 결정 — 깔끔한 책임 분리 위해 ML→BE 이동). 60분 TTL 자동 만료는 fallback. **구현 메커니즘**: BFF 가 `/api/admin/ingest` 트리거 직후 Virtual Thread 로 watcher 를 띄워 `/ml/ingest/status/{jobId}` 를 주기적으로 폴링(`lina.admin.ingest-watch-interval-ms`, 기본 30s) → `COMPLETED`/`FAILED` 감지 시 auth-server 내부 `POST /internal/admin/key/deactivate` 호출 → Atlassian admin-key 폐기. BFF 재시작 시 watcher 가 사라지면 60분 TTL 이 fallback (PoC 단계는 영속 watcher 미구현). ML 측 책임 없음 — `/ml/ingest` 인터페이스 변경 불필요.
 
-### Admin Key 활성화
+### Admin Key 활성화 (수동/테스트용)
+
+> **일반 사용 경로 아님** — 기본 admin UX 는 `POST /api/admin/ingest` 가 내부적으로 key activate 를 묶어 처리(상단 노트). 본 endpoint 는 **수동 검증·디버깅·운영 점검** 시 명시적으로 키만 활성화하고 싶을 때 사용.
 
 | 항목   | 내용                                                                                                                              |
 | ------ | --------------------------------------------------------------------------------------------------------------------------------- |
 | Method | `POST`                                                                                                                            |
 | URL    | `/api/admin/key/activate`                                                                                                         |
-| 설명   | admin 의 Confluence Admin Key 60분 활성화. 후속 ingestion 이 page-level restriction 을 우회해 admin 권한으로 페이지 수집 가능하게 함 |
+| 설명   | admin 의 Confluence Admin Key 60분 명시적 활성화 (일반 동선은 `/api/admin/ingest` 가 자동 처리)                                   |
 
 Request Body 없음 (admin 의 OAuth access_token 은 서버 측에서 사용).
 
@@ -576,17 +584,20 @@ Request Body 없음 (admin 의 OAuth access_token 은 서버 측에서 사용).
 
 ### 수집 트리거
 
-| 항목   | 내용                                             |
-| ------ | ------------------------------------------------ |
-| Method | `POST`                                           |
-| URL    | `/api/admin/ingest`                              |
-| 설명   | 고정 스페이스의 Confluence 문서 수집 수동 트리거 |
+| 항목   | 내용                                                                                |
+| ------ | ----------------------------------------------------------------------------------- |
+| Method | `POST`                                                                              |
+| URL    | `/api/admin/ingest`                                                                 |
+| 설명   | admin 이 접근 가능한 **모든 Confluence 스페이스** 일괄 수집 수동 트리거 (버튼 1회) |
 
 **Request Body**
 
 ```json
-{ "spaceKey": "CPC" }
+{ "mode": "full" }
 ```
+
+- `mode`: `"full"` (전체 재색인, 기본) | `"delta"` (변경분만). 생략 시 `"full"`.
+- spaceKey 등 스페이스 스코프 파라미터 **없음** — admin Key 로 admin 이 접근 가능한 전체 스페이스를 ML 이 iterate (2026-06-04 결정).
 
 **Response**
 
@@ -655,12 +666,13 @@ Request Body 없음 (admin 의 OAuth access_token 은 서버 측에서 사용).
 
 **Request Body**
 
+> ACL(`userId`/`groups`)만으로 cross-space 검색한다 — 사용자가 접근 가능한 모든 콘텐츠에서 답변. 스페이스 스코프 파라미터는 없다(2026-06-04 결정).
+
 ```json
 {
   "question": "지난번 S3 버킷 권한 오류 때 어떻게 해결했어?",
   "userId": "user-001",
   "groups": ["Cloud-Control-Center"],
-  "spaceKey": "CPC",
   "conversationId": "conv-uuid-001",
   "history": [
     { "role": "user", "content": "S3 관련 장애 이력 알려줘" },
@@ -675,7 +687,6 @@ Request Body 없음 (admin 의 OAuth access_token 은 서버 측에서 사용).
 | `question`       | String   | ✅       | 사용자 자연어 질문(최소 1자)                                                                                                                                                                         |
 | `userId`         | String   | ✅       | JWT `sub` 에서 추출한 사용자 식별자(ACL Pre-filtering)                                                                                                                                               |
 | `groups`         | String[] | ✅       | 사용자 그룹(ACL `should`-OR 필터). **빈 배열 금지** — BFF fail-closed                                                                                                                                |
-| `spaceKey`       | String   | ✅       | 검색 대상 스페이스. **빈 문자열 금지** — BFF fail-closed                                                                                                                                             |
 | `conversationId` | String   | —        | 대화 컨텍스트. 없으면 단발성 질의(new topic)로 처리                                                                                                                                                  |
 | `history`        | Object[] | —        | 이전 대화 이력(멀티턴). BFF 가 MongoDB `messages` 에서 `lina.rag.history-turns`(기본 10) 만큼 조회해 전달                                                                                            |
 | `stream`         | Boolean  | —        | 기본 `false`. **BFF 는 항상 `true` 로 호출**(토큰 스트리밍). PoC 환경(OpenAI 키/generator 없음)에서는 `true` 라도 자동 비-streaming fallback 으로 `token` 이벤트가 1회로 내려올 수 있음 — §1-1 참조 |
@@ -689,7 +700,7 @@ Request Body 없음 (admin 의 OAuth access_token 은 서버 측에서 사용).
 
 > **`history[].role` 값 체계**: 메시지 `role` 은 저장(`messages.role`)·외부 응답(§1-2)·RAG 와이어(`/ml/query` `history[].role`) 모두 `user`/`assistant` lowercase 로 통일한다 — LLM/OpenAI 산업 표준(Common Enum 값 표기 정책의 명시된 예외). **boundary 변환 없음** — 저장값을 그대로 RAG 에 전달.
 
-> **ACL fail-closed (BFF 측 강제)**: `groups` 가 비어 있거나(`[]`) `spaceKey` 가 빈 문자열이면 BFF 는 `/ml/query` 호출을 **막고** SSE `error`(`errorCode: UNAUTHORIZED` 또는 `INVALID_REQUEST`)로 종료한다 (`backend/CLAUDE.md` §6 "ACL 필터 없이 RAG 호출 금지"). RAG 자체 검증이 빈 값을 허용하더라도 BFF 가 게이트한다.
+> **ACL fail-closed (BFF 측 강제)**: `userId` 가 비어 있거나 `groups` 가 비어 있으면(`[]`) BFF 는 `/ml/query` 호출을 **막고** SSE `error`(`errorCode: UNAUTHORIZED`)로 종료한다 (`backend/CLAUDE.md` §6 "ACL 필터 없이 RAG 호출 금지"). RAG 자체 검증이 빈 값을 허용하더라도 BFF 가 게이트한다.
 
 > **camelCase**: 와이어 필드는 모두 camelCase. RAG(FastAPI)는 `populate_by_name=True` 로 테스트 편의상 snake_case 도 허용하나, 생산 클라이언트(BFF)는 camelCase 만 사용한다.
 
@@ -716,7 +727,6 @@ Request Body 없음 (admin 의 OAuth access_token 은 서버 측에서 사용).
 
 ```json
 {
-  "spaceKey": "CPC",
   "mode": "full",
   "accessToken": "<Confluence OAuth access_token>",
   "cloudId": "11111111-2222-3333-4444-555555555555"
@@ -724,6 +734,7 @@ Request Body 없음 (admin 의 OAuth access_token 은 서버 측에서 사용).
 ```
 
 - `mode`: `"full"` (전체) | `"delta"` (변경분만)
+- 스페이스 스코프 파라미터 **없음** — admin Key 로 admin 이 접근 가능한 전체 스페이스를 ML 이 iterate 하며 수집 (2026-06-04 결정, `/api/admin/ingest` 와 동일).
 - `accessToken` / `cloudId` (**PoC 모드, 3단계 도입**): **admin 의 Confluence OAuth access_token** (사용자 로그인 시 발급된 그 토큰, §4-1)과 `accessible-resources`로 조회한 cloudId. BFF가 auth-server로부터 수신(`GET /api/auth/confluence-token`)해 Data Ingestion Pipeline으로 전달하며, 수집 단계의 Confluence REST API 호출(페이지/첨부파일 크롤)에 사용한다. Data Ingestion Pipeline 은 Atlassian REST 호출 시 **`Atl-Confluence-With-Admin-Key: true` 헤더를 부여**해 page-level read restriction 을 우회한다(Admin Key 사전 활성화 필수, §1-4). **추후 확장 단계에서 `connectionId` + `cloudId` 조합으로 교체 예정**이며, 이 경우 Data Ingestion 서버가 connectionId로 BFF/auth-server에 토큰을 재요청한다.
 
 > **보안 주의 (PoC 모드 한정):** 요청 body에 access token이 평문으로 노출되므로 다음 운영 규칙을 함께 강제한다.
@@ -806,14 +817,16 @@ ML 서버는 책임이 다른 두 파이프라인으로 분리되어 있으며, 
   │                                                    ├─ DB 에서 이전 이력 조회 → ML 전달
   │                                                    └─ ML 응답을 DB 저장 + SSE 중계
   ├─ POST   /api/messages/{id}/feedback              → BFF → DB 피드백 저장(upsert)
-  ├─ POST   /api/admin/key/activate                  → BFF → Auth Server → Atlassian POST /api/v2/admin-key (60분)
-  ├─ POST   /api/admin/ingest                        → BFF → POST /ml/ingest → ML 서버
+  ├─ POST   /api/admin/key/activate                  → BFF → Auth Server → Atlassian POST /api/v2/admin-key (60분, 수동/테스트용)
+  ├─ POST   /api/admin/ingest                        → BFF: key 활성 미확인 시 자동 activate → POST /ml/ingest (jobId 반환)
+  │                                                    └─ BFF Virtual Thread watcher: /ml/ingest/status 폴링 → COMPLETED/FAILED 시 Auth Server → Atlassian admin-key deactivate(보안)
   ├─ GET    /api/admin/ingest/status/{jobId}         → BFF → GET /ml/ingest/status/{jobId}
   │
   │ ─── §4-1 인증 (5주차, Confluence OAuth 2.0) ─────────────────
-  ├─ GET    /api/auth/login                          → BFF → 302 https://auth.atlassian.com/authorize
-  ├─ GET    /api/auth/callback                       → BFF → Auth Server: code 교환·ACL·JWT 발급
-  │                                                    └─ JSON 으로 access/refresh 토큰 반환(FE 보관)
+  ├─ GET    /api/auth/login[?mode=admin]             → BFF → 302 https://auth.atlassian.com/authorize (mode 는 state 에 직렬화)
+  ├─ GET    /api/auth/callback                       → BFF → Auth Server: code 교환·users upsert·JWT 발급
+  │                                                    ├─ mode=admin + users.role!=ADMIN → 403 FORBIDDEN, 토큰 미발급
+  │                                                    └─ 정상: JSON 으로 access/refresh 토큰 반환(FE 보관)
   ├─ POST   /api/auth/refresh                        → BFF → Auth Server: refresh 회전·새 JWT 발급
   ├─ POST   /api/auth/logout                         → BFF → Auth Server: refresh 무효화
   ├─ GET    /api/users/me                            → BFF → DB 사용자 정보 조회 (Bearer)
@@ -861,6 +874,9 @@ Confluence OAuth 2.0 Authorization URL로 리다이렉트한다. CSRF 방지를 
 | Key | Type | Required | Description |
 |-----|------|----------|-------------|
 | `returnTo` | string | N | 로그인 완료 후 돌아갈 FE 내부 경로(기본 `/`). 오픈 리다이렉트 방지를 위해 **내부 경로만 허용**한다. |
+| `mode` | string | N | `"admin"` 이면 관리자 로그인 요청 — callback 에서 `users.role != ADMIN` 이면 `403 FORBIDDEN` 으로 차단. 생략·기타값이면 일반 사용자 로그인. FE 의 "Continue with Confluence for Admin" 버튼이 `?mode=admin` 을 붙여 호출(2026-06-02 회의 결정). |
+
+> `mode` 값은 `state` 에 함께 직렬화되어 callback 까지 전달된다(또는 서버 측 세션에 저장). FE 가 임의로 클라이언트에서 결정하는 것이 아니라 login → callback 한 사이클 동안 BE 가 보관한다 — 사용자가 callback URL 만 조작해 admin 으로 우회하는 것을 막기 위함.
 
 **Response** — `302 Found` (Wrapper 미적용)
 
@@ -872,11 +888,13 @@ Location: https://auth.atlassian.com/authorize?audience=api.atlassian.com&client
 
 Confluence 인가 후 redirect_uri(FE 콜백 라우트)가 받은 `code`/`state` 로 세션을 교환한다. BFF → Auth Server 가 Confluence Access/Refresh Token 교환 → ACL(스페이스 접근 권한) 조회 → **세션 JWT 발급**을 수행하고, FE 가 보관할 access/refresh 토큰을 반환한다(기획서 §6.5). Confluence OAuth 토큰은 서버에만 보관하고 응답에 포함하지 않는다.
 
+`state` 에 보관된 `mode=admin` 표식이 있으면 `users.role == ADMIN` 인지 검증한 뒤 통과시킨다. `mode=admin` 인데 `users.role != ADMIN` 이면 `403`(`errorCode: FORBIDDEN`, message: "관리자 권한이 없는 계정입니다") 으로 거부하고 JWT 를 발급하지 않는다.
+
 **Query Parameter**
 | Key | Type | Required | Description |
 |-----|------|----------|-------------|
 | `code` | string | ✅ | Confluence Authorization Code |
-| `state` | string | ✅ | `login`에서 발급한 CSRF state. 불일치 시 거부 |
+| `state` | string | ✅ | `login`에서 발급한 CSRF state. 불일치 시 거부. `mode=admin` 표식 보관 |
 
 **Response (성공 200)**
 
@@ -895,7 +913,7 @@ Confluence 인가 후 redirect_uri(FE 콜백 라우트)가 받은 `code`/`state`
 
 - FE 는 `accessToken` 을 보관해 이후 요청에 `Authorization: Bearer` 로 전송한다.
 
-**Response (실패)** — `state` 불일치는 `400`(`errorCode: INVALID_REQUEST`), `code` 무효·Confluence 오류는 `401`(`errorCode: UNAUTHORIZED`). 토큰을 발급하지 않는다.
+**Response (실패)** — `state` 불일치는 `400`(`errorCode: INVALID_REQUEST`), `code` 무효·Confluence 오류는 `401`(`errorCode: UNAUTHORIZED`), **`mode=admin` 인데 `users.role != ADMIN`** 은 `403`(`errorCode: FORBIDDEN`, message: "관리자 권한이 없는 계정입니다"). 모든 실패 케이스에서 토큰을 발급하지 않는다.
 
 ### `POST /api/auth/refresh`
 

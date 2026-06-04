@@ -18,6 +18,7 @@
 import type {
   ConfluencePagePreview,
   Conversation,
+  ConversationSearchResponse,
   CurrentUser,
   Message,
   Source,
@@ -180,4 +181,28 @@ export const mockMessagesByConversationId: Record<string, Message[]> = {
       createdAt: '2026-05-07T18:12:00+09:00',
     },
   ],
+};
+
+export const mockConversationSearchResponse: ConversationSearchResponse = {
+  results: [
+    {
+      conversationId: 'conv-mock-001',
+      title: 'S3 권한 오류 해결 방법',
+      lastMessageAt: '2026-05-06T19:05:00+09:00',
+      isPinned: true,
+      matchedMessages: [
+        {
+          messageId: 'msg-mock-assistant-001',
+          role: 'assistant',
+          snippet: 'IAM 정책을 수정하여 S3 권한 오류를 해결했습니다.',
+          matchPositions: [[13, 18]],
+          createdAt: '2026-05-06T19:00:05+09:00',
+        },
+      ],
+      matchCount: 1,
+    },
+  ],
+  totalCount: 1,
+  page: 0,
+  size: 20,
 };

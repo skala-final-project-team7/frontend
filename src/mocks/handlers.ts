@@ -21,6 +21,7 @@ import { HttpResponse, http } from 'msw';
 
 import {
   mockConfluencePreviewPages,
+  mockConversationSearchResponse,
   mockConversations,
   mockCurrentUser,
   mockMessagesByConversationId,
@@ -32,6 +33,7 @@ import type {
   CreateConversationResponse,
   ConversationList,
   ConversationMessages,
+  ConversationSearchResponse,
   CurrentUser,
 } from '@/types/api';
 
@@ -67,6 +69,49 @@ export const mockHandlers = [
         page,
         size,
       },
+    });
+  }),
+
+  // TODO(MOCK): GET /api/conversations/search
+  http.get('*/api/conversations/search', ({ request }) => {
+    const url = new URL(request.url);
+    const query = url.searchParams.get('q')?.trim() ?? '';
+    const page = Number(url.searchParams.get('page') ?? 0);
+    const size = Number(url.searchParams.get('size') ?? 20);
+
+    if (query.length < 2 || query.length > 50 || size > 50) {
+      return HttpResponse.json<ApiErrorResponse | ApiSuccessResponse<ConversationSearchResponse>>(
+        {
+          isSuccess: false,
+          code: 400,
+          errorCode: 'INVALID_SEARCH_QUERY',
+          message: '검색어는 2자 이상 50자 이하로 입력해야 합니다',
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    const response: ConversationSearchResponse =
+      query === 'empty'
+        ? {
+            results: [],
+            totalCount: 0,
+            page,
+            size,
+          }
+        : {
+            ...mockConversationSearchResponse,
+            page,
+            size,
+          };
+
+    return HttpResponse.json<ApiSuccessResponse<ConversationSearchResponse>>({
+      isSuccess: true,
+      code: 200,
+      message: '대화 검색 성공',
+      data: response,
     });
   }),
 

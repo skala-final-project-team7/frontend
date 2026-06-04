@@ -80,7 +80,7 @@
 [x] `/api/conversations` mock handler 생성
 [x] `/api/conversations/{conversationId}/messages` mock handler 생성
 [x] `/api/conversations/{conversationId}/chat` SSE mock 방식을 구현 가능한 수준으로 준비
-[x] `/api/confluence/pages/preview?page_id={pageId}` hover preview mock handler 생성
+[x] `/api/confluence/pages/preview?pageId={pageId}` hover preview mock handler 생성
 [x] Chat 메인 화면에서 사용할 Confluence page preview mock data 1~2개 생성
 [x] mock handler마다 `TODO(MOCK): {endpoint}` 주석 추가
 
@@ -141,15 +141,10 @@
 [x] `error` 수신 시 이미 받은 partial token을 남길지/버릴지 확정
 [x] assistant 답변의 thumbs up/down 선택 시 피드백 사유와 comment를 입력하는 모달 표시
 [x] 피드백 모달 제출 시 기존 `submitMessageFeedback(messageId, { rating, comment })` API 함수로 전송
-[ ] 검색 모달 open/close, 검색어 validation, loading/error/empty/success UI 테스트 먼저 작성
-[ ] `src/types/api.ts`에 검색 요청/응답 타입 추가
-[ ] `src/api/index.ts`에 `GET /api/conversations/search` 호출 함수 추가
-[ ] 사이드바 `채팅 검색` 진입점에서 검색 모달을 열도록 연결
-[ ] 검색어는 trim 후 2~50자만 API 호출하고, 위반 시 사용자 안내 표시
-[ ] `matchedMessages[].snippet`과 `matchPositions`를 plain text 기반으로 하이라이트 렌더링
-[ ] 검색 결과 클릭 시 해당 conversation route로 이동
-[ ] 검색 실패와 빈 결과 상태를 사용자에게 표시
-
+[x] 검색어는 trim 후 2~50자만 API 호출하고, 위반 시 사용자 안내 표시
+[x] `matchedMessages[].snippet`과 `matchPositions`를 plain text 기반으로 하이라이트 렌더링
+[x] 검색 결과 클릭 시 해당 conversation route로 이동
+[x] 접힌 사이드바의 채팅 목록 아이콘 클릭 시 마우스 옆 작은 팝오버로 최근 대화 최대 10개 표시
 
 # feature10.5: ChatPage 책임 분리 리팩토링 (feature11 전 선행 고려)
 

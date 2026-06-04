@@ -106,7 +106,7 @@ function submitFeedback() {
           data-testid="feedback-close-button"
           type="button"
           aria-label="피드백 닫기"
-          class="inline-flex size-11 shrink-0 items-center justify-center rounded-button border border-primary text-overlay-dark-80 transition hover:border-status-error hover:bg-bg-100 focus-visible:border-status-error focus-visible:outline-none focus-visible:shadow-focus"
+          class="inline-flex size-11 shrink-0 items-center justify-center rounded-button border border-primary text-overlay-dark-80 transition hover:bg-bg-100 focus-visible:outline-none focus-visible:shadow-focus"
           @click="emit('close')"
         >
           <X aria-hidden="true" class="size-6" />

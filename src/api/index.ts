@@ -21,6 +21,8 @@ import type {
   ConfluencePagePreview,
   ConversationList,
   ConversationMessages,
+  ConversationSearchParams,
+  ConversationSearchResponse,
   CreateConversationResponse,
   CurrentUser,
   DeleteConversationResponse,
@@ -64,6 +66,20 @@ export function createConversation(): Promise<CreateConversationResponse> {
  */
 export function listConversations(params: ListConversationsParams = {}): Promise<ConversationList> {
   return apiRequest<ConversationList>('/api/conversations', {
+    query: params,
+  });
+}
+
+/**
+ * 메시지 본문에 매칭되는 대화를 검색한다.
+ *
+ * @param params 검색어와 pagination query
+ * @returns 대화 단위 검색 결과와 pagination metadata
+ */
+export function searchConversations(
+  params: ConversationSearchParams,
+): Promise<ConversationSearchResponse> {
+  return apiRequest<ConversationSearchResponse>('/api/conversations/search', {
     query: params,
   });
 }

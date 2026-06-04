@@ -2057,6 +2057,60 @@
 - `./scripts/format.sh`: passed
 - `./scripts/lint.sh`: passed
 - `./scripts/test.sh`: passed, 11 test files and 88 tests passed
+
+## 2026-06-02 - feature10.4 conversation search modal
+
+### Scope
+
+- `docs/F-api-spec.md`의 `GET /api/conversations/search` 계약을 기준으로 Chat 대화 검색 모달 구현
+- 사이드바 `채팅 검색` 진입점에서 모달을 열고, 검색 결과 클릭 시 해당 conversation route로 이동
+- 검색어는 trim 후 2~50자만 API 호출하며, 위반 시 클라이언트 안내 표시
+- `matchedMessages[].snippet`과 `matchPositions`를 plain text 기반으로 렌더링하고 FE에서 직접 하이라이트 처리
+
+### Test Cases
+
+- `searchConversations`가 `/api/conversations/search?q=...&page=0&size=20`로 요청한다.
+- 검색 모달에서 1자 검색어는 API 호출 없이 validation message를 표시한다.
+- 정상 검색 결과는 대화 제목, 매칭 메시지, 하이라이트를 표시한다.
+- 검색 결과 클릭 시 모달을 닫고 해당 conversation route로 이동한다.
+- 빈 결과와 API 실패 상태를 각각 표시한다.
+
+### Changed Files
+
+- `docs/ai/current-plan.md`: feature10.4 검색 모달 체크리스트 추가 및 완료 체크
+- `src/types/api.ts`: 대화 검색 요청/응답 타입 추가
+- `src/api/index.ts`: `searchConversations` API 함수 추가
+- `src/features/chat/ConversationSearchModal.vue`: 검색 모달, validation, 결과/empty/error/loading UI, matchPositions 하이라이트 구현
+- `src/pages/ChatPage.vue`: 검색 모달 open/close 상태와 결과 선택 route 이동 연결
+- `src/mocks/data.ts`: 대화 검색 mock response 추가
+- `src/mocks/handlers.ts`: `GET /api/conversations/search` mock handler 추가
+- `src/__tests__/feature5.api-client.test.ts`: 검색 API 함수 요청/응답 테스트 추가
+- `src/__tests__/feature9.chat-conversation.test.ts`: 검색 모달 통합 회귀 테스트 추가
+- `docs/ai/working-log.md`: 작업 범위와 검증 결과 기록
+
+### Commands
+
+- `npm run test -- src/__tests__/feature5.api-client.test.ts` (구현 전 실패 확인)
+- `npm run test -- src/__tests__/feature9.chat-conversation.test.ts` (구현 전 실패 확인)
+- `npm run test -- src/__tests__/feature5.api-client.test.ts`
+- `npm run test -- src/__tests__/feature9.chat-conversation.test.ts`
+- `npm run typecheck`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- 구현 전 API 테스트: failed, `searchConversations is not a function`
+- 구현 전 모달 테스트: failed, 검색 모달/검색 연결이 없어 `conversation-search-modal` 관련 UI를 찾지 못함
+- feature5 API 테스트: passed, 1 test file and 8 tests passed
+- feature9 chat conversation 테스트: passed, 1 test file and 20 tests passed
+- `npm run typecheck`: passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed, 11 test files and 92 tests passed
+- `./scripts/verify.sh`: passed, 11 test files and 92 tests passed
 - `./scripts/verify.sh`: passed, 11 test files and 88 tests passed
 
 ## 2026-06-02 - feature10.4 feedback modal close focus border 보정
@@ -2088,3 +2142,72 @@
 - `./scripts/format.sh`: passed
 - `./scripts/lint.sh`: passed
 - `./scripts/test.sh`: passed, 11 test files and 88 tests passed
+
+## 2026-06-04 - feature10.4 collapsed sidebar conversation popover
+
+### Scope
+
+- 접힌 사이드바의 `채팅 목록` 아이콘 클릭 시 아이콘 오른쪽에 작은 최근 채팅 팝오버 표시
+- 기존 `/api/conversations`로 로드한 conversation 목록을 재사용하고, 최대 10개까지만 렌더링
+- 팝오버 항목 클릭 시 해당 conversation route로 이동하고 팝오버 닫힘
+
+### Test Cases
+
+- 접힌 사이드바의 `채팅 목록` 버튼 클릭 시 최근 채팅 팝오버가 표시된다.
+- conversation 목록이 12개여도 팝오버에는 최대 10개만 표시된다.
+- 팝오버 항목 클릭 시 `/chat/{conversationId}`로 이동하고 팝오버가 닫힌다.
+
+### Changed Files
+
+- `docs/ai/current-plan.md`: feature10.4 팝오버 항목 추가 및 완료 체크
+- `src/pages/ChatPage.vue`: 접힌 사이드바 최근 채팅 팝오버 상태, 렌더링, 외부 클릭/ESC 닫힘 처리 추가
+- `src/__tests__/feature9.chat-conversation.test.ts`: 팝오버 표시, 10개 제한, 항목 선택 route 이동 회귀 테스트 추가
+- `docs/ai/working-log.md`: 작업 범위와 검증 결과 기록
+
+### Commands
+
+- `npm run test -- src/__tests__/feature9.chat-conversation.test.ts` (구현 전 실패 확인)
+- `npm run test -- src/__tests__/feature9.chat-conversation.test.ts`
+- `npm run typecheck`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- 구현 전 테스트: failed, `collapsed-conversation-popover` UI가 없음
+- feature9 chat conversation 테스트: passed, 1 test file and 22 tests passed
+- `npm run typecheck`: passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed, 11 test files and 94 tests passed
+- `./scripts/verify.sh`: passed, 11 test files and 94 tests passed
+
+## 2026-06-04 - api-spec v2.4.0 FE contract alignment
+
+### Scope
+
+- `docs/api-spec.md` v2.4.0 기준으로 FE 타입/API 호출/목업 응답을 대조
+- LINA API 표면에서 제거된 `spaceKey`, 구버전 preview query `page_id`, 제거된 `messageCount`가 런타임 코드에 남아 있는지 확인
+- `GET /api/conversations` query parameter는 명세상 `page`/`size`만 지원하므로 FE 타입에서 임의 `query` 파라미터 제거
+
+### Changed Files
+
+- `src/types/api.ts`: `ListConversationsParams.query` 제거
+- `src/__tests__/feature5.api-client.test.ts`: 대화 목록 조회 params가 `page`/`size`만 허용됨을 타입 회귀 테스트로 고정
+- `docs/ai/current-plan.md`: Confluence preview query 표기를 현재 명세의 `pageId`로 정정
+- `docs/ai/working-log.md`: 대조 결과와 검증 결과 기록
+
+### Commands
+
+- `npm run typecheck` (구현 전 실패 확인)
+- `npm run typecheck`
+- `npm run test -- src/__tests__/feature5.api-client.test.ts`
+
+### Results
+
+- 구현 전 typecheck: failed, `ListConversationsParams.query`가 허용되어 `@ts-expect-error`가 unused 처리됨
+- `npm run typecheck`: passed
+- feature5 API 테스트: passed, 1 test file and 8 tests passed
+- `spaceKey`, `page_id`, `messageCount` 런타임 코드 잔존 없음

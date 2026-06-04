@@ -56,7 +56,38 @@ export type ConversationList = {
 export type ListConversationsParams = {
   page?: number;
   size?: number;
-  query?: string;
+};
+
+export type ConversationSearchParams = {
+  q: string;
+  page?: number;
+  size?: number;
+};
+
+export type ConversationSearchMatchPosition = [start: number, end: number];
+
+export type ConversationSearchMatchedMessage = {
+  messageId: string;
+  role: MessageRole;
+  snippet: string;
+  matchPositions: ConversationSearchMatchPosition[];
+  createdAt: string;
+};
+
+export type ConversationSearchResult = {
+  conversationId: string;
+  title: string;
+  lastMessageAt: string;
+  isPinned: boolean;
+  matchedMessages: ConversationSearchMatchedMessage[];
+  matchCount: number;
+};
+
+export type ConversationSearchResponse = {
+  results: ConversationSearchResult[];
+  totalCount: number;
+  page: number;
+  size: number;
 };
 
 export type Source = {
