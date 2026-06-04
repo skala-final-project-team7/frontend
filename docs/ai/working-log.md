@@ -2268,6 +2268,7 @@
 ### Cause
 
 - collapsed popover item 선택이 `click` 이벤트에 의존하고 있었고, popover dismiss/DOM 변경 타이밍 때문에 item click이 route 이동까지 안정적으로 도달하지 못했다.
+- 이전 수정에서도 handler 내부 순서는 `router.push` 이후 popover close였지만, 그 handler 자체가 `click` 이벤트에 묶여 있었다. `pointerdown` 이후 `click` 전에 popover가 닫히거나 item이 이벤트 대상에서 벗어나면 click handler가 실행되지 않아 `router.push`까지 도달하지 못했다.
 - 네이티브 anchor `href`에서도 이동이 발생하지 않아, 실제 navigation 로직을 `click`보다 빠른 pointer/mouse down 단계에서 실행해야 하는 문제로 판단했다.
 - 사용자가 확인한 브라우저 로그에서 `pointerdown` handler, `router.push`, route change, message history API 요청이 모두 실행되는 것을 확인했다.
 
@@ -2295,3 +2296,17 @@
 - `./scripts/test.sh`: passed, 12 test files and 100 tests passed
 - `./scripts/verify.sh`: passed, 12 test files and 100 tests passed
 - 임시 디버그 로그 제거 확인: `ChatSidebar.vue`에 `collapsed popover debug`/`console.log` 잔존 없음
+
+## 2026-06-04 - feature11 backend readiness hold
+
+### Decision
+
+- Chat BFF 실제 응답, SSE, feedback API 연결 검증 환경이 아직 준비되지 않아 feature11을 보류한다.
+- 백엔드 의존이 낮은 feature12 Auth / Login + Role Selection 화면 구현과 라우팅 mock 범위를 선행한다.
+- feature11 완료 체크는 하지 않고, backend readiness 확인 후 재개한다.
+
+### Scope Impact
+
+- Chat API/SSE/feedback 실제 연결 코드는 이번 결정에서 변경하지 않는다.
+- feature12는 인증 API 미확정 항목을 mock 또는 placeholder 경계 안에 격리해서 진행한다.
+- 최종 인증/인가 판단은 feature13에서 `GET /api/users/me`와 BFF 인증 계약을 기준으로 연결한다.

@@ -158,6 +158,8 @@
 
 # feature11: Chat 백엔드 연결 전환
 
+> 보류 사유: 2026-06-04 기준 Chat BFF 실제 응답, SSE, feedback API 연결 검증 환경이 아직 준비되지 않아 feature11은 backend readiness 이후 진행한다. 그동안 백엔드 의존이 낮은 feature12 Auth / Login + Role Selection 화면 및 라우팅 mock 범위를 선행 진행한다.
+
 [ ] `docs/api-spec.md`와 실제 BFF 응답을 대조해 `src/types/api.ts` 수정 필요 여부 확인
 [ ] `VITE_USE_MOCK=false` 환경에서 `/api/conversations` 대화 목록 조회 연결
 [ ] `VITE_USE_MOCK=false` 환경에서 `/api/conversations/{conversationId}/messages` 메시지 이력 조회 연결
