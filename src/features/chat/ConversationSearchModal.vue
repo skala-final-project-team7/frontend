@@ -6,6 +6,8 @@
 작성일 : 2026-06-02
 변경사항 내역 (날짜, 변경목적, 변경내용 순)
   - 2026-06-02, feature10.4 검색 모달 구현, 대화 검색 API 연결 UI 추가
+  - 2026-06-04, 검색 결과 메타 정보 개선, 마지막 메시지 시각을 날짜만 표시하도록 변경
+  - 2026-06-04, 검색 결과 가독성 개선, 제목 클라이언트 하이라이트와 메타 색상 조정
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -38,6 +40,7 @@ const emit = defineEmits<{
 
 const { showToast } = useToast();
 const query = ref('');
+const submittedQuery = ref('');
 const searchInput = ref<HTMLInputElement | null>(null);
 const errorMessage = ref('');
 const isLoading = ref(false);
@@ -74,6 +77,7 @@ async function submitSearch() {
 
   isLoading.value = true;
   hasSearched.value = true;
+  submittedQuery.value = trimmedQuery;
 
   try {
     searchResponse.value = await searchConversations({
@@ -144,6 +148,63 @@ function createHighlightedSegments(
       ];
 }
 
+function createTitleHighlightedSegments(title: string): HighlightSegment[] {
+  const searchKeyword = submittedQuery.value;
+
+  if (!searchKeyword) {
+    return [
+      {
+        id: 'title-full',
+        text: title,
+        isMatch: false,
+      },
+    ];
+  }
+
+  const normalizedTitle = title.normalize('NFC').toLocaleLowerCase();
+  const normalizedKeyword = searchKeyword.normalize('NFC').toLocaleLowerCase();
+  const segments: HighlightSegment[] = [];
+  let cursor = 0;
+  let matchIndex = normalizedTitle.indexOf(normalizedKeyword);
+
+  while (matchIndex >= 0) {
+    if (matchIndex > cursor) {
+      segments.push({
+        id: `title-text-${cursor}`,
+        text: title.slice(cursor, matchIndex),
+        isMatch: false,
+      });
+    }
+
+    const matchEnd = matchIndex + searchKeyword.length;
+    segments.push({
+      id: `title-match-${matchIndex}`,
+      text: title.slice(matchIndex, matchEnd),
+      isMatch: true,
+    });
+    cursor = matchEnd;
+    matchIndex = normalizedTitle.indexOf(normalizedKeyword, cursor);
+  }
+
+  if (cursor < title.length) {
+    segments.push({
+      id: `title-text-tail-${cursor}`,
+      text: title.slice(cursor),
+      isMatch: false,
+    });
+  }
+
+  return segments.length > 0
+    ? segments
+    : [
+        {
+          id: 'title-full',
+          text: title,
+          isMatch: false,
+        },
+      ];
+}
+
 function selectConversation(conversationId: string) {
   emit('select', conversationId);
 }
@@ -155,6 +216,20 @@ function clearQuery() {
 
 function getMessageLabel(message: ConversationSearchMatchedMessage) {
   return message.role === 'assistant' ? 'LINA' : '나';
+}
+
+function formatDate(value: string) {
+  const parsedDate = new Date(value);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return '';
+  }
+
+  const year = parsedDate.getFullYear();
+  const month = `${parsedDate.getMonth() + 1}`.padStart(2, '0');
+  const day = `${parsedDate.getDate()}`.padStart(2, '0');
+
+  return `${year}.${month}.${day}`;
 }
 
 onMounted(async () => {
@@ -292,10 +367,22 @@ onMounted(async () => {
             <div class="flex items-start justify-between gap-4">
               <div class="min-w-0">
                 <p class="truncate font-lina text-body font-bold text-overlay-dark-80">
-                  {{ result.title }}
+                  <template
+                    v-for="segment in createTitleHighlightedSegments(result.title)"
+                    :key="segment.id"
+                  >
+                    <mark
+                      v-if="segment.isMatch"
+                      data-testid="conversation-search-title-highlight"
+                      class="bg-transparent p-0 text-[#f6a04d]"
+                    >
+                      {{ segment.text }}
+                    </mark>
+                    <span v-else>{{ segment.text }}</span>
+                  </template>
                 </p>
-                <p class="mt-1 font-lina text-small text-overlay-dark-60">
-                  매칭 메시지 {{ result.matchCount }}개 · {{ result.lastMessageAt }}
+                <p class="mt-1 font-lina text-small text-overlay-dark-40">
+                  매칭 메시지 {{ result.matchCount }}개 · {{ formatDate(result.lastMessageAt) }}
                 </p>
               </div>
             </div>

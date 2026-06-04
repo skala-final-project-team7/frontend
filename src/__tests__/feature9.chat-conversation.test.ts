@@ -498,8 +498,16 @@ describe('feature9 SCR-410, SCR-420, SCR-600 Chat conversation screen', () => {
     const searchResult = wrapper.get('[data-testid="conversation-search-result"]');
 
     expect(searchResult.text()).not.toContain('고정');
+    expect(searchResult.text()).toContain('2026.05.06');
+    expect(searchResult.text()).not.toContain('19:05');
+    expect(searchResult.text()).toContain('매칭 메시지 1개');
+    expect(searchResult.find('.text-overlay-dark-40').exists()).toBe(true);
     expect(searchResult.classes()).toEqual(expect.arrayContaining(['border-b', 'border-bg-300']));
     expect(searchResult.classes()).not.toContain('rounded-card');
+    const titleHighlight = wrapper.get('[data-testid="conversation-search-title-highlight"]');
+
+    expect(titleHighlight.text()).toBe('S3 권한');
+    expect(titleHighlight.classes()).toContain('text-[#f6a04d]');
     const highlight = wrapper.get('[data-testid="conversation-search-highlight"]');
 
     expect(highlight.text()).toBe('S3 권한');
