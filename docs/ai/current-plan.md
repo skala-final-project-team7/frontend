@@ -148,13 +148,13 @@
 
 # feature10.5: ChatPage 책임 분리 리팩토링 (feature11 전 선행 고려)
 
-[ ] `ChatPage.vue`는 route/page shell 조립 중심으로 남기고 sidebar/header/submission/route sync 책임을 작게 분리
-[ ] `ChatSidebar` 또는 동등한 feature 컴포넌트로 sidebar 렌더링과 열림/닫힘 UI 상태 분리
-[ ] `ChatHeader` 또는 동등한 feature 컴포넌트로 empty/conversation header 분기 분리
-[ ] `useChatSubmission` 또는 동등한 composable로 새 대화 생성, route conversation fallback, SSE submit, 실패 toast 처리 이동
-[ ] `useChatRouteSync` 또는 동등한 composable로 route watcher, 메시지 이력 로딩, active conversation clear 처리 이동
-[ ] Public API, SSE 이벤트 계약, store action signature는 변경하지 않고 기존 feature8/feature9 테스트가 그대로 통과해야 함
-[ ] 리팩토링 후 `ChatPage.vue` 변경 범위가 UI 동작 변경이 아닌 책임 분리임을 `docs/ai/working-log.md`에 기록
+[x] `ChatPage.vue`는 route/page shell 조립 중심으로 남기고 sidebar/header/submission/route sync 책임을 작게 분리
+[x] `ChatSidebar` 또는 동등한 feature 컴포넌트로 sidebar 렌더링과 열림/닫힘 UI 상태 분리
+[x] `ChatHeader` 또는 동등한 feature 컴포넌트로 empty/conversation header 분기 분리
+[x] `useChatSubmission` 또는 동등한 composable로 새 대화 생성, route conversation fallback, SSE submit, 실패 toast 처리 이동
+[x] `useChatRouteSync` 또는 동등한 composable로 route watcher, 메시지 이력 로딩, active conversation clear 처리 이동
+[x] Public API, SSE 이벤트 계약, store action signature는 변경하지 않고 기존 feature8/feature9 테스트가 그대로 통과해야 함
+[x] 리팩토링 후 `ChatPage.vue` 변경 범위가 UI 동작 변경이 아닌 책임 분리임을 `docs/ai/working-log.md`에 기록
 
 # feature11: Chat 백엔드 연결 전환
 

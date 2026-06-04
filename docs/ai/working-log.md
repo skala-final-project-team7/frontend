@@ -32,6 +32,51 @@
 -
 ```
 
+## 2026-06-04 - feature10.5: ChatPage 책임 분리 리팩토링
+
+### Scope
+
+- `ChatPage.vue`를 route/page shell 조립 중심으로 축소
+- sidebar 렌더링과 열림/닫힘 UI 상태를 `ChatSidebar.vue`로 분리
+- empty/conversation header 분기를 `ChatHeader.vue`로 분리
+- 새 대화 생성, route fallback, SSE submit, 실패 toast 흐름을 `useChatSubmission`으로 분리
+- route watcher, 메시지 이력 로딩, active conversation clear 처리를 `useChatRouteSync`로 분리
+
+### Test Cases
+
+- `ChatPage`가 `ChatSidebar`와 `ChatHeader`를 조립하고 기존 collapsed sidebar/header DOM 계약을 유지한다.
+- submission/route sync 책임이 composable로 분리되어 있고 `ChatPage.vue`가 직접 `createConversation`/message history loading을 소유하지 않는다.
+- 새 대화 fallback 후 `/api/conversations/{conversationId}/chat` SSE submit과 token 누적 표시가 유지된다.
+- 기존 feature8/feature9/feature10/feature10.1 채팅 회귀 테스트가 그대로 통과한다.
+
+### Changed Files
+
+- `src/pages/ChatPage.vue`: page shell 조립 중심으로 축소
+- `src/features/chat/ChatSidebar.vue`: sidebar UI와 접힌 최근 대화 팝오버 상태 분리
+- `src/features/chat/ChatHeader.vue`: header 분기와 profile affordance 분리
+- `src/composables/useChatSubmission.ts`: message submit 흐름 분리
+- `src/composables/useChatRouteSync.ts`: route sync 흐름 분리
+- `src/__tests__/feature10.5.chat-page-refactor.test.ts`: feature10.5 책임 분리 회귀 테스트 추가
+- `docs/ai/current-plan.md`: feature10.5 완료 체크 처리
+- `docs/ai/working-log.md`: 작업 결과 기록
+
+### Commands
+
+- `npm test -- src/__tests__/feature10.5.chat-page-refactor.test.ts` 실패 확인
+- `npm test -- src/__tests__/feature10.5.chat-page-refactor.test.ts`
+- `npm test -- src/__tests__/feature8.chat-main.test.ts src/__tests__/feature9.chat-conversation.test.ts src/__tests__/feature9.chat-sse-store.test.ts src/__tests__/feature10.reference-panel.test.ts src/__tests__/feature10.1.conversation-menu.test.ts`
+
+### Results
+
+- 최초 feature10.5 테스트: failed, `ChatHeader.vue` 미존재로 실패 확인
+- feature10.5 테스트: passed, 3 tests passed
+- 기존 chat 회귀 테스트: passed, 5 test files and 55 tests passed
+
+### Notes / Remaining Issues
+
+- Public API, SSE 이벤트 계약, store action signature는 변경하지 않음.
+- UI 동작 변경 목적이 아닌 책임 분리 리팩토링이며 feature11 이후 항목은 수정하지 않음.
+
 ## 2026-05-15 - feature1: 프로젝트 초기 설정
 
 ### Scope
