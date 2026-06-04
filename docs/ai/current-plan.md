@@ -4,7 +4,7 @@
 
 - 목표: LINA Frontend를 Vue 3 + Vite + TypeScript 기반으로 feature 단위 구현한다.
 - 기준 문서: `AGENTS.md`, `frontend/AGENTS.md`, `docs/ai/workflow.md`, `docs/conventions.md`, `docs/architecture.md`, `docs/api-spec.md`
-- 구현 순서: Chat(SCR-400~600) mock 구현 → Chat 백엔드 연결 → Auth/Onboarding(SCR-100~310) → Settings(SCR-700~720)
+- 구현 순서: Chat(SCR-400~600) mock 구현 → Chat 백엔드 연결 → Auth/Login + Role Selection(SCR-100~200 기반, Onboarding 제거) → Settings(SCR-700~720) → Admin(SCR-800~830)
 - 원칙: 한 세션에서는 하나의 feature만 구현하고, feature 완료 후 `docs/ai/working-log.md`에 기록한 뒤 다음 feature는 새 세션 또는 `/clear` 이후 진행한다.
 
 ## Feature Execution Rule
@@ -80,7 +80,7 @@
 [x] `/api/conversations` mock handler 생성
 [x] `/api/conversations/{conversationId}/messages` mock handler 생성
 [x] `/api/conversations/{conversationId}/chat` SSE mock 방식을 구현 가능한 수준으로 준비
-[x] `/api/confluence/pages/preview?page_id={pageId}` hover preview mock handler 생성
+[x] `/api/confluence/pages/preview?pageId={pageId}` hover preview mock handler 생성
 [x] Chat 메인 화면에서 사용할 Confluence page preview mock data 1~2개 생성
 [x] mock handler마다 `TODO(MOCK): {endpoint}` 주석 추가
 
@@ -107,10 +107,10 @@
 [x] enter - 전송 / shift+enter - 사용자 메시지 안에서 '\n' 구현
 [x] SSE 청크 누적 표시와 RAG 단계 라벨 placeholder 구현
 [x] 답변 하단 출처 버튼 구현
-[x] 사용자 메시지 인라인 수정 모드는 feature15에서 backend version/re-generation 계약 확정 후 재개
+[x] 사용자 메시지 인라인 수정 모드는 feature19에서 backend version/re-generation 계약 확정 후 재개
 [x] 사이드바에서 conversation list에 나오는 제목과 conversation 각각 채팅 내용 연결되도록 구현
 [x] conversation list 불러올 시, isPinned - 고정된 채팅 정보도 넘어오게 반영(api-spec.md, src/types/api.ts, src/mocks/data.ts 등)
-[x] backend message version 목록 및 수정 이후 답변 재생성 계약 협의는 feature15 범위로 이관
+[x] backend message version 목록 및 수정 이후 답변 재생성 계약 협의는 feature19 범위로 이관
 
 # feature10: 출처 패널 구현 (SCR-500, SCR-510)
 
@@ -118,7 +118,7 @@
 [x] 출처 List item에 Title / Path / 작성자 / 작성일자 표시
 [x] List item hover 시 PreviewPageCard 표시 및 카드로 포인터 이동 중 유지, 카드 자체 hover에서만 shadow / URL 액션 / Path 표시
 [x] 새 채팅 진입 시 이전 conversation의 출처 패널 닫기
-[x] 후속 feature16 실제 그래프 렌더링 전까지 Graph view placeholder와 List/Graph 토글 구현
+[x] 후속 feature20 실제 그래프 렌더링 전까지 Graph view placeholder와 List/Graph 토글 구현
 
 # feature10.1: 케밥 아이콘 메뉴 컴포넌트 개발
 
@@ -133,12 +133,18 @@
 
 # feature10.4: FE/RAG SSE 스트리밍 계약 확인 (feature10.5 이전 선행)
 
-- [ ] FE가 `POST /api/conversations/{conversationId}/chat`를 일반 JSON API wrapper가 아니라 SSE/streaming fetch로 분리해서 읽는 구조인지 확인
-- [ ] RAG 운영 모드의 여러 `token`과 PoC fallback의 단일 `token`을 구분하지 않고 `token.data.content`를 순서대로 append하는지 확인
-- [ ] append 시 공백 trim, separator 삽입, 재정렬을 하지 않는지 확인
-- [ ] `sources`, `verification`, `meta`, `done`, `error` 이벤트를 각각 처리하는지 확인
-- [ ] `done` 수신 전까지 메시지를 임시 assistant bubble로 표시할지 확정
-- [ ] `error` 수신 시 이미 받은 partial token을 남길지/버릴지 확정
+[x] FE가 `POST /api/conversations/{conversationId}/chat`를 일반 JSON API wrapper가 아니라 SSE/streaming fetch로 분리해서 읽는 구조인지 확인
+[x] RAG 운영 모드의 여러 `token`과 PoC fallback의 단일 `token`을 구분하지 않고 `token.data.content`를 순서대로 append하는지 확인
+[x] append 시 공백 trim, separator 삽입, 재정렬을 하지 않는지 확인
+[x] `sources`, `verification`, `meta`, `done`, `error` 이벤트를 각각 처리하는지 확인
+[x] `done` 수신 전까지 메시지를 임시 assistant bubble로 표시할지 확정
+[x] `error` 수신 시 이미 받은 partial token을 남길지/버릴지 확정
+[x] assistant 답변의 thumbs up/down 선택 시 피드백 사유와 comment를 입력하는 모달 표시
+[x] 피드백 모달 제출 시 기존 `submitMessageFeedback(messageId, { rating, comment })` API 함수로 전송
+[x] 검색어는 trim 후 2~50자만 API 호출하고, 위반 시 사용자 안내 표시
+[x] `matchedMessages[].snippet`과 `matchPositions`를 plain text 기반으로 하이라이트 렌더링
+[x] 검색 결과 클릭 시 해당 conversation route로 이동
+[x] 접힌 사이드바의 채팅 목록 아이콘 클릭 시 마우스 옆 작은 팝오버로 최근 대화 최대 10개 표시
 
 # feature10.5: ChatPage 책임 분리 리팩토링 (feature11 전 선행 고려)
 
@@ -181,20 +187,28 @@
 [ ] 사용자 중단 시 partial assistant 응답 저장/폐기와 대화 이력 복원 정책을 backend와 합의
 [ ] 별도 cancel API가 필요한 구조로 결정된 경우에만 `docs/api-spec.md` 갱신 후 구현 범위 확정
 
-# feature12: Auth / Onboarding 화면 구현 (SCR-100~310)
+# feature12: Auth / Login + Role Selection 화면 구현 (SCR-100~200 기반, SCR-300~310 제거)
 
-[ ] LandingPage 기본 화면 구현
-[ ] LoginPage Confluence OAuth CTA 화면 구현
-[ ] OnboardingPage 4-step 진행 화면 구현
-[ ] OnboardingDone 완료 화면 구현
-[ ] 인증 API가 불명확한 항목은 mock 또는 placeholder로 격리
+[ ] `frontend/docs/components.md`의 기존 Phase 2가 Onboarding(SCR-300~310)을 포함하더라도, 이번 흐름에서는 Onboarding 화면을 구현하지 않고 라우팅 대상에서도 제외한다
+[ ] LandingPage(SCR-100)는 유지하되 `Continue with Confluence` CTA가 LoginPage 또는 역할 선택 진입으로 자연스럽게 이어지도록 화면 흐름만 정리
+[ ] LoginPage(SCR-200)에 `Continue with Confluence` CTA를 배치하고, 클릭 후 사용자/관리자 선택 UI를 표시한다
+[ ] 역할 선택 UI에는 일반 사용자와 관리자 버튼을 명확히 구분해 제공한다
+[ ] 일반 사용자 선택 시 사용자 로그인 모드로 진행하고, 인증 완료 후 현재 구현된 Chat 화면(`/chat`)으로 이동하는 흐름을 준비한다
+[ ] 관리자 선택 시 관리자 로그인 모드로 진행하고, 인증 완료 후 Admin 화면(`/admin`)으로 이동하는 흐름을 준비한다
+[ ] 사용자가 선택한 역할은 클라이언트 표시/라우팅 의도일 뿐이며, 최종 권한 판단은 `GET /api/users/me`의 `role` 및 BFF의 `mode=admin` 검증 결과를 따른다
+[ ] Onboarding 관련 route/page/component/test가 이미 존재하면 제거 또는 비활성화하고, 새 흐름 회귀 테스트로 대체한다
+[ ] 인증 API가 불명확한 항목은 mock 또는 placeholder로 격리하되, `docs/api-spec.md`의 `/api/auth/login?mode=admin` 계약과 충돌하지 않게 둔다
 
 # feature13: Auth 백엔드 연결 전환
 
 [ ] `docs/api-spec.md`의 인증 API 예정 항목과 실제 BFF 인증 흐름 대조
-[ ] `GET /api/auth/login` 또는 합의된 Confluence OAuth 시작 endpoint 연결
+[ ] 일반 사용자 선택 시 `GET /api/auth/login`으로 Confluence OAuth 시작 endpoint 연결
+[ ] 관리자 선택 시 `GET /api/auth/login?mode=admin`으로 Confluence OAuth 시작 endpoint 연결
 [ ] OAuth callback 이후 사용자 상태 복원 방식 확인
-[ ] `GET /api/users/me` 연결 후 사용자 이름/프로필 표시 데이터 흐름 연결
+[ ] OAuth callback 성공 후 `GET /api/users/me`를 호출해 사용자 이름/프로필/`role` 표시 데이터 흐름 연결
+[ ] `role === "USER"`이면 Chat 화면(`/chat`)으로 이동하고, `role === "ADMIN"`이면 선택한 흐름에 맞춰 Admin 화면(`/admin`) 또는 Chat 화면 진입 정책을 확정해 적용
+[ ] 관리자 선택 흐름에서 BFF가 `users.role != ADMIN`을 `403 FORBIDDEN`으로 거부하면 로그인 화면에 권한 부족 안내를 표시하고 토큰을 저장하지 않음
+[ ] 일반 사용자 세션으로 `/admin` 접근 시 `403 FORBIDDEN` 또는 `role !== "ADMIN"`을 기준으로 접근 차단 처리
 [ ] 인증 실패 / 세션 만료 / 로그아웃 상태 처리
 [ ] 인증/인가 흐름 변경 시 관련 문서 갱신
 
@@ -206,13 +220,49 @@
 [ ] 일반 설정의 히스토리 관리 UI 구현
 [ ] 계정 관리와 데이터 관리 UI 구현
 
-# feature15: Chat 후속 기능 - 인라인 수정 backend 연결
+# feature15: Admin 기본 shell 및 데이터 수집 메인 보드 구현 (SCR-800)
+
+[ ] `frontend/docs/frames/[SCR-800] 관리자 데이터 수집 메인 보드.pdf` 기준으로 Admin shell, 좌측 nav, 관리자 프로필 영역, 데이터 파이프라인 영역을 구현
+[ ] `/admin` 또는 `/admin/operations` route를 추가하고 기본 진입 시 SCR-800 화면을 표시
+[ ] 데이터 현황 카드에 `GET /api/admin/data` 응답 필드(`totalSpaces`, `totalPages`, `totalAttachments`, `vectorDbSize`, `totalChunks`, `lastSyncAt`)를 매핑
+[ ] 최근 동기화 이력에는 `GET /api/admin/sync` 응답의 `status`, `updatedPages`, `deletedPages`, `duration`, `completedAt`을 매핑
+[ ] 데이터 수집/싱크 버튼은 `POST /api/admin/ingest` 계약을 확인한 뒤 연결하고, 연결 전에는 mock/placeholder 상태로 분리
+[ ] 관리자 API는 모두 Common Response wrapper를 사용하고, `/api/admin/*`의 Loading / Error / Empty 상태를 처리
+[ ] `role !== "ADMIN"` 접근 차단 회귀 테스트와 관리자 shell 렌더링 테스트 작성
+
+# feature16: Admin 대시보드 구현 (SCR-810)
+
+[ ] `frontend/docs/frames/[SCR-810] 관리자 추이 확인 대시보드.pdf` 기준으로 대시보드 화면을 구현
+[ ] `/admin/dashboard` route를 추가하고 Admin shell nav에서 이동 가능하게 구성
+[ ] `GET /api/admin/stats`의 일간 질의 수, 평균 응답 시간, 전체 대화 수, 시간대별 접속 추이를 표시
+[ ] `GET /api/admin/users`의 전체/일일 활성 사용자 수와 사용자별 스페이스/페이지/첨부 수, 대화 수, 마지막 접속 정보를 표시
+[ ] 기간 탭(오늘/7일/30일)은 `docs/api-spec.md`의 공통 query parameter 확정 상태를 확인한 뒤 연결하고, 미확정이면 UI 상태만 mock으로 격리
+[ ] 사용자 목록 pagination과 empty/error 상태 테스트 작성
+
+# feature17: Admin 피드백 확인 구현 (SCR-820)
+
+[ ] `frontend/docs/frames/[SCR-820] 관리자 피드백 확인.pdf` 기준으로 피드백 화면을 구현
+[ ] `/admin/feedback` route를 추가하고 Admin shell nav에서 이동 가능하게 구성
+[ ] `GET /api/admin/feedback`의 `likeCount`, `dislikeCount`, `positiveRatio`, `trend`, `negativeFeedbacks`를 표시
+[ ] 부정 피드백 원문에는 질문, 답변, comment, createdAt을 표시하되 민감 정보가 노출되지 않도록 API 응답 범위만 렌더링
+[ ] 기간 탭(7일/14일/30일)은 query parameter 확정 상태를 확인한 뒤 연결하고, 미확정이면 mock으로 격리
+[ ] 피드백 목록 pagination, empty/error 상태 테스트 작성
+
+# feature18: Admin 동기화 이력 구현 (SCR-830)
+
+[ ] `frontend/docs/frames/[SCR-830] 관리자 동기화 이력 확인.pdf` 기준으로 전체 동기화 이력 화면을 구현
+[ ] `/admin/sync` route를 추가하고 Admin shell nav에서 이동 가능하게 구성
+[ ] `GET /api/admin/sync`의 `syncHistory`를 상태, 업데이트 수, 삭제 수, 소요 시간, 완료 시각 테이블로 표시
+[ ] 실패 상태를 완료 상태와 시각적으로 구분하되 임의 status 값을 만들지 않고 API enum을 따른다
+[ ] pagination, loading, empty, error 상태 테스트 작성
+
+# feature19: Chat 후속 기능 - 인라인 수정 backend 연결
 
 [ ] feature11 완료 후 message version/답변 재생성 API 계약을 확정하고 `docs/api-spec.md` 및 FE 타입을 갱신
 [ ] 사용자 메시지 inline edit와 version navigation을 backend version 응답 기준으로 활성화
 [ ] 수정 version 전환 핵심 플로우 테스트 작성
 
-# feature16: 출처 패널 그래프 뷰 후속 구현
+# feature20: 출처 패널 그래프 뷰 후속 구현
 
 [ ] feature10 출처 패널 및 List/Graph 토글 기본 UI 구현 완료 후 진행
 [ ] backend 또는 RAG와 출처 graph node/edge 데이터 계약 확정
@@ -224,7 +274,7 @@
 [ ] 그래프 loading/error/empty 상태와 접근성 대체 표시를 구현
 [ ] 그래프 렌더링 및 node 선택/줌/팬 동작을 관련 테스트로 검증
 
-# feature17: 테스트 및 검증 기반 확장
+# feature21: 테스트 및 검증 기반 확장
 
 [ ] App 기본 렌더링 테스트 작성
 [ ] Chat shell Empty 상태 테스트 작성
@@ -282,9 +332,11 @@
 - 답변과 검색 결과에는 항상 출처 / 작성일자 / 작성자를 표시한다.
 - 모든 비동기 화면은 Loading / Error / Empty 상태를 처리한다.
 - API 응답 타입은 `docs/api-spec.md`와 일치하며 임의 추정하지 않는다.
+- Onboarding(SCR-300~310)은 새 로그인 흐름에서 제거되고, 로그인 후 역할 선택을 거쳐 사용자(Chat) 또는 관리자(Admin) 화면으로 진입한다.
+- 관리자 화면은 `frontend/docs/frames/`의 SCR-800~830 PDF와 `docs/api-spec.md`의 `/api/admin/*` 계약을 기준으로 구현한다.
 
 ## Assumptions
 
-- `frontend/docs/components.md`는 현재 없고 `frontend/docs/componets.md`가 존재하므로 기존 파일명을 변경하지 않고 해당 문서를 참조한다.
+- `frontend/docs/components.md`의 Phase 2에는 아직 Onboarding 문구가 남아 있지만, 최신 사용자 요청 기준으로 SCR-300~310은 구현 대상에서 제외한다.
 - API/DB/인증 문서는 실제 변경이 필요한 feature에서만 수정한다.
-- 현재 구현 상태는 feature1까지만 유지하고, feature2 이후는 이 plan에 따라 새 세션 또는 `/clear` 이후 순차 구현한다.
+- 관리자 API의 query parameter 중 `period`, `from`, `to`, `page`, `size`는 `docs/api-spec.md`에서 제안 상태이므로 실제 연결 전 BFF 계약을 재확인한다.

@@ -8,6 +8,7 @@
  *   - 2026-05-21, feature9 보강, useSSE composable 최초 작성
  *   - 2026-05-22, feature9 보강, AbortSignal 취소와 CRLF/multi-data SSE frame 파싱 추가
  *   - 2026-05-22, feature9 문서화, SSE parser helper 주석 보강
+ *   - 2026-06-02, API v2.3.0 정합화, done/error terminal event 수신 시 reader cancel 처리 추가
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -99,7 +100,23 @@ export function useSSE() {
         }
 
         buffer += decoder.decode(value, { stream: true });
-        buffer = flushCompleteFrames(buffer, handlers.onEvent);
+        let frameResult: { incompleteFrame: string; hasTerminalEvent: boolean };
+
+        try {
+          frameResult = flushCompleteFrames(buffer, handlers.onEvent);
+        } catch (error) {
+          await reader.cancel();
+          throw error;
+        }
+
+        buffer = frameResult.incompleteFrame;
+
+        if (frameResult.hasTerminalEvent) {
+          await reader.cancel();
+          handlers.onComplete?.();
+          return;
+        }
+
         readerResult = await reader.read();
       }
 
@@ -127,14 +144,19 @@ export function useSSE() {
  * @param onEvent 완성 frame을 ChatSseEvent로 변환한 뒤 호출할 callback
  * @returns 아직 `\n\n` 종료자를 만나지 못한 미완성 frame
  */
-function flushCompleteFrames(buffer: string, onEvent: (event: ChatSseEvent) => void): string {
+function flushCompleteFrames(
+  buffer: string,
+  onEvent: (event: ChatSseEvent) => void,
+): { incompleteFrame: string; hasTerminalEvent: boolean } {
   const normalizedBuffer = buffer.replace(/\r\n/g, '\n');
   const frames = normalizedBuffer.split('\n\n');
   const incompleteFrame = frames.pop() ?? '';
+  const hasTerminalEvent = parseSseText(frames.join('\n\n'), onEvent);
 
-  parseSseText(frames.join('\n\n'), onEvent);
-
-  return incompleteFrame;
+  return {
+    incompleteFrame,
+    hasTerminalEvent,
+  };
 }
 
 /**
@@ -147,27 +169,38 @@ function flushCompleteFrames(buffer: string, onEvent: (event: ChatSseEvent) => v
  * @param onEvent 파싱된 ChatSseEvent를 전달받는 callback
  * @throws data payload가 JSON으로 파싱되지 않으면 SyntaxError를 throw한다.
  */
-function parseSseText(streamText: string, onEvent: (event: ChatSseEvent) => void) {
-  streamText
+function parseSseText(streamText: string, onEvent: (event: ChatSseEvent) => void): boolean {
+  const chunks = streamText
     .replace(/\r\n/g, '\n')
     .split('\n\n')
     .map((chunk) => chunk.trim())
-    .filter(Boolean)
-    .forEach((chunk) => {
-      const eventName = chunk.match(/^event:\s*(.+)$/m)?.[1];
-      const eventData = chunk
-        .split('\n')
-        .filter((line) => line.startsWith('data:'))
-        .map((line) => line.replace(/^data:\s?/, ''))
-        .join('\n');
+    .filter(Boolean);
 
-      if (!eventName || !eventData) {
-        return;
-      }
+  for (const chunk of chunks) {
+    const eventName = chunk.match(/^event:\s*(.+)$/m)?.[1];
+    const eventData = chunk
+      .split('\n')
+      .filter((line) => line.startsWith('data:'))
+      .map((line) => line.replace(/^data:\s?/, ''))
+      .join('\n');
 
-      onEvent({
-        event: eventName,
-        data: JSON.parse(eventData),
-      } as ChatSseEvent);
-    });
+    if (!eventName || !eventData) {
+      continue;
+    }
+
+    onEvent({
+      event: eventName,
+      data: JSON.parse(eventData),
+    } as ChatSseEvent);
+
+    if (isTerminalSseEvent(eventName)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function isTerminalSseEvent(eventName: string): boolean {
+  return eventName === 'done' || eventName === 'error';
 }

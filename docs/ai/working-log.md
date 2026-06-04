@@ -1854,3 +1854,360 @@
 - 고정 채팅과 최근 채팅 row가 `ConversationActionMenu`를 공유하지만, hover/open wrapper와 row button markup은 `ChatPage.vue`에 중복되어 있다.
 - `feature10.5`의 ChatPage 책임 분리 시 `ConversationListItem` 또는 동등한 row 컴포넌트로 추출하면 고정/최근 목록이 같은 row 계약을 재사용할 수 있다.
 - `ConversationActionMenu`는 메뉴 trigger와 menuitem 렌더링에 집중시키고, row hover/open 유지와 선택 버튼 배치는 row 컴포넌트가 담당하는 구조가 더 적절하다.
+
+## 2026-06-01 - feature10.4 SSE 임시 assistant bubble 정책 확인
+
+### Scope
+
+- `done` 수신 전까지 스트리밍 중인 답변을 임시 assistant bubble로 표시하는 현재 FE 정책 확인
+- 사용자가 질문을 보내면 `msg-local-assistant-*` 메시지를 먼저 추가하고, `done.messageId` 수신 시 backend message ID로 교체하는 흐름 확인
+
+### Decision
+
+- `done` 수신 전에도 임시 assistant bubble을 표시한다.
+- 임시 bubble은 streaming status/spinner와 수신된 token 누적 답변을 보여주는 단일 UI 자리로 사용한다.
+- `done` 수신 후에는 같은 메시지의 `messageId`를 backend가 반환한 실제 assistant message ID로 교체한다.
+
+### Evidence
+
+- `src/stores/chat.ts`: `streamMessage()`가 local user message와 local assistant placeholder를 먼저 active messages에 추가한다.
+- `src/stores/chat.ts`: `applySseEvent()`의 `done` branch가 `event.data.messageId`로 placeholder ID를 교체한다.
+- `src/features/chat/MessageBubble.vue`: streaming assistant message에 spinner/status를 렌더링한다.
+- `src/__tests__/feature9.chat-conversation.test.ts`: 빈 assistant placeholder가 streaming 중 loading spinner로 표시되는 동작을 검증한다.
+
+### Commands
+
+- 실행하지 않음. 이번 항목은 기존 구현과 테스트 근거를 확인하는 정책 확정 작업이다.
+
+## 2026-06-01 - feature10.4 SSE error partial token 폐기 정책 확인
+
+### Scope
+
+- `error` 수신 전 이미 append된 partial token을 화면에 남길지/버릴지 정책 확정
+- partial token 이후 backend `error` 이벤트가 오는 상황을 회귀 테스트로 고정
+
+### Decision
+
+- `error` 수신 시 partial token은 버린다.
+- assistant bubble은 partial 답변 대신 backend가 내려준 error message만 표시한다.
+- 이 정책은 `docs/api-spec.md`의 "`error` 로 종료되면 assistant 메시지는 저장하지 않는다" 계약에 맞춘다.
+
+### Logic
+
+- `token` 이벤트 수신 시 `src/stores/chat.ts`의 `applySseEvent()`가 현재 assistant placeholder의 `content` 뒤에 `event.data.content`를 append한다.
+- 이후 `error` 이벤트를 수신하면 같은 `applySseEvent()`의 `error` branch가 `phase: 'error'`, `error: event.data.message`, `content: event.data.message`로 메시지를 갱신한다.
+- 이때 `content`를 기존 content에 append하지 않고 오류 문구로 대체하므로, 이전 partial token은 화면 상태에서 제거된다.
+- `streamMessage()`는 `error` 이벤트 처리 직후 예외를 던지고, `finally`에서 streaming 상태를 종료한다.
+
+### Changed Files
+
+- `src/__tests__/feature9.chat-sse-store.test.ts`: token 일부 수신 후 `error`로 종료될 때 partial 답변이 남지 않는 회귀 테스트 추가
+- `docs/ai/working-log.md`: error partial token 폐기 정책과 동작 로직 기록
+
+### Commands
+
+- `npm run test -- src/__tests__/feature9.chat-sse-store.test.ts`
+
+### Results
+
+- passed, 1 test file and 7 tests passed
+
+## 2026-06-02 - Frontend API v2.3.0 정합화
+
+### Scope
+
+- `docs/api-spec.md` v2.3.0 기준으로 Frontend 정의서와 실제 FE 타입/목 데이터를 대조
+- 메시지 `role` 값 체계를 API 명세의 `user` / `assistant` lowercase로 정합화
+- API v2.3.0에서 제거된 conversation `messageCount`를 FE 타입/목 데이터/로컬 생성 흐름에서 제거
+- 별도 FE-facing 검색 API가 없고, 자연어 검색/질의는 Chat SSE API로 수행한다는 내용을 Frontend 정의서에 명시
+
+### Changed Files
+
+- `FRONTEND_SPEC.md`: API v2.3.0 기준 Frontend 정의서 생성
+- `src/types/api.ts`: `MessageRole` lowercase 반영 및 `Conversation.messageCount` 제거
+- `src/stores/chat.ts`: local user/assistant message role을 lowercase로 생성
+- `src/features/chat/MessageBubble.vue`: 메시지 role 분기 조건을 lowercase로 변경
+- `src/pages/ChatPage.vue`: assistant message 탐색 조건 lowercase 반영 및 신규 대화 local `messageCount` 제거
+- `src/mocks/data.ts`: mock conversation/message payload를 API v2.3.0에 맞게 정리
+- `src/__tests__/feature5.api-client.test.ts`: API 타입 계약 테스트 갱신
+- `src/__tests__/feature6.mock-api.test.ts`: mock API response 계약 테스트 갱신
+- `src/__tests__/feature9.chat-sse-store.test.ts`: SSE store role 기대값 갱신
+- `src/__tests__/feature9.chat-conversation.test.ts`: MessageBubble role fixture 갱신
+
+### Commands
+
+- `npm run test -- src/__tests__/feature5.api-client.test.ts src/__tests__/feature6.mock-api.test.ts src/__tests__/feature9.chat-sse-store.test.ts src/__tests__/feature9.chat-conversation.test.ts` (구현 전 실패 확인)
+- `npm run typecheck`
+- `npm run test -- src/__tests__/feature5.api-client.test.ts src/__tests__/feature6.mock-api.test.ts src/__tests__/feature9.chat-sse-store.test.ts src/__tests__/feature9.chat-conversation.test.ts`
+
+### Results
+
+- 구현 전 테스트: failed, 기존 FE가 `USER` / `ASSISTANT` uppercase role을 생성/렌더링하고 mock response도 uppercase를 반환함
+- 관련 테스트: passed, 4 test files and 40 tests passed
+- `npm run typecheck`: passed
+
+### Notes / Remaining Issues
+
+- 인증 token 저장/Authorization header 자동 주입, auth refresh/logout API 구현은 feature13 범위로 남긴다.
+- 관리자 대시보드 API 구현은 현재 화면 feature 범위 밖이며, `FRONTEND_SPEC.md`에 API spec 기준 범위만 명시했다.
+
+## 2026-06-02 - SSE terminal event reader cancel 처리
+
+### Scope
+
+- API spec의 `done` / `error` terminal event 수신 후 클라이언트가 스트림을 종료하는 계약을 FE reader 동작에 반영
+- 서버가 `done` 또는 `error` 이벤트 이후 stream을 닫지 않아도 FE가 직접 `reader.cancel()`로 읽기를 중단하도록 구현
+
+### Changed Files
+
+- `src/composables/useSSE.ts`: 완성된 SSE frame 파싱 결과에 terminal event 여부를 반환하고, `done` 수신 시 `reader.cancel()` 후 정상 완료 처리
+- `src/composables/useSSE.ts`: `error` 이벤트 처리 중 store callback이 예외를 던지는 경우에도 reader를 cancel한 뒤 예외를 전파
+- `src/__tests__/feature9.chat-sse-store.test.ts`: 서버가 stream을 닫지 않는 `done` / `error` 응답에서도 reader cancel과 상태 정리가 되는 회귀 테스트 추가
+- `docs/ai/working-log.md`: 구현 내용과 검증 결과 기록
+
+### Commands
+
+- `npm run test -- src/__tests__/feature9.chat-sse-store.test.ts` (구현 전 실패 확인)
+- `npm run test -- src/__tests__/feature9.chat-sse-store.test.ts`
+
+### Results
+
+- 구현 전 테스트: failed, `done` 이후 stream이 열린 채로 남으면 테스트가 timeout되고 `error` 이후에도 reader cancel이 호출되지 않음
+- feature9 SSE store 테스트: passed, 1 test file and 9 tests passed
+
+## 2026-06-02 - feature10.4 assistant feedback comment modal
+
+### Scope
+
+- assistant 답변의 thumbs up/down 선택 시 피드백 사유와 optional comment를 입력하는 모달 표시
+- 선택 사유와 세부 comment를 하나의 `comment` 문자열로 구성해 기존 `submitMessageFeedback(messageId, { rating, comment })` API 함수로 전송
+- API 함수 시그니처와 feedback endpoint 계약은 변경하지 않음
+
+### Test Cases
+
+- assistant thumbs down 클릭 시 피드백 모달이 열린다.
+- 사유를 선택하기 전에는 제출 버튼이 비활성화된다.
+- 사유와 comment를 입력하고 제출하면 `POST /api/messages/{messageId}/feedback`에 `DISLIKE`와 조합된 comment가 전송된다.
+- 제출 성공 후 모달이 닫힌다.
+
+### Changed Files
+
+- `docs/ai/current-plan.md`: feature10.4 피드백 모달 항목 추가 및 완료 체크
+- `src/features/chat/FeedbackModal.vue`: 피드백 사유/comment 입력 모달 추가
+- `src/features/chat/MessageBubble.vue`: thumbs up/down 클릭 시 feedback rating 이벤트 emit
+- `src/features/chat/ChatConversationView.vue`: feedback 이벤트를 ChatPage로 전달
+- `src/pages/ChatPage.vue`: 모달 상태, close/submit 처리, `submitMessageFeedback` API 연결
+- `src/__tests__/feature9.chat-conversation.test.ts`: feedback modal open/submit 회귀 테스트 추가
+- `docs/ai/working-log.md`: 작업 범위와 검증 결과 기록
+
+### Commands
+
+- `npm run test -- src/__tests__/feature9.chat-conversation.test.ts` (구현 전 실패 확인)
+- `npm run test -- src/__tests__/feature9.chat-conversation.test.ts`
+- `npm run typecheck`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- 구현 전 테스트: failed, thumbs down 클릭 후 `feedback-modal`이 렌더링되지 않음
+- feature9 chat conversation 테스트: passed, 1 test file and 16 tests passed
+- `npm run typecheck`: passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed, 11 test files and 87 tests passed
+- `./scripts/verify.sh`: passed, 11 test files and 87 tests passed
+
+### Notes / Remaining Issues
+
+- 현재 모달은 선택 사유를 필수로 하고 세부 comment는 선택으로 둔다.
+- API가 별도 reason 필드를 제공하지 않으므로 `[사유] 세부내용` 형식의 comment 문자열로 전송한다.
+
+## 2026-06-02 - feature10.4 feedback modal submit condition 보정
+
+### Scope
+
+- 피드백 API payload가 `rating`과 `comment`만 받는 구조에 맞춰 모달 제출 조건 조정
+- 사유 선택 없이 공유 세부 정보만 입력해도 제출 가능하도록 변경
+- 사유와 공유 세부 정보가 모두 있으면 기존처럼 `[사유] 세부내용` 형식으로 전송
+
+### Changed Files
+
+- `src/features/chat/FeedbackModal.vue`: 제출 가능 조건과 comment 조합 로직 수정
+- `src/__tests__/feature9.chat-conversation.test.ts`: 공유 세부 정보만 입력한 경우 제출 가능 및 API payload 검증 테스트 추가
+- `docs/ai/working-log.md`: 변경 내용과 검증 결과 기록
+
+### Commands
+
+- `npm run test -- src/__tests__/feature9.chat-conversation.test.ts` (구현 전 실패 확인)
+- `npm run test -- src/__tests__/feature9.chat-conversation.test.ts`
+- `npm run typecheck`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- 구현 전 테스트: failed, 공유 세부 정보만 입력하면 제출 버튼이 비활성 상태로 유지됨
+- feature9 chat conversation 테스트: passed, 1 test file and 17 tests passed
+- `npm run typecheck`: passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed, 11 test files and 88 tests passed
+
+## 2026-06-02 - feature10.4 conversation search modal
+
+### Scope
+
+- `docs/F-api-spec.md`의 `GET /api/conversations/search` 계약을 기준으로 Chat 대화 검색 모달 구현
+- 사이드바 `채팅 검색` 진입점에서 모달을 열고, 검색 결과 클릭 시 해당 conversation route로 이동
+- 검색어는 trim 후 2~50자만 API 호출하며, 위반 시 클라이언트 안내 표시
+- `matchedMessages[].snippet`과 `matchPositions`를 plain text 기반으로 렌더링하고 FE에서 직접 하이라이트 처리
+
+### Test Cases
+
+- `searchConversations`가 `/api/conversations/search?q=...&page=0&size=20`로 요청한다.
+- 검색 모달에서 1자 검색어는 API 호출 없이 validation message를 표시한다.
+- 정상 검색 결과는 대화 제목, 매칭 메시지, 하이라이트를 표시한다.
+- 검색 결과 클릭 시 모달을 닫고 해당 conversation route로 이동한다.
+- 빈 결과와 API 실패 상태를 각각 표시한다.
+
+### Changed Files
+
+- `docs/ai/current-plan.md`: feature10.4 검색 모달 체크리스트 추가 및 완료 체크
+- `src/types/api.ts`: 대화 검색 요청/응답 타입 추가
+- `src/api/index.ts`: `searchConversations` API 함수 추가
+- `src/features/chat/ConversationSearchModal.vue`: 검색 모달, validation, 결과/empty/error/loading UI, matchPositions 하이라이트 구현
+- `src/pages/ChatPage.vue`: 검색 모달 open/close 상태와 결과 선택 route 이동 연결
+- `src/mocks/data.ts`: 대화 검색 mock response 추가
+- `src/mocks/handlers.ts`: `GET /api/conversations/search` mock handler 추가
+- `src/__tests__/feature5.api-client.test.ts`: 검색 API 함수 요청/응답 테스트 추가
+- `src/__tests__/feature9.chat-conversation.test.ts`: 검색 모달 통합 회귀 테스트 추가
+- `docs/ai/working-log.md`: 작업 범위와 검증 결과 기록
+
+### Commands
+
+- `npm run test -- src/__tests__/feature5.api-client.test.ts` (구현 전 실패 확인)
+- `npm run test -- src/__tests__/feature9.chat-conversation.test.ts` (구현 전 실패 확인)
+- `npm run test -- src/__tests__/feature5.api-client.test.ts`
+- `npm run test -- src/__tests__/feature9.chat-conversation.test.ts`
+- `npm run typecheck`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- 구현 전 API 테스트: failed, `searchConversations is not a function`
+- 구현 전 모달 테스트: failed, 검색 모달/검색 연결이 없어 `conversation-search-modal` 관련 UI를 찾지 못함
+- feature5 API 테스트: passed, 1 test file and 8 tests passed
+- feature9 chat conversation 테스트: passed, 1 test file and 20 tests passed
+- `npm run typecheck`: passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed, 11 test files and 92 tests passed
+- `./scripts/verify.sh`: passed, 11 test files and 92 tests passed
+- `./scripts/verify.sh`: passed, 11 test files and 88 tests passed
+
+## 2026-06-02 - feature10.4 feedback modal close focus border 보정
+
+### Scope
+
+- 피드백 모달 닫기 버튼 hover/focus-visible 상태에서 주황색 테두리가 보이도록 스타일 보정
+
+### Changed Files
+
+- `src/features/chat/FeedbackModal.vue`: 닫기 버튼에 `hover:border-status-error`, `focus-visible:border-status-error` 클래스 추가
+- `src/__tests__/feature9.chat-conversation.test.ts`: 닫기 버튼 hover/focus border 클래스 회귀 테스트 추가
+- `docs/ai/working-log.md`: 변경 내용과 검증 결과 기록
+
+### Commands
+
+- `npm run test -- src/__tests__/feature9.chat-conversation.test.ts` (구현 전 실패 확인)
+- `npm run test -- src/__tests__/feature9.chat-conversation.test.ts`
+- `npm run typecheck`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+
+### Results
+
+- 구현 전 테스트: failed, 닫기 버튼에 hover/focus-visible 주황색 border 클래스가 없음
+- feature9 chat conversation 테스트: passed, 1 test file and 17 tests passed
+- `npm run typecheck`: passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed, 11 test files and 88 tests passed
+
+## 2026-06-04 - feature10.4 collapsed sidebar conversation popover
+
+### Scope
+
+- 접힌 사이드바의 `채팅 목록` 아이콘 클릭 시 아이콘 오른쪽에 작은 최근 채팅 팝오버 표시
+- 기존 `/api/conversations`로 로드한 conversation 목록을 재사용하고, 최대 10개까지만 렌더링
+- 팝오버 항목 클릭 시 해당 conversation route로 이동하고 팝오버 닫힘
+
+### Test Cases
+
+- 접힌 사이드바의 `채팅 목록` 버튼 클릭 시 최근 채팅 팝오버가 표시된다.
+- conversation 목록이 12개여도 팝오버에는 최대 10개만 표시된다.
+- 팝오버 항목 클릭 시 `/chat/{conversationId}`로 이동하고 팝오버가 닫힌다.
+
+### Changed Files
+
+- `docs/ai/current-plan.md`: feature10.4 팝오버 항목 추가 및 완료 체크
+- `src/pages/ChatPage.vue`: 접힌 사이드바 최근 채팅 팝오버 상태, 렌더링, 외부 클릭/ESC 닫힘 처리 추가
+- `src/__tests__/feature9.chat-conversation.test.ts`: 팝오버 표시, 10개 제한, 항목 선택 route 이동 회귀 테스트 추가
+- `docs/ai/working-log.md`: 작업 범위와 검증 결과 기록
+
+### Commands
+
+- `npm run test -- src/__tests__/feature9.chat-conversation.test.ts` (구현 전 실패 확인)
+- `npm run test -- src/__tests__/feature9.chat-conversation.test.ts`
+- `npm run typecheck`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- 구현 전 테스트: failed, `collapsed-conversation-popover` UI가 없음
+- feature9 chat conversation 테스트: passed, 1 test file and 22 tests passed
+- `npm run typecheck`: passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed, 11 test files and 94 tests passed
+- `./scripts/verify.sh`: passed, 11 test files and 94 tests passed
+
+## 2026-06-04 - api-spec v2.4.0 FE contract alignment
+
+### Scope
+
+- `docs/api-spec.md` v2.4.0 기준으로 FE 타입/API 호출/목업 응답을 대조
+- LINA API 표면에서 제거된 `spaceKey`, 구버전 preview query `page_id`, 제거된 `messageCount`가 런타임 코드에 남아 있는지 확인
+- `GET /api/conversations` query parameter는 명세상 `page`/`size`만 지원하므로 FE 타입에서 임의 `query` 파라미터 제거
+
+### Changed Files
+
+- `src/types/api.ts`: `ListConversationsParams.query` 제거
+- `src/__tests__/feature5.api-client.test.ts`: 대화 목록 조회 params가 `page`/`size`만 허용됨을 타입 회귀 테스트로 고정
+- `docs/ai/current-plan.md`: Confluence preview query 표기를 현재 명세의 `pageId`로 정정
+- `docs/ai/working-log.md`: 대조 결과와 검증 결과 기록
+
+### Commands
+
+- `npm run typecheck` (구현 전 실패 확인)
+- `npm run typecheck`
+- `npm run test -- src/__tests__/feature5.api-client.test.ts`
+
+### Results
+
+- 구현 전 typecheck: failed, `ListConversationsParams.query`가 허용되어 `@ts-expect-error`가 unused 처리됨
+- `npm run typecheck`: passed
+- feature5 API 테스트: passed, 1 test file and 8 tests passed
+- `spaceKey`, `page_id`, `messageCount` 런타임 코드 잔존 없음

@@ -23,6 +23,7 @@ import MessageInput from '@/features/chat/MessageInput.vue';
 import { mockConversations, mockCurrentUser, mockMessagesByConversationId } from '@/mocks/data';
 import ChatPage from '@/pages/ChatPage.vue';
 import router from '@/router';
+import { useToast } from '@/composables/useToast';
 
 /**
  * ChatPage를 Pinia와 router가 주입된 상태로 마운트한다.
@@ -35,6 +36,30 @@ function mountChatPage() {
       plugins: [createPinia(), router],
     },
   });
+}
+
+function getConversationSearchButton(wrapper: ReturnType<typeof mountChatPage>) {
+  const searchButton = wrapper
+    .findAll('button')
+    .find((button) => button.attributes('aria-label') === '채팅 검색');
+
+  if (!searchButton) {
+    throw new Error('Conversation search button was not found');
+  }
+
+  return searchButton;
+}
+
+function getCollapsedConversationListButton(wrapper: ReturnType<typeof mountChatPage>) {
+  const conversationListButton = wrapper
+    .findAll('button')
+    .find((button) => button.attributes('aria-label') === '채팅 목록');
+
+  if (!conversationListButton) {
+    throw new Error('Collapsed conversation list button was not found');
+  }
+
+  return conversationListButton;
 }
 
 /**
@@ -88,7 +113,7 @@ function createSseResponse(): Response {
  *
  * @returns install된 fetch mock
  */
-function installFeature9FetchMock() {
+function installFeature9FetchMock(conversationList = mockConversations) {
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const requestUrl =
       typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
@@ -138,14 +163,91 @@ function installFeature9FetchMock() {
       return createSseResponse();
     }
 
+    if (requestUrl.includes('/api/messages/') && requestUrl.endsWith('/feedback')) {
+      return createJsonResponse(
+        {
+          isSuccess: true,
+          code: 201,
+          message: '피드백 등록 성공',
+          data: {
+            feedbackId: 'fb-mock-001',
+            messageId: requestUrl.match(/\/api\/messages\/([^/]+)\/feedback/)?.[1] ?? '',
+            rating: JSON.parse(String(init?.body)).rating,
+            createdAt: '2026-05-21T19:10:00+09:00',
+          },
+        },
+        201,
+      );
+    }
+
+    if (requestUrl.includes('/api/conversations/search')) {
+      const url = new URL(requestUrl, 'http://localhost');
+      const query = url.searchParams.get('q') ?? '';
+
+      if (query === 'empty') {
+        return createJsonResponse({
+          isSuccess: true,
+          code: 200,
+          message: '대화 검색 성공',
+          data: {
+            results: [],
+            totalCount: 0,
+            page: 0,
+            size: 20,
+          },
+        });
+      }
+
+      if (query === 'fail') {
+        return createJsonResponse(
+          {
+            isSuccess: false,
+            code: 500,
+            errorCode: 'INTERNAL_ERROR',
+            message: '검색 실패',
+          },
+          500,
+        );
+      }
+
+      return createJsonResponse({
+        isSuccess: true,
+        code: 200,
+        message: '대화 검색 성공',
+        data: {
+          results: [
+            {
+              conversationId: 'conv-mock-001',
+              title: 'S3 권한 오류 해결 방법',
+              lastMessageAt: '2026-05-06T19:05:00+09:00',
+              isPinned: true,
+              matchedMessages: [
+                {
+                  messageId: 'msg-mock-assistant-001',
+                  role: 'assistant',
+                  snippet: 'IAM 정책을 수정하여 S3 권한 오류를 해결했습니다.',
+                  matchPositions: [[13, 18]],
+                  createdAt: '2026-05-06T19:00:05+09:00',
+                },
+              ],
+              matchCount: 1,
+            },
+          ],
+          totalCount: 1,
+          page: 0,
+          size: 20,
+        },
+      });
+    }
+
     if (requestUrl.includes('/api/conversations')) {
       return createJsonResponse({
         isSuccess: true,
         code: 200,
         message: '대화 목록 조회 성공',
         data: {
-          conversations: mockConversations,
-          totalCount: mockConversations.length,
+          conversations: conversationList,
+          totalCount: conversationList.length,
           page: 0,
           size: 20,
         },
@@ -180,6 +282,9 @@ describe('feature9 SCR-410, SCR-420, SCR-600 Chat conversation screen', () => {
   beforeEach(async () => {
     setActivePinia(createPinia());
     installFeature9FetchMock();
+    const { dismissToast, toasts } = useToast();
+
+    toasts.value.forEach((toast) => dismissToast(toast.id));
     await router.push('/chat/conv-mock-001');
   });
 
@@ -237,12 +342,226 @@ describe('feature9 SCR-410, SCR-420, SCR-600 Chat conversation screen', () => {
     );
   });
 
+  it('opens feedback modal from assistant thumbs down and submits reason with optional comment', async () => {
+    const fetchMock = installFeature9FetchMock();
+    const wrapper = mountChatPage();
+    await flushAsyncUpdates();
+
+    await wrapper.get('[data-testid="assistant-dislike-button"]').trigger('click');
+
+    expect(wrapper.get('[data-testid="feedback-modal"]').text()).toContain('피드백 공유');
+    expect(wrapper.get('[data-testid="feedback-close-button"]').classes()).not.toContain(
+      'hover:border-status-error',
+    );
+    expect(wrapper.get('[data-testid="feedback-close-button"]').classes()).not.toContain(
+      'focus-visible:border-status-error',
+    );
+    expect(wrapper.get('[data-testid="feedback-submit-button"]').attributes('disabled')).toBe('');
+
+    await wrapper.get('[data-testid="feedback-reason-incorrect"]').trigger('click');
+    await wrapper
+      .get('[data-testid="feedback-comment-input"]')
+      .setValue('S3 해결 절차가 중간에 끊겼어요.');
+    await wrapper.get('[data-testid="feedback-submit-button"]').trigger('click');
+    await flushAsyncUpdates();
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/messages/msg-mock-assistant-001/feedback',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          rating: 'DISLIKE',
+          comment: '[올바르지 않거나 끝까지 작성되지 않음] S3 해결 절차가 중간에 끊겼어요.',
+        }),
+      }),
+    );
+    expect(wrapper.find('[data-testid="feedback-modal"]').exists()).toBe(false);
+  });
+
+  it('enables feedback submit when only the optional comment is filled', async () => {
+    const fetchMock = installFeature9FetchMock();
+    const wrapper = mountChatPage();
+    await flushAsyncUpdates();
+
+    await wrapper.get('[data-testid="assistant-like-button"]').trigger('click');
+    await wrapper
+      .get('[data-testid="feedback-comment-input"]')
+      .setValue('답변이 짧고 바로 적용할 수 있었어요.');
+
+    expect(wrapper.get('[data-testid="feedback-submit-button"]').attributes('disabled')).toBe(
+      undefined,
+    );
+
+    await wrapper.get('[data-testid="feedback-submit-button"]').trigger('click');
+    await flushAsyncUpdates();
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/messages/msg-mock-assistant-001/feedback',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          rating: 'LIKE',
+          comment: '답변이 짧고 바로 적용할 수 있었어요.',
+        }),
+      }),
+    );
+    expect(wrapper.find('[data-testid="feedback-modal"]').exists()).toBe(false);
+  });
+
+  it('opens conversation search modal and blocks one-character queries before API call', async () => {
+    const fetchMock = installFeature9FetchMock();
+    const wrapper = mountChatPage();
+    const focusSpy = vi.spyOn(HTMLInputElement.prototype, 'focus');
+    await flushAsyncUpdates();
+
+    await getConversationSearchButton(wrapper).trigger('click');
+    await flushAsyncUpdates();
+
+    expect(focusSpy).toHaveBeenCalled();
+    expect(wrapper.get('[data-testid="conversation-search-close"]').classes()).not.toContain(
+      'border-primary',
+    );
+    expect(wrapper.get('[data-testid="conversation-search-close"]').classes()).not.toContain(
+      'hover:border-status-error',
+    );
+    expect(wrapper.get('[data-testid="conversation-search-close"]').classes()).not.toContain(
+      'focus-visible:border-status-error',
+    );
+
+    await wrapper.get('[data-testid="conversation-search-input"]').setValue('S');
+    await wrapper.get('[data-testid="conversation-search-submit"]').trigger('submit');
+    await flushAsyncUpdates();
+
+    const { toasts } = useToast();
+
+    expect(wrapper.get('[data-testid="conversation-search-modal"]').text()).not.toContain(
+      '검색어는 2자 이상 50자 이하로 입력해주세요.',
+    );
+    expect(toasts.value.at(-1)).toMatchObject({
+      message: '검색어는 2자 이상 50자 이하로 입력해주세요.',
+      variant: 'info',
+    });
+    expect(
+      fetchMock.mock.calls.some(([input]) => String(input).includes('/api/conversations/search')),
+    ).toBe(false);
+  });
+
+  it('closes conversation search modal from backdrop and clears query from circular clear button', async () => {
+    const wrapper = mountChatPage();
+    await flushAsyncUpdates();
+
+    await getConversationSearchButton(wrapper).trigger('click');
+    await flushAsyncUpdates();
+    await wrapper.get('[data-testid="conversation-search-input"]').setValue('S3 권한');
+
+    expect(wrapper.get('[data-testid="conversation-search-input"]').attributes('type')).toBe(
+      'text',
+    );
+    const clearButton = wrapper.get('[data-testid="conversation-search-clear"]');
+
+    expect(clearButton.classes()).toEqual(
+      expect.arrayContaining(['rounded-full', 'bg-bg-300', 'text-overlay-dark-60']),
+    );
+
+    await clearButton.trigger('click');
+
+    expect(
+      (wrapper.get('[data-testid="conversation-search-input"]').element as HTMLInputElement).value,
+    ).toBe('');
+
+    await wrapper.get('[data-testid="conversation-search-modal"]').trigger('click');
+
+    expect(wrapper.find('[data-testid="conversation-search-modal"]').exists()).toBe(false);
+  });
+
+  it('shows highlighted conversation search results and moves to the selected conversation', async () => {
+    const fetchMock = installFeature9FetchMock();
+    const wrapper = mountChatPage();
+    await flushAsyncUpdates();
+
+    await getConversationSearchButton(wrapper).trigger('click');
+    await wrapper.get('[data-testid="conversation-search-input"]').setValue('S3 권한');
+    await wrapper.get('[data-testid="conversation-search-submit"]').trigger('submit');
+    await flushAsyncUpdates();
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/conversations/search?q=S3+%EA%B6%8C%ED%95%9C&page=0&size=20',
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Accept: 'application/json',
+        }),
+      }),
+    );
+    expect(wrapper.get('[data-testid="conversation-search-result"]').text()).toContain(
+      'S3 권한 오류 해결 방법',
+    );
+    const searchResult = wrapper.get('[data-testid="conversation-search-result"]');
+
+    expect(searchResult.text()).not.toContain('고정');
+    expect(searchResult.text()).toContain('2026.05.06');
+    expect(searchResult.text()).not.toContain('19:05');
+    expect(searchResult.text()).toContain('매칭 메시지 1개');
+    expect(searchResult.find('.text-overlay-dark-40').exists()).toBe(true);
+    expect(searchResult.classes()).toEqual(expect.arrayContaining(['border-b', 'border-bg-300']));
+    expect(searchResult.classes()).not.toContain('rounded-card');
+    const titleHighlight = wrapper.get('[data-testid="conversation-search-title-highlight"]');
+
+    expect(titleHighlight.text()).toBe('S3 권한');
+    expect(titleHighlight.classes()).toContain('text-[#f6a04d]');
+    const highlight = wrapper.get('[data-testid="conversation-search-highlight"]');
+
+    expect(highlight.text()).toBe('S3 권한');
+    expect(highlight.classes()).toContain('text-[#f6a04d]');
+    expect(highlight.classes()).not.toContain('font-bold');
+    expect(highlight.classes()).not.toContain('bg-primary/15');
+
+    await wrapper.get('[data-testid="conversation-search-result"]').trigger('click');
+    await flushAsyncUpdates();
+
+    expect(wrapper.find('[data-testid="conversation-search-modal"]').exists()).toBe(false);
+    expect(router.currentRoute.value.fullPath).toBe('/chat/conv-mock-001');
+  });
+
+  it('shows empty and error states in conversation search modal', async () => {
+    const wrapper = mountChatPage();
+    await flushAsyncUpdates();
+
+    await getConversationSearchButton(wrapper).trigger('click');
+    await wrapper.get('[data-testid="conversation-search-input"]').setValue('empty');
+    await wrapper.get('[data-testid="conversation-search-submit"]').trigger('submit');
+    await flushAsyncUpdates();
+
+    const emptyState = wrapper.get('[data-testid="conversation-search-empty"]');
+
+    expect(emptyState.text()).toContain('대화 결과가 없습니다');
+    expect(emptyState.classes()).toContain('text-overlay-dark-80');
+    expect(
+      wrapper.get('[data-testid="conversation-search-empty-image"]').attributes('src'),
+    ).toContain('mascot-wrong');
+
+    await wrapper.get('[data-testid="conversation-search-input"]').setValue('fail');
+    await wrapper.get('[data-testid="conversation-search-submit"]').trigger('submit');
+    await flushAsyncUpdates();
+
+    const errorState = wrapper.get('[data-testid="conversation-search-error"]');
+
+    expect(errorState.text()).toContain('대화 검색에 실패했습니다');
+    expect(errorState.text()).toContain('잠시 후 다시 한번 시도하세요.');
+    expect(errorState.text()).not.toContain('/api/conversations/search');
+    expect(
+      wrapper.get('[data-testid="conversation-search-error-image"]').attributes('src'),
+    ).toContain('mascot-wrong');
+    expect(errorState.classes()).toContain('text-overlay-dark-80');
+    expect(errorState.classes()).not.toContain('text-status-error');
+    expect(errorState.classes()).not.toContain('border-status-error/40');
+  });
+
   it('shows backend status message before token chunks arrive', () => {
     const wrapper = mount(MessageBubble, {
       props: {
         message: {
           messageId: 'msg-local-assistant-phase',
-          role: 'ASSISTANT',
+          role: 'assistant',
           content: '',
           createdAt: '2026-05-21T00:00:00Z',
           sources: [],
@@ -502,7 +821,7 @@ describe('feature9 SCR-410, SCR-420, SCR-600 Chat conversation screen', () => {
       props: {
         message: {
           messageId: 'msg-local-assistant-loading',
-          role: 'ASSISTANT',
+          role: 'assistant',
           content: '',
           createdAt: '2026-05-21T00:00:00Z',
           sources: [],
@@ -528,7 +847,7 @@ describe('feature9 SCR-410, SCR-420, SCR-600 Chat conversation screen', () => {
       props: {
         message: {
           messageId: 'msg-local-assistant-cancelled',
-          role: 'ASSISTANT',
+          role: 'assistant',
           content: '',
           createdAt: '2026-05-21T00:00:00Z',
           sources: [],
@@ -543,7 +862,7 @@ describe('feature9 SCR-410, SCR-420, SCR-600 Chat conversation screen', () => {
       props: {
         message: {
           messageId: 'msg-local-assistant-error',
-          role: 'ASSISTANT',
+          role: 'assistant',
           content: '답변 생성 중 오류가 발생했습니다',
           createdAt: '2026-05-21T00:00:00Z',
           phase: 'error',
@@ -648,6 +967,37 @@ describe('feature9 SCR-410, SCR-420, SCR-600 Chat conversation screen', () => {
     expect(router.currentRoute.value.fullPath).toBe('/chat/conv-mock-002');
     expect(wrapper.text()).toContain('문서 동기화가 마지막으로 언제 성공했어?');
     expect(wrapper.text()).not.toContain('지난번 S3 버킷 권한 오류 때 어떻게 해결했어?');
+  });
+
+  it('opens a compact conversation list popover from collapsed sidebar and limits it to 10 items', async () => {
+    const conversationList = Array.from({ length: 12 }, (_, index) => ({
+      conversationId: `conv-popover-${String(index + 1).padStart(2, '0')}`,
+      title: `최근 채팅 ${index + 1}`,
+      createdAt: `2026-05-${String(index + 1).padStart(2, '0')}T10:00:00+09:00`,
+      lastMessageAt: `2026-05-${String(index + 1).padStart(2, '0')}T10:05:00+09:00`,
+      isPinned: false,
+    }));
+    installFeature9FetchMock(conversationList);
+    const wrapper = mountChatPage();
+    await flushAsyncUpdates();
+
+    await getCollapsedConversationListButton(wrapper).trigger('click');
+    await flushAsyncUpdates();
+
+    const popover = wrapper.get('[data-testid="collapsed-conversation-popover"]');
+    const items = wrapper.findAll('[data-testid="collapsed-conversation-popover-item"]');
+
+    expect(popover.text()).toContain('최근 채팅');
+    expect(items).toHaveLength(10);
+    expect(popover.text()).toContain('최근 채팅 1');
+    expect(popover.text()).toContain('최근 채팅 10');
+    expect(popover.text()).not.toContain('최근 채팅 11');
+
+    await items[3].trigger('click');
+    await flushAsyncUpdates();
+
+    expect(router.currentRoute.value.fullPath).toBe('/chat/conv-popover-04');
+    expect(wrapper.find('[data-testid="collapsed-conversation-popover"]').exists()).toBe(false);
   });
 
   it('shows the selected conversation history instead of the empty state when entering from /chat', async () => {

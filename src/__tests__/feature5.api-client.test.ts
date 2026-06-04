@@ -7,6 +7,7 @@ import {
   getConversationMessages,
   getCurrentUser,
   listConversations,
+  searchConversations,
   streamConversationChat,
   submitMessageFeedback,
   updateConversationTitle,
@@ -44,7 +45,7 @@ describe('feature5 API types and client skeleton', () => {
 
     const assistantMessage: Message = {
       messageId: 'msg-uuid-002',
-      role: 'ASSISTANT',
+      role: 'assistant',
       content: 'S3 권한 오류는 IAM 정책을 수정하여 해결했습니다.',
       sources: [source],
       confidenceScore: 0.85,
@@ -57,11 +58,14 @@ describe('feature5 API types and client skeleton', () => {
       title: 'S3 권한 오류 해결 방법',
       createdAt: '2026-05-06T19:00:00+09:00',
       lastMessageAt: '2026-05-06T19:05:00+09:00',
-      messageCount: 4,
     };
     const listParams: ListConversationsParams = {
       page: 1,
       size: 10,
+    };
+    const invalidListParams: ListConversationsParams = {
+      // @ts-expect-error docs/api-spec.md GET /api/conversations supports page and size only.
+      query: 'S3 권한',
     };
     const deleteResponse: DeleteConversationResponse = null;
 
@@ -113,6 +117,7 @@ describe('feature5 API types and client skeleton', () => {
     expect(errorResponse.errorCode).toBe('RESOURCE_NOT_FOUND');
     expect(assistantMessage.sources).toEqual([source]);
     expect(listParams).toEqual({ page: 1, size: 10 });
+    expect(invalidListParams).toEqual({ query: 'S3 권한' });
     expect(deleteResponse).toBeNull();
     expect(feedback.rating).toBe('LIKE');
     expect(sseEvent.event).toBe('sources');
@@ -292,6 +297,65 @@ describe('feature5 API types and client skeleton', () => {
     ).resolves.toMatchObject({
       feedbackId: 'fb-uuid-001',
       rating: 'LIKE',
+    });
+  });
+
+  it('searches conversations with message body query pagination parameters', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const requestUrl = String(input);
+
+      expect(requestUrl).toBe('/api/conversations/search?q=S3+%EA%B6%8C%ED%95%9C&page=0&size=20');
+
+      return jsonResponse({
+        isSuccess: true,
+        code: 200,
+        message: '대화 검색 성공',
+        data: {
+          results: [
+            {
+              conversationId: 'conv-uuid-001',
+              title: 'S3 권한 오류 해결 방법',
+              lastMessageAt: '2026-05-06T19:05:00+09:00',
+              isPinned: false,
+              matchedMessages: [
+                {
+                  messageId: 'msg-uuid-002',
+                  role: 'assistant',
+                  snippet: 'IAM 정책을 수정하여 S3 권한 오류를 해결했습니다.',
+                  matchPositions: [[13, 18]],
+                  createdAt: '2026-05-06T19:00:05+09:00',
+                },
+              ],
+              matchCount: 1,
+            },
+          ],
+          totalCount: 1,
+          page: 0,
+          size: 20,
+        },
+      });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(
+      searchConversations({
+        q: 'S3 권한',
+        page: 0,
+        size: 20,
+      }),
+    ).resolves.toMatchObject({
+      results: [
+        {
+          conversationId: 'conv-uuid-001',
+          matchedMessages: [
+            {
+              role: 'assistant',
+              matchPositions: [[13, 18]],
+            },
+          ],
+        },
+      ],
+      totalCount: 1,
     });
   });
 
