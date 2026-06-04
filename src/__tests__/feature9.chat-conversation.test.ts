@@ -993,10 +993,97 @@ describe('feature9 SCR-410, SCR-420, SCR-600 Chat conversation screen', () => {
     expect(popover.text()).toContain('최근 채팅 10');
     expect(popover.text()).not.toContain('최근 채팅 11');
 
-    await items[3].trigger('click');
+    expect(items[3].attributes('href')).toBe('/chat/conv-popover-04');
+
+    await items[3].trigger('pointerdown');
     await flushAsyncUpdates();
 
     expect(router.currentRoute.value.fullPath).toBe('/chat/conv-popover-04');
+    expect(wrapper.find('[data-testid="collapsed-conversation-popover"]').exists()).toBe(false);
+  });
+
+  it('closes the collapsed conversation popover only on outside click, not outside pointerdown', async () => {
+    const conversationList = [
+      {
+        conversationId: 'conv-popover-text-node',
+        title: '텍스트 노드 클릭 대상',
+        createdAt: '2026-05-01T10:00:00+09:00',
+        lastMessageAt: '2026-05-01T10:05:00+09:00',
+        isPinned: false,
+      },
+    ];
+    installFeature9FetchMock(conversationList);
+    const wrapper = mountChatPage();
+    await flushAsyncUpdates();
+
+    await getCollapsedConversationListButton(wrapper).trigger('click');
+    await flushAsyncUpdates();
+
+    expect(router.currentRoute.value.fullPath).toBe('/chat/conv-mock-001');
+    expect(wrapper.find('[data-testid="collapsed-conversation-popover"]').exists()).toBe(true);
+
+    document.body.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
+    await flushAsyncUpdates();
+
+    expect(wrapper.find('[data-testid="collapsed-conversation-popover"]').exists()).toBe(true);
+
+    document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await flushAsyncUpdates();
+
+    expect(wrapper.find('[data-testid="collapsed-conversation-popover"]').exists()).toBe(false);
+  });
+
+  it('routes from a collapsed conversation title pointerdown and closes from route change', async () => {
+    const conversationList = [
+      {
+        conversationId: 'conv-popover-title-click',
+        title: '제목 클릭 라우팅 대상',
+        createdAt: '2026-05-01T10:00:00+09:00',
+        lastMessageAt: '2026-05-01T10:05:00+09:00',
+        isPinned: false,
+      },
+    ];
+    installFeature9FetchMock(conversationList);
+    const wrapper = mountChatPage();
+    await flushAsyncUpdates();
+
+    await getCollapsedConversationListButton(wrapper).trigger('click');
+    await flushAsyncUpdates();
+
+    const item = wrapper.get('[data-testid="collapsed-conversation-popover-item"]');
+
+    await item.trigger('pointerdown');
+    await flushAsyncUpdates();
+
+    expect(router.currentRoute.value.fullPath).toBe('/chat/conv-popover-title-click');
+    expect(wrapper.find('[data-testid="collapsed-conversation-popover"]').exists()).toBe(false);
+  });
+
+  it('routes from a collapsed conversation title mousedown and closes from route change', async () => {
+    const conversationList = [
+      {
+        conversationId: 'conv-popover-mousedown',
+        title: 'mousedown 라우팅 대상',
+        createdAt: '2026-05-01T10:00:00+09:00',
+        lastMessageAt: '2026-05-01T10:05:00+09:00',
+        isPinned: false,
+      },
+    ];
+    installFeature9FetchMock(conversationList);
+    const wrapper = mountChatPage();
+    await flushAsyncUpdates();
+
+    await getCollapsedConversationListButton(wrapper).trigger('click');
+    await flushAsyncUpdates();
+
+    const item = wrapper.get('[data-testid="collapsed-conversation-popover-item"]');
+
+    expect(item.attributes('href')).toBe('/chat/conv-popover-mousedown');
+
+    await item.trigger('mousedown');
+    await flushAsyncUpdates();
+
+    expect(router.currentRoute.value.fullPath).toBe('/chat/conv-popover-mousedown');
     expect(wrapper.find('[data-testid="collapsed-conversation-popover"]').exists()).toBe(false);
   });
 

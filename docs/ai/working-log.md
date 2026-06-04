@@ -2256,3 +2256,42 @@
 - `npm run typecheck`: passed
 - feature5 API 테스트: passed, 1 test file and 8 tests passed
 - `spaceKey`, `page_id`, `messageCount` 런타임 코드 잔존 없음
+
+## 2026-06-04 - collapsed sidebar chat popover routing fix
+
+### Scope
+
+- 접힌 사이드바의 채팅 목록 팝오버에서 conversation item 클릭 시 팝오버만 닫히고 `/chat/{conversationId}`로 이동하지 않는 회귀 수정
+- expanded sidebar의 기존 conversation 선택 동작은 유지
+- 기존 route path, store action signature, conversation loading 로직은 변경하지 않음
+
+### Cause
+
+- collapsed popover item 선택이 `click` 이벤트에 의존하고 있었고, popover dismiss/DOM 변경 타이밍 때문에 item click이 route 이동까지 안정적으로 도달하지 못했다.
+- 네이티브 anchor `href`에서도 이동이 발생하지 않아, 실제 navigation 로직을 `click`보다 빠른 pointer/mouse down 단계에서 실행해야 하는 문제로 판단했다.
+- 사용자가 확인한 브라우저 로그에서 `pointerdown` handler, `router.push`, route change, message history API 요청이 모두 실행되는 것을 확인했다.
+
+### Changed Files
+
+- `src/features/chat/ChatSidebar.vue`: collapsed popover item을 `RouterLink custom` anchor로 렌더링하고, `pointerdown`/`mousedown` 단계에서 `router.push`를 먼저 실행하도록 변경. popover 닫힘은 route change watcher로 분리하고, popover stacking context를 보정
+- `src/__tests__/feature9.chat-conversation.test.ts`: collapsed popover item의 `pointerdown`/`mousedown` 라우팅, route change 후 close, outside click close 회귀 테스트 추가
+- `docs/ai/working-log.md`: 원인과 수정 내용, 검증 결과 기록
+
+### Commands
+
+- `npm run test -- src/__tests__/feature9.chat-conversation.test.ts`
+- `npm run typecheck`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- feature9 chat conversation 테스트: passed, 1 test file and 25 tests passed
+- `npm run typecheck`: passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed, 12 test files and 100 tests passed
+- `./scripts/verify.sh`: passed, 12 test files and 100 tests passed
+- 임시 디버그 로그 제거 확인: `ChatSidebar.vue`에 `collapsed popover debug`/`console.log` 잔존 없음

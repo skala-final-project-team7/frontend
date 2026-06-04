@@ -21,7 +21,8 @@ import {
   Settings,
   SquarePen,
 } from '@lucide/vue';
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { RouterLink, useRoute, useRouter } from 'vue-router';
 
 import ConversationActionMenu from '@/features/chat/ConversationActionMenu.vue';
 import { mascotImageUrl } from '@/shared/assets';
@@ -51,6 +52,8 @@ const isSidebarMascotHovered = ref(false);
 const isSidebarContentVisible = ref(false);
 const hoveredConversationMenuId = ref('');
 const isCollapsedConversationPopoverOpen = ref(false);
+const route = useRoute();
+const router = useRouter();
 let sidebarContentTimer: number | undefined;
 
 const pinnedConversations = computed(() =>
@@ -60,6 +63,16 @@ const recentConversations = computed(() =>
   props.conversations.filter((conversation) => !conversation.isPinned),
 );
 const collapsedConversationPreviewList = computed(() => props.conversations.slice(0, 10));
+
+function getConversationRouteId(conversation: Conversation): string {
+  return conversation.conversationId;
+}
+
+function getConversationRoutePath(conversation: Conversation): string {
+  const conversationId = getConversationRouteId(conversation);
+
+  return conversationId ? `/chat/${encodeURIComponent(conversationId)}` : '/chat';
+}
 
 function toggleSidebar() {
   emit('update:isOpen', !props.isOpen);
@@ -79,6 +92,39 @@ function selectConversation(conversationId: string) {
   emit('selectConversation', conversationId);
 }
 
+async function handleSelectCollapsedConversation(conversationId: string, event?: Event) {
+  event?.preventDefault();
+
+  if (!conversationId) {
+    return;
+  }
+
+  try {
+    await router.push({
+      name: 'chat-conversation',
+      params: {
+        conversationId,
+      },
+    });
+  } catch {
+    // Vue Router may ignore duplicated navigation; the visible state is handled by route watcher.
+  }
+}
+
+function getEventTargetElement(event: Event): Element | null {
+  const target = event.target;
+
+  if (target instanceof Element) {
+    return target;
+  }
+
+  if (target instanceof Node) {
+    return target.parentElement;
+  }
+
+  return null;
+}
+
 function closeCollapsedConversationPopover() {
   isCollapsedConversationPopoverOpen.value = false;
 }
@@ -88,11 +134,10 @@ function toggleCollapsedConversationPopover() {
 }
 
 function closeConversationMenuFromOutside(event: PointerEvent) {
-  const target = event.target;
+  const target = getEventTargetElement(event);
 
-  if (!(target instanceof Element)) {
+  if (!target) {
     emit('closeConversationMenu');
-    closeCollapsedConversationPopover();
     return;
   }
 
@@ -105,6 +150,20 @@ function closeConversationMenuFromOutside(event: PointerEvent) {
   }
 
   emit('closeConversationMenu');
+}
+
+function closeCollapsedConversationPopoverFromOutside(event: MouseEvent) {
+  const target = getEventTargetElement(event);
+
+  if (!target) {
+    closeCollapsedConversationPopover();
+    return;
+  }
+
+  if (target.closest('[data-collapsed-conversation-popover-root]')) {
+    return;
+  }
+
   closeCollapsedConversationPopover();
 }
 
@@ -135,8 +194,17 @@ watch(
   },
 );
 
+watch(
+  () => route.fullPath,
+  async () => {
+    await nextTick();
+    closeCollapsedConversationPopover();
+  },
+);
+
 onMounted(() => {
   document.addEventListener('pointerdown', closeConversationMenuFromOutside);
+  document.addEventListener('click', closeCollapsedConversationPopoverFromOutside);
   document.addEventListener('keydown', closeCollapsedConversationPopoverOnEscape);
 });
 
@@ -146,6 +214,7 @@ onBeforeUnmount(() => {
   }
 
   document.removeEventListener('pointerdown', closeConversationMenuFromOutside);
+  document.removeEventListener('click', closeCollapsedConversationPopoverFromOutside);
   document.removeEventListener('keydown', closeCollapsedConversationPopoverOnEscape);
 });
 </script>
@@ -155,7 +224,7 @@ onBeforeUnmount(() => {
     data-testid="chat-sidebar"
     :data-state="isOpen ? 'expanded' : 'collapsed'"
     aria-label="Chat sidebar"
-    class="sticky top-0 flex h-screen shrink-0 flex-col border-r border-bg-300 transition-[width] duration-200"
+    class="sticky top-0 z-50 flex h-screen shrink-0 flex-col border-r border-bg-300 transition-[width] duration-200"
     :class="isOpen ? 'w-[264px] bg-bg-100' : 'w-[76px] bg-primary-white'"
   >
     <div
@@ -290,7 +359,10 @@ onBeforeUnmount(() => {
             data-testid="collapsed-conversation-popover"
             role="menu"
             aria-label="최근 채팅"
-            class="absolute left-12 top-0 z-50 w-[264px] rounded-card border border-bg-300 bg-primary-white px-4 py-4 shadow-floating"
+            class="absolute left-12 top-0 z-[80] w-[264px] rounded-card border border-bg-300 bg-primary-white px-4 py-4 shadow-floating"
+            @click.stop
+            @mousedown.stop
+            @pointerdown.stop
           >
             <p class="mb-3 font-lina text-small font-bold text-overlay-dark-80">최근 채팅</p>
             <p
@@ -304,15 +376,34 @@ onBeforeUnmount(() => {
                 v-for="conversation in collapsedConversationPreviewList"
                 :key="conversation.conversationId"
               >
-                <button
-                  data-testid="collapsed-conversation-popover-item"
-                  type="button"
-                  role="menuitem"
-                  class="w-full truncate rounded-button px-2 py-2 text-left font-lina text-small text-overlay-dark-80 transition hover:bg-bg-100 focus-visible:outline-none focus-visible:shadow-focus"
-                  @click="selectConversation(conversation.conversationId)"
-                >
-                  {{ conversation.title }}
-                </button>
+                <RouterLink v-slot="{ href }" custom :to="getConversationRoutePath(conversation)">
+                  <a
+                    data-testid="collapsed-conversation-popover-item"
+                    :href="href"
+                    role="menuitem"
+                    class="block w-full truncate rounded-button px-2 py-2 text-left font-lina text-small text-overlay-dark-80 transition hover:bg-bg-100 focus-visible:outline-none focus-visible:shadow-focus"
+                    @click.stop.prevent="
+                      handleSelectCollapsedConversation(
+                        getConversationRouteId(conversation),
+                        $event,
+                      )
+                    "
+                    @mousedown.stop.prevent="
+                      handleSelectCollapsedConversation(
+                        getConversationRouteId(conversation),
+                        $event,
+                      )
+                    "
+                    @pointerdown.stop.prevent="
+                      handleSelectCollapsedConversation(
+                        getConversationRouteId(conversation),
+                        $event,
+                      )
+                    "
+                  >
+                    {{ conversation.title }}
+                  </a>
+                </RouterLink>
               </li>
             </ul>
           </div>
