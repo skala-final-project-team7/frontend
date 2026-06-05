@@ -8,6 +8,8 @@
 
 ## 1. 라이브러리 설치
 
+> ⚠️ **`frontend/AGENTS.md` 규칙**: "새 UI 라이브러리 추가 금지 (package.json 외)". GSAP은 현재 `package.json`에 없으므로 팀 승인 후 추가한다. 추가 시 이유를 `docs/ai/working-log.md`에 기록한다.
+
 ```bash
 npm install gsap
 ```
@@ -34,10 +36,9 @@ npm install gsap
 에셋은 기존 `src/shared/assets.ts`에 Vite import로 추가한다.
 
 ```ts
-import logoLinaCute4Url from '../../frontend/assets/logo-lina-cute_files/logo-lina-cute4.png'
-import logoLinaVer3Url from '../../frontend/assets/logo-lina-ver3.png'
+import logoLinaCute4Url from '../../frontend/assets/logo-lina-cute4.png'
 
-export { logoLinaCute4Url, logoLinaVer3Url }
+export { logoLinaCute4Url }
 ```
 
 ---
@@ -126,6 +127,8 @@ function scrollToPanel(index: number) {
 - 노드 ambient float 애니메이션
 
 ### 핵심 CSS
+
+> ⚠️ **`code-reference.md` 규칙**: 색상은 `design-reference.css`의 CSS 변수를 사용해야 한다. 임의 hex값(`#f8f8f9` 등) 직접 사용 금지. 아래 CSS 스니펫의 색상은 구현 시 `var(--color-bg-100)`, `var(--color-primary)` 등 토큰으로 교체한다.
 
 ```css
 /* 패널 1 배경: 쿨 그레이화이트 */
