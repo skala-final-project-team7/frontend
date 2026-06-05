@@ -19,8 +19,10 @@ import mascotImageUrl from '../../frontend/assets/mascot.png';
 import mascotWrongImageUrl from '../../frontend/assets/mascot-wrong.png';
 import searchImageUrl from '../../frontend/assets/search.png';
 import skpSymbolImageUrl from '../../frontend/assets/skp_symbol-nobg.png';
+import confluenceIconImageUrl from '../../frontend/assets/confluence-icon.png';
 
 export {
+  confluenceIconImageUrl,
   mascotImageUrl,
   mascotRealizeImageUrl,
   mascotSearchImageUrl,

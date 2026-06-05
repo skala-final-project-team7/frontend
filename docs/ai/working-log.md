@@ -2339,3 +2339,60 @@
 - 구현 전 테스트: failed, streaming 중 버튼 label이 `응답 중단`으로 남아 있음
 - feature8 chat main 테스트: passed, 1 test file and 14 tests passed
 - `npm run typecheck`: passed
+
+## 2026-06-05 - feature12: Auth / Login + Role Selection 화면 구현
+
+### Scope
+
+- SCR-100 LandingPage와 SCR-200 LoginPage를 Auth 진입 흐름으로 추가
+- Landing CTA는 `/login`으로 이동하고, Login CTA는 즉시 OAuth를 시작하지 않고 역할 선택 UI를 표시
+- 일반 사용자 선택은 `/api/auth/login?returnTo=/chat`, 관리자 선택은 `/api/auth/login?mode=admin&returnTo=/admin` 계약과 맞는 mock 경계로 구성
+- feature12 범위에서 accessToken/refreshToken 저장, refresh, logout, 실제 인증 API 호출은 구현하지 않음
+- Onboarding(SCR-300~310)은 route/page/component 구현 대상에서 제외
+
+### Test Cases
+
+- `/`, `/login` Auth 진입 route가 Landing/Login page에 연결되고 onboarding route가 존재하지 않는다.
+- LandingPage의 `Continue with Confluence` CTA가 onboarding이 아니라 LoginPage로 이동한다.
+- LoginPage의 `Continue with Confluence` CTA는 OAuth URL 없이 역할 선택 UI만 연다.
+- 사용자/관리자 역할 버튼은 향후 OAuth URL과 returnTo를 준비하고 mock 흐름에서 각각 `/chat`, `/admin`으로 이동한다.
+
+### Changed Files
+
+- `src/__tests__/feature12.auth-login-role-selection.test.ts`: feature12 실패 우선 테스트 추가
+- `src/features/auth/authIntent.ts`, `src/features/auth/index.ts`: 역할별 auth intent와 예정 OAuth URL 정의
+- `src/pages/LandingPage.vue`: SCR-100 Landing 화면 및 Login 진입 CTA 추가
+- `src/pages/LoginPage.vue`: SCR-200 Login CTA와 사용자/관리자 역할 선택 UI 추가
+- `src/pages/AdminEntryPage.vue`: feature12 mock 관리자 진입용 placeholder route 추가
+- `src/router/index.ts`: `/`, `/login`, `/admin` route 추가
+- `src/pages/index.ts`: 신규 Auth page export 추가
+- `src/shared/assets.ts`: Confluence icon asset export 추가
+- `src/shared/index.ts`: Auth page에서 사용하는 shared asset barrel export 추가
+- `docs/ai/current-plan.md`: feature12 완료 체크 처리
+- `docs/ai/working-log.md`: 작업 결과 기록
+
+### Commands
+
+- `npm test -- --run src/__tests__/feature12.auth-login-role-selection.test.ts` 실패 확인
+- `npm test -- --run src/__tests__/feature12.auth-login-role-selection.test.ts`
+- `./scripts/test.sh`
+- `./scripts/lint.sh`
+- `./scripts/format.sh`
+- `./scripts/verify.sh`
+- `npm run typecheck`
+
+### Results
+
+- 최초 feature12 테스트: failed, Auth intent/page 모듈 미존재로 실패 확인
+- feature12 테스트: passed, 4 tests passed
+- `./scripts/test.sh`: passed, 13 test files and 104 tests passed
+- `./scripts/lint.sh`: passed
+- `./scripts/format.sh`: passed
+- `./scripts/verify.sh`: passed
+- `npm run typecheck`: passed
+
+### Notes / Remaining Issues
+
+- `/admin`은 feature12 역할 선택 mock 흐름을 위한 placeholder이며, SCR-800 Admin shell 구현은 feature15 범위로 유지한다.
+- 실제 `/api/auth/login`, OAuth callback, `GET /api/users/me`, 토큰 저장/갱신/로그아웃 처리는 feature13 범위로 남긴다.
+- API, DB, 인증/인가 명세는 변경하지 않음.

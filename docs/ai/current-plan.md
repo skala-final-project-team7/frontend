@@ -192,22 +192,22 @@
 
 # feature12: Auth / Login + Role Selection 화면 구현 (SCR-100~200 기반, SCR-300~310 제거)
 
-[ ] `frontend/docs/components.md`의 기존 Phase 2가 Onboarding(SCR-300~310)을 포함하더라도, 이번 흐름에서는 Onboarding 화면을 구현하지 않고 라우팅 대상에서도 제외한다
-[ ] LandingPage(SCR-100)는 유지하되 `Continue with Confluence` CTA가 LoginPage 또는 역할 선택 진입으로 자연스럽게 이어지도록 화면 흐름만 정리
-[ ] LoginPage(SCR-200)에 `Continue with Confluence` CTA를 배치하고, 클릭 후 사용자/관리자 선택 UI를 표시한다
-[ ] `Continue with Confluence` CTA는 즉시 OAuth를 시작하지 않고 역할 선택 UI를 여는 진입점으로 둔다
-[ ] 역할 선택 UI에는 일반 사용자와 관리자 버튼을 명확히 구분해 제공한다
-[ ] 일반 사용자 선택 시 사용자 로그인 모드로 진행하고, 인증 완료 후 현재 구현된 Chat 화면(`/chat`)으로 이동하는 흐름을 준비한다
-[ ] 관리자 선택 시 관리자 로그인 모드로 진행하고, 인증 완료 후 Admin 화면(`/admin`)으로 이동하는 흐름을 준비한다
-[ ] 일반 사용자 선택은 향후 `GET /api/auth/login?returnTo=/chat` 호출로 연결될 수 있게 mock 또는 placeholder 경계로 처리한다
-[ ] 관리자 선택은 향후 `GET /api/auth/login?mode=admin&returnTo=/admin` 호출로 연결될 수 있게 mock 또는 placeholder 경계로 처리한다
-[ ] 사용자가 선택한 역할은 클라이언트 표시/라우팅 의도일 뿐이며, 최종 권한 판단은 `GET /api/users/me`의 `role` 및 BFF의 `mode=admin` 검증 결과를 따른다
+[x] `frontend/docs/components.md`의 기존 Phase 2가 Onboarding(SCR-300~310)을 포함하더라도, 이번 흐름에서는 Onboarding 화면을 구현하지 않고 라우팅 대상에서도 제외한다
+[x] LandingPage(SCR-100)는 유지하되 `Continue with Confluence` CTA가 LoginPage 또는 역할 선택 진입으로 자연스럽게 이어지도록 화면 흐름만 정리
+[x] LoginPage(SCR-200)에 `Continue with Confluence` CTA를 배치하고, 클릭 후 사용자/관리자 선택 UI를 표시한다
+[x] `Continue with Confluence` CTA는 즉시 OAuth를 시작하지 않고 역할 선택 UI를 여는 진입점으로 둔다
+[x] 역할 선택 UI에는 일반 사용자와 관리자 버튼을 명확히 구분해 제공한다
+[x] 일반 사용자 선택 시 사용자 로그인 모드로 진행하고, 인증 완료 후 현재 구현된 Chat 화면(`/chat`)으로 이동하는 흐름을 준비한다
+[x] 관리자 선택 시 관리자 로그인 모드로 진행하고, 인증 완료 후 Admin 화면(`/admin`)으로 이동하는 흐름을 준비한다
+[x] 일반 사용자 선택은 향후 `GET /api/auth/login?returnTo=/chat` 호출로 연결될 수 있게 mock 또는 placeholder 경계로 처리한다
+[x] 관리자 선택은 향후 `GET /api/auth/login?mode=admin&returnTo=/admin` 호출로 연결될 수 있게 mock 또는 placeholder 경계로 처리한다
+[x] 사용자가 선택한 역할은 클라이언트 표시/라우팅 의도일 뿐이며, 최종 권한 판단은 `GET /api/users/me`의 `role` 및 BFF의 `mode=admin` 검증 결과를 따른다
 
 **주의사항**
-[ ] feature12에서는 accessToken/refreshToken 저장, refresh, logout 실제 처리를 구현하지 않고 feature13 인증 백엔드 연결 범위로 남긴다
-[ ] feature12 mock 흐름에서도 `docs/api-spec.md`의 Bearer token 기반 세션 계약과 충돌하는 cookie 기반 인증 가정을 추가하지 않는다
-[ ] Onboarding 관련 route/page/component/test가 이미 존재하면 제거 또는 비활성화하고, 새 흐름 회귀 테스트로 대체한다
-[ ] 인증 API가 불명확한 항목은 mock 또는 placeholder로 격리하되, `docs/api-spec.md`의 `/api/auth/login?mode=admin` 계약과 충돌하지 않게 둔다
+[x] feature12에서는 accessToken/refreshToken 저장, refresh, logout 실제 처리를 구현하지 않고 feature13 인증 백엔드 연결 범위로 남긴다
+[x] feature12 mock 흐름에서도 `docs/api-spec.md`의 Bearer token 기반 세션 계약과 충돌하는 cookie 기반 인증 가정을 추가하지 않는다
+[x] Onboarding 관련 route/page/component/test가 이미 존재하면 제거 또는 비활성화하고, 새 흐름 회귀 테스트로 대체한다
+[x] 인증 API가 불명확한 항목은 mock 또는 placeholder로 격리하되, `docs/api-spec.md`의 `/api/auth/login?mode=admin` 계약과 충돌하지 않게 둔다
 
 # feature13: Auth 백엔드 연결 전환
 

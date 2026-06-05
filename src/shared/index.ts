@@ -7,3 +7,4 @@ export { default as BaseToast } from './ui/BaseToast.vue';
 export { default as BaseTooltip } from './ui/BaseTooltip.vue';
 export { default as EmptyState } from './ui/EmptyState.vue';
 export { default as ErrorRetryState } from './ui/ErrorRetryState.vue';
+export * from './assets';

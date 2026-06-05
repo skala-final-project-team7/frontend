@@ -7,6 +7,7 @@
  * 변경사항 내역 (날짜, 변경목적, 변경내용 순)
  *   - 2026-05-18, feature3 구현, 루트 Chat 라우트 추가
  *   - 2026-05-21, feature9 보강, 대화 상세 route /chat/:conversationId 추가
+ *   - 2026-06-05, feature12 구현, Landing/Login/Auth mock 라우트 추가
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -15,11 +16,24 @@
  */
 import { createRouter, createWebHistory } from 'vue-router';
 
+import AdminEntryPage from '@/pages/AdminEntryPage.vue';
 import ChatPage from '@/pages/ChatPage.vue';
+import LandingPage from '@/pages/LandingPage.vue';
+import LoginPage from '@/pages/LoginPage.vue';
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
+    {
+      path: '/',
+      name: 'landing',
+      component: LandingPage,
+    },
+    {
+      path: '/login',
+      name: 'login',
+      component: LoginPage,
+    },
     {
       path: '/chat',
       name: 'chat',
@@ -29,6 +43,11 @@ const router = createRouter({
       path: '/chat/:conversationId',
       name: 'chat-conversation',
       component: ChatPage,
+    },
+    {
+      path: '/admin',
+      name: 'admin-entry',
+      component: AdminEntryPage,
     },
   ],
 });
