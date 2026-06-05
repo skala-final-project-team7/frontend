@@ -3,434 +3,536 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>LINA · Landing Concepts (Light · Scroll)</title>
+<title>LINA · Landing</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:ital,wght@0,400..700;1,400..600&family=Hanken+Grotesk:wght@300;400;500;600&family=Spline+Sans+Mono:wght@300;400;500&family=Newsreader:ital,opsz,wght@0,6..72,300..500;1,6..72,300..400&display=swap" rel="stylesheet" />
-
-<!-- GSAP + ScrollTrigger (concept prototype only — CDN) -->
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@200;300;400;500;600;700&family=Spline+Sans+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 
 <style>
 :root{
-  --primary:#F48122; --primary-soft:#FCDAAC;
-  --blue:#185CFF; --sky:#7DBBFF; --purple:#AF68E2; --indigo:#ADADFB;
-  --teal:#6BE6D3; --green:#71DD8C; --yellow:#FFCC00; --orange:#FFB55B; --red:#FF4747;
-  --ink:#1b1b1d;
+  --primary:#F48122;
+  --blue:#185CFF;--sky:#7DBBFF;--purple:#AF68E2;--indigo:#ADADFB;
+  --teal:#6BE6D3;--green:#71DD8C;--yellow:#FFCC00;--orange:#FFB55B;--red:#FF4747;
+  --ink:#1b1b1d;--font:'Hanken Grotesk',sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%}
-body{background:#e9e4dc;color:var(--ink);overflow:hidden;font-family:'Hanken Grotesk',sans-serif;-webkit-font-smoothing:antialiased}
+html,body{height:100%;overflow:hidden}
+body{background:#fff;color:var(--ink);font-family:var(--font);-webkit-font-smoothing:antialiased}
 
-/* ---------- toolbar ---------- */
-.toolbar{
-  position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:200;
-  display:flex;gap:5px;padding:6px;border-radius:999px;
-  background:rgba(24,24,28,.74);backdrop-filter:blur(14px);
-  border:1px solid rgba(255,255,255,.10);box-shadow:0 10px 34px rgba(0,0,0,.22);
-}
-.toolbar button{
-  font:600 12px/1 'Hanken Grotesk';letter-spacing:.03em;color:rgba(255,255,255,.6);
-  background:transparent;border:0;padding:9px 14px;border-radius:999px;cursor:pointer;transition:.25s;
-}
-.toolbar button:hover{color:#fff}
-.toolbar button.active{background:#fff;color:#111}
+/* toolbar */
+.toolbar{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:200;display:flex;gap:4px;padding:6px;
+  border-radius:999px;background:rgba(22,22,26,.76);backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.10);box-shadow:0 10px 34px rgba(0,0,0,.22)}
+.toolbar button{font:600 12px/1 var(--font);letter-spacing:.03em;color:rgba(255,255,255,.6);background:transparent;border:0;padding:9px 12px;border-radius:999px;cursor:pointer;transition:.22s}
+.toolbar button:hover{color:#fff}.toolbar button.active{background:#fff;color:#111}
 .toolbar .sep{width:1px;background:rgba(255,255,255,.16);margin:4px 2px}
 .toolbar .replay{color:var(--primary)}
+.toolbar .lab{font:600 10px/1 var(--font);color:rgba(255,255,255,.35);padding:0 4px;align-self:center;letter-spacing:.08em;text-transform:uppercase}
 
-/* ---------- stage / scroller / panels ---------- */
-.stage{position:fixed;inset:0;opacity:0;pointer-events:none;visibility:hidden;transition:opacity .3s}
-.stage.show{opacity:1;pointer-events:auto;visibility:visible}
-.scroller{height:100%;overflow-y:scroll;scroll-snap-type:y mandatory;scroll-behavior:smooth;scrollbar-width:none}
-.scroller::-webkit-scrollbar{display:none}
+/* snap deck */
+.deck{height:100vh;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none}
+.deck::-webkit-scrollbar{display:none}
 .panel{position:relative;height:100vh;overflow:hidden;scroll-snap-align:start;scroll-snap-stop:always}
 
-.brand-mark{position:absolute;top:24px;left:30px;display:flex;align-items:center;gap:9px;z-index:30;opacity:0}
-.brand-mark img{height:20px;width:auto;filter:drop-shadow(0 4px 10px rgba(0,0,0,.22))}
-.brand-mark span{font:600 16px/1 'Schibsted Grotesk';letter-spacing:.01em;color:var(--ink)}
+/* variant backgrounds */
+.deck[data-v="white"] .p1,.deck[data-v="white"] .p2{background:#ffffff}
+.deck[data-v="white"] .login{background:#FCFCFC}
+.deck[data-v="pure"]  .p1,.deck[data-v="pure"]  .p2{background:radial-gradient(120% 96% at 50% 14%,#ffffff 0%,#f6f4f1 60%,#efece6 100%)}
+.deck[data-v="pure"]  .login{background:#FCFCFC}
+.deck[data-v="mist"]  .p1,.deck[data-v="mist"]  .p2{background:radial-gradient(120% 96% at 50% 14%,#fdfdff 0%,#eef1f6 60%,#e4e8f0 100%)}
+.deck[data-v="mist"]  .login{background:#FCFCFC}
 
-.hero-footer{position:absolute;left:0;right:0;bottom:24px;text-align:center;
-  font:600 11px/1 'Hanken Grotesk';letter-spacing:.18em;opacity:0;z-index:30;color:rgba(0,0,0,.32)}
+/* cute-xl mode: cool gray-white */
+.deck[data-logo="cute-xl"] .p1{background:radial-gradient(140% 120% at 50% 50%,#f8f8f9 0%,#ededef 55%,#e4e4e6 100%)}
+.deck[data-logo="cute-xl"] .p1 .lina{display:none}
+.deck[data-logo="cute-xl"] .p1 .acr-wrap{display:none}
+.deck[data-logo="cute-xl"] .p1 .lina-xl{display:block}
 
+/* graph */
 .edges{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-.edges line{stroke-linecap:round}
+.edges line{stroke-linecap:round;stroke:rgba(0,0,0,.055)}
+.deck[data-v="mist"] .p1 .edges line{stroke:rgba(40,55,90,.07)}
 .nodes{position:absolute;inset:0;pointer-events:none}
-.node{position:absolute;transform:translate(-50%,-50%);will-change:transform,opacity}
-.node .dot{border-radius:50%}
-.node .label{position:absolute;left:50%;top:calc(50% + 15px);transform:translate(-50%,0);white-space:nowrap;
-  font:400 10.5px/1 'Spline Sans Mono';letter-spacing:.01em;color:rgba(0,0,0,.42);opacity:0}
+.node{position:absolute;will-change:transform}
+.node .halo{position:absolute;left:0;top:0;transform:translate(-50%,-50%);border-radius:50%;opacity:.18}
+.node .dot{position:absolute;left:0;top:0;transform:translate(-50%,-50%);border-radius:50%}
+.node .label{position:absolute;left:0;transform:translateX(-50%);white-space:nowrap;font:400 10.5px/1 'Spline Sans Mono';letter-spacing:.03em;color:rgba(0,0,0,.35)}
 
-.center{position:absolute;inset:0;display:grid;place-items:center;z-index:20}
-.center-inner{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center}
+/* brand + footer */
+.brand-mark{position:absolute;top:24px;left:30px;display:flex;align-items:center;gap:9px;z-index:30;opacity:0}
+.brand-mark img{height:20px;width:auto}
+.brand-mark img.mul{mix-blend-mode:multiply}
+.brand-mark span{font:700 16px/1 var(--font);color:var(--ink)}
+.panel-footer{position:absolute;left:0;right:0;bottom:24px;text-align:center;font:700 11px/1 var(--font);letter-spacing:.18em;opacity:0;z-index:30;color:rgba(0,0,0,.28)}
 
-.logo{will-change:transform,opacity;opacity:0}
-.logo img{display:block;width:min(44vw,420px);height:auto;
-  filter:drop-shadow(0 16px 38px rgba(0,0,0,.26)) drop-shadow(0 3px 6px rgba(0,0,0,.20))}
+/* LINA logo center — normal */
+.lina{position:absolute;left:50%;top:43%;transform:translate(-50%,-50%);z-index:20;opacity:0}
+.lina .lshadow{position:absolute;inset:-18% -8%;z-index:-1;border-radius:50%;background:radial-gradient(closest-side,rgba(54,40,20,.12),transparent 72%);filter:blur(18px)}
+.lina img{display:block;width:min(40vw,380px);height:auto}
+.lina img.shadow-crisp{filter:drop-shadow(0 16px 36px rgba(0,0,0,.20)) drop-shadow(0 3px 6px rgba(0,0,0,.14))}
 
-.acronym{display:flex;gap:0;margin-top:26px}
-.acronym .word{overflow:hidden}
-.acronym .word b{display:inline-block;will-change:transform;
-  font:400 13px/1 'Spline Sans Mono';letter-spacing:.42em;color:rgba(0,0,0,.5);text-transform:uppercase}
-.acronym .word b .lead{color:var(--primary)}
-
-.headline{position:absolute;max-width:740px;opacity:0;will-change:transform,opacity}
-.headline .accent{color:var(--primary)}
-
-/* scroll-down hint (also clickable) */
-.scrollcue{position:absolute;left:50%;bottom:8vh;transform:translateX(-50%);z-index:30;opacity:0;
-  display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;background:none;border:0;color:var(--ink)}
-.scrollcue .lbl{font:500 13px/1 'Schibsted Grotesk';letter-spacing:.06em;color:rgba(0,0,0,.55)}
-.scrollcue .chev{width:22px;height:22px}
-
-/* =================== A · PAPER =================== */
-.stage[data-c="a"] .hero{background:radial-gradient(120% 95% at 50% 10%,#faf7f2 0%,#ece6dd 56%,#e2dbd0 100%)}
-.stage[data-c="a"] .glow{position:absolute;border-radius:50%;filter:blur(90px);opacity:0;
-  width:48vw;height:48vw;left:50%;top:34%;transform:translate(-50%,-50%);
-  background:radial-gradient(circle,rgba(244,129,34,.18),transparent 62%)}
-.stage[data-c="a"] .edges line{stroke:rgba(0,0,0,.08)}
-.stage[data-c="a"] .headline{font:300 46px/1.16 'Newsreader';color:#1c1c1c}
-.stage[data-c="a"] .headline .accent{font-style:italic;font-weight:400}
-
-/* =================== B · AURORA =================== */
-.stage[data-c="b"] .hero{background:#f7f6f3}
-.stage[data-c="b"] .aurora{position:absolute;border-radius:50%;filter:blur(95px);opacity:0}
-.stage[data-c="b"] .aurora.a1{width:46vw;height:46vw;left:16%;top:16%;background:radial-gradient(circle,rgba(244,129,34,.30),transparent 60%)}
-.stage[data-c="b"] .aurora.a2{width:50vw;height:50vw;right:8%;top:28%;background:radial-gradient(circle,rgba(125,187,255,.32),transparent 60%)}
-.stage[data-c="b"] .aurora.a3{width:44vw;height:44vw;left:32%;bottom:4%;background:radial-gradient(circle,rgba(107,230,211,.26),transparent 60%)}
-.stage[data-c="b"] .edges line{stroke:rgba(0,0,0,.06)}
-.stage[data-c="b"] .vstack{position:absolute;display:flex;flex-direction:column;gap:1px;text-align:left;opacity:0}
-.stage[data-c="b"] .vstack .ln2{font:500 32px/1.06 'Schibsted Grotesk';color:#a6a6a6;letter-spacing:-.01em}
-.stage[data-c="b"] .vstack .ln2 b{color:#1a1a1a;font-weight:700}
-.stage[data-c="b"] .headline{font:500 42px/1.18 'Schibsted Grotesk';color:#1a1a1a;letter-spacing:-.01em}
-
-/* =================== C · NEURAL =================== */
-.stage[data-c="c"] .hero{background:radial-gradient(130% 100% at 50% 42%,#fbfcfe 0%,#eef1f7 56%,#e4e9f2 100%)}
-.stage[data-c="c"] .graphwrap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-  width:min(84vw,84vh);height:min(84vw,84vh);will-change:transform}
-.stage[data-c="c"] .edges line{stroke:rgba(70,100,150,.18)}
-.stage[data-c="c"] .edges line.hub{stroke:rgba(244,129,34,.4)}
-.stage[data-c="c"] .hublogo{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:25;opacity:0}
-.stage[data-c="c"] .hublogo img{width:min(19vw,200px);
-  filter:drop-shadow(0 0 34px rgba(244,129,34,.34)) drop-shadow(0 10px 24px rgba(0,0,0,.20))}
-.stage[data-c="c"] .acronym2{position:absolute;z-index:26;opacity:0}
-.stage[data-c="c"] .acronym2 div{font:400 12.5px/1.95 'Spline Sans Mono';color:rgba(0,0,0,.52);letter-spacing:.03em;white-space:nowrap}
-.stage[data-c="c"] .acronym2 div b{color:var(--primary);font-weight:500}
-.stage[data-c="c"] .headline{font:400 36px/1.2 'Schibsted Grotesk';color:#1a2233;top:calc(50% + 150px);letter-spacing:-.01em}
-.stage[data-c="c"] .headline .accent{color:var(--primary)}
-
-/* =================== LOGIN PANEL (shared) =================== */
-.login{background:radial-gradient(120% 90% at 50% 18%,#ffffff 0%,#f4f2ee 64%,#ece7df 100%);display:grid;place-items:center}
-.login-card{position:relative;width:min(92vw,420px);padding:46px 40px 30px;text-align:center;
-  background:rgba(255,255,255,.82);border:1px solid rgba(0,0,0,.06);border-radius:24px;
-  box-shadow:0 30px 80px rgba(0,0,0,.10),0 2px 8px rgba(0,0,0,.04);backdrop-filter:blur(8px);opacity:0}
-.login-card .login-logo{width:140px;height:auto;margin:0 auto 22px;display:block;
-  filter:drop-shadow(0 10px 26px rgba(0,0,0,.22)) drop-shadow(0 2px 4px rgba(0,0,0,.16))}
-.login-card h2{font:500 22px/1.3 'Schibsted Grotesk';color:#1a1a1a;letter-spacing:-.01em}
-.login-card .sub{margin-top:8px;font:400 13px/1.5 'Hanken Grotesk';color:rgba(0,0,0,.5)}
-.oauth{margin-top:24px;width:100%;display:inline-flex;align-items:center;justify-content:center;gap:8px;
-  background:var(--primary);color:#fff;border:0;border-radius:12px;padding:14px;cursor:pointer;
-  font:600 14px/1 'Schibsted Grotesk';box-shadow:0 12px 26px rgba(244,129,34,.30);transition:.25s}
-.oauth:hover{filter:brightness(.96);transform:translateY(-1px)}
-.roles{margin-top:14px;display:flex;gap:8px}
-.roles .role{flex:1;padding:11px;border-radius:10px;cursor:pointer;background:#fff;
-  border:1px solid rgba(0,0,0,.12);font:500 13px/1 'Hanken Grotesk';color:rgba(0,0,0,.6);transition:.2s}
-.roles .role:hover{border-color:rgba(0,0,0,.28)}
-.roles .role.active{border-color:var(--primary);color:var(--primary);background:#fff7ef;box-shadow:0 0 0 1px var(--primary) inset}
-.login-card .terms{margin-top:20px;font:400 11px/1.6 'Hanken Grotesk';color:rgba(0,0,0,.4)}
-.login-card .terms a{color:rgba(0,0,0,.6);text-decoration:underline;cursor:pointer}
-.login-footer{position:absolute;left:0;right:0;bottom:24px;text-align:center;
-  font:600 11px/1 'Hanken Grotesk';letter-spacing:.18em;color:rgba(0,0,0,.32)}
-.login-back{position:absolute;top:26px;left:30px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;
-  background:none;border:0;font:500 13px/1 'Schibsted Grotesk';color:rgba(0,0,0,.5)}
-
-@media (max-width:640px){
-  .logo img{width:60vw}
-  .stage[data-c="a"] .headline,.stage[data-c="b"] .headline{font-size:30px}
-  .stage[data-c="c"] .headline{font-size:23px}
-  .stage[data-c="b"] .vstack .ln2{font-size:23px}
+/* LINA logo — XL fullscreen */
+.lina-xl{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  z-index:20;opacity:0;
+  width:min(94vw,1060px);
+  display:none;
 }
+.lina-xl img{display:block;width:100%;height:auto}
+
+/* subtitle: overlaid on logo image, vertically centered on the letters */
+/* image aspect 941/1672 = 56.3% → letter midpoint ≈ 52% down image */
+.acr-xl{
+  display:none;
+  position:absolute;
+  left:0;right:0;
+  top:52%;          /* ≈ vertical center of the letter glyphs */
+  transform:translateY(-50%);
+  pointer-events:none;
+  height:0;         /* zero height so it doesn't push layout */
+}
+.deck[data-logo="cute-xl"] .p1 .acr-xl{display:block}
+.acr-xl .word{
+  position:absolute;transform:translateX(-50%);
+  font:300 11px/1 'Spline Sans Mono';letter-spacing:.28em;text-transform:uppercase;
+  color:rgba(0,0,0,.5);white-space:nowrap;overflow:hidden;height:0;opacity:0;
+  will-change:height,opacity;
+}
+.acr-xl .wl{left:12%}
+.acr-xl .wi{left:37%}
+.acr-xl .wn{left:62%}
+.acr-xl .wa{left:87%}
+
+/* ── ACRONYM AREA (shared container for all 3 variants) ── */
+.acr-wrap{position:absolute;left:50%;top:62%;transform:translate(-50%,-50%);z-index:20;text-align:center}
+
+/* variant A — leads appear then words expand right */
+.acr-a{display:flex;gap:0;white-space:nowrap;align-items:baseline}
+.acr-a .unit{display:flex;align-items:baseline;overflow:hidden}
+.acr-a .lead-ch{font:700 22px/1 'Spline Sans Mono';color:var(--primary);letter-spacing:.02em;opacity:0}
+.acr-a .tail{overflow:hidden;max-width:0;white-space:nowrap;will-change:max-width}
+.acr-a .tail span{font:400 13px/1 'Spline Sans Mono';letter-spacing:.34em;color:rgba(0,0,0,.48);text-transform:uppercase;padding-right:.08em}
+.acr-a .spacer{display:inline-block;width:16px}
+
+/* variant B — full words, very slow stagger rise */
+.acr-b{display:flex;gap:0;white-space:nowrap}
+.acr-b .word{overflow:hidden}
+.acr-b .word b{display:inline-block;will-change:transform;font:400 13px/1 'Spline Sans Mono';letter-spacing:.42em;color:rgba(0,0,0,.5);text-transform:uppercase}
+.acr-b .word b .lead{color:var(--primary)}
+
+/* variant C — stacked: L I N A large, then full word below each */
+.acr-c{display:flex;gap:20px;align-items:flex-start}
+.acr-c .col{display:flex;flex-direction:column;align-items:center;gap:8px}
+.acr-c .big{font:600 28px/1 'Spline Sans Mono';color:var(--primary);opacity:0}
+.acr-c .rest{font:300 10px/1.5 'Spline Sans Mono';letter-spacing:.22em;color:rgba(0,0,0,.44);text-transform:uppercase;overflow:hidden;max-height:0;white-space:nowrap}
+
+/* panel 2 */
+.lina-sm{position:absolute;left:50%;top:22%;transform:translate(-50%,-50%);z-index:20;opacity:0}
+.lina-sm img{display:block;width:min(20vw,170px);height:auto}
+.lina-sm img.mul{mix-blend-mode:multiply}
+.lina-sm img.shadow-crisp{filter:drop-shadow(0 8px 20px rgba(0,0,0,.15))}
+.headblock{position:absolute;left:50%;top:56%;transform:translate(-50%,-50%);z-index:20;width:920px;max-width:92vw;text-align:center}
+.eyebrow{font:500 12px/1 'Spline Sans Mono';letter-spacing:.42em;color:var(--primary);text-transform:uppercase;opacity:0}
+.headline{margin-top:20px;font:300 54px/1.16 var(--font);letter-spacing:-.02em;color:#16161a}
+.headline .w{display:inline-block;will-change:transform,opacity}
+.headline .av{position:relative;display:inline-block}
+.headline .accent{color:var(--primary);font-weight:400}
+.headline .ul{position:absolute;left:0;right:0;bottom:.04em;height:2px;background:var(--primary);border-radius:2px;transform:scaleX(0);transform-origin:left;opacity:.9}
+.subline{margin-top:22px;font:300 17px/1.5 var(--font);color:rgba(0,0,0,.5);opacity:0}
+
+.scrollcue{position:absolute;left:50%;bottom:6vh;transform:translateX(-50%);z-index:30;opacity:0;display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;background:none;border:0;color:var(--ink)}
+.scrollcue .lbl{font:500 12px/1 var(--font);letter-spacing:.14em;color:rgba(0,0,0,.42);text-transform:uppercase}
+.scrollcue .chev{width:20px;height:20px}
+
+/* login */
+.login .edges line{stroke:rgba(0,0,0,.05)}
+.login .node .dot{opacity:.48}
+.login-head{position:absolute;top:24px;left:32px;display:flex;align-items:center;gap:10px;z-index:5}
+.login-head img{width:34px;height:34px;object-fit:contain}
+.login-head span{font:700 20px/1 var(--font);color:var(--ink)}
+.login-body{position:relative;z-index:5;max-width:680px;margin:0 auto;height:100%;display:flex;flex-direction:column;align-items:center;text-align:center;padding:16vh 24px 0}
+.login-body h1{font:700 22px/1.3 var(--font);color:#111}
+.login-body .l1{margin-top:28px;font:300 22px/1.4 var(--font);color:rgba(0,0,0,.82)}
+.login-body .l2{margin-top:20px;font:400 14px/1.5 var(--font);color:rgba(0,0,0,.42);max-width:560px}
+.confluence-btn{margin-top:30px;width:100%;max-width:436px;min-height:64px;display:inline-flex;align-items:center;justify-content:center;gap:30px;background:#FEFEFE;border:1px solid #E6E6E6;border-radius:18px;cursor:pointer;font:400 19px/1 var(--font);color:rgba(0,0,0,.8);transition:.2s;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+.confluence-btn:hover{filter:brightness(1.03);box-shadow:0 8px 22px rgba(0,0,0,.07)}
+.confluence-btn img{width:30px;height:30px;object-fit:contain}
+.legal{margin-top:18px;display:flex;align-items:center;gap:18px;font:400 14px/1 var(--font);color:rgba(0,0,0,.4)}
+.legal a{cursor:pointer}.legal a:hover{color:rgba(0,0,0,.75)}
+.roles{margin-top:30px;width:100%;max-width:560px;display:grid;grid-template-columns:1fr 1fr;gap:12px;opacity:0;transform:translateY(10px);pointer-events:none}
+.roles.show{opacity:1;transform:none;pointer-events:auto;transition:.4s}
+.role{display:flex;flex-direction:column;align-items:flex-start;text-align:left;min-height:130px;background:#FEFEFE;border:1px solid #E6E6E6;border-radius:18px;padding:18px;cursor:pointer;box-shadow:0 10px 26px rgba(0,0,0,.06);transition:.2s}
+.role:hover{filter:brightness(1.02);box-shadow:0 14px 32px rgba(0,0,0,.10);transform:translateY(-2px)}
+.role .ic{width:22px;height:22px;color:var(--primary);margin-bottom:14px}
+.role .rl{font:700 14px/1.2 var(--font);color:rgba(0,0,0,.8)}
+.role .rd{margin-top:8px;font:400 12px/1.5 var(--font);color:rgba(0,0,0,.42)}
+.role-note{margin-top:16px;max-width:560px;font:400 12px/1.5 var(--font);color:rgba(0,0,0,.4);opacity:0}
+.role-note.show{opacity:1;transition:.4s}
+.login-footer{position:absolute;left:0;right:0;bottom:30px;text-align:center;z-index:5;font:700 11px/1 var(--font);letter-spacing:.16em;color:rgba(0,0,0,.32)}
+
+@media(max-width:640px){.lina img{width:58vw}.headline{font-size:32px}.roles{grid-template-columns:1fr}.login-body .l1{font-size:18px}.node .label{display:none}.acr-c{gap:12px}}
 </style>
 </head>
 <body>
 
 <div class="toolbar">
-  <button data-go="a" class="active">A · Paper</button>
-  <button data-go="b">B · Aurora</button>
-  <button data-go="c">C · Neural</button>
+  <span class="lab">배경</span>
+  <button data-v="white" class="active">White</button>
+  <button data-v="pure">Pure</button>
+  <button data-v="mist">Mist</button>
+  <span class="sep"></span>
+  <span class="lab">로고</span>
+  <button data-logo="bg" class="active">Frosted</button>
+  <button data-logo="cute">Cute4</button>
+  <button data-logo="cute-xl">Cute XL</button>
+  <span class="sep"></span>
+  <span class="lab">Acronym</span>
+  <button data-acr="a" class="active">A · Expand</button>
+  <button data-acr="b">B · Rise</button>
+  <button data-acr="c">C · Stack</button>
   <span class="sep"></span>
   <button class="replay" data-replay>↻ Replay</button>
-  <span class="sep"></span>
-  <button data-logo="1">ver1</button>
-  <button data-logo="2">ver2</button>
-  <button data-logo="3" class="active">ver3</button>
 </div>
 
-<!-- shared login panel template -->
-<template id="loginTpl">
-  <section class="panel login">
-    <button class="login-back">← back</button>
-    <div class="login-card">
-      <img class="login-logo" src="frontend/assets/logo-lina-ver3.png" alt="LINA" />
-      <h2>Sign in to continue</h2>
-      <p class="sub">사내 지식을 자연어로 검색하고, 출처와 함께 확인하세요.</p>
-      <button class="oauth">Continue with Confluence <span>→</span></button>
-      <div class="roles">
-        <button class="role active">일반 사용자</button>
-        <button class="role">관리자</button>
+<div class="deck" data-v="white">
+
+  <!-- PANEL 1 -->
+  <section class="panel p1">
+    <svg class="edges"></svg><div class="nodes"></div>
+    <div class="brand-mark"><img src="frontend/assets/logo-lina-ver3.png" class="shadow-crisp" alt=""><span>LINA</span></div>
+    <div class="lina"><span class="lshadow"></span><img src="frontend/assets/logo-lina-ver3.png" class="shadow-crisp" alt="LINA"></div>
+
+    <!-- XL fullscreen cute logo + inline subtitle -->
+    <div class="lina-xl">
+      <img src="frontend/assets/logo-lina-cute_files/logo-lina-cute4.png" alt="LINA">
+      <div class="acr-xl">
+        <span class="word wl">inked</span>
+        <span class="word wi">ntelligence</span>
+        <span class="word wn">avigation</span>
+        <span class="word wa">gent</span>
       </div>
-      <p class="terms">계속하면 <a>이용약관</a> 및 <a>개인정보처리방침</a>에 동의합니다.</p>
+    </div>
+
+    <!-- acronym variant A -->
+    <div class="acr-wrap" data-acr-panel="a">
+      <div class="acr-a">
+        <div class="unit"><span class="lead-ch">L</span><span class="tail"><span>inked</span></span><span class="spacer"></span></div>
+        <div class="unit"><span class="lead-ch">I</span><span class="tail"><span>ntelligence</span></span><span class="spacer"></span></div>
+        <div class="unit"><span class="lead-ch">N</span><span class="tail"><span>avigation</span></span><span class="spacer"></span></div>
+        <div class="unit"><span class="lead-ch">A</span><span class="tail"><span>gent</span></span></div>
+      </div>
+    </div>
+
+    <!-- acronym variant B -->
+    <div class="acr-wrap" data-acr-panel="b" style="display:none">
+      <div class="acr-b">
+        <div class="word"><b><span class="lead">L</span>inked&nbsp;</b></div>
+        <div class="word"><b><span class="lead">I</span>ntelligence&nbsp;</b></div>
+        <div class="word"><b><span class="lead">N</span>avigation&nbsp;</b></div>
+        <div class="word"><b><span class="lead">A</span>gent</b></div>
+      </div>
+    </div>
+
+    <!-- acronym variant C -->
+    <div class="acr-wrap" data-acr-panel="c" style="display:none">
+      <div class="acr-c">
+        <div class="col"><div class="big">L</div><div class="rest">inked</div></div>
+        <div class="col"><div class="big">I</div><div class="rest">ntelligence</div></div>
+        <div class="col"><div class="big">N</div><div class="rest">avigation</div></div>
+        <div class="col"><div class="big">A</div><div class="rest">gent</div></div>
+      </div>
+    </div>
+
+    <button class="scrollcue" data-next="1"><span class="lbl">scroll</span>
+      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 9l6 6 6-6"/></svg></button>
+    <div class="panel-footer">©2026 LINA | SKALA</div>
+  </section>
+
+  <!-- PANEL 2 -->
+  <section class="panel p2">
+    <svg class="edges"></svg><div class="nodes"></div>
+    <div class="brand-mark"><img src="frontend/assets/logo-lina-ver3.png" class="shadow-crisp" alt=""><span>LINA</span></div>
+    <div class="lina-sm"><img src="frontend/assets/logo-lina-ver3.png" class="shadow-crisp" alt="LINA"></div>
+    <div class="headblock">
+      <div class="eyebrow">Ask · Search · Verify</div>
+      <h1 class="headline">
+        <span class="w">Ask,</span> <span class="w">search,</span> <span class="w">and</span>
+        <span class="w av"><span class="accent">verify</span><i class="ul"></i></span>
+        <span class="w">knowledge</span> <span class="w">across</span> <span class="w">your</span> <span class="w">workspace.</span>
+      </h1>
+      <p class="subline">Confluence 문서를 자연어로 검색하고, 답변과 출처를 함께 확인하세요.</p>
+    </div>
+    <button class="scrollcue" data-next="2"><span class="lbl">continue</span>
+      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 9l6 6 6-6"/></svg></button>
+    <div class="panel-footer">©2026 LINA | SKALA</div>
+  </section>
+
+  <!-- PANEL 3 login -->
+  <section class="panel login">
+    <svg class="edges" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
+    <div class="nodes"></div>
+    <header class="login-head"><img src="frontend/assets/mascot.png" alt=""><span>LINA</span></header>
+    <div class="login-body">
+      <h1>Log in</h1>
+      <p class="l1">LINA.ai와 함께 Confluence 안의 지식을 빠르게 찾아보세요.</p>
+      <p class="l2">Confluence 문서를 기반으로 필요한 정보를 검색하고, 답변과 출처를 함께 확인할 수 있습니다.</p>
+      <button class="confluence-btn"><img src="frontend/assets/confluence-icon.png" alt=""><span>Continue with Confluence</span></button>
+      <nav class="legal"><a>Terms of Use</a><span>|</span><a>Privacy Policy</a></nav>
+      <div class="roles">
+        <button class="role" data-to="/chat">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
+          <span class="rl">일반 사용자</span><span class="rd">Confluence 지식 검색과 답변 확인을 위해 Chat 화면으로 이동합니다.</span>
+        </button>
+        <button class="role" data-to="/admin">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>
+          <span class="rl">관리자</span><span class="rd">조직 데이터 수집과 동기화 관리를 위해 Admin 화면으로 이동합니다.</span>
+        </button>
+      </div>
+      <p class="role-note">선택한 역할은 로그인 의도이며 최종 권한은 인증 완료 후 서버에서 확인됩니다.</p>
     </div>
     <div class="login-footer">©2026 LINA | SKALA</div>
   </section>
-</template>
-
-<!-- ============ STAGE A · PAPER ============ -->
-<section class="stage show" data-c="a">
-  <div class="scroller">
-    <section class="panel hero">
-      <div class="glow"></div>
-      <svg class="edges"></svg><div class="nodes"></div>
-      <div class="brand-mark"><img src="frontend/assets/logo-lina-ver3.png" alt=""><span>LINA</span></div>
-      <div class="center"><div class="center-inner">
-        <div class="logo"><img src="frontend/assets/logo-lina-ver3.png" alt="LINA"></div>
-        <div class="acronym">
-          <div class="word"><b><span class="lead">L</span>inked&nbsp;</b></div>
-          <div class="word"><b><span class="lead">I</span>ntelligence&nbsp;</b></div>
-          <div class="word"><b><span class="lead">N</span>avigation&nbsp;</b></div>
-          <div class="word"><b><span class="lead">A</span>gent</b></div>
-        </div>
-        <h1 class="headline">Ask, search, and <span class="accent">verify</span> knowledge across your workspace.</h1>
-      </div></div>
-      <button class="scrollcue"><span class="lbl">scroll</span>
-        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 9l6 6 6-6"/></svg></button>
-      <div class="hero-footer">©2026 LINA | SKALA</div>
-    </section>
-  </div>
-</section>
-
-<!-- ============ STAGE B · AURORA ============ -->
-<section class="stage" data-c="b">
-  <div class="scroller">
-    <section class="panel hero">
-      <div class="aurora a1"></div><div class="aurora a2"></div><div class="aurora a3"></div>
-      <svg class="edges"></svg><div class="nodes"></div>
-      <div class="brand-mark"><img src="frontend/assets/logo-lina-ver3.png" alt=""><span>LINA</span></div>
-      <div class="center"><div class="center-inner">
-        <div class="logo"><img src="frontend/assets/logo-lina-ver3.png" alt="LINA"></div>
-        <div class="vstack">
-          <div class="ln2"><b>L</b>inked</div><div class="ln2"><b>I</b>ntelligence</div>
-          <div class="ln2"><b>N</b>avigation</div><div class="ln2"><b>A</b>gent</div>
-        </div>
-        <h1 class="headline">Ask, search, and verify <span class="accent">knowledge</span> across your workspace.</h1>
-      </div></div>
-      <button class="scrollcue"><span class="lbl">scroll</span>
-        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 9l6 6 6-6"/></svg></button>
-      <div class="hero-footer">©2026 LINA | SKALA</div>
-    </section>
-  </div>
-</section>
-
-<!-- ============ STAGE C · NEURAL ============ -->
-<section class="stage" data-c="c">
-  <div class="scroller">
-    <section class="panel hero">
-      <div class="graphwrap"><svg class="edges" viewBox="0 0 100 100" preserveAspectRatio="none"></svg><div class="nodes"></div></div>
-      <div class="hublogo"><img src="frontend/assets/logo-lina-ver3.png" alt="LINA"></div>
-      <div class="acronym2"><div><b>L</b>inked</div><div><b>I</b>ntelligence</div><div><b>N</b>avigation</div><div><b>A</b>gent</div></div>
-      <div class="brand-mark"><img src="frontend/assets/logo-lina-ver3.png" alt=""><span>LINA</span></div>
-      <div class="center"><div class="center-inner">
-        <h1 class="headline">Linked <span class="accent">intelligence</span> across your knowledge.</h1>
-      </div></div>
-      <button class="scrollcue"><span class="lbl">scroll</span>
-        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 9l6 6 6-6"/></svg></button>
-      <div class="hero-footer">©2026 LINA | SKALA</div>
-    </section>
-  </div>
-</section>
+</div>
 
 <script>
-gsap.registerPlugin(ScrollTrigger);
-const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-const LABELS=['Confluence','Jira','Figma','Project Wiki','Documentation','Templates',
-  'Storybook','Operations','Analytics','Style Guide','Accessibility','Sprint Board'];
+const LABELS=['Confluence','Jira','Figma','Project Wiki','Documentation','Templates','Storybook','Operations','Analytics','Style Guide','Accessibility','Sprint Board'];
 const COLORS=['--blue','--sky','--purple','--indigo','--teal','--green','--yellow','--orange','--red','--primary'];
 const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
-const SCATTER=[[50,16],[68,24],[33,26],[80,40],[20,44],[60,42],[40,46],[85,62],[16,66],[72,70],[34,72],[55,80]];
+/* positions: semi-organic scatter around center */
+const SCATTER=[[50,15],[70,23],[31,25],[82,38],[18,43],[62,40],[39,47],[86,60],[14,64],[74,69],[33,73],[57,80]];
+const ZS=[.7,1,.62,.85,.55,.95,.7,.8,.58,.88,.66,.92];
+/* hub links (all → center) + cross links */
+const HUB={x:50,y:43};
+const CROSS=[[0,1],[2,4],[3,5],[6,9],[8,10],[7,11],[1,3],[0,5],[2,6],[9,11]];
+const ns='http://www.w3.org/2000/svg';
+const hexA=(c,a)=>c+a;
+const deck=document.querySelector('.deck');
+const panels=[...deck.querySelectorAll('.panel')];
+const p1=panels[0],p2=panels[1],login=panels[2];
 
-/* inject shared login panel into every scroller */
-const loginTpl=document.getElementById('loginTpl');
-document.querySelectorAll('.scroller').forEach(sc=>sc.appendChild(loginTpl.content.cloneNode(true)));
-
-function buildGraph(stage,opts){
-  const nodesEl=stage.querySelector('.hero .nodes'), svg=stage.querySelector('.hero .edges');
+/* ── Graph builder for p1 (floating, no hover) ── */
+function buildP1Graph(){
+  const nodesEl=p1.querySelector('.nodes'), svg=p1.querySelector('.edges');
   nodesEl.innerHTML='';svg.innerHTML='';
-  const ns='http://www.w3.org/2000/svg', useVB=opts.viewbox;
-  const hub={x:50,y:useVB?50:48};
-  const nodes=SCATTER.map((p,i)=>({x:p[0],y:p[1],label:LABELS[i],color:css(COLORS[i%COLORS.length])}));
-  const links=nodes.map(n=>({a:hub,b:n,hub:true}));
-  [[0,1],[2,4],[3,5],[6,9],[8,10],[7,11],[1,3]].forEach(([a,b])=>links.push({a:nodes[a],b:nodes[b],hub:false}));
-  const lineEls=links.map(L=>{
+  const nodes=SCATTER.map((p,i)=>({x:p[0],y:p[1],z:ZS[i],color:css(COLORS[i%COLORS.length]),label:LABELS[i]}));
+  /* hub rays + cross links */
+  const allLinks=[...nodes.map((n,i)=>({a:HUB,b:n,type:'hub',color:n.color})),
+                  ...CROSS.map(([a,b])=>({a:nodes[a],b:nodes[b],type:'cross'}))];
+  const lineEls=allLinks.map(L=>{
     const ln=document.createElementNS(ns,'line');
-    if(L.hub)ln.classList.add('hub');
-    if(useVB){ln.setAttribute('x1',L.a.x);ln.setAttribute('y1',L.a.y);ln.setAttribute('x2',L.b.x);ln.setAttribute('y2',L.b.y);ln.setAttribute('stroke-width',L.hub?.5:.35);}
+    if(L.type==='hub') ln.setAttribute('stroke',hexA(L.color,'28'));
     svg.appendChild(ln);return{el:ln,L};
   });
+
   const nodeEls=nodes.map((n,i)=>{
-    const el=document.createElement('div');el.className='node';el.style.left=n.x+'%';el.style.top=n.y+'%';
-    const size=opts.labeled?15:(7+(i%4)*4), op=opts.nodeOpacity!=null?opts.nodeOpacity:1;
-    el.innerHTML=`<div class="dot" style="width:${size}px;height:${size}px;opacity:${op};
-      background:radial-gradient(circle at 35% 30%,#fff,${n.color});box-shadow:0 2px ${opts.labeled?16:12}px ${n.color}3a"></div>`+
-      (opts.labeled?`<div class="label">${n.label}</div>`:'');
+    const el=document.createElement('div');el.className='node';
+    el.style.cssText=`left:${n.x}%;top:${n.y}%;position:absolute`;
+    const size=5+n.z*9, halo=size*4.5, op=(.28+n.z*.62).toFixed(2), blur=((1-n.z)*1.4).toFixed(1);
+    el.innerHTML=`<span class="halo" style="width:${halo}px;height:${halo}px;filter:blur(5px);background:radial-gradient(circle,${n.color},transparent 66%);opacity:${(.16+n.z*.12).toFixed(2)}"></span>
+      <span class="dot" style="width:${size}px;height:${size}px;background:radial-gradient(circle at 35% 30%,#fff,${n.color});box-shadow:0 1px 9px ${hexA(n.color,'50')};opacity:${op};filter:blur(${blur}px)"></span>
+      <span class="label" style="top:${size/2+11}px;opacity:${(.22+n.z*.42).toFixed(2)};filter:blur(${blur}px)">${n.label}</span>`;
     nodesEl.appendChild(el);n.el=el;return n;
   });
+
+  /* rAF line tracker */
   let raf;
-  function follow(){
-    const box=svg.getBoundingClientRect();
-    lineEls.forEach(({el,L})=>{const pa=pt(L.a),pb=pt(L.b);
-      el.setAttribute('x1',pa.x);el.setAttribute('y1',pa.y);el.setAttribute('x2',pb.x);el.setAttribute('y2',pb.y);
-      el.setAttribute('stroke-width',L.hub?1:.6);});
-    function pt(node){if(node===hub)return{x:box.width*hub.x/100,y:box.height*hub.y/100};
-      const r=node.el.getBoundingClientRect();return{x:r.left+r.width/2-box.left,y:r.top+r.height/2-box.top};}
-    raf=requestAnimationFrame(follow);
+  const ctr=n=>{
+    if(n===HUB){const b=svg.getBoundingClientRect();return{x:b.width*HUB.x/100,y:b.height*HUB.y/100};}
+    const dot=n.el.querySelector('.dot'), r=dot.getBoundingClientRect(), b=svg.getBoundingClientRect();
+    return{x:r.left+r.width/2-b.left,y:r.top+r.height/2-b.top};
+  };
+  (function frame(){
+    lineEls.forEach(({el,L})=>{
+      try{const pa=ctr(L.a),pb=ctr(L.b);
+        el.setAttribute('x1',pa.x);el.setAttribute('y1',pa.y);el.setAttribute('x2',pb.x);el.setAttribute('y2',pb.y);
+        el.setAttribute('stroke-width',L.type==='hub'?.8:.4);}catch(e){}
+    });
+    raf=requestAnimationFrame(frame);
+  })();
+
+  /* gentle ambient float — no hover interaction */
+  nodeEls.forEach((n,i)=>{
+    gsap.to(n.el,{x:gsap.utils.random(-14,14),y:gsap.utils.random(-12,12),
+      duration:gsap.utils.random(5,9),repeat:-1,yoyo:true,ease:'sine.inOut',delay:i*.14});
+    gsap.to(n.el.querySelector('.halo'),{scale:1.3,opacity:'+= .07',
+      duration:gsap.utils.random(2.4,3.8),repeat:-1,yoyo:true,ease:'sine.inOut',delay:i*.1});
+  });
+  return{nodeEls,stop:()=>cancelAnimationFrame(raf)};
+}
+
+/* faint graph for p2 + login */
+function buildFaintGraph(panel){
+  const nodesEl=panel.querySelector('.nodes'), svg=panel.querySelector('.edges');
+  nodesEl.innerHTML='';svg.innerHTML='';
+  const vb=svg.hasAttribute('viewBox');
+  const nodes=SCATTER.map((p,i)=>({x:p[0],y:vb?28+p[i<6?1:0]*0.64:p[1],color:css(COLORS[i%COLORS.length])}));
+  const lhub=vb?{x:50,y:60}:{x:50,y:43};
+  const links=[...nodes.map(n=>({a:lhub,b:n})),...CROSS.map(([a,b])=>({a:nodes[a],b:nodes[b]}))];
+  const lels=links.map(L=>{const ln=document.createElementNS(ns,'line');
+    if(vb){ln.setAttribute('x1',L.a.x);ln.setAttribute('y1',L.a.y);ln.setAttribute('x2',L.b.x);ln.setAttribute('y2',L.b.y);}
+    ln.setAttribute('stroke-width',.4);svg.appendChild(ln);return{el:ln,L};
+  });
+  const nodeEls=nodes.map((n,i)=>{const el=document.createElement('div');el.className='node';
+    el.style.cssText=`left:${n.x}%;top:${n.y}%;position:absolute`;
+    const s=vb?8+(i%4)*5:5+(i%4)*3.5,h=s*3.8;
+    el.innerHTML=`<span class="halo" style="width:${h}px;height:${h}px;filter:blur(6px);background:radial-gradient(circle,${n.color},transparent 66%)"></span>
+      <span class="dot" style="width:${s}px;height:${s}px;background:radial-gradient(circle at 35% 30%,#fff,${n.color});box-shadow:0 2px 12px ${hexA(n.color,'28')};opacity:.48"></span>`;
+    nodesEl.appendChild(el);n.el=el;return n;
+  });
+  if(!vb){let raf;(function follow(){
+    const b=svg.getBoundingClientRect();
+    const c=n=>n===lhub?{x:b.width*lhub.x/100,y:b.height*lhub.y/100}:(()=>{const r=n.el.querySelector('.dot').getBoundingClientRect();return{x:r.left+r.width/2-b.left,y:r.top+r.height/2-b.top};})();
+    lels.forEach(({el,L})=>{const pa=c(L.a),pb=c(L.b);el.setAttribute('x1',pa.x);el.setAttribute('y1',pa.y);el.setAttribute('x2',pb.x);el.setAttribute('y2',pb.y);});
+    raf=requestAnimationFrame(follow);})();}
+  nodeEls.forEach((n,i)=>gsap.to(n.el,{x:gsap.utils.random(-8,8),y:gsap.utils.random(-7,7),duration:gsap.utils.random(5,8),repeat:-1,yoyo:true,ease:'sine.inOut',delay:i*.12}));
+}
+
+let g1=buildP1Graph();
+buildFaintGraph(p2);
+buildFaintGraph(login);
+
+/* ── Acronym animations ── */
+let activeAcr='a';
+function hideAllAcr(){p1.querySelectorAll('.acr-wrap').forEach(w=>w.style.display='none');}
+function showAcr(v){hideAllAcr();const w=p1.querySelector(`[data-acr-panel="${v}"]`);if(w)w.style.display='';}
+
+function animAcrA(panel){
+  showAcr('a');
+  const leads=panel.querySelectorAll('.acr-a .lead-ch');
+  const tails=panel.querySelectorAll('.acr-a .tail');
+  gsap.set(leads,{opacity:0,y:18});
+  tails.forEach(t=>t.style.maxWidth='0px');
+  const tl=gsap.timeline();
+  tl.to(leads,{opacity:1,y:0,duration:.55,stagger:.18,ease:'power2.out'},.2)
+    .to(Array.from(tails),{maxWidth:'200px',duration:.9,stagger:.18,ease:'power3.out'},'-=.6');
+  return tl;
+}
+function animAcrB(panel){
+  showAcr('b');
+  const words=panel.querySelectorAll('.acr-b .word b');
+  gsap.set(words,{yPercent:120});
+  return gsap.to(words,{yPercent:0,duration:1.4,stagger:.28,ease:'power3.out'});
+}
+function animAcrC(panel){
+  showAcr('c');
+  const bigs=panel.querySelectorAll('.acr-c .big');
+  const rests=panel.querySelectorAll('.acr-c .rest');
+  gsap.set(bigs,{opacity:0,y:12});
+  rests.forEach(r=>{r.style.maxHeight='0';r.style.opacity='0';});
+  const tl=gsap.timeline();
+  tl.to(bigs,{opacity:1,y:0,duration:.6,stagger:.14,ease:'back.out(1.4)'},.2)
+    .to(Array.from(rests),{maxHeight:'32px',opacity:.85,duration:.7,stagger:.14,ease:'power2.out'},'-=.5');
+  return tl;
+}
+const ACR_FNS={a:animAcrA,b:animAcrB,c:animAcrC};
+
+/* ── Panel entrance animations ── */
+function animXL(){
+  const linaXL=p1.querySelector('.lina-xl');
+  const words=p1.querySelectorAll('.acr-xl .word');
+  gsap.set(words,{height:0,opacity:0});
+  const tl=gsap.timeline({defaults:{ease:'power3.out'}});
+  tl.fromTo(linaXL,{opacity:0,scale:.97},{opacity:1,scale:1,duration:1.3,ease:'power2.out'},0)
+    .to(Array.from(words),{height:'1.2em',opacity:1,duration:.5,stagger:.18,ease:'power2.out'},'1.0')
+    .to(p1.querySelector('.brand-mark'),{opacity:1,duration:.5},'-=.4')
+    .to(p1.querySelector('.scrollcue'),{opacity:1,duration:.5},'<')
+    .to(p1.querySelector('.panel-footer'),{opacity:1,duration:.5},'<');
+}
+
+function animP1(){
+  g1.stop();p1.querySelector('.nodes').innerHTML='';p1.querySelector('.edges').innerHTML='';
+  g1=buildP1Graph();
+  const isXL=deck.dataset.logo==='cute-xl';
+  const tl=gsap.timeline({defaults:{ease:'power3.out'}});
+  gsap.set(p1.querySelectorAll('.node .dot,.node .halo'),{opacity:0,scale:0});
+  tl.to(p1.querySelectorAll('.node .dot'),{opacity:(i,t)=>parseFloat(t.style.opacity)||.55,scale:1,duration:.9,stagger:{each:.04,from:'random'},ease:'back.out(1.3)'})
+    .to(p1.querySelectorAll('.node .halo'),{opacity:(i,t)=>parseFloat(t.style.opacity)||.18,scale:1,duration:.8,stagger:{each:.04,from:'random'},ease:'back.out(1.3)'},'<')
+    .to(p1.querySelectorAll('.edges line'),{opacity:1,duration:1},.3);
+  if(isXL){
+    tl.add(animXL,0);
+  } else {
+    tl.fromTo(p1.querySelector('.lina'),{opacity:0,scale:.88,filter:'blur(8px)'},{opacity:1,scale:1,filter:'blur(0px)',duration:1.1,ease:'power2.out'},.4);
+    tl.add(ACR_FNS[activeAcr](p1),'-=.3');
+    tl.to(p1.querySelector('.brand-mark'),{opacity:1,duration:.5},'-=.5')
+      .to(p1.querySelector('.scrollcue'),{opacity:1,duration:.5},'<')
+      .to(p1.querySelector('.panel-footer'),{opacity:1,duration:.5},'<');
   }
-  if(!useVB)follow();
-  return{nodeEls,lineEls,stop:()=>cancelAnimationFrame(raf)};
+  gsap.to(p1.querySelector('.scrollcue .chev'),{y:5,duration:.9,repeat:-1,yoyo:true,ease:'sine.inOut'});
 }
-function drift(nodeEls,amt){nodeEls.forEach((n,i)=>gsap.to(n.el,{x:`+=${gsap.utils.random(-amt,amt)}`,y:`+=${gsap.utils.random(-amt,amt)}`,
-  duration:gsap.utils.random(4,7),repeat:-1,yoyo:true,ease:'sine.inOut',delay:i*.08}));}
-
-/* scroll-driven hero→login transition (the "슉" feel) */
-function setupScroll(stage){
-  const scroller=stage.querySelector('.scroller');
-  const hero=stage.querySelector('.hero .center-inner');
-  const login=stage.querySelector('.login');
-  const card=stage.querySelector('.login-card');
-  scroller.scrollTop=0;
-  // hero content lifts & fades as you scroll toward login
-  gsap.to(hero,{yPercent:-16,opacity:0,ease:'none',scrollTrigger:{
-    scroller,trigger:login,start:'top bottom',end:'top top',scrub:.4}});
-  // login card eases up into place
-  gsap.fromTo(card,{opacity:0,y:46,scale:.98},{opacity:1,y:0,scale:1,ease:'power2.out',scrollTrigger:{
-    scroller,trigger:login,start:'top 78%',end:'top 22%',scrub:.4}});
-  ScrollTrigger.refresh();
-}
-function goLogin(stage){stage.querySelector('.login').scrollIntoView({behavior:'smooth'});}
-function goHero(stage){stage.querySelector('.hero').scrollIntoView({behavior:'smooth'});}
-
-/* ---------------- intro timelines ---------------- */
-const ctxs={};
-function play(key){
-  const stage=document.querySelector(`.stage[data-c="${key}"]`);
-  if(ctxs[key]){ctxs[key].graph.stop();ctxs[key].ctx.revert();}
-  let graph;
-  const ctx=gsap.context(()=>{
-    if(key==='a')graph=tlA(stage);
-    if(key==='b')graph=tlB(stage);
-    if(key==='c')graph=tlC(stage);
-    setupScroll(stage);
-  },stage);
-  ctxs[key]={ctx,graph};
-}
-function cue(stage){gsap.to(stage.querySelector('.scrollcue .chev'),{y:5,duration:.9,repeat:-1,yoyo:true,ease:'sine.inOut'});}
-
-function tlA(stage){
-  const g=buildGraph(stage,{labeled:false,viewbox:false,nodeOpacity:.55});
+function animP2(){
   const tl=gsap.timeline({defaults:{ease:'power3.out'}});
-  gsap.set(stage.querySelectorAll('.hero .node'),{opacity:0,scale:0});
-  gsap.set(stage.querySelector('.headline'),{y:22});
-  tl.to(stage.querySelector('.glow'),{opacity:1,duration:1.8},0)
-    .to(stage.querySelectorAll('.hero .node'),{opacity:1,scale:1,duration:1.5,stagger:{each:.05,from:'random'}},.2)
-    .to(stage.querySelectorAll('.hero .edges line'),{opacity:1,duration:1.2},.4)
-    .fromTo(stage.querySelector('.logo'),{opacity:0,scale:.9,filter:'blur(6px)'},{opacity:1,scale:1,filter:'blur(0px)',duration:1.3,ease:'power2.out'},.7)
-    .fromTo(stage.querySelectorAll('.acronym .word b'),{yPercent:120},{yPercent:0,duration:.9,stagger:.12},'-=.5')
-    .to({},{duration:1.2})
-    .to(stage.querySelector('.acronym'),{opacity:0,y:-12,duration:.5},'>')
-    .to(stage.querySelector('.logo'),{scale:0,opacity:0,duration:.7,ease:'power2.inOut'},'<')
-    .to(stage.querySelector('.brand-mark'),{opacity:1,duration:.6},'<.1')
-    .to(stage.querySelector('.headline'),{opacity:1,y:0,duration:1.0},'<.05')
-    .to(stage.querySelector('.scrollcue'),{opacity:1,duration:.6},'-=.2')
-    .to(stage.querySelector('.hero-footer'),{opacity:1,duration:.6},'<');
-  drift(g.nodeEls,9);cue(stage);return g;
+  gsap.set(p2.querySelector('.ul'),{scaleX:0});
+  tl.fromTo(p2.querySelector('.lina-sm'),{opacity:0,y:-14},{opacity:1,y:0,duration:.7},0)
+    .fromTo(p2.querySelector('.eyebrow'),{opacity:0,y:10},{opacity:1,y:0,duration:.5},.1)
+    .fromTo(p2.querySelectorAll('.headline .w'),{opacity:0,y:26},{opacity:1,y:0,duration:.65,stagger:.05},.15)
+    .to(p2.querySelector('.ul'),{scaleX:1,duration:.55,ease:'power2.out'},'-=.3')
+    .fromTo(p2.querySelector('.subline'),{opacity:0,y:12},{opacity:1,y:0,duration:.5},'-=.25')
+    .to(p2.querySelector('.brand-mark'),{opacity:1,duration:.5},'<')
+    .to(p2.querySelector('.scrollcue'),{opacity:1,duration:.5},'<')
+    .to(p2.querySelector('.panel-footer'),{opacity:1,duration:.5},'<');
+  gsap.to(p2.querySelector('.scrollcue .chev'),{y:5,duration:.9,repeat:-1,yoyo:true,ease:'sine.inOut'});
 }
-function tlB(stage){
-  const g=buildGraph(stage,{labeled:false,viewbox:false,nodeOpacity:.9});
+function animLogin(){
+  // clearProps 먼저: 이전 GSAP 인라인 스타일 제거 후 fromTo로 명시
+  const head=login.querySelector('.login-head');
+  const bodyChildren=[...login.querySelectorAll('.login-body > *')];
+  const foot=login.querySelector('.login-footer');
+  gsap.set([head,...bodyChildren,foot],{clearProps:'all'});
+  // .roles/.role-note는 CSS로 opacity:0 관리 — GSAP 건드리지 않음
+  login.querySelector('.roles').classList.remove('show');
+  login.querySelector('.role-note').classList.remove('show');
   const tl=gsap.timeline({defaults:{ease:'power3.out'}});
-  gsap.set(stage.querySelectorAll('.hero .node'),{opacity:0,scale:0});
-  gsap.set(stage.querySelector('.logo'),{position:'relative'});
-  gsap.set(stage.querySelector('.vstack'),{xPercent:120});
-  gsap.set(stage.querySelector('.headline'),{y:22});
-  tl.to(stage.querySelectorAll('.aurora'),{opacity:1,duration:1.9,stagger:.2},0)
-    .to(stage.querySelectorAll('.hero .node'),{opacity:.9,scale:1,duration:1.5,stagger:{each:.06,from:'random'}},.2)
-    .to(stage.querySelectorAll('.hero .edges line'),{opacity:1,duration:1.2},.4)
-    .fromTo(stage.querySelector('.logo'),{opacity:0,y:16},{opacity:1,y:0,duration:1.1},.7)
-    .to(stage.querySelector('.vstack'),{opacity:1,duration:.5},'-=.5')
-    .fromTo(stage.querySelectorAll('.vstack .ln2'),{opacity:0,x:-12},{opacity:1,x:0,duration:.6,stagger:.1},'<')
-    .to({},{duration:1.2})
-    .to(stage.querySelector('.vstack'),{opacity:0,x:14,duration:.5},'>')
-    .to(stage.querySelector('.logo'),{y:-38,scale:.76,duration:.9,ease:'power2.inOut'},'<')
-    .to(stage.querySelector('.brand-mark'),{opacity:1,duration:.6},'<.1')
-    .to(stage.querySelector('.headline'),{opacity:1,y:0,duration:1.0},'<.1')
-    .to(stage.querySelector('.scrollcue'),{opacity:1,duration:.6},'-=.2')
-    .to(stage.querySelector('.hero-footer'),{opacity:1,duration:.6},'<');
-  drift(g.nodeEls,8);cue(stage);return g;
+  tl.fromTo(head,{opacity:0,y:-10},{opacity:1,y:0,duration:.5},0)
+    .fromTo(bodyChildren.filter(el=>!el.classList.contains('roles')&&!el.classList.contains('role-note')),
+      {opacity:0,y:22},{opacity:1,y:0,duration:.55,stagger:.07},.05)
+    .fromTo(foot,{opacity:0},{opacity:1,duration:.5},'-=.2');
 }
-function tlC(stage){
-  const g=buildGraph(stage,{labeled:true,viewbox:true,nodeOpacity:1});
-  const lines=stage.querySelectorAll('.hero .edges line');
-  const tl=gsap.timeline({defaults:{ease:'power3.out'}});
-  gsap.set(stage.querySelectorAll('.hero .node'),{opacity:0,scale:0});
-  gsap.set(stage.querySelectorAll('.hero .node .label'),{opacity:0});
-  gsap.set(stage.querySelector('.headline'),{y:22});
-  lines.forEach(l=>{const len=l.getTotalLength();l.style.strokeDasharray=len;l.style.strokeDashoffset=len;});
-  tl.to(lines,{strokeDashoffset:0,duration:1.4,stagger:.03,ease:'power2.inOut'},.2)
-    .to(stage.querySelectorAll('.hero .node'),{opacity:1,scale:1,duration:.7,stagger:{each:.04,from:'center'},ease:'back.out(2)'},'-=1.0')
-    .to(stage.querySelectorAll('.hero .node .label'),{opacity:1,duration:.6,stagger:.03},'-=.6')
-    .fromTo(stage.querySelector('.hublogo'),{opacity:0,scale:.55},{opacity:1,scale:1,duration:1.0,ease:'back.out(1.5)'},'-=.3')
-    .fromTo(stage.querySelectorAll('.acronym2 div'),{opacity:0,x:-10},{opacity:1,x:0,duration:.5,stagger:.08},'-=.4')
-    .to(stage.querySelector('.acronym2'),{opacity:1,duration:.01},'<')
-    .to(stage.querySelector('.headline'),{opacity:1,y:0,duration:1.0},'-=.1')
-    .to(stage.querySelector('.brand-mark'),{opacity:1,duration:.6},'<')
-    .to(stage.querySelector('.scrollcue'),{opacity:1,duration:.6},'-=.3')
-    .to(stage.querySelector('.hero-footer'),{opacity:1,duration:.6},'<');
-  requestAnimationFrame(()=>{const c=stage.querySelector('.center').getBoundingClientRect();
-    const a=stage.querySelector('.acronym2');a.style.left=(c.width*0.5+150)+'px';a.style.top=(c.height*0.5-70)+'px';});
-  drift(g.nodeEls,1.0);
-  const wrap=stage.querySelector('.graphwrap');
-  stage.querySelector('.hero').onmousemove=e=>{const dx=(e.clientX/innerWidth-.5),dy=(e.clientY/innerHeight-.5);
-    gsap.to(wrap,{rotationY:dx*7,rotationX:-dy*7,x:dx*16,y:dy*16,duration:.8,ease:'power2.out',transformPerspective:900});};
-  cue(stage);return g;
-}
+const ANIMS=[animP1,animP2,animLogin];
 
-/* ---------------- switching & controls ---------------- */
-const stages=[...document.querySelectorAll('.stage')];
-function activate(key){
-  stages.forEach(s=>s.classList.toggle('show',s.dataset.c===key));
-  document.querySelectorAll('.toolbar [data-go]').forEach(b=>b.classList.toggle('active',b.dataset.go===key));
-  play(key);
-  setTimeout(()=>ScrollTrigger.refresh(),60);
-}
-document.querySelectorAll('.toolbar [data-go]').forEach(b=>b.onclick=()=>activate(b.dataset.go));
-document.querySelector('[data-replay]').onclick=()=>{const cur=stages.find(s=>s.classList.contains('show'));play(cur.dataset.c);};
+/* intersection → trigger entrance */
+let activePanel=-1;
+const io=new IntersectionObserver(es=>{es.forEach(e=>{
+  if(e.isIntersecting&&e.intersectionRatio>=.55){const i=panels.indexOf(e.target);if(i!==activePanel){activePanel=i;ANIMS[i]();}}
+});},{root:deck,threshold:[.55]});
+panels.forEach(p=>io.observe(p));
 
-/* scroll cue → snap to login; back → hero */
-document.querySelectorAll('.scrollcue').forEach(c=>c.onclick=()=>goLogin(c.closest('.stage')));
-document.querySelectorAll('.login-back').forEach(b=>b.onclick=()=>goHero(b.closest('.stage')));
-document.querySelectorAll('.role').forEach(r=>r.onclick=function(){this.parentElement.querySelectorAll('.role').forEach(x=>x.classList.remove('active'));this.classList.add('active');});
-document.querySelectorAll('.oauth').forEach(o=>o.onclick=()=>{const s=o.querySelector('span');const t=s.textContent;s.textContent='↻';setTimeout(()=>s.textContent=t,900);});
+/* controls */
+document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{deck.dataset.v=b.dataset.v;document.querySelectorAll('[data-v]').forEach(x=>x.classList.toggle('active',x===b));});
 
-/* live logo swap */
+document.querySelectorAll('[data-acr]').forEach(b=>b.onclick=()=>{
+  activeAcr=b.dataset.acr;
+  document.querySelectorAll('[data-acr]').forEach(x=>x.classList.toggle('active',x===b));
+  if(activePanel===0){showAcr(activeAcr);ACR_FNS[activeAcr](p1);}
+});
+
 function setLogo(v){
-  document.querySelectorAll('.brand-mark img,.logo img,.hublogo img,.login-logo')
-    .forEach(img=>img.src=`frontend/assets/logo-lina-ver${v}.png`);
-  document.querySelectorAll('.toolbar [data-logo]').forEach(b=>b.classList.toggle('active',b.dataset.logo===v));
+  const isXL=v==='cute-xl', isCute=v==='cute'||isXL;
+  const src=isCute?'frontend/assets/logo-lina-cute_files/logo-lina-cute4.png'
+                  :'frontend/assets/logo-lina-ver3.png';
+  document.querySelectorAll('.lina img,.lina-sm img,.brand-mark img').forEach(img=>{
+    img.src=src;
+    img.className=isCute?'':'shadow-crisp';
+  });
+  // switch deck data-logo to trigger CSS show/hide for XL
+  deck.dataset.logo=v;
+  document.querySelectorAll('[data-logo]').forEach(b=>b.classList.toggle('active',b.dataset.logo===v));
+  // replay p1 if currently visible
+  if(activePanel===0){animP1();}
 }
-document.querySelectorAll('.toolbar [data-logo]').forEach(b=>b.onclick=()=>setLogo(b.dataset.logo));
+document.querySelectorAll('[data-logo]').forEach(b=>b.onclick=()=>setLogo(b.dataset.logo));
 
-window.addEventListener('load',()=>activate('a'));
-window.addEventListener('resize',()=>ScrollTrigger.refresh());
+document.querySelector('[data-replay]').onclick=()=>{
+  deck.scrollTo({top:0,behavior:'smooth'});activePanel=-1;
+  setTimeout(()=>{activePanel=0;animP1();},420);
+};
+document.querySelectorAll('.scrollcue').forEach(c=>c.onclick=()=>{
+  const i=+c.dataset.next;deck.scrollTo({top:panels[i].offsetTop,behavior:'smooth'});
+});
+login.querySelector('.confluence-btn').onclick=()=>{login.querySelector('.roles').classList.add('show');login.querySelector('.role-note').classList.add('show');};
+login.querySelectorAll('.role').forEach(r=>r.onclick=()=>{const s=r.querySelector('.rl');const t=s.textContent;s.textContent='→ '+r.dataset.to;setTimeout(()=>s.textContent=t,1000);});
+
+window.addEventListener('load',()=>{activePanel=0;animP1();});
 </script>
 </body>
 </html>
