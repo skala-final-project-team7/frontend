@@ -148,15 +148,17 @@
 
 # feature10.5: ChatPage 책임 분리 리팩토링 (feature11 전 선행 고려)
 
-[ ] `ChatPage.vue`는 route/page shell 조립 중심으로 남기고 sidebar/header/submission/route sync 책임을 작게 분리
-[ ] `ChatSidebar` 또는 동등한 feature 컴포넌트로 sidebar 렌더링과 열림/닫힘 UI 상태 분리
-[ ] `ChatHeader` 또는 동등한 feature 컴포넌트로 empty/conversation header 분기 분리
-[ ] `useChatSubmission` 또는 동등한 composable로 새 대화 생성, route conversation fallback, SSE submit, 실패 toast 처리 이동
-[ ] `useChatRouteSync` 또는 동등한 composable로 route watcher, 메시지 이력 로딩, active conversation clear 처리 이동
-[ ] Public API, SSE 이벤트 계약, store action signature는 변경하지 않고 기존 feature8/feature9 테스트가 그대로 통과해야 함
-[ ] 리팩토링 후 `ChatPage.vue` 변경 범위가 UI 동작 변경이 아닌 책임 분리임을 `docs/ai/working-log.md`에 기록
+[x] `ChatPage.vue`는 route/page shell 조립 중심으로 남기고 sidebar/header/submission/route sync 책임을 작게 분리
+[x] `ChatSidebar` 또는 동등한 feature 컴포넌트로 sidebar 렌더링과 열림/닫힘 UI 상태 분리
+[x] `ChatHeader` 또는 동등한 feature 컴포넌트로 empty/conversation header 분기 분리
+[x] `useChatSubmission` 또는 동등한 composable로 새 대화 생성, route conversation fallback, SSE submit, 실패 toast 처리 이동
+[x] `useChatRouteSync` 또는 동등한 composable로 route watcher, 메시지 이력 로딩, active conversation clear 처리 이동
+[x] Public API, SSE 이벤트 계약, store action signature는 변경하지 않고 기존 feature8/feature9 테스트가 그대로 통과해야 함
+[x] 리팩토링 후 `ChatPage.vue` 변경 범위가 UI 동작 변경이 아닌 책임 분리임을 `docs/ai/working-log.md`에 기록
 
 # feature11: Chat 백엔드 연결 전환
+
+> 보류 사유: 2026-06-04 기준 Chat BFF 실제 응답, SSE, feedback API 연결 검증 환경이 아직 준비되지 않아 feature11은 backend readiness 이후 진행한다. 그동안 백엔드 의존이 낮은 feature12 Auth / Login + Role Selection 화면 및 라우팅 mock 범위를 선행 진행한다.
 
 [ ] `docs/api-spec.md`와 실제 BFF 응답을 대조해 `src/types/api.ts` 수정 필요 여부 확인
 [ ] `VITE_USE_MOCK=false` 환경에서 `/api/conversations` 대화 목록 조회 연결
@@ -192,10 +194,15 @@
 [ ] `frontend/docs/components.md`의 기존 Phase 2가 Onboarding(SCR-300~310)을 포함하더라도, 이번 흐름에서는 Onboarding 화면을 구현하지 않고 라우팅 대상에서도 제외한다
 [ ] LandingPage(SCR-100)는 유지하되 `Continue with Confluence` CTA가 LoginPage 또는 역할 선택 진입으로 자연스럽게 이어지도록 화면 흐름만 정리
 [ ] LoginPage(SCR-200)에 `Continue with Confluence` CTA를 배치하고, 클릭 후 사용자/관리자 선택 UI를 표시한다
+[ ] `Continue with Confluence` CTA는 즉시 OAuth를 시작하지 않고 역할 선택 UI를 여는 진입점으로 둔다
 [ ] 역할 선택 UI에는 일반 사용자와 관리자 버튼을 명확히 구분해 제공한다
 [ ] 일반 사용자 선택 시 사용자 로그인 모드로 진행하고, 인증 완료 후 현재 구현된 Chat 화면(`/chat`)으로 이동하는 흐름을 준비한다
 [ ] 관리자 선택 시 관리자 로그인 모드로 진행하고, 인증 완료 후 Admin 화면(`/admin`)으로 이동하는 흐름을 준비한다
+[ ] 일반 사용자 선택은 향후 `GET /api/auth/login?returnTo=/chat` 호출로 연결될 수 있게 mock 또는 placeholder 경계로 처리한다
+[ ] 관리자 선택은 향후 `GET /api/auth/login?mode=admin&returnTo=/admin` 호출로 연결될 수 있게 mock 또는 placeholder 경계로 처리한다
 [ ] 사용자가 선택한 역할은 클라이언트 표시/라우팅 의도일 뿐이며, 최종 권한 판단은 `GET /api/users/me`의 `role` 및 BFF의 `mode=admin` 검증 결과를 따른다
+[ ] feature12에서는 accessToken/refreshToken 저장, refresh, logout 실제 처리를 구현하지 않고 feature13 인증 백엔드 연결 범위로 남긴다
+[ ] feature12 mock 흐름에서도 `docs/api-spec.md`의 Bearer token 기반 세션 계약과 충돌하는 cookie 기반 인증 가정을 추가하지 않는다
 [ ] Onboarding 관련 route/page/component/test가 이미 존재하면 제거 또는 비활성화하고, 새 흐름 회귀 테스트로 대체한다
 [ ] 인증 API가 불명확한 항목은 mock 또는 placeholder로 격리하되, `docs/api-spec.md`의 `/api/auth/login?mode=admin` 계약과 충돌하지 않게 둔다
 

@@ -2211,3 +2211,105 @@
 - `npm run typecheck`: passed
 - feature5 API 테스트: passed, 1 test file and 8 tests passed
 - `spaceKey`, `page_id`, `messageCount` 런타임 코드 잔존 없음
+
+## 2026-06-04 - collapsed sidebar chat popover routing fix
+
+### Scope
+
+- 접힌 사이드바의 채팅 목록 팝오버에서 conversation item 클릭 시 팝오버만 닫히고 `/chat/{conversationId}`로 이동하지 않는 회귀 수정
+- expanded sidebar의 기존 conversation 선택 동작은 유지
+- 기존 route path, store action signature, conversation loading 로직은 변경하지 않음
+
+### Cause
+
+- collapsed popover item 선택이 `click` 이벤트에 의존하고 있었고, popover dismiss/DOM 변경 타이밍 때문에 item click이 route 이동까지 안정적으로 도달하지 못했다.
+- 이전 수정에서도 handler 내부 순서는 `router.push` 이후 popover close였지만, 그 handler 자체가 `click` 이벤트에 묶여 있었다. `pointerdown` 이후 `click` 전에 popover가 닫히거나 item이 이벤트 대상에서 벗어나면 click handler가 실행되지 않아 `router.push`까지 도달하지 못했다.
+- 네이티브 anchor `href`에서도 이동이 발생하지 않아, 실제 navigation 로직을 `click`보다 빠른 pointer/mouse down 단계에서 실행해야 하는 문제로 판단했다.
+- 사용자가 확인한 브라우저 로그에서 `pointerdown` handler, `router.push`, route change, message history API 요청이 모두 실행되는 것을 확인했다.
+
+### Changed Files
+
+- `src/features/chat/ChatSidebar.vue`: collapsed popover item을 `RouterLink custom` anchor로 렌더링하고, `pointerdown`/`mousedown` 단계에서 `router.push`를 먼저 실행하도록 변경. popover 닫힘은 route change watcher로 분리하고, popover stacking context를 보정
+- `src/__tests__/feature9.chat-conversation.test.ts`: collapsed popover item의 `pointerdown`/`mousedown` 라우팅, route change 후 close, outside click close 회귀 테스트 추가
+- `docs/ai/working-log.md`: 원인과 수정 내용, 검증 결과 기록
+
+### Commands
+
+- `npm run test -- src/__tests__/feature9.chat-conversation.test.ts`
+- `npm run typecheck`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- feature9 chat conversation 테스트: passed, 1 test file and 25 tests passed
+- `npm run typecheck`: passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed, 12 test files and 100 tests passed
+- `./scripts/verify.sh`: passed, 12 test files and 100 tests passed
+- 임시 디버그 로그 제거 확인: `ChatSidebar.vue`에 `collapsed popover debug`/`console.log` 잔존 없음
+
+
+## 2026-06-04 - feature10.5: ChatPage 책임 분리 리팩토링
+
+### Scope
+
+- `ChatPage.vue`를 route/page shell 조립 중심으로 축소
+- sidebar 렌더링과 열림/닫힘 UI 상태를 `ChatSidebar.vue`로 분리
+- empty/conversation header 분기를 `ChatHeader.vue`로 분리
+- 새 대화 생성, route fallback, SSE submit, 실패 toast 흐름을 `useChatSubmission`으로 분리
+- route watcher, 메시지 이력 로딩, active conversation clear 처리를 `useChatRouteSync`로 분리
+
+### Test Cases
+
+- `ChatPage`가 `ChatSidebar`와 `ChatHeader`를 조립하고 기존 collapsed sidebar/header DOM 계약을 유지한다.
+- submission/route sync 책임이 composable로 분리되어 있고 `ChatPage.vue`가 직접 `createConversation`/message history loading을 소유하지 않는다.
+- 새 대화 fallback 후 `/api/conversations/{conversationId}/chat` SSE submit과 token 누적 표시가 유지된다.
+- 기존 feature8/feature9/feature10/feature10.1 채팅 회귀 테스트가 그대로 통과한다.
+
+### Changed Files
+
+- `src/pages/ChatPage.vue`: page shell 조립 중심으로 축소
+- `src/features/chat/ChatSidebar.vue`: sidebar UI와 접힌 최근 대화 팝오버 상태 분리
+- `src/features/chat/ChatHeader.vue`: header 분기와 profile affordance 분리
+- `src/composables/useChatSubmission.ts`: message submit 흐름 분리
+- `src/composables/useChatRouteSync.ts`: route sync 흐름 분리
+- `src/__tests__/feature10.5.chat-page-refactor.test.ts`: feature10.5 책임 분리 회귀 테스트 추가
+- `docs/ai/current-plan.md`: feature10.5 완료 체크 처리
+- `docs/ai/working-log.md`: 작업 결과 기록
+
+### Commands
+
+- `npm test -- src/__tests__/feature10.5.chat-page-refactor.test.ts` 실패 확인
+- `npm test -- src/__tests__/feature10.5.chat-page-refactor.test.ts`
+- `npm test -- src/__tests__/feature8.chat-main.test.ts src/__tests__/feature9.chat-conversation.test.ts src/__tests__/feature9.chat-sse-store.test.ts src/__tests__/feature10.reference-panel.test.ts src/__tests__/feature10.1.conversation-menu.test.ts`
+
+### Results
+
+- 최초 feature10.5 테스트: failed, `ChatHeader.vue` 미존재로 실패 확인
+- feature10.5 테스트: passed, 3 tests passed
+- 기존 chat 회귀 테스트: passed, 5 test files and 55 tests passed
+
+### Notes / Remaining Issues
+
+- Public API, SSE 이벤트 계약, store action signature는 변경하지 않음.
+- UI 동작 변경 목적이 아닌 책임 분리 리팩토링이며 feature11 이후 항목은 수정하지 않음.
+
+
+
+## 2026-06-04 - feature11 backend readiness hold
+
+### Decision
+
+- Chat BFF 실제 응답, SSE, feedback API 연결 검증 환경이 아직 준비되지 않아 feature11을 보류한다.
+- 백엔드 의존이 낮은 feature12 Auth / Login + Role Selection 화면 구현과 라우팅 mock 범위를 선행한다.
+- feature11 완료 체크는 하지 않고, backend readiness 확인 후 재개한다.
+
+### Scope Impact
+
+- Chat API/SSE/feedback 실제 연결 코드는 이번 결정에서 변경하지 않는다.
+- feature12는 인증 API 미확정 항목을 mock 또는 placeholder 경계 안에 격리해서 진행한다.
+- 최종 인증/인가 판단은 feature13에서 `GET /api/users/me`와 BFF 인증 계약을 기준으로 연결한다.
