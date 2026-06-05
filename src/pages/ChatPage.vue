@@ -282,7 +282,7 @@ function resetMessageDraftState() {
   userMessageVersionsById.value = {};
 }
 
-const { cancelStreaming, submitMessage } = useChatSubmission({
+const { submitMessage } = useChatSubmission({
   chatStore,
   conversations,
   routeConversationId,
@@ -513,11 +513,7 @@ watch(
               isReferencePanelOpen ? 'right-[376px]' : 'right-0',
             ]"
           >
-            <MessageInput
-              :is-streaming="chatStore.isStreaming"
-              @submit="submitMessage"
-              @cancel="cancelStreaming"
-            />
+            <MessageInput :is-streaming="chatStore.isStreaming" @submit="submitMessage" />
           </div>
         </div>
 

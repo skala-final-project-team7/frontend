@@ -188,6 +188,7 @@
 [ ] stop 버튼의 FE `AbortController` SSE 중단 이후 BFF/RAG downstream 작업 취소 전파 필요 여부 확인
 [ ] 사용자 중단 시 partial assistant 응답 저장/폐기와 대화 이력 복원 정책을 backend와 합의
 [ ] 별도 cancel API가 필요한 구조로 결정된 경우에만 `docs/api-spec.md` 갱신 후 구현 범위 확정
+[ ] stop icon 노출과 사용자 중단 기능은 별도 cancel API 또는 backend 취소 전파 정책이 확정된 뒤 후속 구현한다
 
 # feature12: Auth / Login + Role Selection 화면 구현 (SCR-100~200 기반, SCR-300~310 제거)
 
@@ -201,6 +202,8 @@
 [ ] 일반 사용자 선택은 향후 `GET /api/auth/login?returnTo=/chat` 호출로 연결될 수 있게 mock 또는 placeholder 경계로 처리한다
 [ ] 관리자 선택은 향후 `GET /api/auth/login?mode=admin&returnTo=/admin` 호출로 연결될 수 있게 mock 또는 placeholder 경계로 처리한다
 [ ] 사용자가 선택한 역할은 클라이언트 표시/라우팅 의도일 뿐이며, 최종 권한 판단은 `GET /api/users/me`의 `role` 및 BFF의 `mode=admin` 검증 결과를 따른다
+
+**주의사항**
 [ ] feature12에서는 accessToken/refreshToken 저장, refresh, logout 실제 처리를 구현하지 않고 feature13 인증 백엔드 연결 범위로 남긴다
 [ ] feature12 mock 흐름에서도 `docs/api-spec.md`의 Bearer token 기반 세션 계약과 충돌하는 cookie 기반 인증 가정을 추가하지 않는다
 [ ] Onboarding 관련 route/page/component/test가 이미 존재하면 제거 또는 비활성화하고, 새 흐름 회귀 테스트로 대체한다

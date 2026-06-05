@@ -452,7 +452,7 @@ describe('feature8 SCR-400 Chat main screen', () => {
     expect(wrapper.get('[data-testid="message-send-button"]').attributes('disabled')).toBeDefined();
   });
 
-  it('keeps Shift+Enter as multiline input and supports streaming stop action state', async () => {
+  it('keeps Shift+Enter as multiline input and disables sending while streaming', async () => {
     const onSubmit = vi.fn();
     const onCancel = vi.fn();
     const wrapper = mount(MessageInput, {
@@ -467,18 +467,17 @@ describe('feature8 SCR-400 Chat main screen', () => {
     const actionButton = wrapper.get('[data-testid="message-send-button"]');
 
     expect(textarea.attributes('disabled')).toBeDefined();
-    expect(actionButton.attributes('aria-label')).toBe('응답 중단');
-    expect(actionButton.attributes('disabled')).toBeUndefined();
+    expect(actionButton.attributes('aria-label')).toBe('메시지 보내기');
+    expect(actionButton.attributes('disabled')).toBeDefined();
     expect(actionButton.classes()).toEqual(
-      expect.arrayContaining(['bg-bg-400', 'text-overlay-dark-40']),
+      expect.arrayContaining(['disabled:bg-bg-400', 'disabled:text-overlay-dark-40']),
     );
     expect(wrapper.find('[data-testid="message-cancel-button"]').exists()).toBe(false);
-    expect(actionButton.find('rect[width="6"][height="6"]').exists()).toBe(true);
 
     await actionButton.trigger('click');
     await textarea.trigger('keydown.enter.shift');
 
-    expect(onCancel).toHaveBeenCalledTimes(1);
+    expect(onCancel).not.toHaveBeenCalled();
     expect(onSubmit).not.toHaveBeenCalled();
   });
 

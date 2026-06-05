@@ -2252,7 +2252,6 @@
 - `./scripts/verify.sh`: passed, 12 test files and 100 tests passed
 - 임시 디버그 로그 제거 확인: `ChatSidebar.vue`에 `collapsed popover debug`/`console.log` 잔존 없음
 
-
 ## 2026-06-04 - feature10.5: ChatPage 책임 분리 리팩토링
 
 ### Scope
@@ -2298,8 +2297,6 @@
 - Public API, SSE 이벤트 계약, store action signature는 변경하지 않음.
 - UI 동작 변경 목적이 아닌 책임 분리 리팩토링이며 feature11 이후 항목은 수정하지 않음.
 
-
-
 ## 2026-06-04 - feature11 backend readiness hold
 
 ### Decision
@@ -2313,3 +2310,32 @@
 - Chat API/SSE/feedback 실제 연결 코드는 이번 결정에서 변경하지 않는다.
 - feature12는 인증 API 미확정 항목을 mock 또는 placeholder 경계 안에 격리해서 진행한다.
 - 최종 인증/인가 판단은 feature13에서 `GET /api/users/me`와 BFF 인증 계약을 기준으로 연결한다.
+
+## 2026-06-05 - chat streaming stop UI deferred
+
+### Scope
+
+- `docs/api-spec.md`에 chat SSE streaming 중 별도 cancel POST API가 정의되어 있지 않음을 기준으로, 사용자에게 노출되던 streaming stop icon과 cancel action을 후속 구현 범위로 보류
+- 기존 `POST /api/conversations/{conversationId}/chat` SSE 계약과 store 내부 AbortController 기반 처리 자체는 변경하지 않음
+- 별도 cancel API 또는 BFF/RAG downstream 취소 전파 정책이 확정되면 feature11.5에서 stop UI와 사용자 중단 기능을 다시 구현
+
+### Changed Files
+
+- `src/features/chat/MessageInput.vue`: streaming 중에도 stop icon으로 전환하지 않고 send button disabled 상태를 유지하도록 변경
+- `src/pages/ChatPage.vue`: MessageInput의 cancel event 연결 제거
+- `src/composables/useChatSubmission.ts`: UI에서 사용하지 않는 cancel handler 반환 제거
+- `src/__tests__/feature8.chat-main.test.ts`: streaming 중 stop action 대신 send disabled 상태를 검증하도록 회귀 테스트 수정
+- `docs/ai/current-plan.md`: feature11.5에 stop icon/사용자 중단 기능을 backend 취소 정책 확정 후 구현한다고 명시
+- `docs/ai/working-log.md`: 변경 사유와 검증 결과 기록
+
+### Commands
+
+- `npm run test -- src/__tests__/feature8.chat-main.test.ts` (구현 전 실패 확인)
+- `npm run test -- src/__tests__/feature8.chat-main.test.ts`
+- `npm run typecheck`
+
+### Results
+
+- 구현 전 테스트: failed, streaming 중 버튼 label이 `응답 중단`으로 남아 있음
+- feature8 chat main 테스트: passed, 1 test file and 14 tests passed
+- `npm run typecheck`: passed

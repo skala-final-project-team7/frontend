@@ -8,7 +8,7 @@
   - 2026-05-20, feature8 구현, MessageInput 최초 작성
   - 2026-05-22, feature9 보강, IME 조합 중 Enter 전송 방지 처리 추가
   - 2026-05-22, 스트리밍 중 원형 중단 버튼으로 cancel 동작 통합
-  - 2026-05-26, feature11.5 고려, backend streaming 중단 정책 확정 TODO 기록
+  - 2026-06-05, cancel API 미정의에 따라 stop UI/기능 후속 범위로 보류
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -16,7 +16,7 @@
 --------------------------------------------------
 -->
 <script setup lang="ts">
-import { CircleStop, SendHorizontal } from '@lucide/vue';
+import { SendHorizontal } from '@lucide/vue';
 import { computed, ref } from 'vue';
 
 import { mascotSearchImageUrl } from '@/shared/assets';
@@ -35,7 +35,6 @@ const props = defineProps({
 
 const emit = defineEmits<{
   submit: [message: string];
-  cancel: [];
 }>();
 
 const message = ref('');
@@ -45,15 +44,11 @@ const isSendDisabled = computed(
   () => props.disabled || props.isStreaming || message.value.trim().length === 0,
 );
 
-const actionButtonLabel = computed(() => (props.isStreaming ? '응답 중단' : '메시지 보내기'));
-const actionButtonType = computed(() => (props.isStreaming ? 'button' : 'submit'));
-const actionButtonIcon = computed(() => (props.isStreaming ? CircleStop : SendHorizontal));
-const isActionDisabled = computed(() => !props.isStreaming && isSendDisabled.value);
+const actionButtonLabel = computed(() => '메시지 보내기');
+const isActionDisabled = computed(() => isSendDisabled.value);
 const actionButtonClass = computed(() => [
   'inline-flex size-12 shrink-0 items-center justify-center rounded-full shadow-primary transition focus-visible:outline-none focus-visible:shadow-focus',
-  props.isStreaming
-    ? 'bg-bg-400 text-overlay-dark-40 shadow-none hover:brightness-95 active:scale-[0.96]'
-    : 'bg-primary text-primary-white hover:brightness-95 active:scale-[0.96] disabled:bg-bg-400 disabled:text-overlay-dark-40 disabled:opacity-60 disabled:shadow-none disabled:hover:brightness-100 disabled:active:scale-100',
+  'bg-primary text-primary-white hover:brightness-95 active:scale-[0.96] disabled:bg-bg-400 disabled:text-overlay-dark-40 disabled:opacity-60 disabled:shadow-none disabled:hover:brightness-100 disabled:active:scale-100',
 ]);
 
 /**
@@ -100,18 +95,6 @@ function submitMessage() {
   emit('submit', trimmedMessage);
   message.value = '';
 }
-
-/**
- * 스트리밍 중에는 같은 원형 버튼을 응답 중단 액션으로 사용한다.
- */
-function handleActionButtonClick() {
-  if (!props.isStreaming) {
-    return;
-  }
-
-  // TODO(feature11.5): SSE abort 이후 BFF/RAG 취소 전파와 partial assistant 응답 저장 정책을 확정한다.
-  emit('cancel');
-}
 </script>
 
 <template>
@@ -140,13 +123,12 @@ function handleActionButtonClick() {
       <BaseTooltip :label="actionButtonLabel" placement="top">
         <button
           data-testid="message-send-button"
-          :type="actionButtonType"
+          type="submit"
           :aria-label="actionButtonLabel"
           :disabled="isActionDisabled"
           :class="actionButtonClass"
-          @click="handleActionButtonClick"
         >
-          <component :is="actionButtonIcon" aria-hidden="true" class="size-6" />
+          <SendHorizontal aria-hidden="true" class="size-6" />
         </button>
       </BaseTooltip>
     </div>

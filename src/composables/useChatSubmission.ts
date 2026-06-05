@@ -35,7 +35,7 @@ type UseChatSubmissionOptions = {
  * 채팅 메시지 제출 흐름을 제공한다.
  *
  * @param options route/store/conversation/toast 의존성
- * @returns submit/cancel handler
+ * @returns submit handler
  */
 export function useChatSubmission(options: UseChatSubmissionOptions) {
   const { chatStore, conversations, routeConversationId, router, showToast } = options;
@@ -76,12 +76,7 @@ export function useChatSubmission(options: UseChatSubmissionOptions) {
     }
   }
 
-  function cancelStreaming() {
-    chatStore.cancelStreaming();
-  }
-
   return {
-    cancelStreaming,
     submitMessage,
   };
 }
