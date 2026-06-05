@@ -2345,14 +2345,14 @@
 ### Scope
 
 - SCR-100 LandingPage와 SCR-200 LoginPage를 Auth 진입 흐름으로 추가
-- Landing CTA는 `/login`으로 이동하고, Login CTA는 즉시 OAuth를 시작하지 않고 역할 선택 UI를 표시
+- 서비스 루트(`/`)는 `/login`으로 redirect하고, LandingPage는 라우팅 대상에 추가하지 않은 채 CTA 동작만 유지하며, Login CTA는 즉시 OAuth를 시작하지 않고 역할 선택 UI를 표시
 - 일반 사용자 선택은 `/api/auth/login?returnTo=/chat`, 관리자 선택은 `/api/auth/login?mode=admin&returnTo=/admin` 계약과 맞는 mock 경계로 구성
 - feature12 범위에서 accessToken/refreshToken 저장, refresh, logout, 실제 인증 API 호출은 구현하지 않음
 - Onboarding(SCR-300~310)은 route/page/component 구현 대상에서 제외
 
 ### Test Cases
 
-- `/`, `/login` Auth 진입 route가 Landing/Login page에 연결되고 onboarding route가 존재하지 않는다.
+- `/`는 `/login`으로 redirect하고, `/login` Auth 진입 route가 LoginPage에 연결되며 `/landing` 및 onboarding route가 존재하지 않는다.
 - LandingPage의 `Continue with Confluence` CTA가 onboarding이 아니라 LoginPage로 이동한다.
 - LoginPage의 `Continue with Confluence` CTA는 OAuth URL 없이 역할 선택 UI만 연다.
 - 사용자/관리자 역할 버튼은 향후 OAuth URL과 returnTo를 준비하고 mock 흐름에서 각각 `/chat`, `/admin`으로 이동한다.
@@ -2364,7 +2364,7 @@
 - `src/pages/LandingPage.vue`: SCR-100 Landing 화면 및 Login 진입 CTA 추가
 - `src/pages/LoginPage.vue`: SCR-200 Login CTA와 사용자/관리자 역할 선택 UI 추가
 - `src/pages/AdminEntryPage.vue`: feature12 mock 관리자 진입용 placeholder route 추가
-- `src/router/index.ts`: `/`, `/login`, `/admin` route 추가
+- `src/router/index.ts`: `/` to `/login` redirect, `/login`, `/admin` route 추가
 - `src/pages/index.ts`: 신규 Auth page export 추가
 - `src/shared/assets.ts`: Confluence icon asset export 추가
 - `src/shared/index.ts`: Auth page에서 사용하는 shared asset barrel export 추가

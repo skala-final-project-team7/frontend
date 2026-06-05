@@ -2,7 +2,6 @@ import { flushPromises, mount } from '@vue/test-utils';
 import { createPinia } from 'pinia';
 import { describe, expect, it } from 'vitest';
 
-import App from '@/App.vue';
 import { AUTH_LOGIN_URL_BY_ROLE } from '@/features/auth/authIntent';
 import LandingPage from '@/pages/LandingPage.vue';
 import LoginPage from '@/pages/LoginPage.vue';
@@ -11,19 +10,26 @@ import router from '@/router';
 describe('feature12 Auth / Login + Role Selection', () => {
   it('connects the auth entry routes without registering onboarding screens', () => {
     const routes = router.getRoutes();
+    const rootRoute = routes.find((route) => route.path === '/');
 
-    expect(routes.find((route) => route.path === '/')?.components?.default).toBe(LandingPage);
+    expect(rootRoute?.redirect).toEqual({ name: 'login' });
     expect(routes.find((route) => route.path === '/login')?.components?.default).toBe(LoginPage);
+    expect(routes.some((route) => route.path === '/landing')).toBe(false);
     expect(routes.some((route) => route.path.includes('onboarding'))).toBe(false);
     expect(routes.some((route) => route.path.includes('scr-300'))).toBe(false);
     expect(routes.some((route) => route.path.includes('scr-310'))).toBe(false);
   });
 
-  it('moves from Landing CTA to the Login page instead of onboarding', async () => {
+  it('redirects the service root to Login as the default auth entry', async () => {
     await router.push('/');
     await router.isReady();
+    await flushPromises();
 
-    const wrapper = mount(App, {
+    expect(router.currentRoute.value.path).toBe('/login');
+  });
+
+  it('moves from Landing CTA to the Login page instead of onboarding', async () => {
+    const wrapper = mount(LandingPage, {
       global: {
         plugins: [createPinia(), router],
       },
@@ -34,7 +40,6 @@ describe('feature12 Auth / Login + Role Selection', () => {
     await router.isReady();
 
     expect(router.currentRoute.value.path).toBe('/login');
-    expect(wrapper.find('[data-testid="login-page"]').exists()).toBe(true);
   });
 
   it('opens role selection from the Confluence CTA before any OAuth navigation intent', async () => {

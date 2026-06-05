@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>LINA · Landing Concepts (Light · Scroll)</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:ital,wght@0,400..700;1,400..600&family=Hanken+Grotesk:wght@300;400;500;600&family=Spline+Sans+Mono:wght@300;400;500&family=Newsreader:ital,opsz,wght@0,6..72,300..500;1,6..72,300..400&display=swap" rel="stylesheet" />
+
+<!-- GSAP + ScrollTrigger (concept prototype only — CDN) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+<style>
+:root{
+  --primary:#F48122; --primary-soft:#FCDAAC;
+  --blue:#185CFF; --sky:#7DBBFF; --purple:#AF68E2; --indigo:#ADADFB;
+  --teal:#6BE6D3; --green:#71DD8C; --yellow:#FFCC00; --orange:#FFB55B; --red:#FF4747;
+  --ink:#1b1b1d;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:#e9e4dc;color:var(--ink);overflow:hidden;font-family:'Hanken Grotesk',sans-serif;-webkit-font-smoothing:antialiased}
+
+/* ---------- toolbar ---------- */
+.toolbar{
+  position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:200;
+  display:flex;gap:5px;padding:6px;border-radius:999px;
+  background:rgba(24,24,28,.74);backdrop-filter:blur(14px);
+  border:1px solid rgba(255,255,255,.10);box-shadow:0 10px 34px rgba(0,0,0,.22);
+}
+.toolbar button{
+  font:600 12px/1 'Hanken Grotesk';letter-spacing:.03em;color:rgba(255,255,255,.6);
+  background:transparent;border:0;padding:9px 14px;border-radius:999px;cursor:pointer;transition:.25s;
+}
+.toolbar button:hover{color:#fff}
+.toolbar button.active{background:#fff;color:#111}
+.toolbar .sep{width:1px;background:rgba(255,255,255,.16);margin:4px 2px}
+.toolbar .replay{color:var(--primary)}
+
+/* ---------- stage / scroller / panels ---------- */
+.stage{position:fixed;inset:0;opacity:0;pointer-events:none;visibility:hidden;transition:opacity .3s}
+.stage.show{opacity:1;pointer-events:auto;visibility:visible}
+.scroller{height:100%;overflow-y:scroll;scroll-snap-type:y mandatory;scroll-behavior:smooth;scrollbar-width:none}
+.scroller::-webkit-scrollbar{display:none}
+.panel{position:relative;height:100vh;overflow:hidden;scroll-snap-align:start;scroll-snap-stop:always}
+
+.brand-mark{position:absolute;top:24px;left:30px;display:flex;align-items:center;gap:9px;z-index:30;opacity:0}
+.brand-mark img{height:20px;width:auto;filter:drop-shadow(0 4px 10px rgba(0,0,0,.22))}
+.brand-mark span{font:600 16px/1 'Schibsted Grotesk';letter-spacing:.01em;color:var(--ink)}
+
+.hero-footer{position:absolute;left:0;right:0;bottom:24px;text-align:center;
+  font:600 11px/1 'Hanken Grotesk';letter-spacing:.18em;opacity:0;z-index:30;color:rgba(0,0,0,.32)}
+
+.edges{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.edges line{stroke-linecap:round}
+.nodes{position:absolute;inset:0;pointer-events:none}
+.node{position:absolute;transform:translate(-50%,-50%);will-change:transform,opacity}
+.node .dot{border-radius:50%}
+.node .label{position:absolute;left:50%;top:calc(50% + 15px);transform:translate(-50%,0);white-space:nowrap;
+  font:400 10.5px/1 'Spline Sans Mono';letter-spacing:.01em;color:rgba(0,0,0,.42);opacity:0}
+
+.center{position:absolute;inset:0;display:grid;place-items:center;z-index:20}
+.center-inner{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center}
+
+.logo{will-change:transform,opacity;opacity:0}
+.logo img{display:block;width:min(44vw,420px);height:auto;
+  filter:drop-shadow(0 16px 38px rgba(0,0,0,.26)) drop-shadow(0 3px 6px rgba(0,0,0,.20))}
+
+.acronym{display:flex;gap:0;margin-top:26px}
+.acronym .word{overflow:hidden}
+.acronym .word b{display:inline-block;will-change:transform;
+  font:400 13px/1 'Spline Sans Mono';letter-spacing:.42em;color:rgba(0,0,0,.5);text-transform:uppercase}
+.acronym .word b .lead{color:var(--primary)}
+
+.headline{position:absolute;max-width:740px;opacity:0;will-change:transform,opacity}
+.headline .accent{color:var(--primary)}
+
+/* scroll-down hint (also clickable) */
+.scrollcue{position:absolute;left:50%;bottom:8vh;transform:translateX(-50%);z-index:30;opacity:0;
+  display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;background:none;border:0;color:var(--ink)}
+.scrollcue .lbl{font:500 13px/1 'Schibsted Grotesk';letter-spacing:.06em;color:rgba(0,0,0,.55)}
+.scrollcue .chev{width:22px;height:22px}
+
+/* =================== A · PAPER =================== */
+.stage[data-c="a"] .hero{background:radial-gradient(120% 95% at 50% 10%,#faf7f2 0%,#ece6dd 56%,#e2dbd0 100%)}
+.stage[data-c="a"] .glow{position:absolute;border-radius:50%;filter:blur(90px);opacity:0;
+  width:48vw;height:48vw;left:50%;top:34%;transform:translate(-50%,-50%);
+  background:radial-gradient(circle,rgba(244,129,34,.18),transparent 62%)}
+.stage[data-c="a"] .edges line{stroke:rgba(0,0,0,.08)}
+.stage[data-c="a"] .headline{font:300 46px/1.16 'Newsreader';color:#1c1c1c}
+.stage[data-c="a"] .headline .accent{font-style:italic;font-weight:400}
+
+/* =================== B · AURORA =================== */
+.stage[data-c="b"] .hero{background:#f7f6f3}
+.stage[data-c="b"] .aurora{position:absolute;border-radius:50%;filter:blur(95px);opacity:0}
+.stage[data-c="b"] .aurora.a1{width:46vw;height:46vw;left:16%;top:16%;background:radial-gradient(circle,rgba(244,129,34,.30),transparent 60%)}
+.stage[data-c="b"] .aurora.a2{width:50vw;height:50vw;right:8%;top:28%;background:radial-gradient(circle,rgba(125,187,255,.32),transparent 60%)}
+.stage[data-c="b"] .aurora.a3{width:44vw;height:44vw;left:32%;bottom:4%;background:radial-gradient(circle,rgba(107,230,211,.26),transparent 60%)}
+.stage[data-c="b"] .edges line{stroke:rgba(0,0,0,.06)}
+.stage[data-c="b"] .vstack{position:absolute;display:flex;flex-direction:column;gap:1px;text-align:left;opacity:0}
+.stage[data-c="b"] .vstack .ln2{font:500 32px/1.06 'Schibsted Grotesk';color:#a6a6a6;letter-spacing:-.01em}
+.stage[data-c="b"] .vstack .ln2 b{color:#1a1a1a;font-weight:700}
+.stage[data-c="b"] .headline{font:500 42px/1.18 'Schibsted Grotesk';color:#1a1a1a;letter-spacing:-.01em}
+
+/* =================== C · NEURAL =================== */
+.stage[data-c="c"] .hero{background:radial-gradient(130% 100% at 50% 42%,#fbfcfe 0%,#eef1f7 56%,#e4e9f2 100%)}
+.stage[data-c="c"] .graphwrap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:min(84vw,84vh);height:min(84vw,84vh);will-change:transform}
+.stage[data-c="c"] .edges line{stroke:rgba(70,100,150,.18)}
+.stage[data-c="c"] .edges line.hub{stroke:rgba(244,129,34,.4)}
+.stage[data-c="c"] .hublogo{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:25;opacity:0}
+.stage[data-c="c"] .hublogo img{width:min(19vw,200px);
+  filter:drop-shadow(0 0 34px rgba(244,129,34,.34)) drop-shadow(0 10px 24px rgba(0,0,0,.20))}
+.stage[data-c="c"] .acronym2{position:absolute;z-index:26;opacity:0}
+.stage[data-c="c"] .acronym2 div{font:400 12.5px/1.95 'Spline Sans Mono';color:rgba(0,0,0,.52);letter-spacing:.03em;white-space:nowrap}
+.stage[data-c="c"] .acronym2 div b{color:var(--primary);font-weight:500}
+.stage[data-c="c"] .headline{font:400 36px/1.2 'Schibsted Grotesk';color:#1a2233;top:calc(50% + 150px);letter-spacing:-.01em}
+.stage[data-c="c"] .headline .accent{color:var(--primary)}
+
+/* =================== LOGIN PANEL (shared) =================== */
+.login{background:radial-gradient(120% 90% at 50% 18%,#ffffff 0%,#f4f2ee 64%,#ece7df 100%);display:grid;place-items:center}
+.login-card{position:relative;width:min(92vw,420px);padding:46px 40px 30px;text-align:center;
+  background:rgba(255,255,255,.82);border:1px solid rgba(0,0,0,.06);border-radius:24px;
+  box-shadow:0 30px 80px rgba(0,0,0,.10),0 2px 8px rgba(0,0,0,.04);backdrop-filter:blur(8px);opacity:0}
+.login-card .login-logo{width:140px;height:auto;margin:0 auto 22px;display:block;
+  filter:drop-shadow(0 10px 26px rgba(0,0,0,.22)) drop-shadow(0 2px 4px rgba(0,0,0,.16))}
+.login-card h2{font:500 22px/1.3 'Schibsted Grotesk';color:#1a1a1a;letter-spacing:-.01em}
+.login-card .sub{margin-top:8px;font:400 13px/1.5 'Hanken Grotesk';color:rgba(0,0,0,.5)}
+.oauth{margin-top:24px;width:100%;display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  background:var(--primary);color:#fff;border:0;border-radius:12px;padding:14px;cursor:pointer;
+  font:600 14px/1 'Schibsted Grotesk';box-shadow:0 12px 26px rgba(244,129,34,.30);transition:.25s}
+.oauth:hover{filter:brightness(.96);transform:translateY(-1px)}
+.roles{margin-top:14px;display:flex;gap:8px}
+.roles .role{flex:1;padding:11px;border-radius:10px;cursor:pointer;background:#fff;
+  border:1px solid rgba(0,0,0,.12);font:500 13px/1 'Hanken Grotesk';color:rgba(0,0,0,.6);transition:.2s}
+.roles .role:hover{border-color:rgba(0,0,0,.28)}
+.roles .role.active{border-color:var(--primary);color:var(--primary);background:#fff7ef;box-shadow:0 0 0 1px var(--primary) inset}
+.login-card .terms{margin-top:20px;font:400 11px/1.6 'Hanken Grotesk';color:rgba(0,0,0,.4)}
+.login-card .terms a{color:rgba(0,0,0,.6);text-decoration:underline;cursor:pointer}
+.login-footer{position:absolute;left:0;right:0;bottom:24px;text-align:center;
+  font:600 11px/1 'Hanken Grotesk';letter-spacing:.18em;color:rgba(0,0,0,.32)}
+.login-back{position:absolute;top:26px;left:30px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+  background:none;border:0;font:500 13px/1 'Schibsted Grotesk';color:rgba(0,0,0,.5)}
+
+@media (max-width:640px){
+  .logo img{width:60vw}
+  .stage[data-c="a"] .headline,.stage[data-c="b"] .headline{font-size:30px}
+  .stage[data-c="c"] .headline{font-size:23px}
+  .stage[data-c="b"] .vstack .ln2{font-size:23px}
+}
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <button data-go="a" class="active">A · Paper</button>
+  <button data-go="b">B · Aurora</button>
+  <button data-go="c">C · Neural</button>
+  <span class="sep"></span>
+  <button class="replay" data-replay>↻ Replay</button>
+  <span class="sep"></span>
+  <button data-logo="1">ver1</button>
+  <button data-logo="2">ver2</button>
+  <button data-logo="3" class="active">ver3</button>
+</div>
+
+<!-- shared login panel template -->
+<template id="loginTpl">
+  <section class="panel login">
+    <button class="login-back">← back</button>
+    <div class="login-card">
+      <img class="login-logo" src="frontend/assets/logo-lina-ver3.png" alt="LINA" />
+      <h2>Sign in to continue</h2>
+      <p class="sub">사내 지식을 자연어로 검색하고, 출처와 함께 확인하세요.</p>
+      <button class="oauth">Continue with Confluence <span>→</span></button>
+      <div class="roles">
+        <button class="role active">일반 사용자</button>
+        <button class="role">관리자</button>
+      </div>
+      <p class="terms">계속하면 <a>이용약관</a> 및 <a>개인정보처리방침</a>에 동의합니다.</p>
+    </div>
+    <div class="login-footer">©2026 LINA | SKALA</div>
+  </section>
+</template>
+
+<!-- ============ STAGE A · PAPER ============ -->
+<section class="stage show" data-c="a">
+  <div class="scroller">
+    <section class="panel hero">
+      <div class="glow"></div>
+      <svg class="edges"></svg><div class="nodes"></div>
+      <div class="brand-mark"><img src="frontend/assets/logo-lina-ver3.png" alt=""><span>LINA</span></div>
+      <div class="center"><div class="center-inner">
+        <div class="logo"><img src="frontend/assets/logo-lina-ver3.png" alt="LINA"></div>
+        <div class="acronym">
+          <div class="word"><b><span class="lead">L</span>inked&nbsp;</b></div>
+          <div class="word"><b><span class="lead">I</span>ntelligence&nbsp;</b></div>
+          <div class="word"><b><span class="lead">N</span>avigation&nbsp;</b></div>
+          <div class="word"><b><span class="lead">A</span>gent</b></div>
+        </div>
+        <h1 class="headline">Ask, search, and <span class="accent">verify</span> knowledge across your workspace.</h1>
+      </div></div>
+      <button class="scrollcue"><span class="lbl">scroll</span>
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="hero-footer">©2026 LINA | SKALA</div>
+    </section>
+  </div>
+</section>
+
+<!-- ============ STAGE B · AURORA ============ -->
+<section class="stage" data-c="b">
+  <div class="scroller">
+    <section class="panel hero">
+      <div class="aurora a1"></div><div class="aurora a2"></div><div class="aurora a3"></div>
+      <svg class="edges"></svg><div class="nodes"></div>
+      <div class="brand-mark"><img src="frontend/assets/logo-lina-ver3.png" alt=""><span>LINA</span></div>
+      <div class="center"><div class="center-inner">
+        <div class="logo"><img src="frontend/assets/logo-lina-ver3.png" alt="LINA"></div>
+        <div class="vstack">
+          <div class="ln2"><b>L</b>inked</div><div class="ln2"><b>I</b>ntelligence</div>
+          <div class="ln2"><b>N</b>avigation</div><div class="ln2"><b>A</b>gent</div>
+        </div>
+        <h1 class="headline">Ask, search, and verify <span class="accent">knowledge</span> across your workspace.</h1>
+      </div></div>
+      <button class="scrollcue"><span class="lbl">scroll</span>
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="hero-footer">©2026 LINA | SKALA</div>
+    </section>
+  </div>
+</section>
+
+<!-- ============ STAGE C · NEURAL ============ -->
+<section class="stage" data-c="c">
+  <div class="scroller">
+    <section class="panel hero">
+      <div class="graphwrap"><svg class="edges" viewBox="0 0 100 100" preserveAspectRatio="none"></svg><div class="nodes"></div></div>
+      <div class="hublogo"><img src="frontend/assets/logo-lina-ver3.png" alt="LINA"></div>
+      <div class="acronym2"><div><b>L</b>inked</div><div><b>I</b>ntelligence</div><div><b>N</b>avigation</div><div><b>A</b>gent</div></div>
+      <div class="brand-mark"><img src="frontend/assets/logo-lina-ver3.png" alt=""><span>LINA</span></div>
+      <div class="center"><div class="center-inner">
+        <h1 class="headline">Linked <span class="accent">intelligence</span> across your knowledge.</h1>
+      </div></div>
+      <button class="scrollcue"><span class="lbl">scroll</span>
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="hero-footer">©2026 LINA | SKALA</div>
+    </section>
+  </div>
+</section>
+
+<script>
+gsap.registerPlugin(ScrollTrigger);
+const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const LABELS=['Confluence','Jira','Figma','Project Wiki','Documentation','Templates',
+  'Storybook','Operations','Analytics','Style Guide','Accessibility','Sprint Board'];
+const COLORS=['--blue','--sky','--purple','--indigo','--teal','--green','--yellow','--orange','--red','--primary'];
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const SCATTER=[[50,16],[68,24],[33,26],[80,40],[20,44],[60,42],[40,46],[85,62],[16,66],[72,70],[34,72],[55,80]];
+
+/* inject shared login panel into every scroller */
+const loginTpl=document.getElementById('loginTpl');
+document.querySelectorAll('.scroller').forEach(sc=>sc.appendChild(loginTpl.content.cloneNode(true)));
+
+function buildGraph(stage,opts){
+  const nodesEl=stage.querySelector('.hero .nodes'), svg=stage.querySelector('.hero .edges');
+  nodesEl.innerHTML='';svg.innerHTML='';
+  const ns='http://www.w3.org/2000/svg', useVB=opts.viewbox;
+  const hub={x:50,y:useVB?50:48};
+  const nodes=SCATTER.map((p,i)=>({x:p[0],y:p[1],label:LABELS[i],color:css(COLORS[i%COLORS.length])}));
+  const links=nodes.map(n=>({a:hub,b:n,hub:true}));
+  [[0,1],[2,4],[3,5],[6,9],[8,10],[7,11],[1,3]].forEach(([a,b])=>links.push({a:nodes[a],b:nodes[b],hub:false}));
+  const lineEls=links.map(L=>{
+    const ln=document.createElementNS(ns,'line');
+    if(L.hub)ln.classList.add('hub');
+    if(useVB){ln.setAttribute('x1',L.a.x);ln.setAttribute('y1',L.a.y);ln.setAttribute('x2',L.b.x);ln.setAttribute('y2',L.b.y);ln.setAttribute('stroke-width',L.hub?.5:.35);}
+    svg.appendChild(ln);return{el:ln,L};
+  });
+  const nodeEls=nodes.map((n,i)=>{
+    const el=document.createElement('div');el.className='node';el.style.left=n.x+'%';el.style.top=n.y+'%';
+    const size=opts.labeled?15:(7+(i%4)*4), op=opts.nodeOpacity!=null?opts.nodeOpacity:1;
+    el.innerHTML=`<div class="dot" style="width:${size}px;height:${size}px;opacity:${op};
+      background:radial-gradient(circle at 35% 30%,#fff,${n.color});box-shadow:0 2px ${opts.labeled?16:12}px ${n.color}3a"></div>`+
+      (opts.labeled?`<div class="label">${n.label}</div>`:'');
+    nodesEl.appendChild(el);n.el=el;return n;
+  });
+  let raf;
+  function follow(){
+    const box=svg.getBoundingClientRect();
+    lineEls.forEach(({el,L})=>{const pa=pt(L.a),pb=pt(L.b);
+      el.setAttribute('x1',pa.x);el.setAttribute('y1',pa.y);el.setAttribute('x2',pb.x);el.setAttribute('y2',pb.y);
+      el.setAttribute('stroke-width',L.hub?1:.6);});
+    function pt(node){if(node===hub)return{x:box.width*hub.x/100,y:box.height*hub.y/100};
+      const r=node.el.getBoundingClientRect();return{x:r.left+r.width/2-box.left,y:r.top+r.height/2-box.top};}
+    raf=requestAnimationFrame(follow);
+  }
+  if(!useVB)follow();
+  return{nodeEls,lineEls,stop:()=>cancelAnimationFrame(raf)};
+}
+function drift(nodeEls,amt){nodeEls.forEach((n,i)=>gsap.to(n.el,{x:`+=${gsap.utils.random(-amt,amt)}`,y:`+=${gsap.utils.random(-amt,amt)}`,
+  duration:gsap.utils.random(4,7),repeat:-1,yoyo:true,ease:'sine.inOut',delay:i*.08}));}
+
+/* scroll-driven hero→login transition (the "슉" feel) */
+function setupScroll(stage){
+  const scroller=stage.querySelector('.scroller');
+  const hero=stage.querySelector('.hero .center-inner');
+  const login=stage.querySelector('.login');
+  const card=stage.querySelector('.login-card');
+  scroller.scrollTop=0;
+  // hero content lifts & fades as you scroll toward login
+  gsap.to(hero,{yPercent:-16,opacity:0,ease:'none',scrollTrigger:{
+    scroller,trigger:login,start:'top bottom',end:'top top',scrub:.4}});
+  // login card eases up into place
+  gsap.fromTo(card,{opacity:0,y:46,scale:.98},{opacity:1,y:0,scale:1,ease:'power2.out',scrollTrigger:{
+    scroller,trigger:login,start:'top 78%',end:'top 22%',scrub:.4}});
+  ScrollTrigger.refresh();
+}
+function goLogin(stage){stage.querySelector('.login').scrollIntoView({behavior:'smooth'});}
+function goHero(stage){stage.querySelector('.hero').scrollIntoView({behavior:'smooth'});}
+
+/* ---------------- intro timelines ---------------- */
+const ctxs={};
+function play(key){
+  const stage=document.querySelector(`.stage[data-c="${key}"]`);
+  if(ctxs[key]){ctxs[key].graph.stop();ctxs[key].ctx.revert();}
+  let graph;
+  const ctx=gsap.context(()=>{
+    if(key==='a')graph=tlA(stage);
+    if(key==='b')graph=tlB(stage);
+    if(key==='c')graph=tlC(stage);
+    setupScroll(stage);
+  },stage);
+  ctxs[key]={ctx,graph};
+}
+function cue(stage){gsap.to(stage.querySelector('.scrollcue .chev'),{y:5,duration:.9,repeat:-1,yoyo:true,ease:'sine.inOut'});}
+
+function tlA(stage){
+  const g=buildGraph(stage,{labeled:false,viewbox:false,nodeOpacity:.55});
+  const tl=gsap.timeline({defaults:{ease:'power3.out'}});
+  gsap.set(stage.querySelectorAll('.hero .node'),{opacity:0,scale:0});
+  gsap.set(stage.querySelector('.headline'),{y:22});
+  tl.to(stage.querySelector('.glow'),{opacity:1,duration:1.8},0)
+    .to(stage.querySelectorAll('.hero .node'),{opacity:1,scale:1,duration:1.5,stagger:{each:.05,from:'random'}},.2)
+    .to(stage.querySelectorAll('.hero .edges line'),{opacity:1,duration:1.2},.4)
+    .fromTo(stage.querySelector('.logo'),{opacity:0,scale:.9,filter:'blur(6px)'},{opacity:1,scale:1,filter:'blur(0px)',duration:1.3,ease:'power2.out'},.7)
+    .fromTo(stage.querySelectorAll('.acronym .word b'),{yPercent:120},{yPercent:0,duration:.9,stagger:.12},'-=.5')
+    .to({},{duration:1.2})
+    .to(stage.querySelector('.acronym'),{opacity:0,y:-12,duration:.5},'>')
+    .to(stage.querySelector('.logo'),{scale:0,opacity:0,duration:.7,ease:'power2.inOut'},'<')
+    .to(stage.querySelector('.brand-mark'),{opacity:1,duration:.6},'<.1')
+    .to(stage.querySelector('.headline'),{opacity:1,y:0,duration:1.0},'<.05')
+    .to(stage.querySelector('.scrollcue'),{opacity:1,duration:.6},'-=.2')
+    .to(stage.querySelector('.hero-footer'),{opacity:1,duration:.6},'<');
+  drift(g.nodeEls,9);cue(stage);return g;
+}
+function tlB(stage){
+  const g=buildGraph(stage,{labeled:false,viewbox:false,nodeOpacity:.9});
+  const tl=gsap.timeline({defaults:{ease:'power3.out'}});
+  gsap.set(stage.querySelectorAll('.hero .node'),{opacity:0,scale:0});
+  gsap.set(stage.querySelector('.logo'),{position:'relative'});
+  gsap.set(stage.querySelector('.vstack'),{xPercent:120});
+  gsap.set(stage.querySelector('.headline'),{y:22});
+  tl.to(stage.querySelectorAll('.aurora'),{opacity:1,duration:1.9,stagger:.2},0)
+    .to(stage.querySelectorAll('.hero .node'),{opacity:.9,scale:1,duration:1.5,stagger:{each:.06,from:'random'}},.2)
+    .to(stage.querySelectorAll('.hero .edges line'),{opacity:1,duration:1.2},.4)
+    .fromTo(stage.querySelector('.logo'),{opacity:0,y:16},{opacity:1,y:0,duration:1.1},.7)
+    .to(stage.querySelector('.vstack'),{opacity:1,duration:.5},'-=.5')
+    .fromTo(stage.querySelectorAll('.vstack .ln2'),{opacity:0,x:-12},{opacity:1,x:0,duration:.6,stagger:.1},'<')
+    .to({},{duration:1.2})
+    .to(stage.querySelector('.vstack'),{opacity:0,x:14,duration:.5},'>')
+    .to(stage.querySelector('.logo'),{y:-38,scale:.76,duration:.9,ease:'power2.inOut'},'<')
+    .to(stage.querySelector('.brand-mark'),{opacity:1,duration:.6},'<.1')
+    .to(stage.querySelector('.headline'),{opacity:1,y:0,duration:1.0},'<.1')
+    .to(stage.querySelector('.scrollcue'),{opacity:1,duration:.6},'-=.2')
+    .to(stage.querySelector('.hero-footer'),{opacity:1,duration:.6},'<');
+  drift(g.nodeEls,8);cue(stage);return g;
+}
+function tlC(stage){
+  const g=buildGraph(stage,{labeled:true,viewbox:true,nodeOpacity:1});
+  const lines=stage.querySelectorAll('.hero .edges line');
+  const tl=gsap.timeline({defaults:{ease:'power3.out'}});
+  gsap.set(stage.querySelectorAll('.hero .node'),{opacity:0,scale:0});
+  gsap.set(stage.querySelectorAll('.hero .node .label'),{opacity:0});
+  gsap.set(stage.querySelector('.headline'),{y:22});
+  lines.forEach(l=>{const len=l.getTotalLength();l.style.strokeDasharray=len;l.style.strokeDashoffset=len;});
+  tl.to(lines,{strokeDashoffset:0,duration:1.4,stagger:.03,ease:'power2.inOut'},.2)
+    .to(stage.querySelectorAll('.hero .node'),{opacity:1,scale:1,duration:.7,stagger:{each:.04,from:'center'},ease:'back.out(2)'},'-=1.0')
+    .to(stage.querySelectorAll('.hero .node .label'),{opacity:1,duration:.6,stagger:.03},'-=.6')
+    .fromTo(stage.querySelector('.hublogo'),{opacity:0,scale:.55},{opacity:1,scale:1,duration:1.0,ease:'back.out(1.5)'},'-=.3')
+    .fromTo(stage.querySelectorAll('.acronym2 div'),{opacity:0,x:-10},{opacity:1,x:0,duration:.5,stagger:.08},'-=.4')
+    .to(stage.querySelector('.acronym2'),{opacity:1,duration:.01},'<')
+    .to(stage.querySelector('.headline'),{opacity:1,y:0,duration:1.0},'-=.1')
+    .to(stage.querySelector('.brand-mark'),{opacity:1,duration:.6},'<')
+    .to(stage.querySelector('.scrollcue'),{opacity:1,duration:.6},'-=.3')
+    .to(stage.querySelector('.hero-footer'),{opacity:1,duration:.6},'<');
+  requestAnimationFrame(()=>{const c=stage.querySelector('.center').getBoundingClientRect();
+    const a=stage.querySelector('.acronym2');a.style.left=(c.width*0.5+150)+'px';a.style.top=(c.height*0.5-70)+'px';});
+  drift(g.nodeEls,1.0);
+  const wrap=stage.querySelector('.graphwrap');
+  stage.querySelector('.hero').onmousemove=e=>{const dx=(e.clientX/innerWidth-.5),dy=(e.clientY/innerHeight-.5);
+    gsap.to(wrap,{rotationY:dx*7,rotationX:-dy*7,x:dx*16,y:dy*16,duration:.8,ease:'power2.out',transformPerspective:900});};
+  cue(stage);return g;
+}
+
+/* ---------------- switching & controls ---------------- */
+const stages=[...document.querySelectorAll('.stage')];
+function activate(key){
+  stages.forEach(s=>s.classList.toggle('show',s.dataset.c===key));
+  document.querySelectorAll('.toolbar [data-go]').forEach(b=>b.classList.toggle('active',b.dataset.go===key));
+  play(key);
+  setTimeout(()=>ScrollTrigger.refresh(),60);
+}
+document.querySelectorAll('.toolbar [data-go]').forEach(b=>b.onclick=()=>activate(b.dataset.go));
+document.querySelector('[data-replay]').onclick=()=>{const cur=stages.find(s=>s.classList.contains('show'));play(cur.dataset.c);};
+
+/* scroll cue → snap to login; back → hero */
+document.querySelectorAll('.scrollcue').forEach(c=>c.onclick=()=>goLogin(c.closest('.stage')));
+document.querySelectorAll('.login-back').forEach(b=>b.onclick=()=>goHero(b.closest('.stage')));
+document.querySelectorAll('.role').forEach(r=>r.onclick=function(){this.parentElement.querySelectorAll('.role').forEach(x=>x.classList.remove('active'));this.classList.add('active');});
+document.querySelectorAll('.oauth').forEach(o=>o.onclick=()=>{const s=o.querySelector('span');const t=s.textContent;s.textContent='↻';setTimeout(()=>s.textContent=t,900);});
+
+/* live logo swap */
+function setLogo(v){
+  document.querySelectorAll('.brand-mark img,.logo img,.hublogo img,.login-logo')
+    .forEach(img=>img.src=`frontend/assets/logo-lina-ver${v}.png`);
+  document.querySelectorAll('.toolbar [data-logo]').forEach(b=>b.classList.toggle('active',b.dataset.logo===v));
+}
+document.querySelectorAll('.toolbar [data-logo]').forEach(b=>b.onclick=()=>setLogo(b.dataset.logo));
+
+window.addEventListener('load',()=>activate('a'));
+window.addEventListener('resize',()=>ScrollTrigger.refresh());
+</script>
+</body>
+</html>
