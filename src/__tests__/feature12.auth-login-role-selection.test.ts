@@ -109,7 +109,7 @@ describe('feature12 Auth / Login + Role Selection', () => {
     expect(wrapper.get('[data-testid="landing-ask-input-box"]').classes()).toContain('-right-20');
     expect(wrapper.get('[data-testid="landing-ask-input-box"]').classes()).toContain('top-24');
     expect(wrapper.get('[data-testid="landing-ask-arrow-path"]').attributes('d')).toBe(
-      'M 205 198 C 292 158 356 148 438 160',
+      'M 196 226 C 260 204 318 194 360 196',
     );
 
     await wrapper.get('[data-testid="landing-feature-tab-verify"]').trigger('click');

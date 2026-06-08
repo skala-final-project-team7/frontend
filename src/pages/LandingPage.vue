@@ -21,6 +21,9 @@ import {
   chatInputBoxImageUrl,
   chatScreenshotImageUrl,
   confluenceIconImageUrl,
+  linaAskImageUrl,
+  linaSearchImageUrl,
+  linaVerifyImageUrl,
   logoLinaCuteImageUrl,
 } from '@/shared';
 
@@ -436,6 +439,30 @@ onMounted(() => {
                 {{ bullet }}
               </li>
             </ul>
+
+            <div class="-mt-10 flex justify-end">
+              <img
+                v-if="activeTab === 'ask'"
+                :src="linaAskImageUrl"
+                alt=""
+                aria-hidden="true"
+                class="w-36 object-contain drop-shadow-sm"
+              />
+              <img
+                v-else-if="activeTab === 'search'"
+                :src="linaSearchImageUrl"
+                alt=""
+                aria-hidden="true"
+                class="w-36 object-contain drop-shadow-sm"
+              />
+              <img
+                v-else
+                :src="linaVerifyImageUrl"
+                alt=""
+                aria-hidden="true"
+                class="w-36 object-contain mix-blend-darken"
+              />
+            </div>
           </div>
 
           <!-- 우측: 시각적 목업 -->
@@ -686,21 +713,21 @@ onMounted(() => {
               >
                 <path
                   data-testid="landing-ask-arrow-path"
-                  d="M 205 198 C 292 158 356 148 438 160"
+                  d="M 152 236 C 168 168 268 140 310 140"
                   stroke="var(--color-primary)"
-                  stroke-width="4"
+                  stroke-width="5"
                   stroke-linecap="round"
                   stroke-linejoin="round"
                 />
                 <path
-                  d="M 420 146 L 438 160 L 415 170"
+                  d="M 287 130 L 310 140 L 290 155"
                   stroke="var(--color-primary)"
-                  stroke-width="4"
+                  stroke-width="5"
                   stroke-linecap="round"
                   stroke-linejoin="round"
                 />
               </svg>
-
+              
               <img
                 data-testid="landing-ask-input-box"
                 :src="chatInputBoxImageUrl"

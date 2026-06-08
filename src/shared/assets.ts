@@ -17,7 +17,10 @@ import confluenceIconImageUrl from '../../frontend/assets/icons/confluence-icon.
 import searchImageUrl from '../../frontend/assets/icons/search.png';
 import skpSymbolImageUrl from '../../frontend/assets/icons/skp_symbol-nobg.png';
 import linaAdminImageUrl from '../../frontend/assets/lina-character/lina-admin.png';
+import linaAskImageUrl from '../../frontend/assets/lina-character/lina-ask.png';
+import linaSearchImageUrl from '../../frontend/assets/lina-character/lina-search.png';
 import linaUserImageUrl from '../../frontend/assets/lina-character/lina-user.png';
+import linaVerifyImageUrl from '../../frontend/assets/lina-character/lina-verify.png';
 import mascotRealizeImageUrl from '../../frontend/assets/lina-character/mascot-realize-nobg.png';
 import mascotSearchImageUrl from '../../frontend/assets/lina-character/mascot-search-nobg.png';
 import mascotWrongImageUrl from '../../frontend/assets/lina-character/mascot-wrong.png';
@@ -31,7 +34,10 @@ export {
   chatScreenshotImageUrl,
   confluenceIconImageUrl,
   linaAdminImageUrl,
+  linaAskImageUrl,
+  linaSearchImageUrl,
   linaUserImageUrl,
+  linaVerifyImageUrl,
   logoLinaCuteImageUrl,
   mascotImageUrl,
   mascotRealizeImageUrl,
