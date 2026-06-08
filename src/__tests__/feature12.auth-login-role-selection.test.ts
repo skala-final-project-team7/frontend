@@ -51,12 +51,16 @@ describe('feature12 Auth / Login + Role Selection', () => {
     expect(wrapper.text()).not.toContain('continue');
     expect(wrapper.find('[data-testid="login-page"]').exists()).toBe(false);
 
+    const scrollIndicators = wrapper.findAll('.landing-scroll-indicator');
+    expect(scrollIndicators).toHaveLength(2);
+    expect(scrollIndicators[0].classes()).toContain('text-overlay-dark-60');
+
     const acronymWords = wrapper.findAll('[data-testid="landing-acronym-word"]');
     expect(acronymWords).toHaveLength(4);
     expect(acronymWords[0].classes()).toContain('landing-acronym-word');
     expect(acronymWords[0].classes()).toContain('text-body');
     expect(acronymWords[0].classes()).toContain('text-overlay-dark-80');
-    expect(acronymWords[0].attributes('style')).toContain('left: 28%');
+    expect(acronymWords[0].attributes('style')).toContain('left: 30%');
     expect(acronymWords[0].attributes('style')).toContain('top: -62%');
   });
 
@@ -93,7 +97,39 @@ describe('feature12 Auth / Login + Role Selection', () => {
     expect(wrapper.find('[data-testid="confluence-login-button"]').exists()).toBe(false);
     expect(wrapper.find('[data-testid="role-selection-panel"]').exists()).toBe(true);
     expect(wrapper.get('[data-testid="user-role-button"]').classes()).toContain('login-role-card');
+    expect(wrapper.get('[data-testid="user-role-button"]').classes()).toContain('items-center');
+    expect(wrapper.get('[data-testid="user-role-button"]').classes()).toContain('text-center');
+    expect(wrapper.get('[data-testid="user-role-button"]').classes()).toContain(
+      'hover:-translate-y-2',
+    );
+    expect(wrapper.get('[data-testid="user-role-button"]').classes()).toContain(
+      'hover:border-primary',
+    );
     expect(wrapper.get('[data-testid="admin-role-button"]').classes()).toContain('login-role-card');
+    expect(wrapper.get('[data-testid="user-role-image"]').attributes('src')).toContain(
+      'lina-user.png',
+    );
+    expect(wrapper.get('[data-testid="user-role-image"]').classes()).toContain('h-28');
+    expect(wrapper.get('[data-testid="admin-role-image"]').attributes('src')).toContain(
+      'lina-admin.png',
+    );
+    expect(wrapper.get('[data-testid="admin-role-image"]').classes()).toContain('h-28');
+    expect(wrapper.get('[data-testid="user-role-button"]').text()).toContain(
+      '사용자별 접근 가능한 문서를 기반으로 질문하고',
+    );
+    expect(wrapper.get('[data-testid="admin-role-button"]').text()).toContain(
+      '접근 권한 및 운영 상태를 관리합니다.',
+    );
+    expect(wrapper.get('[data-testid="user-role-button"]').text()).toContain(
+      '답변의 출처와 근거를 함께 확인해보세요.',
+    );
+    expect(wrapper.get('[data-testid="user-role-button"] span:nth-of-type(2)').classes()).toContain(
+      'whitespace-pre-line',
+    );
+    expect(wrapper.get('[data-testid="admin-role-note-icon"]').exists()).toBe(true);
+    expect(wrapper.get('[data-testid="admin-role-note"]').text()).toBe(
+      '관리자 권한 확인 후 접근할 수 있습니다.',
+    );
     expect(wrapper.get('[data-testid="user-role-button"]').attributes('data-auth-url')).toBe(
       AUTH_LOGIN_URL_BY_ROLE.user,
     );

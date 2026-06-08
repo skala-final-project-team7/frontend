@@ -13,10 +13,15 @@
 --------------------------------------------------
 -->
 <script setup lang="ts">
-import { ShieldCheck, UserRound } from '@lucide/vue';
+import { ShieldCheck } from '@lucide/vue';
 
 import { AUTH_INTENT_OPTIONS } from '@/features/auth';
-import { mascotImageUrl } from '@/shared';
+import { linaAdminImageUrl, linaUserImageUrl, mascotImageUrl } from '@/shared';
+
+const roleImageUrlByRole = {
+  user: linaUserImageUrl,
+  admin: linaAdminImageUrl,
+} as const;
 </script>
 
 <template>
@@ -44,16 +49,31 @@ import { mascotImageUrl } from '@/shared';
           :data-testid="`${option.role}-role-button`"
           :data-auth-url="option.authUrl"
           :data-return-to="option.returnTo"
-          class="login-role-card flex min-h-[260px] flex-col items-start rounded-card border border-bg-300 bg-primary-white p-8 text-left shadow-floating transition hover:brightness-105 focus-visible:outline-none focus-visible:shadow-focus"
+          class="login-role-card flex min-h-[260px] flex-col items-center rounded-card border border-bg-300 bg-primary-white p-8 text-center shadow-floating transition duration-200 ease-out hover:-translate-y-2 hover:border-primary hover:brightness-105 hover:shadow-primary focus-visible:outline-none focus-visible:shadow-focus"
         >
-          <component
-            :is="option.role === 'admin' ? ShieldCheck : UserRound"
-            class="mb-9 size-8 text-primary"
-            aria-hidden="true"
+          <img
+            class="mb-6 h-28 w-auto object-contain"
+            :src="roleImageUrlByRole[option.role]"
+            :alt="`${option.label} 로그인`"
+            :data-testid="`${option.role}-role-image`"
           />
           <span class="text-heading font-bold text-overlay-dark-80">{{ option.label }}</span>
-          <span class="mt-8 max-w-md text-xl leading-relaxed text-overlay-dark-40">
+          <span
+            class="mt-6 max-w-md whitespace-pre-line text-xl leading-relaxed text-overlay-dark-40"
+          >
             {{ option.description }}
+          </span>
+          <span
+            v-if="option.note"
+            data-testid="admin-role-note"
+            class="mt-5 inline-flex items-center gap-1.5 text-small text-overlay-dark-40"
+          >
+            <ShieldCheck
+              data-testid="admin-role-note-icon"
+              class="size-3.5 text-primary"
+              aria-hidden="true"
+            />
+            {{ option.note }}
           </span>
         </a>
       </section>

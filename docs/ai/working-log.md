@@ -2396,3 +2396,13 @@
 - `/admin`은 feature12 역할 선택 mock 흐름을 위한 placeholder이며, SCR-800 Admin shell 구현은 feature15 범위로 유지한다.
 - 실제 `/api/auth/login`, OAuth callback, `GET /api/users/me`, 토큰 저장/갱신/로그아웃 처리는 feature13 범위로 남긴다.
 - API, DB, 인증/인가 명세는 변경하지 않음.
+
+## 2026-06-08 - refactor: feature12 Landing/Login 디자인 정리
+
+- `/` 랜딩을 3패널 스크롤 구조로 정리하고, 첫 화면에 큐트 LINA 로고와 장식용 지식 그래프 배경을 배치했다.
+- 랜딩 acronym 텍스트(`INKED / INTELLIGENCE / AVIGATION / GENT`)에 순차 rise animation을 적용하고, `INKED` 위치를 로고 안쪽으로 조정했다.
+- `/login`은 중간 Confluence CTA 없이 일반 사용자/관리자 역할 카드 2개를 즉시 표시하도록 정리했다.
+- 역할 카드에 `lina-user.png`, `lina-admin.png` 이미지를 적용하고 중앙 정렬, rise animation, hover lift/primary border 효과를 추가했다.
+- 관리자 카드에는 권한 확인 note와 작은 shield icon을 추가했다.
+- 사용자/관리자 설명 문구를 서비스 톤으로 다듬고 `whitespace-pre-line`으로 의도한 줄바꿈이 보이게 했다.
+- graph용 blue/sky/purple/indigo 디자인 토큰을 추가해 랜딩 그래프 색상을 토큰 기반으로 관리한다.

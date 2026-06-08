@@ -20,10 +20,14 @@ import mascotWrongImageUrl from '../../frontend/assets/mascot-wrong.png';
 import searchImageUrl from '../../frontend/assets/search.png';
 import skpSymbolImageUrl from '../../frontend/assets/skp_symbol-nobg.png';
 import confluenceIconImageUrl from '../../frontend/assets/confluence-icon.png';
+import linaAdminImageUrl from '../../frontend/assets/lina-admin.png';
+import linaUserImageUrl from '../../frontend/assets/lina-user.png';
 import logoLinaCuteImageUrl from '../../frontend/assets/logo-lina-cute4.png';
 
 export {
   confluenceIconImageUrl,
+  linaAdminImageUrl,
+  linaUserImageUrl,
   logoLinaCuteImageUrl,
   mascotImageUrl,
   mascotRealizeImageUrl,

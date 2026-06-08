@@ -16,7 +16,7 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 
-import { confluenceIconImageUrl, logoLinaCuteImageUrl, mascotImageUrl } from '@/shared';
+import { confluenceIconImageUrl, logoLinaCuteImageUrl } from '@/shared';
 
 const router = useRouter();
 const loginPanelRef = ref<HTMLElement | null>(null);
@@ -129,10 +129,10 @@ const graphLines = [
 ] as const;
 
 const acronymWords = [
-  { text: 'INKED', x: 31, y: -62 },
-  { text: 'INTELLIGENCE', x: 43, y: 0 },
+  { text: 'INKED', x: 30, y: -62 },
+  { text: 'INTELLIGENCE', x: 42, y: 0 },
   { text: 'AVIGATION', x: 59, y: 0 },
-  { text: 'GENT', x: 79, y: 0 },
+  { text: 'GENT', x: 78, y: 0 },
 ] as const;
 
 function enterLogin() {
@@ -216,7 +216,7 @@ function scrollToLoginPanel() {
       <button
         type="button"
         data-testid="landing-continue-button"
-        class="absolute bottom-16 left-1/2 z-10 inline-flex -translate-x-1/2 flex-col items-center gap-2 text-button font-normal text-overlay-dark-40 transition hover:text-overlay-dark-80 focus-visible:outline-none focus-visible:shadow-focus"
+        class="landing-scroll-indicator absolute bottom-16 left-1/2 z-10 inline-flex flex-col items-center gap-2 text-button font-normal text-overlay-dark-60 transition hover:text-overlay-dark-80 focus-visible:outline-none focus-visible:shadow-focus"
         @click="scrollToLoginPanel"
       >
         <span>scroll</span>
@@ -251,7 +251,7 @@ function scrollToLoginPanel() {
       </p>
       <button
         type="button"
-        class="absolute bottom-16 left-1/2 inline-flex -translate-x-1/2 flex-col items-center gap-2 text-button font-normal text-overlay-dark-40 transition hover:text-overlay-dark-80 focus-visible:outline-none focus-visible:shadow-focus"
+        class="landing-scroll-indicator absolute bottom-16 left-1/2 inline-flex flex-col items-center gap-2 text-button font-normal text-overlay-dark-60 transition hover:text-overlay-dark-80 focus-visible:outline-none focus-visible:shadow-focus"
         @click="scrollToLoginPanel"
       >
         <span>scroll</span>
@@ -270,11 +270,6 @@ function scrollToLoginPanel() {
       class="relative flex h-screen snap-start snap-always flex-col overflow-hidden bg-bg-100 text-overlay-dark-80"
       aria-label="로그인 진입"
     >
-      <header class="flex items-center gap-3 px-8 py-7">
-        <img class="size-9 object-contain" :src="mascotImageUrl" alt="" aria-hidden="true" />
-        <span class="text-xl font-bold">LINA</span>
-      </header>
-
       <section
         class="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center px-6 pt-24 text-center"
       >
@@ -335,6 +330,11 @@ function scrollToLoginPanel() {
   animation-delay: 660ms;
 }
 
+.landing-scroll-indicator {
+  animation: landing-scroll-float 1800ms ease-in-out infinite;
+  filter: drop-shadow(0 10px 18px color-mix(in srgb, var(--color-primary) 24%, transparent));
+}
+
 @keyframes landing-acronym-rise {
   from {
     opacity: 0;
@@ -344,6 +344,17 @@ function scrollToLoginPanel() {
   to {
     opacity: 1;
     transform: translate(-50%, -50%);
+  }
+}
+
+@keyframes landing-scroll-float {
+  0%,
+  100% {
+    transform: translate(-50%, 0);
+  }
+
+  50% {
+    transform: translate(-50%, -12px);
   }
 }
 </style>

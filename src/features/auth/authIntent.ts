@@ -18,6 +18,7 @@ export interface AuthIntentOption {
   role: AuthRoleIntent;
   label: string;
   description: string;
+  note?: string;
   authUrl: string;
   returnTo: '/chat' | '/admin';
 }
@@ -33,14 +34,16 @@ export const AUTH_INTENT_OPTIONS: AuthIntentOption[] = [
   {
     role: 'user',
     label: '일반 사용자',
-    description: 'Confluence 지식 검색과 답변 확인을 위해 Chat 화면으로 이동합니다.',
+    description:
+      '사용자별 접근 가능한 문서를 기반으로 질문하고,\n답변의 출처와 근거를 함께 확인해보세요.',
     authUrl: AUTH_LOGIN_URL_BY_ROLE.user,
     returnTo: '/chat',
   },
   {
     role: 'admin',
     label: '관리자',
-    description: '조직 데이터 수집과 동기화 관리를 위해 Admin 화면으로 이동합니다.',
+    description: '조직 지식 베이스 연동과 문서 동기화,\n접근 권한 및 운영 상태를 관리합니다.',
+    note: '관리자 권한 확인 후 접근할 수 있습니다.',
     authUrl: AUTH_LOGIN_URL_BY_ROLE.admin,
     returnTo: '/admin',
   },
