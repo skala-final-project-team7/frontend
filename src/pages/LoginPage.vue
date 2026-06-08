@@ -14,23 +14,9 @@
 -->
 <script setup lang="ts">
 import { ShieldCheck, UserRound } from '@lucide/vue';
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
 
-import { AUTH_INTENT_OPTIONS, type AuthIntentOption } from '@/features/auth';
-import { confluenceIconImageUrl, mascotImageUrl } from '@/shared';
-
-const router = useRouter();
-const isRoleSelectionOpen = ref(false);
-
-function openRoleSelection() {
-  isRoleSelectionOpen.value = true;
-}
-
-function continueWithRole(option: AuthIntentOption) {
-  // feature12에서는 실제 OAuth 호출이나 토큰 저장 없이 역할 선택 의도만 mock 라우팅한다.
-  void router.push(option.returnTo);
-}
+import { AUTH_INTENT_OPTIONS } from '@/features/auth';
+import { mascotImageUrl } from '@/shared';
 </script>
 
 <template>
@@ -44,77 +30,60 @@ function continueWithRole(option: AuthIntentOption) {
     </header>
 
     <section
-      class="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center px-6 pt-24 text-center"
+      class="mx-auto flex w-full max-w-6xl flex-1 flex-col items-center justify-center px-6 pb-20 text-center"
     >
-      <h1 class="text-heading font-bold">Log in</h1>
-      <p class="mt-8 text-xl text-overlay-dark-80">
-        LINA.ai와 함께 Confluence 안의 지식을 빠르게 찾아보세요.
-      </p>
-      <p class="mt-6 text-body text-overlay-dark-40">
-        Confluence 문서를 기반으로 필요한 정보를 검색하고, 답변과 출처를 함께 확인할 수 있습니다.
-      </p>
-
-      <button
-        type="button"
-        data-testid="confluence-login-button"
-        data-auth-url=""
-        class="mt-8 inline-flex min-h-16 w-full max-w-[436px] items-center justify-center gap-8 rounded-card border border-bg-300 bg-primary-white px-8 text-xl text-overlay-dark-80 transition hover:brightness-105 focus-visible:outline-none focus-visible:shadow-focus"
-        @click="openRoleSelection"
-      >
-        <img
-          class="size-8 object-contain"
-          :src="confluenceIconImageUrl"
-          alt=""
-          aria-hidden="true"
-        />
-        <span>Continue with Confluence</span>
-      </button>
-
-      <nav class="mt-5 flex items-center gap-5 text-body text-overlay-dark-40" aria-label="약관">
-        <a class="hover:text-overlay-dark-80" href="#">Terms of Use</a>
-        <span aria-hidden="true">|</span>
-        <a class="hover:text-overlay-dark-80" href="#">Privacy Policy</a>
-      </nav>
-
       <section
-        v-if="isRoleSelectionOpen"
         data-testid="role-selection-panel"
-        class="mt-8 grid w-full max-w-[560px] gap-3 sm:grid-cols-2"
+        class="grid w-full max-w-[1120px] gap-6 md:grid-cols-2"
         aria-label="로그인 역할 선택"
       >
-        <button
+        <a
           v-for="option in AUTH_INTENT_OPTIONS"
           :key="option.role"
-          type="button"
+          :href="option.authUrl"
           :data-testid="`${option.role}-role-button`"
           :data-auth-url="option.authUrl"
           :data-return-to="option.returnTo"
-          class="flex min-h-[132px] flex-col items-start rounded-card border border-bg-300 bg-primary-white p-card text-left shadow-floating transition hover:brightness-105 focus-visible:outline-none focus-visible:shadow-focus"
-          @click="continueWithRole(option)"
+          class="login-role-card flex min-h-[260px] flex-col items-start rounded-card border border-bg-300 bg-primary-white p-8 text-left shadow-floating transition hover:brightness-105 focus-visible:outline-none focus-visible:shadow-focus"
         >
           <component
             :is="option.role === 'admin' ? ShieldCheck : UserRound"
-            class="mb-4 size-5 text-primary"
+            class="mb-9 size-8 text-primary"
             aria-hidden="true"
           />
-          <span class="text-body font-bold text-overlay-dark-80">{{ option.label }}</span>
-          <span class="mt-2 text-small text-overlay-dark-40">{{ option.description }}</span>
-        </button>
+          <span class="text-heading font-bold text-overlay-dark-80">{{ option.label }}</span>
+          <span class="mt-8 max-w-md text-xl leading-relaxed text-overlay-dark-40">
+            {{ option.description }}
+          </span>
+        </a>
       </section>
-
-      <p
-        v-if="isRoleSelectionOpen"
-        data-testid="auth-intent-note"
-        class="mt-4 max-w-[560px] text-small text-overlay-dark-40"
-      >
-        선택한 역할은 로그인 의도이며 최종 권한은 인증 완료 후 서버에서 확인됩니다.
-      </p>
     </section>
 
-    <footer
-      class="absolute inset-x-0 bottom-8 text-center text-button font-bold text-overlay-dark-40"
-    >
+    <footer class="absolute inset-x-0 bottom-8 text-center text-button text-overlay-dark-40">
       ©2026 LINA | SKALA
     </footer>
   </main>
 </template>
+
+<style scoped>
+.login-role-card {
+  opacity: 0;
+  animation: login-role-card-rise 900ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.login-role-card:nth-child(2) {
+  animation-delay: 160ms;
+}
+
+@keyframes login-role-card-rise {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+</style>

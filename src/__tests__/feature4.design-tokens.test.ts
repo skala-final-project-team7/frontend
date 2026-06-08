@@ -20,6 +20,7 @@ type Feature4ThemeExtension = {
     primary: Record<string, string>;
     bg: Record<number, string>;
     status: Record<string, string>;
+    graph: Record<string, string>;
     overlay: {
       dark: Record<number, string>;
       white: Record<number, string>;
@@ -48,6 +49,12 @@ describe('feature4 design tokens and base styles', () => {
       success: 'var(--color-success)',
       error: 'var(--color-error)',
       warning: 'var(--color-warning)',
+    });
+    expect(extension.colors.graph).toMatchObject({
+      blue: 'var(--color-graph-blue)',
+      sky: 'var(--color-graph-sky)',
+      purple: 'var(--color-graph-purple)',
+      indigo: 'var(--color-graph-indigo)',
     });
     expect(extension.colors.overlay).toMatchObject({
       dark: {

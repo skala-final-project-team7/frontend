@@ -42,11 +42,13 @@ LINA — Confluence 기반 RAG 검색/응답 시스템 (Vue 3 SPA)
 
 ## Auth / Data Responsibility
 
-- 서비스 시작 화면은 Login 화면이다.
-- Login 화면 최초 CTA는 `Continue with Confluence` 하나만 표시한다.
-- `Continue with Confluence` 클릭 시 즉시 OAuth를 시작하지 않고, 일반 사용자/관리자 선택 UI를 표시한다.
-- 일반 사용자 선택은 향후 `GET /api/auth/login?returnTo=/chat` 흐름으로 연결한다.
-- 관리자 선택은 향후 `GET /api/auth/login?mode=admin&returnTo=/admin` 흐름으로 연결한다.
+- 서비스 시작 화면은 `/` 랜딩 화면이다.
+- `/` 랜딩 화면은 3패널 스크롤 구조로 구성한다.
+- `/` 랜딩의 마지막 패널은 로그인 진입 패널이며, 최초 CTA는 `Continue with Confluence` 하나만 표시한다.
+- `/` 랜딩의 `Continue with Confluence` 클릭 시 즉시 OAuth를 시작하지 않고 `/login`으로 이동한다.
+- `/login` 화면은 일반 사용자/관리자 선택 UI를 표시한다.
+- 일반 사용자 선택은 `GET /api/auth/login` 흐름으로 연결한다.
+- 관리자 선택은 `GET /api/auth/login?mode=admin` 흐름으로 연결한다.
 - 사용자가 선택한 역할은 클라이언트의 로그인 의도일 뿐이다. 최종 권한 판단은 BFF/Auth Server가 `mode=admin`, OAuth 결과, `users.role`, `GET /api/users/me`의 `role`을 기준으로 수행한다.
 - 일반 사용자는 로그인 후 Chat 화면에서 질의만 수행한다. Data Ingestion/Data Sync/Admin Key 발급 UI는 일반 사용자 화면에 노출하지 않는다.
 - 조직 데이터 수집과 동기화는 오직 관리자 화면에서 관리자만 수행한다.
@@ -60,15 +62,16 @@ LINA — Confluence 기반 RAG 검색/응답 시스템 (Vue 3 SPA)
 ```mermaid
 flowchart TD
 
-    SCR100[SCR-100<br/>시작 / 로그인 진입] --> SCR200[SCR-200<br/>로그인]
-    SCR200 --> CTA[Continue with Confluence]
-    CTA --> RoleSelect{역할 선택}
+    Root[/<br/>랜딩 3패널 스크롤] --> LoginEntry[마지막 패널<br/>로그인 진입]
+    LoginEntry --> CTA[Continue with Confluence]
+    CTA --> SCR200[/login<br/>로그인]
+    SCR200 --> RoleSelect{역할 선택}
 
     RoleSelect --> UserLogin[일반 사용자로 계속]
     RoleSelect --> AdminLogin[관리자로 계속]
 
-    UserLogin --> UserOAuth[Confluence OAuth<br/>일반 사용자 모드]
-    AdminLogin --> AdminOAuth[Confluence OAuth<br/>관리자 모드]
+    UserLogin --> UserOAuth[/api/auth/login<br/>Confluence OAuth 일반 사용자 모드]
+    AdminLogin --> AdminOAuth[/api/auth/login?mode=admin<br/>Confluence OAuth 관리자 모드]
 
     UserOAuth --> SCR400[SCR-400<br/>챗봇 메인]
     AdminOAuth --> SCR800[SCR-800<br/>관리자 데이터 수집 메인 보드]

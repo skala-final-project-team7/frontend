@@ -20,6 +20,12 @@ export default {
           error: 'var(--color-error)',
           warning: 'var(--color-warning)',
         },
+        graph: {
+          blue: 'var(--color-graph-blue)',
+          sky: 'var(--color-graph-sky)',
+          purple: 'var(--color-graph-purple)',
+          indigo: 'var(--color-graph-indigo)',
+        },
         overlay: {
           dark: {
             80: 'var(--color-dark-80)',

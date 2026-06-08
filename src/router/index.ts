@@ -19,6 +19,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 
 import AdminEntryPage from '@/pages/AdminEntryPage.vue';
 import ChatPage from '@/pages/ChatPage.vue';
+import LandingPage from '@/pages/LandingPage.vue';
 import LoginPage from '@/pages/LoginPage.vue';
 
 const router = createRouter({
@@ -26,7 +27,8 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      redirect: { name: 'login' },
+      name: 'landing',
+      component: LandingPage,
     },
     {
       path: '/login',

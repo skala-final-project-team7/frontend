@@ -22,11 +22,11 @@ export interface AuthIntentOption {
   returnTo: '/chat' | '/admin';
 }
 
-// feature12 경계: 실제 /api/auth/login 호출과 토큰 저장은 feature13에서 연결한다.
-// 현재 값은 역할 버튼에 예정 OAuth URL을 노출하고 mock 라우팅 의도를 검증하기 위한 계약이다.
+// feature12 경계: 역할 선택 후 브라우저를 BFF OAuth 시작 엔드포인트로 이동시키는 것까지만 구현한다.
+// 미구현: Confluence callback 처리, LINA JWT 저장, 서버가 확인한 최종 USER/ADMIN 권한 반영은 feature13 이후에 연결한다.
 export const AUTH_LOGIN_URL_BY_ROLE: Record<AuthRoleIntent, string> = {
-  user: '/api/auth/login?returnTo=/chat',
-  admin: '/api/auth/login?mode=admin&returnTo=/admin',
+  user: '/api/auth/login',
+  admin: '/api/auth/login?mode=admin',
 };
 
 export const AUTH_INTENT_OPTIONS: AuthIntentOption[] = [
