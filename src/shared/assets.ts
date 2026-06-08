@@ -14,6 +14,7 @@
  * --------------------------------------------------
  */
 import confluenceIconImageUrl from '../../frontend/assets/icons/confluence-icon.png';
+import iconsImageUrl from '../../frontend/assets/icons/icons.png';
 import searchImageUrl from '../../frontend/assets/icons/search.png';
 import skpSymbolImageUrl from '../../frontend/assets/icons/skp_symbol-nobg.png';
 import linaAdminImageUrl from '../../frontend/assets/lina-character/lina-admin.png';
@@ -33,6 +34,7 @@ export {
   chatInputBoxImageUrl,
   chatScreenshotImageUrl,
   confluenceIconImageUrl,
+  iconsImageUrl,
   linaAdminImageUrl,
   linaAskImageUrl,
   linaSearchImageUrl,

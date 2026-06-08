@@ -2,6 +2,31 @@
 
 이 문서는 `docs/ai/current-plan.md`의 feature 단위 작업 결과를 기록한다.
 
+## 2026-06-08 - refactor: LandingPage 디자인 개선 (Ask 화살표 · 캐릭터 이미지 · 탭 안정성)
+
+### Scope
+
+- LandingPage Ask 탭 화살표 SVG를 직선에서 스웁 곡선으로 개선
+- lina-ask / lina-search / lina-verify 캐릭터 이미지를 각 탭 텍스트 하단 우측에 배치
+- 탭 전환 시 레이아웃 jitter 수정: 그리드에 min-height 고정, `items-start` 적용
+- 탭 콘텐츠에 Vue `<Transition mode="out-in">` fade 애니메이션 추가
+- 스냅 스크롤 컨테이너에 `scroll-smooth` 적용
+- `src/shared/assets.ts`에 lina-ask / lina-search / lina-verify 이미지 export 추가
+
+### Changed Files
+
+- `src/pages/LandingPage.vue`: 화살표 SVG, 캐릭터 이미지 배치, 탭 Transition, scroll-smooth
+- `src/shared/assets.ts`: linaAskImageUrl / linaSearchImageUrl / linaVerifyImageUrl export 추가
+
+### Results
+
+- 탭 전환 시 탭 바 Y 위치 고정 확인 (puppeteer 측정: 3탭 모두 235px STABLE)
+- scroll-smooth로 snap 스크롤 전환 부드러움 개선
+
+### Notes / Remaining Issues
+
+- lina-verify.png는 흰 배경이 포함된 원본 파일이다. PNG 배경 제거 버전 파일로 교체 시 `mix-blend-darken` 클래스 제거 필요.
+
 ## Log Template
 
 ```md

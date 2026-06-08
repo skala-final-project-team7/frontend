@@ -6,6 +6,11 @@
 작성일 : 2026-06-05
 변경사항 내역 (날짜, 변경목적, 변경내용 순)
   - 2026-06-05, feature12 구현, LandingPage 최초 작성
+  - 2026-06-08, 디자인 개선, 3패널 스냅 스크롤 구조, 장식용 지식 그래프 배경, acronym rise animation
+  - 2026-06-08, 디자인 개선, headline 패널 2단계 전환(tagline→feature showcase) 추가
+  - 2026-06-08, 디자인 개선, Ask 탭 화살표 SVG 스웁 곡선으로 개선
+  - 2026-06-08, 디자인 개선, lina-ask/search/verify 캐릭터 이미지 각 탭 하단에 배치
+  - 2026-06-08, UX 개선, 탭 전환 Transition fade 추가, 스냅 스크롤 scroll-smooth 적용
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -18,9 +23,11 @@ import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 import {
+  BaseSpinner,
   chatInputBoxImageUrl,
   chatScreenshotImageUrl,
   confluenceIconImageUrl,
+  iconsImageUrl,
   linaAskImageUrl,
   linaSearchImageUrl,
   linaVerifyImageUrl,
@@ -195,6 +202,13 @@ const verifyDocs = [
 ] as const;
 
 onMounted(() => {
+  // 탭별 캐릭터 이미지를 미리 fetch+decode 해두어 탭 전환 시 이미지 pop-in 버벅임을 막는다.
+  for (const src of [linaAskImageUrl, linaSearchImageUrl, linaVerifyImageUrl]) {
+    const preload = new Image();
+    preload.src = src;
+    void preload.decode?.().catch(() => undefined);
+  }
+
   if (!headlinePanelRef.value) return;
   if (typeof IntersectionObserver === 'undefined') {
     featurePhase.value = true;
@@ -219,7 +233,7 @@ onMounted(() => {
 <template>
   <div
     data-testid="landing-page"
-    class="h-screen snap-y snap-mandatory overflow-y-auto overflow-x-hidden bg-bg-100 text-overlay-dark-80 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+    class="h-screen scroll-smooth snap-y snap-mandatory overflow-y-auto overflow-x-hidden bg-bg-100 text-overlay-dark-80 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
   >
     <section
       data-testid="landing-hero-panel"
@@ -389,9 +403,10 @@ onMounted(() => {
         </div>
 
         <!-- 탭 콘텐츠 -->
-        <div class="mt-10 grid w-full max-w-5xl grid-cols-2 items-center gap-14">
+        <Transition name="tab-fade" mode="out-in">
+          <div :key="activeTab" class="mt-10 grid w-full max-w-5xl grid-cols-2 items-start gap-14" style="min-height: 380px">
           <!-- 좌측: 설명 텍스트 -->
-          <div class="text-left">
+          <div class="text-left" style="min-height: 320px">
             <div class="mb-5 flex size-14 items-center justify-center rounded-2xl bg-primary/10">
               <MessageCircle
                 v-if="activeTab === 'ask'"
@@ -440,7 +455,7 @@ onMounted(() => {
               </li>
             </ul>
 
-            <div class="-mt-10 flex justify-end">
+            <div class="-mt-10 flex min-h-[150px] items-start justify-end">
               <img
                 v-if="activeTab === 'ask'"
                 :src="linaAskImageUrl"
@@ -466,7 +481,7 @@ onMounted(() => {
           </div>
 
           <!-- 우측: 시각적 목업 -->
-          <div>
+          <div style="min-height: 340px">
             <!-- Search 탭: 브라우저 채팅 목업 -->
             <div
               v-if="activeTab === 'search'"
@@ -481,7 +496,7 @@ onMounted(() => {
                 <div
                   class="mx-auto w-36 rounded-md bg-bg-300 py-1 text-center text-[10px] text-overlay-dark-40"
                 >
-                  lina.internal
+                  lina.ai.com
                 </div>
               </div>
               <div class="flex h-[300px] bg-bg-100">
@@ -496,29 +511,22 @@ onMounted(() => {
                 </div>
                 <div class="flex flex-1 flex-col">
                   <div class="border-b border-bg-200 px-4 py-3">
-                    <p class="text-[10px] font-semibold tracking-widest text-primary">
-                      ASK 🐾 LINA
+                    <p class="text-[10px] font-semibold text-overlay-dark-60">
+                      S3 버킷 권한 오류
                     </p>
-                    <p class="text-xs text-overlay-dark-40">환영합니다, 이다민님</p>
                   </div>
-                  <div class="flex flex-1 flex-col gap-2.5 overflow-hidden px-4 py-3">
+                  <div class="flex flex-1 flex-col gap-3 overflow-hidden px-4 py-4">
                     <div
-                      class="ml-10 self-end rounded-xl bg-primary/10 px-3 py-2 text-xs text-overlay-dark-80"
+                      class="ml-10 self-end rounded-2xl bg-bg-200 px-3 py-2 text-xs leading-relaxed text-overlay-dark-80"
                     >
-                      AWS 접속 방법 알려줘
+                      지난 S3 버킷 권한 오류 때 어떻게 해결했어?
                     </div>
-                    <div
-                      class="mr-6 self-start rounded-xl bg-bg-200 px-3 py-2 text-xs leading-relaxed text-overlay-dark-80"
-                    >
-                      AWS 콘솔은 SSO를 통해 접속합니다.
-                      <span class="font-medium text-primary">AWS 계정 접속 가이드</span>를
-                      참고하세요.
+                    <div class="origin-left scale-75 self-start">
+                      <BaseSpinner label="답변을 작성하고 있어요" />
                     </div>
-                    <div
-                      class="self-start rounded-xl border border-bg-300 bg-primary-white px-3 py-1.5 text-[10px] text-overlay-dark-40"
-                    >
-                      📎 참고 문서 3건 · 출처 보기
-                    </div>
+                    <p class="self-start text-xs leading-relaxed text-overlay-dark-80">
+                      S3 권한 오류는 IAM 정책과 버킷 정책을<br />함께 점검해 해결했습니다.
+                    </p>
                   </div>
                   <div class="border-t border-bg-200 px-3 py-2.5">
                     <div class="rounded-full bg-bg-200 px-4 py-2 text-xs text-overlay-dark-40">
@@ -693,7 +701,7 @@ onMounted(() => {
                   <div
                     class="mx-auto w-36 rounded-md bg-bg-300 py-1 text-center text-[10px] text-overlay-dark-40"
                   >
-                    lina.internal
+                    lina.ai.com
                   </div>
                 </div>
                 <img
@@ -729,6 +737,12 @@ onMounted(() => {
               </svg>
               
               <img
+                :src="iconsImageUrl"
+                alt=""
+                aria-hidden="true"
+                class="absolute -right-6 top-4 z-20 w-16 object-contain opacity-90 drop-shadow-sm"
+              />
+              <img
                 data-testid="landing-ask-input-box"
                 :src="chatInputBoxImageUrl"
                 alt="질문 입력"
@@ -737,6 +751,7 @@ onMounted(() => {
             </div>
           </div>
         </div>
+        </Transition>
       </div>
 
       <button
@@ -803,21 +818,38 @@ onMounted(() => {
 </template>
 
 <style scoped>
+.tab-fade-enter-active,
+.tab-fade-leave-active {
+  transition:
+    opacity 160ms ease,
+    transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.tab-fade-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.tab-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
 .landing-acronym-word {
   opacity: 0;
-  animation: landing-acronym-rise 1100ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: landing-acronym-rise 1800ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 .landing-acronym-word:nth-child(2) {
-  animation-delay: 220ms;
+  animation-delay: 420ms;
 }
 
 .landing-acronym-word:nth-child(3) {
-  animation-delay: 440ms;
+  animation-delay: 640ms;
 }
 
 .landing-acronym-word:nth-child(4) {
-  animation-delay: 660ms;
+  animation-delay: 960ms;
 }
 
 .landing-scroll-indicator {
