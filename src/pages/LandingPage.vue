@@ -389,14 +389,11 @@ onMounted(() => {
         <div class="mt-10 grid w-full max-w-5xl grid-cols-2 items-center gap-14">
           <!-- 좌측: 설명 텍스트 -->
           <div class="text-left">
-            <div
-              class="mb-5 flex size-14 items-center justify-center rounded-2xl"
-              :class="activeTab === 'ask' ? 'bg-graph-blue/10' : 'bg-primary/10'"
-            >
+            <div class="mb-5 flex size-14 items-center justify-center rounded-2xl bg-primary/10">
               <MessageCircle
                 v-if="activeTab === 'ask'"
                 data-testid="landing-feature-icon-ask"
-                class="size-7 text-graph-blue"
+                class="size-7 text-primary"
                 aria-hidden="true"
               />
               <Search
@@ -688,14 +685,15 @@ onMounted(() => {
                 aria-hidden="true"
               >
                 <path
-                  d="M 210 160 C 300 110 350 92 428 104"
+                  data-testid="landing-ask-arrow-path"
+                  d="M 205 198 C 292 158 356 148 438 160"
                   stroke="var(--color-primary)"
                   stroke-width="4"
                   stroke-linecap="round"
                   stroke-linejoin="round"
                 />
                 <path
-                  d="M 410 90 L 428 104 L 405 113"
+                  d="M 420 146 L 438 160 L 415 170"
                   stroke="var(--color-primary)"
                   stroke-width="4"
                   stroke-linecap="round"
@@ -707,7 +705,7 @@ onMounted(() => {
                 data-testid="landing-ask-input-box"
                 :src="chatInputBoxImageUrl"
                 alt="질문 입력"
-                class="absolute right-0 top-24 z-30 w-[54%] drop-shadow-xl"
+                class="absolute -right-20 top-24 z-30 w-[54%] drop-shadow-xl"
               />
             </div>
           </div>

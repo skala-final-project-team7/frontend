@@ -101,10 +101,16 @@ describe('feature12 Auth / Login + Role Selection', () => {
       'landing-ask-arrow',
     );
     expect(wrapper.get('[data-testid="landing-ask-input-box"]').attributes('src')).toContain(
-      'chatInputBox.png',
+      'ui/chat-input-box.png',
     );
-    expect(wrapper.get('[data-testid="landing-ask-input-box"]').classes()).toContain('right-0');
+    expect(wrapper.get('[data-testid="landing-feature-icon-ask"]').classes()).toContain(
+      'text-primary',
+    );
+    expect(wrapper.get('[data-testid="landing-ask-input-box"]').classes()).toContain('-right-20');
     expect(wrapper.get('[data-testid="landing-ask-input-box"]').classes()).toContain('top-24');
+    expect(wrapper.get('[data-testid="landing-ask-arrow-path"]').attributes('d')).toBe(
+      'M 205 198 C 292 158 356 148 438 160',
+    );
 
     await wrapper.get('[data-testid="landing-feature-tab-verify"]').trigger('click');
 
