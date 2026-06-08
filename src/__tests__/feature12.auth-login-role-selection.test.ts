@@ -87,6 +87,31 @@ describe('feature12 Auth / Login + Role Selection', () => {
     expect(router.currentRoute.value.path).toBe('/login');
   });
 
+  it('uses polished headline feature visuals for Ask and Verify', async () => {
+    const wrapper = mount(LandingPage, {
+      global: {
+        plugins: [createPinia(), router],
+      },
+    });
+
+    await wrapper.get('[data-testid="landing-feature-tab-ask"]').trigger('click');
+
+    expect(wrapper.get('[data-testid="landing-ask-mockup"]').exists()).toBe(true);
+    expect(wrapper.get('[data-testid="landing-ask-arrow"]').classes()).toContain(
+      'landing-ask-arrow',
+    );
+    expect(wrapper.get('[data-testid="landing-ask-input-box"]').attributes('src')).toContain(
+      'chatInputBox.png',
+    );
+    expect(wrapper.get('[data-testid="landing-ask-input-box"]').classes()).toContain('right-0');
+    expect(wrapper.get('[data-testid="landing-ask-input-box"]').classes()).toContain('top-24');
+
+    await wrapper.get('[data-testid="landing-feature-tab-verify"]').trigger('click');
+
+    expect(wrapper.get('[data-testid="landing-verify-tab-icon"]').exists()).toBe(true);
+    expect(wrapper.get('[data-testid="landing-feature-icon-verify"]').exists()).toBe(true);
+  });
+
   it('shows only role selection cards on the Login page', async () => {
     const wrapper = mount(LoginPage, {
       global: {

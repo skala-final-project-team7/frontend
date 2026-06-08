@@ -13,10 +13,16 @@
 --------------------------------------------------
 -->
 <script setup lang="ts">
-import { ref } from 'vue';
+import { BookOpenCheck, Check, FileText, MessageCircle, Search } from '@lucide/vue';
+import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
-import { confluenceIconImageUrl, logoLinaCuteImageUrl } from '@/shared';
+import {
+  chatInputBoxImageUrl,
+  chatScreenshotImageUrl,
+  confluenceIconImageUrl,
+  logoLinaCuteImageUrl,
+} from '@/shared';
 
 const router = useRouter();
 const loginPanelRef = ref<HTMLElement | null>(null);
@@ -142,6 +148,69 @@ function enterLogin() {
 function scrollToLoginPanel() {
   loginPanelRef.value?.scrollIntoView({ behavior: 'smooth' });
 }
+
+const headlinePanelRef = ref<HTMLElement | null>(null);
+const featurePhase = ref(false);
+const activeTab = ref<'ask' | 'search' | 'verify'>('ask');
+
+const tabs: { id: 'ask' | 'search' | 'verify'; label: string }[] = [
+  { id: 'ask', label: 'Ask' },
+  { id: 'search', label: 'Search' },
+  { id: 'verify', label: 'Verify' },
+];
+
+const tabData = {
+  ask: {
+    description:
+      'Confluence, Notion, Slack 등 흩어진 나의 지식들을 모아 자연어로 바로 질문하세요. 키워드가 기억나지 않아도 됩니다.',
+    bullets: ['자연어로 질문 입력', '키워드 없이도 정확한 답변', '여러 소스를 한 번에 탐색'],
+  },
+  search: {
+    description:
+      'Confluence, Notion, Slack 등 흩어진 나의 지식들을 모아 확인하세요. 원하는 정보가 어디 숨어있든 수초 안에 찾아냅니다.',
+    bullets: [
+      '10,000+ 문서 실시간 인덱싱',
+      '평균 응답 시간 3초 이내',
+      '스페이스·페이지·첨부파일 통합 검색',
+    ],
+  },
+  verify: {
+    description:
+      '산재된 지식을 모아 연결합니다. 답변과 함께 원문 문서를 바로 확인하고, 지식이 어떻게 연결되는지 그래프로 시각화합니다.',
+    bullets: [
+      '모든 답변에 출처 문서 링크 제공',
+      '관련 문서를 리스트로 한눈에 확인',
+      '지식 연결 그래프로 맥락 파악',
+    ],
+  },
+} as const;
+
+const verifyDocs = [
+  { title: 'AWS 계정 접속 가이드', space: 'Infra', date: '2일 전' },
+  { title: 'SSO 로그인 절차 안내', space: 'IT Support', date: '1주 전' },
+  { title: '신입사원 온보딩 FAQ', space: 'HR', date: '3일 전' },
+] as const;
+
+onMounted(() => {
+  if (!headlinePanelRef.value) return;
+  if (typeof IntersectionObserver === 'undefined') {
+    featurePhase.value = true;
+    return;
+  }
+
+  const observer = new IntersectionObserver(
+    ([entry]) => {
+      if (entry.isIntersecting) {
+        setTimeout(() => {
+          featurePhase.value = true;
+        }, 900);
+        observer.disconnect();
+      }
+    },
+    { threshold: 0.8 },
+  );
+  observer.observe(headlinePanelRef.value);
+});
 </script>
 
 <template>
@@ -202,6 +271,23 @@ function scrollToLoginPanel() {
         :src="logoLinaCuteImageUrl"
         alt="LINA"
       />
+      <button
+        type="button"
+        data-testid="landing-cta-button"
+        class="landing-cta-button absolute bottom-20 right-12 z-30 inline-flex items-center gap-3 rounded-full border border-overlay-dark-20 bg-primary-white/80 px-8 py-3.5 text-button font-medium text-overlay-dark-80 backdrop-blur-sm transition-all hover:border-overlay-dark-40 hover:bg-primary-white hover:shadow-sm focus-visible:outline-none focus-visible:shadow-focus"
+        @click="enterLogin"
+      >
+        <span>바로가기</span>
+        <svg class="size-4 shrink-0" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path
+            d="M3 8h10M9 4l4 4-4 4"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
       <div class="pointer-events-none absolute inset-x-0 top-[52%] z-20" aria-hidden="true">
         <span
           v-for="word in acronymWords"
@@ -230,35 +316,414 @@ function scrollToLoginPanel() {
     </section>
 
     <section
+      ref="headlinePanelRef"
       data-testid="landing-headline-panel"
-      class="relative flex h-screen snap-start snap-always flex-col items-center justify-center overflow-hidden px-6 text-center"
+      class="relative h-screen snap-start snap-always overflow-hidden"
       aria-label="LINA 서비스 소개"
     >
-      <p class="text-button text-overlay-dark-40">Ask · Search · Verify</p>
-      <h1 class="mt-5 max-w-3xl text-[54px] font-light leading-tight text-overlay-dark-80">
-        Ask, search, and
-        <span class="relative inline-block text-primary">
-          verify
-          <span
-            class="absolute inset-x-0 bottom-1 h-0.5 rounded-tag bg-primary"
-            aria-hidden="true"
-          />
-        </span>
-        knowledge across your workspace.
-      </h1>
-      <p class="mt-8 text-body text-overlay-dark-40">
-        Confluence 문서를 자연어로 검색하고, 답변과 출처를 함께 확인하세요.
-      </p>
+      <!-- Phase 1: 인트로 태그라인 (위로 날아가며 사라짐) -->
+      <div
+        class="landing-headline-tagline absolute inset-0 flex flex-col items-center justify-center px-6 text-center"
+        :class="{ 'landing-headline-tagline--exit': featurePhase }"
+      >
+        <p class="text-button text-overlay-dark-40">Ask · Search · Verify</p>
+        <h1 class="mt-5 max-w-3xl text-[54px] font-light leading-tight text-overlay-dark-80">
+          Ask, search, and
+          <span class="relative inline-block text-primary">
+            verify
+            <span
+              class="absolute inset-x-0 bottom-1 h-0.5 rounded-tag bg-primary"
+              aria-hidden="true"
+            />
+          </span>
+          knowledge across your workspace.
+        </h1>
+      </div>
+
+      <!-- Phase 2: 피처 쇼케이스 (아래서 올라오며 나타남) -->
+      <div
+        class="landing-headline-features absolute inset-0 flex flex-col items-center justify-center px-8 pb-20"
+        :class="{ 'landing-headline-features--visible': featurePhase }"
+      >
+        <p class="text-button uppercase tracking-[0.2em] text-overlay-dark-40">How it works</p>
+        <h2 class="mt-3 text-[38px] font-light text-overlay-dark-80">LINA와 함께하는 방식</h2>
+
+        <!-- 탭 스위처 -->
+        <div class="mt-7 flex rounded-full border border-bg-300 bg-bg-100 p-1">
+          <button
+            v-for="tab in tabs"
+            :key="tab.id"
+            type="button"
+            :data-testid="`landing-feature-tab-${tab.id}`"
+            class="inline-flex items-center gap-2 rounded-full px-6 py-2.5 text-button transition-all"
+            :class="
+              activeTab === tab.id
+                ? 'bg-overlay-dark-80 font-medium text-primary-white'
+                : 'text-overlay-dark-40 hover:text-overlay-dark-80'
+            "
+            @click="activeTab = tab.id"
+          >
+            <MessageCircle
+              v-if="tab.id === 'ask'"
+              data-testid="landing-ask-tab-icon"
+              class="size-4 shrink-0"
+              aria-hidden="true"
+            />
+            <Search
+              v-else-if="tab.id === 'search'"
+              data-testid="landing-search-tab-icon"
+              class="size-4 shrink-0"
+              aria-hidden="true"
+            />
+            <BookOpenCheck
+              v-else
+              data-testid="landing-verify-tab-icon"
+              class="size-4 shrink-0"
+              aria-hidden="true"
+            />
+            {{ tab.label }}
+          </button>
+        </div>
+
+        <!-- 탭 콘텐츠 -->
+        <div class="mt-10 grid w-full max-w-5xl grid-cols-2 items-center gap-14">
+          <!-- 좌측: 설명 텍스트 -->
+          <div class="text-left">
+            <div
+              class="mb-5 flex size-14 items-center justify-center rounded-2xl"
+              :class="activeTab === 'ask' ? 'bg-graph-blue/10' : 'bg-primary/10'"
+            >
+              <MessageCircle
+                v-if="activeTab === 'ask'"
+                data-testid="landing-feature-icon-ask"
+                class="size-7 text-graph-blue"
+                aria-hidden="true"
+              />
+              <Search
+                v-else-if="activeTab === 'search'"
+                data-testid="landing-feature-icon-search"
+                class="size-7 text-primary"
+                aria-hidden="true"
+              />
+              <BookOpenCheck
+                v-else
+                data-testid="landing-feature-icon-verify"
+                class="size-7 text-primary"
+                aria-hidden="true"
+              />
+            </div>
+
+            <h3 class="text-[30px] font-light leading-tight text-overlay-dark-80">
+              <template v-if="activeTab === 'ask'">무엇이든 물어보세요</template>
+              <template v-else-if="activeTab === 'search'">
+                수백 개 문서를 <span class="text-primary">3초</span> 안에
+              </template>
+              <template v-else>출처를 리스트와 그래프로</template>
+            </h3>
+
+            <p class="mt-4 text-body leading-relaxed text-overlay-dark-40">
+              {{ tabData[activeTab].description }}
+            </p>
+
+            <ul class="mt-6 space-y-3">
+              <li
+                v-for="bullet in tabData[activeTab].bullets"
+                :key="bullet"
+                class="flex items-center gap-3 text-body text-overlay-dark-60"
+              >
+                <span
+                  class="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/15"
+                >
+                  <Check class="size-3 text-primary" aria-hidden="true" />
+                </span>
+                {{ bullet }}
+              </li>
+            </ul>
+          </div>
+
+          <!-- 우측: 시각적 목업 -->
+          <div>
+            <!-- Search 탭: 브라우저 채팅 목업 -->
+            <div
+              v-if="activeTab === 'search'"
+              class="overflow-hidden rounded-2xl border border-bg-300 shadow-lg"
+            >
+              <div class="flex items-center gap-3 border-b border-bg-300 bg-bg-200 px-4 py-2.5">
+                <div class="flex gap-1.5">
+                  <span class="size-3 rounded-full bg-red-400/60" />
+                  <span class="size-3 rounded-full bg-yellow-400/60" />
+                  <span class="size-3 rounded-full bg-green-400/60" />
+                </div>
+                <div
+                  class="mx-auto w-36 rounded-md bg-bg-300 py-1 text-center text-[10px] text-overlay-dark-40"
+                >
+                  lina.internal
+                </div>
+              </div>
+              <div class="flex h-[300px] bg-bg-100">
+                <div class="flex w-11 flex-col items-center gap-4 border-r border-bg-200 pt-4">
+                  <span
+                    class="flex size-6 items-center justify-center rounded-md bg-primary/10 text-[10px] font-bold text-primary"
+                    >L</span
+                  >
+                  <span class="size-1.5 rounded-full bg-overlay-dark-20" />
+                  <span class="size-1.5 rounded-full bg-overlay-dark-10" />
+                  <span class="size-1.5 rounded-full bg-overlay-dark-10" />
+                </div>
+                <div class="flex flex-1 flex-col">
+                  <div class="border-b border-bg-200 px-4 py-3">
+                    <p class="text-[10px] font-semibold tracking-widest text-primary">
+                      ASK 🐾 LINA
+                    </p>
+                    <p class="text-xs text-overlay-dark-40">환영합니다, 이다민님</p>
+                  </div>
+                  <div class="flex flex-1 flex-col gap-2.5 overflow-hidden px-4 py-3">
+                    <div
+                      class="ml-10 self-end rounded-xl bg-primary/10 px-3 py-2 text-xs text-overlay-dark-80"
+                    >
+                      AWS 접속 방법 알려줘
+                    </div>
+                    <div
+                      class="mr-6 self-start rounded-xl bg-bg-200 px-3 py-2 text-xs leading-relaxed text-overlay-dark-80"
+                    >
+                      AWS 콘솔은 SSO를 통해 접속합니다.
+                      <span class="font-medium text-primary">AWS 계정 접속 가이드</span>를
+                      참고하세요.
+                    </div>
+                    <div
+                      class="self-start rounded-xl border border-bg-300 bg-primary-white px-3 py-1.5 text-[10px] text-overlay-dark-40"
+                    >
+                      📎 참고 문서 3건 · 출처 보기
+                    </div>
+                  </div>
+                  <div class="border-t border-bg-200 px-3 py-2.5">
+                    <div class="rounded-full bg-bg-200 px-4 py-2 text-xs text-overlay-dark-40">
+                      무엇이든 물어보세요...
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Verify 탭: 참고문서 + 지식그래프 목업 -->
+            <div v-else-if="activeTab === 'verify'" class="flex flex-col gap-3">
+              <div class="overflow-hidden rounded-2xl border border-bg-300 shadow-sm">
+                <div class="border-b border-bg-200 bg-bg-50 px-5 py-3">
+                  <p class="text-xs font-medium text-overlay-dark-80">
+                    참고 문서
+                    <span class="font-normal text-overlay-dark-40">(3)</span>
+                  </p>
+                </div>
+                <div class="divide-y divide-bg-200 bg-bg-50">
+                  <div
+                    v-for="doc in verifyDocs"
+                    :key="doc.title"
+                    class="flex items-center gap-3 px-5 py-2.5"
+                  >
+                    <div
+                      class="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/10"
+                    >
+                      <FileText class="size-3.5 text-primary" aria-hidden="true" />
+                    </div>
+                    <div class="min-w-0">
+                      <p class="truncate text-xs font-medium text-overlay-dark-80">
+                        {{ doc.title }}
+                      </p>
+                      <p class="text-[10px] text-overlay-dark-40">
+                        {{ doc.space }} · {{ doc.date }}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                class="overflow-hidden rounded-2xl border border-bg-300 bg-bg-50 px-5 py-4 shadow-sm"
+              >
+                <p class="mb-3 text-xs font-medium text-overlay-dark-80">지식 연결 그래프</p>
+                <svg viewBox="0 0 360 88" class="h-20 w-full" aria-hidden="true">
+                  <!-- colored lines matching node hues -->
+                  <line
+                    x1="180"
+                    y1="44"
+                    x2="80"
+                    y2="18"
+                    style="stroke: var(--color-graph-sky); opacity: 0.45"
+                    stroke-width="1.5"
+                  />
+                  <line
+                    x1="180"
+                    y1="44"
+                    x2="280"
+                    y2="18"
+                    style="stroke: var(--color-graph-indigo); opacity: 0.45"
+                    stroke-width="1.5"
+                  />
+                  <line
+                    x1="180"
+                    y1="44"
+                    x2="110"
+                    y2="70"
+                    style="stroke: var(--color-graph-purple); opacity: 0.35"
+                    stroke-width="1.2"
+                  />
+                  <line
+                    x1="180"
+                    y1="44"
+                    x2="260"
+                    y2="70"
+                    style="stroke: var(--color-success); opacity: 0.35"
+                    stroke-width="1.2"
+                  />
+                  <line
+                    x1="80"
+                    y1="18"
+                    x2="30"
+                    y2="44"
+                    style="stroke: var(--color-bg-300)"
+                    stroke-width="1"
+                  />
+                  <line
+                    x1="280"
+                    y1="18"
+                    x2="334"
+                    y2="44"
+                    style="stroke: var(--color-bg-300)"
+                    stroke-width="1"
+                  />
+                  <!-- center node halo + fill -->
+                  <circle
+                    cx="180"
+                    cy="44"
+                    r="16"
+                    style="fill: var(--color-graph-blue); opacity: 0.15"
+                  />
+                  <circle cx="180" cy="44" r="9" style="fill: var(--color-graph-blue)" />
+                  <text
+                    x="180"
+                    y="62"
+                    text-anchor="middle"
+                    font-size="7.5"
+                    style="fill: var(--color-overlay-dark-60)"
+                  >
+                    AWS 접속
+                  </text>
+                  <circle cx="80" cy="18" r="6" style="fill: var(--color-graph-sky)" />
+                  <text
+                    x="80"
+                    y="10"
+                    text-anchor="middle"
+                    font-size="7"
+                    style="fill: var(--color-overlay-dark-40)"
+                  >
+                    SSO 설정
+                  </text>
+                  <circle cx="280" cy="18" r="6" style="fill: var(--color-graph-indigo)" />
+                  <text
+                    x="280"
+                    y="10"
+                    text-anchor="middle"
+                    font-size="7"
+                    style="fill: var(--color-overlay-dark-40)"
+                  >
+                    VPN 가이드
+                  </text>
+                  <circle cx="110" cy="70" r="4.5" style="fill: var(--color-graph-purple)" />
+                  <text
+                    x="110"
+                    y="83"
+                    text-anchor="middle"
+                    font-size="7"
+                    style="fill: var(--color-overlay-dark-40)"
+                  >
+                    IAM 권한
+                  </text>
+                  <circle cx="260" cy="70" r="4.5" style="fill: var(--color-success)" />
+                  <text
+                    x="260"
+                    y="83"
+                    text-anchor="middle"
+                    font-size="7"
+                    style="fill: var(--color-overlay-dark-40)"
+                  >
+                    보안 정책
+                  </text>
+                  <circle cx="30" cy="44" r="3" style="fill: var(--color-overlay-dark-10)" />
+                  <circle cx="334" cy="44" r="3" style="fill: var(--color-overlay-dark-10)" />
+                </svg>
+              </div>
+            </div>
+
+            <!-- Ask 탭: 브라우저에서 질문 입력 박스로 이어지는 흐름 -->
+            <div v-else data-testid="landing-ask-mockup" class="relative h-[340px]">
+              <div
+                class="absolute left-0 top-2 z-10 w-[58%] overflow-hidden rounded-2xl border border-bg-200 shadow-lg"
+                style="height: 265px"
+              >
+                <div class="flex items-center gap-3 border-b border-bg-300 bg-bg-200 px-4 py-2.5">
+                  <div class="flex gap-1.5">
+                    <span class="size-3 rounded-full bg-red-400/60" />
+                    <span class="size-3 rounded-full bg-yellow-400/60" />
+                    <span class="size-3 rounded-full bg-green-400/60" />
+                  </div>
+                  <div
+                    class="mx-auto w-36 rounded-md bg-bg-300 py-1 text-center text-[10px] text-overlay-dark-40"
+                  >
+                    lina.internal
+                  </div>
+                </div>
+                <img
+                  :src="chatScreenshotImageUrl"
+                  alt="LINA 채팅 화면"
+                  class="w-full object-cover object-top"
+                  style="height: 227px"
+                />
+              </div>
+
+              <svg
+                data-testid="landing-ask-arrow"
+                class="landing-ask-arrow pointer-events-none absolute inset-0 z-20 h-full w-full"
+                viewBox="0 0 520 340"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M 210 160 C 300 110 350 92 428 104"
+                  stroke="var(--color-primary)"
+                  stroke-width="4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M 410 90 L 428 104 L 405 113"
+                  stroke="var(--color-primary)"
+                  stroke-width="4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+
+              <img
+                data-testid="landing-ask-input-box"
+                :src="chatInputBoxImageUrl"
+                alt="질문 입력"
+                class="absolute right-0 top-24 z-30 w-[54%] drop-shadow-xl"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
       <button
         type="button"
-        class="landing-scroll-indicator absolute bottom-16 left-1/2 inline-flex flex-col items-center gap-2 text-button font-normal text-overlay-dark-60 transition hover:text-overlay-dark-80 focus-visible:outline-none focus-visible:shadow-focus"
+        class="landing-scroll-indicator absolute bottom-16 left-1/2 z-10 inline-flex -translate-x-1/2 flex-col items-center gap-2 text-button font-normal text-overlay-dark-60 transition hover:text-overlay-dark-80 focus-visible:outline-none focus-visible:shadow-focus"
         @click="scrollToLoginPanel"
       >
         <span>scroll</span>
         <span class="text-xl leading-none" aria-hidden="true">⌄</span>
       </button>
       <footer
-        class="absolute inset-x-0 bottom-8 text-center text-button font-normal text-overlay-dark-40"
+        class="absolute inset-x-0 bottom-8 z-10 text-center text-button font-normal text-overlay-dark-40"
       >
         ©2026 LINA | SKALA
       </footer>
@@ -344,6 +809,52 @@ function scrollToLoginPanel() {
   to {
     opacity: 1;
     transform: translate(-50%, -50%);
+  }
+}
+
+.landing-headline-tagline {
+  z-index: 5;
+  transition:
+    transform 700ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 500ms ease;
+}
+
+.landing-headline-tagline--exit {
+  transform: translateY(-22vh) scale(0.52);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.landing-headline-features {
+  z-index: 4;
+  opacity: 0;
+  transform: translateY(22px);
+  pointer-events: none;
+  transition:
+    opacity 650ms ease 320ms,
+    transform 650ms cubic-bezier(0.22, 1, 0.36, 1) 320ms;
+}
+
+.landing-headline-features--visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.landing-cta-button {
+  opacity: 0;
+  animation: landing-cta-rise 900ms cubic-bezier(0.22, 1, 0.36, 1) 1800ms forwards;
+}
+
+@keyframes landing-cta-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 

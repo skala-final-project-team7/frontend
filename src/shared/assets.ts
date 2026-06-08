@@ -23,8 +23,12 @@ import confluenceIconImageUrl from '../../frontend/assets/confluence-icon.png';
 import linaAdminImageUrl from '../../frontend/assets/lina-admin.png';
 import linaUserImageUrl from '../../frontend/assets/lina-user.png';
 import logoLinaCuteImageUrl from '../../frontend/assets/logo-lina-cute4.png';
+import chatScreenshotImageUrl from '../../frontend/assets/chat-screenshot.png';
+import chatInputBoxImageUrl from '../../frontend/docs/frames/components/chatInputBox.png';
 
 export {
+  chatInputBoxImageUrl,
+  chatScreenshotImageUrl,
   confluenceIconImageUrl,
   linaAdminImageUrl,
   linaUserImageUrl,
