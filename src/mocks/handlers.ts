@@ -21,6 +21,8 @@ import { HttpResponse, http } from 'msw';
 
 import {
   mockAdminDataOverview,
+  mockAdminIngestStart,
+  mockAdminKeyActivation,
   mockAdminSyncHistory,
   mockConfluencePreviewPages,
   mockConversationSearchResponse,
@@ -70,6 +72,26 @@ export const mockHandlers = [
       code: 200,
       message: '동기화 이력 조회 성공',
       data: mockAdminSyncHistory,
+    });
+  }),
+
+  // TODO(MOCK): POST /api/admin/key/activate
+  http.post('*/api/admin/key/activate', () => {
+    return HttpResponse.json<ApiSuccessResponse<typeof mockAdminKeyActivation>>({
+      isSuccess: true,
+      code: 200,
+      message: 'Admin Key 활성화 성공',
+      data: mockAdminKeyActivation,
+    });
+  }),
+
+  // TODO(MOCK): POST /api/admin/ingest
+  http.post('*/api/admin/ingest', () => {
+    return HttpResponse.json<ApiSuccessResponse<typeof mockAdminIngestStart>>({
+      isSuccess: true,
+      code: 200,
+      message: '데이터 수집 작업 시작',
+      data: mockAdminIngestStart,
     });
   }),
 

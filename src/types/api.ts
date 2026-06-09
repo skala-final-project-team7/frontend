@@ -146,6 +146,33 @@ export type AdminSyncHistoryResponse = {
   syncHistory: AdminSyncHistoryItem[];
 };
 
+export type AdminKeyActivationResponse = {
+  activatedUntil: string;
+};
+
+export type AdminIngestMode = 'full' | 'delta';
+
+export type AdminIngestJobStatus = 'STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED';
+
+export type StartAdminIngestRequest = {
+  mode?: AdminIngestMode;
+};
+
+export type StartAdminIngestResponse = {
+  jobId: string;
+  status: AdminIngestJobStatus;
+  startedAt: string;
+};
+
+export type AdminIngestStatusResponse = {
+  jobId: string;
+  status: AdminIngestJobStatus;
+  totalPages: number;
+  processedPages: number;
+  failedPages: number;
+  startedAt: string;
+};
+
 export type VerificationResult = 'SUPPORTED' | 'PARTIALLY_SUPPORTED' | 'NOT_SUPPORTED';
 
 export type MessageRole = 'user' | 'assistant';

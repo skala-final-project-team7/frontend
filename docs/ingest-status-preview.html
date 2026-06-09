@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LINA · 데이터 수집 상태 UI 시안</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --orange:   #f48122;
+      --orange-2: #ff9d4d;
+      --success:  #2eb97f;
+      --error:    #ff4800;
+      --blue:     #5b7fe0;
+      --sky:      #85a6ff;
+
+      --ink-80: rgba(0,0,0,0.8);
+      --ink-60: rgba(0,0,0,0.6);
+      --ink-40: rgba(0,0,0,0.4);
+      --bg-100: #fcfcfc;
+      --bg-200: #f5f5f5;
+      --bg-300: #e6e6e6;
+      --card:   #ffffff;
+      --line:   rgba(0,0,0,0.08);
+
+      --mono: 'JetBrains Mono', ui-monospace, monospace;
+      --sans: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg-100);
+      color: var(--ink-80);
+      -webkit-font-smoothing: antialiased;
+      padding: 48px clamp(20px, 5vw, 64px) 96px;
+      letter-spacing: -0.01em;
+    }
+
+    .wrap { max-width: 980px; margin: 0 auto; }
+
+    /* ── header ── */
+    .eyebrow {
+      font-family: var(--mono);
+      font-size: 0.7rem; font-weight: 500;
+      letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--orange);
+    }
+    .page-title {
+      font-size: clamp(1.6rem, 3.5vw, 2.1rem);
+      font-weight: 800; letter-spacing: -0.04em;
+      margin-top: 10px;
+    }
+    .page-sub {
+      margin-top: 12px; font-size: 0.9rem; color: var(--ink-60);
+      line-height: 1.65; max-width: 600px;
+    }
+    .page-sub code {
+      font-family: var(--mono); font-size: 0.82rem;
+      background: var(--bg-200); padding: 1px 6px; border-radius: 5px;
+      color: var(--ink-80);
+    }
+
+    /* ── section ── */
+    .section { margin-top: 52px; }
+    .section-label { display: flex; align-items: baseline; gap: 11px; margin-bottom: 8px; }
+    .section-label .num {
+      font-family: var(--mono); font-size: 0.72rem; font-weight: 700;
+      color: var(--orange); letter-spacing: 0.08em;
+    }
+    .section-label h2 { font-size: 1.15rem; font-weight: 700; letter-spacing: -0.025em; }
+    .section-desc { font-size: 0.82rem; color: var(--ink-40); margin-bottom: 20px; }
+
+    /* ── status pill ── */
+    .pill {
+      display: inline-flex; align-items: center; gap: 7px;
+      font-family: var(--mono); font-size: 0.68rem; font-weight: 700;
+      letter-spacing: 0.06em; padding: 5px 11px; border-radius: 99px;
+    }
+    .pill .led { width: 6px; height: 6px; border-radius: 50%; }
+    .st-started   { background: rgba(91,127,224,0.12);  color: var(--blue); }
+    .st-started   .led { background: var(--blue); }
+    .st-progress  { background: rgba(244,129,34,0.12);  color: var(--orange); }
+    .st-progress  .led { background: var(--orange); animation: blink 1.1s ease-in-out infinite; }
+    .st-completed { background: rgba(46,185,127,0.14);  color: var(--success); }
+    .st-completed .led { background: var(--success); }
+    .st-failed    { background: rgba(255,72,0,0.12);    color: var(--error); }
+    .st-failed    .led { background: var(--error); }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
+
+    /* legend */
+    .legend { display: flex; flex-wrap: wrap; gap: 10px; }
+    .legend .pill { cursor: default; }
+
+    .fields-note {
+      margin-top: 16px; padding: 14px 16px;
+      background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+      font-family: var(--mono); font-size: 0.74rem; color: var(--ink-60); line-height: 1.7;
+    }
+    .fields-note b { color: var(--orange); font-weight: 700; }
+
+    /* ── buttons ── */
+    .btn {
+      font-family: var(--sans); font-size: 0.875rem; font-weight: 700;
+      color: #fff; cursor: pointer; border: none;
+      padding: 11px 20px; border-radius: 12px;
+      background: var(--orange);
+      box-shadow: 0 8px 18px -10px rgba(244,129,34,0.65);
+      transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+      display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
+    }
+    .btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 12px 24px -10px rgba(244,129,34,0.75); }
+    .btn:disabled { opacity: 0.5; cursor: default; box-shadow: none; }
+    .btn-sec {
+      background: var(--card); color: var(--ink-80);
+      border: 1px solid var(--bg-300); box-shadow: none;
+    }
+    .btn-sec:hover:not(:disabled) { background: var(--bg-200); transform: none; }
+
+    /* ── progress bar (shared) ── */
+    .bar { height: 8px; border-radius: 99px; background: var(--bg-200); overflow: hidden; }
+    .bar > i {
+      display: block; height: 100%; border-radius: 99px; width: 0%;
+      background: linear-gradient(90deg, var(--orange), var(--orange-2));
+      transition: width 0.5s cubic-bezier(0.22,1,0.36,1);
+      position: relative; overflow: hidden;
+    }
+    .bar.is-progress > i::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+      animation: shimmer 1.4s linear infinite;
+    }
+    .bar.is-done > i { background: var(--success); }
+    @keyframes shimmer { from{transform:translateX(-100%)} to{transform:translateX(100%)} }
+
+    /* counts row */
+    .counts { display: flex; gap: 22px; }
+    .count-k { font-size: 0.68rem; color: var(--ink-40); }
+    .count-v { font-family: var(--mono); font-size: 1.05rem; font-weight: 700; letter-spacing: -0.02em; margin-top: 2px; }
+    .count-v.warn { color: var(--error); }
+
+    /* ════════════════════════════════════════════════
+       MODALS
+       ════════════════════════════════════════════════ */
+    .demo-row { display: flex; flex-wrap: wrap; gap: 12px; }
+
+    .overlay {
+      position: fixed; inset: 0; z-index: 50; display: none;
+      align-items: center; justify-content: center; padding: 24px;
+      background: rgba(0,0,0,0.4);
+      backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
+      opacity: 0; transition: opacity 0.25s;
+    }
+    .overlay.open { display: flex; opacity: 1; }
+    .modal {
+      width: 100%; max-width: 420px; background: var(--card);
+      border-radius: 22px; overflow: hidden;
+      box-shadow: 0 30px 70px -24px rgba(0,0,0,0.4);
+      transform: translateY(12px) scale(0.98);
+      transition: transform 0.35s cubic-bezier(0.22,1,0.36,1);
+    }
+    .overlay.open .modal { transform: none; }
+    .modal-head {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      padding: 20px 22px 16px; border-bottom: 1px solid var(--line);
+    }
+    .modal-head h3 { font-size: 1rem; font-weight: 700; letter-spacing: -0.02em; }
+    .modal-head .job { font-family: var(--mono); font-size: 0.72rem; color: var(--ink-40); margin-top: 3px; }
+
+    /* X lock */
+    .x-btn {
+      flex-shrink: 0; width: 32px; height: 32px; border-radius: 10px;
+      border: 1px solid var(--line); background: var(--bg-200); color: var(--ink-40);
+      display: grid; place-items: center; font-size: 1rem; line-height: 1;
+      cursor: not-allowed; transition: all 0.3s; position: relative;
+    }
+    .x-btn[disabled] { opacity: 0.6; }
+    .x-btn.ready {
+      cursor: pointer; opacity: 1;
+      border-color: var(--success); background: rgba(46,185,127,0.12); color: var(--success);
+      animation: xpop 0.45s cubic-bezier(0.22,1,0.36,1);
+    }
+    .x-btn.ready.failed { border-color: var(--bg-300); background: var(--bg-200); color: var(--ink-60); }
+    .x-btn.ready:hover { background: var(--success); color: #fff; }
+    .x-btn.ready.failed:hover { background: var(--bg-300); color: var(--ink-80); }
+    @keyframes xpop { 0%{transform:scale(0.6)} 100%{transform:scale(1)} }
+    .x-btn[disabled]::after {
+      content: '수집 중에는 닫을 수 없습니다';
+      position: absolute; top: 118%; right: 0; white-space: nowrap;
+      font-family: var(--sans); font-size: 0.68rem; color: #fff; background: #16110d;
+      padding: 6px 9px; border-radius: 7px; opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 2;
+    }
+    .x-btn[disabled]:hover::after { opacity: 1; }
+
+    .modal-body { padding: 24px 22px 22px; }
+    .modal-statusrow { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .modal-pctbig { font-family: var(--mono); font-size: 1.3rem; font-weight: 700; letter-spacing: -0.03em; }
+    .modal-line { font-size: 0.8rem; color: var(--ink-60); margin-top: 14px; min-height: 19px; transition: color 0.3s; }
+    .modal-line.done { color: var(--success); font-weight: 600; }
+    .modal-line.fail { color: var(--error); font-weight: 600; }
+
+    /* ring */
+    .ring { position: relative; width: 132px; height: 132px; margin: 4px auto 2px; }
+    .ring svg { transform: rotate(-90deg); }
+    .ring .trk { stroke: var(--bg-200); }
+    .ring .prg {
+      stroke: var(--orange); stroke-linecap: round;
+      transition: stroke-dashoffset 0.5s cubic-bezier(0.22,1,0.36,1), stroke 0.4s;
+    }
+    .ring .prg.done { stroke: var(--success); }
+    .ring-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .ring-num { font-family: var(--mono); font-size: 1.7rem; font-weight: 700; letter-spacing: -0.04em; }
+    .ring-num.done { color: var(--success); }
+    .ring-sub { font-family: var(--mono); font-size: 0.66rem; color: var(--ink-40); margin-top: 2px; }
+
+    /* ════════════════════════════════════════════════
+       INLINE  (button left → process right, same block)
+       ════════════════════════════════════════════════ */
+    .block {
+      background: var(--card); border: 1px solid var(--line); border-radius: 20px;
+      padding: 24px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    }
+    .inline-grid { display: grid; grid-template-columns: 248px 1fr; gap: 28px; align-items: center; }
+    @media (max-width: 680px) { .inline-grid { grid-template-columns: 1fr; gap: 20px; } }
+    .inline-left h3 { font-size: 1.02rem; font-weight: 700; letter-spacing: -0.02em; }
+    .inline-left p { font-size: 0.8rem; color: var(--ink-60); line-height: 1.55; margin: 7px 0 16px; }
+    .inline-left .badge {
+      display: inline-block; font-family: var(--mono); font-size: 0.66rem; font-weight: 600;
+      color: var(--ink-40); background: var(--bg-200); padding: 3px 9px; border-radius: 6px; margin-bottom: 12px;
+    }
+    .inline-right {
+      border-left: 1px solid var(--line); padding-left: 28px; min-height: 96px;
+      display: flex; flex-direction: column; justify-content: center;
+    }
+    @media (max-width: 680px) { .inline-right { border-left: none; border-top: 1px solid var(--line); padding-left: 0; padding-top: 20px; } }
+    .inline-idle { color: var(--ink-40); font-size: 0.82rem; display: flex; align-items: center; gap: 9px; }
+    .inline-idle .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--bg-300); }
+    .fade-in { animation: fadeIn 0.4s ease both; }
+    @keyframes fadeIn { from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none} }
+
+    .ir-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .ir-pct { font-family: var(--mono); font-size: 0.92rem; font-weight: 700; }
+
+    /* ════════════════════════════════════════════════
+       LINA character track
+       ════════════════════════════════════════════════ */
+    .track-wrap { padding: 6px 0 2px; }
+    .track {
+      position: relative; height: 76px; margin: 0 4px 14px;
+      border-bottom: 3px dashed var(--bg-300);
+    }
+    .runner {
+      position: absolute; bottom: 2px; left: 0;
+      width: 58px; height: 58px;
+      transform: translateX(-50%);
+      transition: left 0.5s cubic-bezier(0.4,0,0.2,1), opacity 0.4s;
+    }
+    .runner img {
+      width: 100%; height: 100%; object-fit: contain;
+      animation: bob 0.5s ease-in-out infinite;
+      filter: drop-shadow(0 6px 6px rgba(0,0,0,0.12));
+    }
+    @keyframes bob { 0%,100%{transform:translateY(0) rotate(-3deg)} 50%{transform:translateY(-5px) rotate(0deg)} }
+    .finish {
+      position: absolute; bottom: 2px; right: 0;
+      width: 56px; height: 64px;
+      display: flex; align-items: flex-end; justify-content: center;
+      opacity: 0.35; filter: grayscale(0.7);
+      transition: opacity 0.5s, filter 0.5s, transform 0.5s;
+    }
+    .finish img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 6px 6px rgba(0,0,0,0.12)); }
+    .finish.done { opacity: 1; filter: none; animation: land 0.6s cubic-bezier(0.22,1,0.36,1); }
+    @keyframes land { 0%{transform:translateY(-10px) scale(0.9)} 60%{transform:translateY(2px) scale(1.04)} 100%{transform:none} }
+    .finish-flagline {
+      position: absolute; right: 56px; bottom: 2px; top: 8px;
+      width: 2px; background: repeating-linear-gradient(180deg, var(--bg-300) 0 5px, transparent 5px 10px);
+    }
+    .track-stats { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+    .track-msg { font-size: 0.8rem; color: var(--ink-60); transition: color 0.3s; }
+    .track-msg.done { color: var(--success); font-weight: 600; }
+
+    /* LINA riding the progress bar (inline D) */
+    .barlina { position: relative; margin-top: 54px; overflow: visible; }
+    .barlina-char {
+      position: absolute; left: 0%; bottom: 9px;
+      width: 46px; height: 46px; transform: translateX(-50%);
+      transition: left 0.8s cubic-bezier(0.4,0,0.2,1); z-index: 2;
+    }
+    .barlina-char img {
+      width: 100%; height: 100%; object-fit: contain;
+      filter: drop-shadow(0 5px 5px rgba(0,0,0,0.14));
+      animation: bob 0.45s ease-in-out infinite;
+    }
+    .barlina-char.planted { animation: land 0.55s cubic-bezier(0.22,1,0.36,1); }
+    .barlina-char.planted img { animation: none; }
+    /* speed lines while running */
+    .barlina-char::before {
+      content: ''; position: absolute; right: 78%; top: 52%;
+      width: 18px; height: 2px; border-radius: 2px;
+      background: linear-gradient(90deg, transparent, rgba(244,129,34,0.55));
+      box-shadow: 0 7px 0 -0.5px rgba(244,129,34,0.35), 0 -7px 0 -0.5px rgba(244,129,34,0.35);
+      animation: dash 0.4s linear infinite;
+    }
+    .barlina-char.planted::before { display: none; }
+    @keyframes dash { 0%{opacity:0; transform:translateX(4px)} 50%{opacity:1} 100%{opacity:0; transform:translateX(-6px)} }
+
+    /* compact stepper inline */
+    .mini-step { display: flex; align-items: center; }
+    .mstp { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+    .mstp .dot {
+      width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center;
+      font-family: var(--mono); font-size: 0.62rem; font-weight: 700;
+      background: var(--bg-200); color: var(--bg-300); transition: all 0.4s;
+    }
+    .mstp .dot.done { background: rgba(46,185,127,0.16); color: var(--success); }
+    .mstp .dot.act { background: rgba(244,129,34,0.16); color: var(--orange); }
+    .mstp .dot.err { background: rgba(255,72,0,0.14); color: var(--error); }
+    .mstp .lbl { font-size: 0.6rem; color: var(--ink-40); white-space: nowrap; }
+    .mstp .lbl.on { color: var(--ink-80); font-weight: 600; }
+    .mline { flex: 1; height: 2px; margin: 0 7px; margin-bottom: 15px; background: var(--bg-200); border-radius: 2px; transition: background 0.4s; }
+    .mline.done { background: rgba(46,185,127,0.4); }
+    .mline.act { background: linear-gradient(90deg, var(--orange), var(--bg-200)); }
+
+    .footnote {
+      margin-top: 64px; font-size: 0.74rem; color: var(--ink-40);
+      border-top: 1px solid var(--line); padding-top: 20px; font-family: var(--mono);
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ═══════════ HEADER ═══════════ -->
+  <header>
+    <span class="eyebrow">LINA · Ingestion Pipeline</span>
+    <h1 class="page-title">데이터 수집 상태 UI 시안</h1>
+    <p class="page-sub">
+      <code>GET /api/admin/ingest/status/{jobId}</code> 응답 필드를 그대로 사용합니다.
+      모달형과 인라인형(버튼 왼쪽 → 진행 오른쪽) 시안을 비교하고, LINA 캐릭터로 진행을 표현한 버전도 포함합니다.
+    </p>
+  </header>
+
+  <!-- ═══════════ 상태 레전드 ═══════════ -->
+  <section class="section">
+    <div class="section-label"><span class="num">00</span><h2>상태 &amp; 실제 응답 필드</h2></div>
+    <div class="legend">
+      <span class="pill st-started"><span class="led"></span>STARTED</span>
+      <span class="pill st-progress"><span class="led"></span>IN_PROGRESS</span>
+      <span class="pill st-completed"><span class="led"></span>COMPLETED</span>
+      <span class="pill st-failed"><span class="led"></span>FAILED</span>
+    </div>
+    <div class="fields-note">
+      data: { jobId, status, <b>totalPages</b>, <b>processedPages</b>, <b>failedPages</b>, startedAt }<br />
+      → 진행률 = processedPages / totalPages · 실패 = failedPages · 경과 = now − startedAt
+    </div>
+  </section>
+
+  <!-- ═══════════ 1 · 모달 버전 ═══════════ -->
+  <section class="section">
+    <div class="section-label"><span class="num">01</span><h2>모달 버전</h2></div>
+    <p class="section-desc">버튼 → 모달 진행 → COMPLETED 시 닫기(X) 활성화. 3가지 시안.</p>
+    <div class="demo-row">
+      <button class="btn" data-modal="m1">미니멀 바</button>
+      <button class="btn" data-modal="m2">링 게이지</button>
+      <button class="btn" data-modal="m3">LINA 캐릭터</button>
+      <button class="btn btn-sec" data-modal="m1" data-fail="1">실패(FAILED) 예시</button>
+    </div>
+  </section>
+
+  <!-- ═══════════ 2 · 인라인 버전 ═══════════ -->
+  <section class="section">
+    <div class="section-label"><span class="num">02</span><h2>인라인 버전 · 버튼 왼쪽 → 진행 오른쪽</h2></div>
+    <p class="section-desc">모달 없이 같은 블록 안에서 오른쪽 영역에 진행 과정이 펼쳐집니다. 3가지 시안.</p>
+
+    <!-- inline A : bar + counts -->
+    <div class="block" style="margin-bottom:16px">
+      <div class="inline-grid">
+        <div class="inline-left">
+          <span class="badge">INLINE · A</span>
+          <h3>데이터 파이프라인</h3>
+          <p>Confluence 전체 스페이스를 수집합니다. 진행 상황이 오른쪽에 표시됩니다.</p>
+          <button class="btn" id="ia-btn">⬇ 데이터 불러오기</button>
+        </div>
+        <div class="inline-right" id="ia-right">
+          <div class="inline-idle"><span class="dot"></span>대기 중 — 버튼을 누르면 수집이 시작됩니다.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- inline B : LINA character track -->
+    <div class="block" style="margin-bottom:16px">
+      <div class="inline-grid">
+        <div class="inline-left">
+          <span class="badge">INLINE · B · LINA</span>
+          <h3>데이터 파이프라인</h3>
+          <p>LINA가 결승점의 깃발을 향해 달려갑니다. 도착하면 수집 완료!</p>
+          <button class="btn" id="ib-btn">⬇ 데이터 불러오기</button>
+        </div>
+        <div class="inline-right" id="ib-right">
+          <div class="inline-idle"><span class="dot"></span>대기 중 — 버튼을 누르면 LINA가 출발합니다.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- inline C : compact stepper -->
+    <div class="block" style="margin-bottom:16px">
+      <div class="inline-grid">
+        <div class="inline-left">
+          <span class="badge">INLINE · C</span>
+          <h3>데이터 파이프라인</h3>
+          <p>단계형 스텝과 핵심 숫자만 간결하게 보여줍니다.</p>
+          <button class="btn" id="ic-btn">⬇ 데이터 불러오기</button>
+        </div>
+        <div class="inline-right" id="ic-right">
+          <div class="inline-idle"><span class="dot"></span>대기 중 — 수집 단계가 여기에 표시됩니다.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- inline D : LINA riding the progress bar -->
+    <div class="block">
+      <div class="inline-grid">
+        <div class="inline-left">
+          <span class="badge">INLINE · D · LINA + 바</span>
+          <h3>데이터 파이프라인</h3>
+          <p>진행바 맨 앞에서 LINA가 슝슝 달리고, 끝나면 깃발을 꽂습니다.</p>
+          <button class="btn" id="id-btn">⬇ 데이터 불러오기</button>
+        </div>
+        <div class="inline-right" id="id-right">
+          <div class="inline-idle"><span class="dot"></span>대기 중 — 버튼을 누르면 LINA가 출발합니다.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <p class="footnote">docs/ingest-status-preview.html · LINA Admin · 시연용 정적 시안 (실 데이터 polling 미연동)</p>
+</div>
+
+<!-- ═══════════ MODAL 1 · 미니멀 바 ═══════════ -->
+<div class="overlay" id="ov-m1">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <div><h3>데이터 불러오기</h3><div class="job" data-job>jobId · —</div></div>
+      <button class="x-btn" disabled aria-label="닫기">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-statusrow">
+        <span class="pill st-started" data-pill><span class="led"></span>STARTED</span>
+        <span class="modal-pctbig" data-pctbig>0%</span>
+      </div>
+      <div class="bar" data-bar><i></i></div>
+      <div class="counts" style="margin-top:18px">
+        <div><div class="count-k">수집 / 전체</div><div class="count-v"><span data-proc>0</span> / <span data-total>0</span></div></div>
+        <div><div class="count-k">실패</div><div class="count-v" data-failed>0</div></div>
+        <div><div class="count-k">경과</div><div class="count-v" data-elapsed>00:00</div></div>
+      </div>
+      <div class="modal-line" data-line>Admin Key를 활성화하고 있습니다…</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ MODAL 2 · 링 게이지 ═══════════ -->
+<div class="overlay" id="ov-m2">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <div><h3>데이터 불러오기</h3><div class="job" data-job>jobId · —</div></div>
+      <button class="x-btn" disabled aria-label="닫기">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="ring">
+        <svg width="132" height="132" viewBox="0 0 132 132">
+          <circle class="trk" cx="66" cy="66" r="56" fill="none" stroke-width="10" />
+          <circle class="prg" data-ring cx="66" cy="66" r="56" fill="none" stroke-width="10"
+                  stroke-dasharray="351.86" stroke-dashoffset="351.86" />
+        </svg>
+        <div class="ring-center">
+          <div class="ring-num" data-ringnum>0%</div>
+          <div class="ring-sub"><span data-proc>0</span>/<span data-total>0</span></div>
+        </div>
+      </div>
+      <div class="modal-statusrow" style="margin-top:14px; justify-content:center">
+        <span class="pill st-started" data-pill><span class="led"></span>STARTED</span>
+      </div>
+      <div class="counts" style="margin-top:6px; justify-content:center">
+        <div style="text-align:center"><div class="count-k">실패</div><div class="count-v" data-failed>0</div></div>
+        <div style="text-align:center"><div class="count-k">경과</div><div class="count-v" data-elapsed>00:00</div></div>
+      </div>
+      <div class="modal-line" data-line style="text-align:center">Admin Key를 활성화하고 있습니다…</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ MODAL 3 · LINA 캐릭터 ═══════════ -->
+<div class="overlay" id="ov-m3">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <div><h3>데이터 불러오기</h3><div class="job" data-job>jobId · —</div></div>
+      <button class="x-btn" disabled aria-label="닫기">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="track-wrap">
+        <div class="track">
+          <div class="finish-flagline"></div>
+          <div class="runner" data-runner><img src="../frontend/assets/lina-character/lina-running.png" alt="LINA 수집 중" /></div>
+          <div class="finish" data-finish><img src="../frontend/assets/lina-character/lina-flag.png" alt="완료" /></div>
+        </div>
+      </div>
+      <div class="modal-statusrow">
+        <span class="pill st-started" data-pill><span class="led"></span>STARTED</span>
+        <span class="modal-pctbig" data-pctbig>0%</span>
+      </div>
+      <div class="bar" data-bar><i></i></div>
+      <div class="counts" style="margin-top:16px">
+        <div><div class="count-k">수집 / 전체</div><div class="count-v"><span data-proc>0</span> / <span data-total>0</span></div></div>
+        <div><div class="count-k">실패</div><div class="count-v" data-failed>0</div></div>
+        <div><div class="count-k">경과</div><div class="count-v" data-elapsed>00:00</div></div>
+      </div>
+      <div class="modal-line" data-line>LINA가 출발 준비 중…</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── 상태 메타 ──
+  const STATUS = {
+    STARTED:     { ko: '시작됨',   cls: 'st-started' },
+    IN_PROGRESS: { ko: '수집 중',  cls: 'st-progress' },
+    COMPLETED:   { ko: '완료',     cls: 'st-completed' },
+    FAILED:      { ko: '실패',     cls: 'st-failed' },
+  };
+  const nf = new Intl.NumberFormat('ko-KR');
+  const pctOf = (s) => s.totalPages ? Math.round((s.processedPages / s.totalPages) * 100) : 0;
+  const elapsedOf = (s) => {
+    const t = Math.max(0, Math.floor((Date.now() - new Date(s.startedAt).getTime()) / 1000));
+    return String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0');
+  };
+  const isEnd = (st) => st === 'COMPLETED' || st === 'FAILED';
+
+  // ── 수집 시뮬레이터 : GET /api/admin/ingest/status/{jobId} 응답 형태로 snapshot emit ──
+  function runIngest(onUpdate, opts = {}) {
+    const total = opts.total ?? 150;
+    const dur = opts.durationMs ?? 5400;
+    const failAt = opts.failAt ?? null;       // processedPages 도달 시 FAILED
+    const jobId = 'job-' + Math.random().toString(16).slice(2, 8);
+    const startedAt = new Date().toISOString();
+    let raf, started = performance.now();
+
+    onUpdate({ jobId, status: 'STARTED', totalPages: total, processedPages: 0, failedPages: 0, startedAt });
+
+    function tick(now) {
+      const p = Math.min((now - started) / dur, 1);
+      const processed = Math.round(total * p);
+      const failed = Math.min(2, Math.floor(processed / 65));
+      if (failAt !== null && processed >= failAt) {
+        onUpdate({ jobId, status: 'FAILED', totalPages: total, processedPages: failAt, failedPages: failed + 1, startedAt });
+        return;
+      }
+      if (processed >= total) {
+        onUpdate({ jobId, status: 'COMPLETED', totalPages: total, processedPages: total, failedPages: failed, startedAt });
+        return;
+      }
+      onUpdate({ jobId, status: 'IN_PROGRESS', totalPages: total, processedPages: processed, failedPages: failed, startedAt });
+      raf = requestAnimationFrame(tick);
+    }
+    const kick = setTimeout(() => { started = performance.now(); raf = requestAnimationFrame(tick); }, 650);
+    return { cancel() { clearTimeout(kick); cancelAnimationFrame(raf); } };
+  }
+
+  // 진행 단계별 메시지
+  function lineFor(s) {
+    if (s.status === 'STARTED') return '수집 작업이 큐에 등록됐습니다.';
+    if (s.status === 'COMPLETED') return `✓ ${nf.format(s.totalPages)} 페이지 수집 완료`;
+    if (s.status === 'FAILED') return `✕ 수집 실패 — Admin Key 또는 OAuth 토큰을 확인하세요.`;
+    const pct = pctOf(s);
+    if (pct < 30) return '문서 메타데이터를 조회하는 중…';
+    if (pct < 65) return `페이지 본문을 수집하는 중… (${nf.format(s.processedPages)} / ${nf.format(s.totalPages)})`;
+    if (pct < 90) return '청크를 임베딩하는 중…';
+    return 'VectorDB에 인덱싱하는 중…';
+  }
+
+  // ═══════════ MODAL controller ═══════════
+  function setText(root, sel, val) { root.querySelectorAll('[data-' + sel + ']').forEach(e => e.textContent = val); }
+
+  function bindModal(overlayId) {
+    const ov = document.getElementById(overlayId);
+    const xBtn = ov.querySelector('.x-btn');
+    const bar = ov.querySelector('[data-bar]');
+    const ring = ov.querySelector('[data-ring]');
+    const runner = ov.querySelector('[data-runner]');
+    const finish = ov.querySelector('[data-finish]');
+    const RING_C = 351.86;
+    let ctrl = null;
+
+    function render(s) {
+      const pct = pctOf(s);
+      const meta = STATUS[s.status];
+      // pill
+      const pill = ov.querySelector('[data-pill]');
+      if (pill) { pill.className = 'pill ' + meta.cls; pill.innerHTML = '<span class="led"></span>' + s.status; }
+      // numbers
+      setText(ov, 'pctbig', pct + '%');
+      setText(ov, 'ringnum', pct + '%');
+      setText(ov, 'proc', nf.format(s.processedPages));
+      setText(ov, 'total', nf.format(s.totalPages));
+      setText(ov, 'failed', nf.format(s.failedPages));
+      setText(ov, 'elapsed', elapsedOf(s));
+      setText(ov, 'job', 'jobId · ' + s.jobId);
+      ov.querySelectorAll('[data-failed]').forEach(e => e.classList.toggle('warn', s.failedPages > 0));
+      // bar
+      if (bar) {
+        bar.querySelector('i').style.width = pct + '%';
+        bar.classList.toggle('is-progress', s.status === 'IN_PROGRESS' || s.status === 'STARTED');
+        bar.classList.toggle('is-done', s.status === 'COMPLETED');
+      }
+      // ring
+      if (ring) {
+        ring.style.strokeDashoffset = RING_C * (1 - pct / 100);
+        ring.classList.toggle('done', s.status === 'COMPLETED');
+        const rn = ov.querySelector('[data-ringnum]'); if (rn) rn.classList.toggle('done', s.status === 'COMPLETED');
+      }
+      // character
+      if (runner) {
+        runner.style.left = Math.min(pct, 88) + '%';
+        if (s.status === 'COMPLETED') { runner.style.opacity = '0'; finish.classList.add('done'); }
+        else { runner.style.opacity = '1'; finish.classList.remove('done'); }
+      }
+      // line
+      const line = ov.querySelector('[data-line]');
+      if (line) { line.textContent = lineFor(s); line.className = 'modal-line' + (s.status === 'COMPLETED' ? ' done' : s.status === 'FAILED' ? ' fail' : ''); }
+      if (line && line.style && line.parentElement.querySelector('.ring')) line.style.textAlign = 'center';
+      // X lock
+      if (isEnd(s.status)) {
+        xBtn.disabled = false; xBtn.classList.add('ready');
+        xBtn.classList.toggle('failed', s.status === 'FAILED');
+      } else {
+        xBtn.disabled = true; xBtn.classList.remove('ready', 'failed');
+      }
+    }
+
+    function open(opts) {
+      // reset
+      if (runner) { runner.style.opacity = '1'; runner.style.left = '0%'; finish.classList.remove('done'); }
+      if (bar) bar.querySelector('i').style.width = '0%';
+      if (ring) ring.style.strokeDashoffset = RING_C;
+      xBtn.disabled = true; xBtn.classList.remove('ready', 'failed');
+      ov.classList.add('open');
+      ctrl = runIngest(render, opts);
+    }
+    function close() { if (xBtn.disabled) return; ov.classList.remove('open'); ctrl && ctrl.cancel(); }
+
+    xBtn.addEventListener('click', close);
+    ov.addEventListener('click', (e) => { if (e.target === ov && !xBtn.disabled) close(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && ov.classList.contains('open') && !xBtn.disabled) close(); });
+    return { open };
+  }
+
+  const modals = { m1: bindModal('ov-m1'), m2: bindModal('ov-m2'), m3: bindModal('ov-m3') };
+  document.querySelectorAll('[data-modal]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const opts = btn.dataset.fail ? { failAt: 92 } : {};
+      modals[btn.dataset.modal].open(opts);
+    });
+  });
+
+  // ═══════════ INLINE controllers ═══════════
+  function bindInline(btnId, rightId, renderHTML, onSnap) {
+    const btn = document.getElementById(btnId);
+    const right = document.getElementById(rightId);
+    let ctrl = null;
+    btn.addEventListener('click', () => {
+      btn.disabled = true; btn.textContent = '수집 중…';
+      right.innerHTML = renderHTML();
+      right.classList.add('fade-in');
+      const refs = onSnap(right);
+      ctrl && ctrl.cancel();
+      ctrl = runIngest((s) => {
+        refs(s);
+        if (isEnd(s.status)) {
+          btn.disabled = false;
+          btn.textContent = s.status === 'FAILED' ? '↻ 다시 불러오기' : '↻ 다시 불러오기';
+        }
+      });
+    });
+  }
+
+  // inline A : bar + counts
+  bindInline('ia-btn', 'ia-right',
+    () => `
+      <div class="ir-top">
+        <span class="pill st-started" data-pill><span class="led"></span>STARTED</span>
+        <span class="ir-pct" data-pctbig>0%</span>
+      </div>
+      <div class="bar is-progress" data-bar><i></i></div>
+      <div class="counts" style="margin-top:16px">
+        <div><div class="count-k">수집 / 전체</div><div class="count-v"><span data-proc>0</span> / <span data-total>0</span></div></div>
+        <div><div class="count-k">실패</div><div class="count-v" data-failed>0</div></div>
+        <div><div class="count-k">경과</div><div class="count-v" data-elapsed>00:00</div></div>
+      </div>`,
+    (root) => (s) => {
+      const pct = pctOf(s), meta = STATUS[s.status];
+      const pill = root.querySelector('[data-pill]'); pill.className = 'pill ' + meta.cls; pill.innerHTML = '<span class="led"></span>' + s.status;
+      root.querySelector('[data-pctbig]').textContent = pct + '%';
+      root.querySelector('[data-proc]').textContent = nf.format(s.processedPages);
+      root.querySelector('[data-total]').textContent = nf.format(s.totalPages);
+      const fEl = root.querySelector('[data-failed]'); fEl.textContent = nf.format(s.failedPages); fEl.classList.toggle('warn', s.failedPages > 0);
+      root.querySelector('[data-elapsed]').textContent = elapsedOf(s);
+      const bar = root.querySelector('[data-bar]'); bar.querySelector('i').style.width = pct + '%';
+      bar.classList.toggle('is-progress', !isEnd(s.status)); bar.classList.toggle('is-done', s.status === 'COMPLETED');
+    }
+  );
+
+  // inline B : LINA character track
+  bindInline('ib-btn', 'ib-right',
+    () => `
+      <div class="track-wrap">
+        <div class="track">
+          <div class="finish-flagline"></div>
+          <div class="runner" data-runner><img src="../frontend/assets/lina-character/lina-running.png" alt="수집 중" /></div>
+          <div class="finish" data-finish><img src="../frontend/assets/lina-character/lina-flag.png" alt="완료" /></div>
+        </div>
+        <div class="track-stats">
+          <span class="track-msg" data-line>LINA가 출발합니다…</span>
+          <span class="pill st-started" data-pill><span class="led"></span><span data-proc>0</span>/<span data-total>0</span></span>
+        </div>
+      </div>`,
+    (root) => (s) => {
+      const pct = pctOf(s), meta = STATUS[s.status];
+      const runner = root.querySelector('[data-runner]'), finish = root.querySelector('[data-finish]');
+      runner.style.left = Math.min(pct, 88) + '%';
+      if (s.status === 'COMPLETED') { runner.style.opacity = '0'; finish.classList.add('done'); }
+      const pill = root.querySelector('[data-pill]'); pill.className = 'pill ' + meta.cls;
+      pill.innerHTML = '<span class="led"></span>' + nf.format(s.processedPages) + '/' + nf.format(s.totalPages);
+      const line = root.querySelector('[data-line]'); line.textContent = lineFor(s);
+      line.classList.toggle('done', s.status === 'COMPLETED');
+    }
+  );
+
+  // inline C : compact stepper
+  bindInline('ic-btn', 'ic-right',
+    () => `
+      <div class="mini-step" style="margin-bottom:16px">
+        <div class="mstp"><div class="dot done" data-s0>✓</div><div class="lbl on">키 발급</div></div>
+        <div class="mline" data-l0></div>
+        <div class="mstp"><div class="dot" data-s1>2</div><div class="lbl" data-lbl1>수집</div></div>
+        <div class="mline" data-l1></div>
+        <div class="mstp"><div class="dot" data-s2>3</div><div class="lbl" data-lbl2>인덱싱</div></div>
+        <div class="mline" data-l2></div>
+        <div class="mstp"><div class="dot" data-s3>4</div><div class="lbl" data-lbl3>완료</div></div>
+      </div>
+      <div class="counts">
+        <div><div class="count-k">진행</div><div class="count-v"><span data-pctbig>0%</span></div></div>
+        <div><div class="count-k">수집 / 전체</div><div class="count-v"><span data-proc>0</span> / <span data-total>0</span></div></div>
+        <div><div class="count-k">실패</div><div class="count-v" data-failed>0</div></div>
+      </div>`,
+    (root) => (s) => {
+      const pct = pctOf(s);
+      root.querySelector('[data-pctbig]').textContent = pct + '%';
+      root.querySelector('[data-proc]').textContent = nf.format(s.processedPages);
+      root.querySelector('[data-total]').textContent = nf.format(s.totalPages);
+      const fEl = root.querySelector('[data-failed]'); fEl.textContent = nf.format(s.failedPages); fEl.classList.toggle('warn', s.failedPages > 0);
+      const s1 = root.querySelector('[data-s1]'), s2 = root.querySelector('[data-s2]'), s3 = root.querySelector('[data-s3]');
+      const l0 = root.querySelector('[data-l0]'), l1 = root.querySelector('[data-l1]'), l2 = root.querySelector('[data-l2]');
+      // reset
+      [s1, s2, s3].forEach(d => d.className = 'dot');
+      [l0, l1, l2].forEach(l => l.className = 'mline');
+      if (s.status === 'STARTED') { s1.className = 'dot act'; l0.className = 'mline act'; }
+      else if (s.status === 'IN_PROGRESS') {
+        l0.className = 'mline done';
+        if (pct < 85) { s1.className = 'dot act'; l1.className = 'mline act'; }
+        else { s1.className = 'dot done'; l1.className = 'mline done'; s2.className = 'dot act'; l2.className = 'mline act'; }
+      } else if (s.status === 'COMPLETED') {
+        l0.className = l1.className = l2.className = 'mline done';
+        s1.className = s2.className = s3.className = 'dot done';
+        s3.textContent = '✓';
+      } else if (s.status === 'FAILED') {
+        l0.className = 'mline done'; s1.className = 'dot err'; s1.textContent = '✕';
+      }
+    }
+  );
+
+  // inline D : LINA rides the progress bar → plants flag on completion
+  const RUN_SRC = '../frontend/assets/lina-character/lina-running.png';
+  const FLAG_SRC = '../frontend/assets/lina-character/lina-flag.png';
+  bindInline('id-btn', 'id-right',
+    () => `
+      <div class="barlina">
+        <div class="barlina-char" data-char><img src="${RUN_SRC}" data-charimg alt="수집 중" /></div>
+        <div class="bar is-progress" data-bar><i></i></div>
+      </div>
+      <div class="ir-top" style="margin-top:20px">
+        <span class="pill st-started" data-pill><span class="led"></span>STARTED</span>
+        <span class="ir-pct" data-pctbig>0%</span>
+      </div>
+      <div class="counts" style="margin-top:14px">
+        <div><div class="count-k">수집 / 전체</div><div class="count-v"><span data-proc>0</span> / <span data-total>0</span></div></div>
+        <div><div class="count-k">실패</div><div class="count-v" data-failed>0</div></div>
+        <div><div class="count-k">경과</div><div class="count-v" data-elapsed>00:00</div></div>
+      </div>`,
+    (root) => (s) => {
+      const pct = pctOf(s), meta = STATUS[s.status];
+      const pill = root.querySelector('[data-pill]'); pill.className = 'pill ' + meta.cls; pill.innerHTML = '<span class="led"></span>' + s.status;
+      root.querySelector('[data-pctbig]').textContent = pct + '%';
+      root.querySelector('[data-proc]').textContent = nf.format(s.processedPages);
+      root.querySelector('[data-total]').textContent = nf.format(s.totalPages);
+      const fEl = root.querySelector('[data-failed]'); fEl.textContent = nf.format(s.failedPages); fEl.classList.toggle('warn', s.failedPages > 0);
+      root.querySelector('[data-elapsed]').textContent = elapsedOf(s);
+      const bar = root.querySelector('[data-bar]'); bar.querySelector('i').style.width = pct + '%';
+      bar.classList.toggle('is-progress', !isEnd(s.status)); bar.classList.toggle('is-done', s.status === 'COMPLETED');
+      // LINA rides the fill edge
+      const char = root.querySelector('[data-char]'), img = root.querySelector('[data-charimg]');
+      char.style.left = pct + '%';
+      if (s.status === 'COMPLETED') { img.src = FLAG_SRC; char.classList.add('planted'); }
+      else { img.src = RUN_SRC; char.classList.remove('planted'); }
+    }
+  );
+</script>
+</body>
+</html>

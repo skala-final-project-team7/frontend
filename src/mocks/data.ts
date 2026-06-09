@@ -17,6 +17,8 @@
  */
 import type {
   AdminDataOverview,
+  AdminKeyActivationResponse,
+  StartAdminIngestResponse,
   AdminSyncHistoryResponse,
   ConfluencePagePreview,
   Conversation,
@@ -88,6 +90,16 @@ export const mockAdminSyncHistory: AdminSyncHistoryResponse = {
       completedAt: '2026-06-03T02:23:00+09:00',
     },
   ],
+};
+
+export const mockAdminKeyActivation: AdminKeyActivationResponse = {
+  activatedUntil: '2026-06-09T13:00:00+09:00',
+};
+
+export const mockAdminIngestStart: StartAdminIngestResponse = {
+  jobId: 'job-uuid-001',
+  status: 'STARTED',
+  startedAt: '2026-06-09T12:00:00+09:00',
 };
 
 export const mockSources: Source[] = [

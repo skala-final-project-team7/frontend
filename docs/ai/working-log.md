@@ -2,85 +2,6 @@
 
 이 문서는 `docs/ai/current-plan.md`의 feature 단위 작업 결과를 기록한다.
 
-## 2026-06-08 - refactor: LandingPage 디자인 개선 (Ask 화살표 · 캐릭터 이미지 · 탭 안정성)
-
-### Scope
-
-- LandingPage Ask 탭 화살표 SVG를 직선에서 스웁 곡선으로 개선
-- lina-ask / lina-search / lina-verify 캐릭터 이미지를 각 탭 텍스트 하단 우측에 배치
-- 탭 전환 시 레이아웃 jitter 수정: 그리드에 min-height 고정, `items-start` 적용
-- 탭 콘텐츠에 Vue `<Transition mode="out-in">` fade 애니메이션 추가
-- 스냅 스크롤 컨테이너에 `scroll-smooth` 적용
-- `src/shared/assets.ts`에 lina-ask / lina-search / lina-verify 이미지 export 추가
-
-### Changed Files
-
-- `src/pages/LandingPage.vue`: 화살표 SVG, 캐릭터 이미지 배치, 탭 Transition, scroll-smooth
-- `src/shared/assets.ts`: linaAskImageUrl / linaSearchImageUrl / linaVerifyImageUrl export 추가
-
-### Results
-
-- 탭 전환 시 탭 바 Y 위치 고정 확인 (puppeteer 측정: 3탭 모두 235px STABLE)
-- scroll-smooth로 snap 스크롤 전환 부드러움 개선
-
-### Notes / Remaining Issues
-
-- lina-verify.png는 흰 배경이 포함된 원본 파일이다. PNG 배경 제거 버전 파일로 교체 시 `mix-blend-darken` 클래스 제거 필요.
-
-## 2026-06-09 - feature14: Admin 기본 shell 및 데이터 수집 메인 보드 구현
-
-### Scope
-
-- `docs/ai/current-plan.md`의 feature14 요구사항을 기준으로 Admin 운영 메인 보드(SCR-800)만 구현
-- `/admin`과 `/admin/operations`에서 동일한 Admin shell 진입 화면을 렌더링
-- `GET /api/admin/data`, `GET /api/admin/sync` 응답 타입과 mock handler를 추가하고 보드 카드/최근 동기화 이력에 매핑
-- `POST /api/admin/ingest`는 feature14 범위에서 placeholder 상태로 분리
-- ADMIN 권한 확인, loading/error/empty/access denied 상태를 화면에 분리
-
-### Test Cases
-
-- `/admin`과 `/admin/operations`가 Admin 보드 entry에 연결된다.
-- ADMIN 사용자는 Admin shell, 데이터 현황 카드, 최근 동기화 이력, ingest placeholder를 본다.
-- 최근 동기화 이력이 비어 있으면 empty state를 표시한다.
-- 현재 사용자가 `ADMIN`이 아니면 admin data/sync API 호출 없이 접근 차단 상태를 표시한다.
-- admin data 요청이 실패하면 retry 가능한 error state를 표시하고 재시도 후 정상 보드로 복구된다.
-
-### Changed Files
-
-- `src/__tests__/feature14.admin-operations-board.test.ts`: feature14 전용 route/admin board/access guard 테스트 추가
-- `src/pages/AdminEntryPage.vue`: placeholder를 실제 Admin shell, 운영 보드, 상태 분기 UI로 교체
-- `src/router/index.ts`: `/admin/operations` route 추가
-- `src/api/index.ts`: `getAdminDataOverview`, `getAdminSyncHistory` API 함수 추가
-- `src/types/api.ts`: admin data overview / sync history 타입 추가
-- `src/mocks/data.ts`, `src/mocks/handlers.ts`: admin data/sync mock payload와 handler 추가
-- `docs/ai/current-plan.md`: feature14 완료 체크 처리
-- `docs/ai/working-log.md`: feature14 작업 로그 기록
-
-### Commands
-
-- `npm test -- src/__tests__/feature14.admin-operations-board.test.ts` 최초 실행: failed
-- `npm test -- src/__tests__/feature14.admin-operations-board.test.ts`
-- `npm test`
-- `./scripts/format.sh`
-- `./scripts/lint.sh`
-- `./scripts/test.sh`
-- `./scripts/verify.sh`
-
-### Results
-
-- `npm test -- src/__tests__/feature14.admin-operations-board.test.ts` 최초 실행: failed, `/admin/operations` route와 Admin 보드 UI/상태 분기 미구현 확인
-- `npm test -- src/__tests__/feature14.admin-operations-board.test.ts`: passed
-- `npm test`: passed, 14 files / 114 tests passed
-- `./scripts/format.sh`: passed
-- `./scripts/lint.sh`: passed
-- `./scripts/test.sh`: passed
-- `./scripts/verify.sh`: passed
-
-### Notes / Remaining Issues
-
-- `POST /api/admin/ingest` 실제 연결은 feature14 요구사항에 따라 placeholder 상태로 남겨두었고, feature15 이후 범위는 수정하지 않음.
-- 인증 백엔드 연결(feature13)이 아직 제외 상태이므로 Admin 접근 제어는 `GET /api/users/me` role 확인 기준으로만 동작한다.
-
 ## Log Template
 
 ```md
@@ -2476,6 +2397,7 @@
 - 실제 `/api/auth/login`, OAuth callback, `GET /api/users/me`, 토큰 저장/갱신/로그아웃 처리는 feature13 범위로 남긴다.
 - API, DB, 인증/인가 명세는 변경하지 않음.
 
+
 ## 2026-06-08 - refactor: feature12 Landing/Login 디자인 정리
 
 - `/` 랜딩을 3패널 스크롤 구조로 정리하고, 첫 화면에 큐트 LINA 로고와 장식용 지식 그래프 배경을 배치했다.
@@ -2486,9 +2408,176 @@
 - 사용자/관리자 설명 문구를 서비스 톤으로 다듬고 `whitespace-pre-line`으로 의도한 줄바꿈이 보이게 했다.
 - graph용 blue/sky/purple/indigo 디자인 토큰을 추가해 랜딩 그래프 색상을 토큰 기반으로 관리한다.
 
+## 2026-06-08 - refactor: LandingPage 디자인 개선 (Ask 화살표 · 캐릭터 이미지 · 탭 안정성)
+
+### Scope
+
+- LandingPage Ask 탭 화살표 SVG를 직선에서 스웁 곡선으로 개선
+- lina-ask / lina-search / lina-verify 캐릭터 이미지를 각 탭 텍스트 하단 우측에 배치
+- 탭 전환 시 레이아웃 jitter 수정: 그리드에 min-height 고정, `items-start` 적용
+- 탭 콘텐츠에 Vue `<Transition mode="out-in">` fade 애니메이션 추가
+- 스냅 스크롤 컨테이너에 `scroll-smooth` 적용
+- `src/shared/assets.ts`에 lina-ask / lina-search / lina-verify 이미지 export 추가
+
+### Changed Files
+
+- `src/pages/LandingPage.vue`: 화살표 SVG, 캐릭터 이미지 배치, 탭 Transition, scroll-smooth
+- `src/shared/assets.ts`: linaAskImageUrl / linaSearchImageUrl / linaVerifyImageUrl export 추가
+
+### Results
+
+- 탭 전환 시 탭 바 Y 위치 고정 확인 (puppeteer 측정: 3탭 모두 235px STABLE)
+- scroll-smooth로 snap 스크롤 전환 부드러움 개선
+
+### Notes / Remaining Issues
+
+- lina-verify.png는 흰 배경이 포함된 원본 파일이다. PNG 배경 제거 버전 파일로 교체 시 `mix-blend-darken` 클래스 제거 필요.
+
+
 ## 2026-06-09 - refactor: feature12 Landing/Login 인터랙션 정리
 
 - `/login` 역할 카드의 rise animation을 내부 래퍼로 분리해, 페이지 진입 직후에도 hover impact가 즉시 보이도록 조정했다.
 - 랜딩 `Verify` mockup을 상하 2박스 구조에서 고정 높이 `list / graph` 토글 구조로 정리하고 기본값을 `graph`로 맞췄다.
 - 랜딩 `Ask` 섹션의 입력 박스와 화살표 위치를 여러 차례 조정해 겹침을 줄이고 시선 흐름을 정리했다.
 - `Ask` 캐릭터 foot shadow 실험은 제거하고, 현재는 원본 이미지 그대로 사용한다.
+
+
+## 2026-06-09 - feature14: Admin 기본 shell 및 데이터 수집 메인 보드 구현
+
+### Scope
+
+- `docs/ai/current-plan.md`의 feature14 요구사항을 기준으로 Admin 운영 메인 보드(SCR-800)만 구현
+- `/admin`과 `/admin/operations`에서 동일한 Admin shell 진입 화면을 렌더링
+- `GET /api/admin/data`, `GET /api/admin/sync` 응답 타입과 mock handler를 추가하고 보드 카드/최근 동기화 이력에 매핑
+- `POST /api/admin/ingest`는 feature14 범위에서 placeholder 상태로 분리
+- ADMIN 권한 확인, loading/error/empty/access denied 상태를 화면에 분리
+
+### Test Cases
+
+- `/admin`과 `/admin/operations`가 Admin 보드 entry에 연결된다.
+- ADMIN 사용자는 Admin shell, 데이터 현황 카드, 최근 동기화 이력, ingest placeholder를 본다.
+- 최근 동기화 이력이 비어 있으면 empty state를 표시한다.
+- 현재 사용자가 `ADMIN`이 아니면 admin data/sync API 호출 없이 접근 차단 상태를 표시한다.
+- admin data 요청이 실패하면 retry 가능한 error state를 표시하고 재시도 후 정상 보드로 복구된다.
+
+### Changed Files
+
+- `src/__tests__/feature14.admin-operations-board.test.ts`: feature14 전용 route/admin board/access guard 테스트 추가
+- `src/pages/AdminEntryPage.vue`: placeholder를 실제 Admin shell, 운영 보드, 상태 분기 UI로 교체
+- `src/router/index.ts`: `/admin/operations` route 추가
+- `src/api/index.ts`: `getAdminDataOverview`, `getAdminSyncHistory` API 함수 추가
+- `src/types/api.ts`: admin data overview / sync history 타입 추가
+- `src/mocks/data.ts`, `src/mocks/handlers.ts`: admin data/sync mock payload와 handler 추가
+- `docs/ai/current-plan.md`: feature14 완료 체크 처리
+- `docs/ai/working-log.md`: feature14 작업 로그 기록
+
+### Commands
+
+- `npm test -- src/__tests__/feature14.admin-operations-board.test.ts` 최초 실행: failed
+- `npm test -- src/__tests__/feature14.admin-operations-board.test.ts`
+- `npm test`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- `npm test -- src/__tests__/feature14.admin-operations-board.test.ts` 최초 실행: failed, `/admin/operations` route와 Admin 보드 UI/상태 분기 미구현 확인
+- `npm test -- src/__tests__/feature14.admin-operations-board.test.ts`: passed
+- `npm test`: passed, 14 files / 114 tests passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed
+- `./scripts/verify.sh`: passed
+
+### Notes / Remaining Issues
+
+- `POST /api/admin/ingest` 실제 연결은 feature14 요구사항에 따라 placeholder 상태로 남겨두었고, feature15 이후 범위는 수정하지 않음.
+- 인증 백엔드 연결(feature13)이 아직 제외 상태이므로 Admin 접근 제어는 `GET /api/users/me` role 확인 기준으로만 동작한다.
+
+## 2026-06-09 - follow-up: Admin 접근 차단 UI 및 인증 저장 전략 문서 정리
+
+### Scope
+
+- 비관리자 사용자가 `/admin`에 접근했을 때 보이는 차단 화면 UX를 보강
+- `/admin` 운영 보드를 시안에 맞춰 화이트톤 중심으로 리디자인
+- 인증 토큰 저장 전략 논의를 `frontend/docs` 문서로 정리
+
+### Changed Files
+
+- `src/pages/AdminEntryPage.vue`: 비관리자 차단 상태에 Login 복귀 버튼과 아이콘 추가, 해당 버튼만 볼드 제거, 운영 보드 타이포/레이아웃을 화이트톤 시안 방향으로 재조정
+- `frontend/docs/auth-session-storage-plan.md`: `HttpOnly cookie` 미사용 전제, `Pinia + localStorage` 혼합 저장 전략, refresh 기반 세션 복원 플로우 문서화
+- `docs/ai/working-log.md`: 후속 작업 기록 추가
+
+### Commands
+
+- `npm test -- src/__tests__/feature14.admin-operations-board.test.ts`
+
+### Results
+
+- feature14 admin 보드 테스트: passed, 1 file / 5 tests passed
+
+### Notes / Remaining Issues
+
+- Admin 권한 판별은 여전히 `GET /api/users/me`의 `role` 값을 기준으로만 동작하며, 실제 토큰 저장/복원 구현은 feature13 범위다.
+- 인증 저장 전략 문서는 현재 논의 결정사항을 기록한 것이며, 실제 store / refresh 구현 코드는 아직 포함하지 않는다.
+
+## 2026-06-09 - follow-up: Admin 수집 버튼 역할 분리
+
+### Scope
+
+- Admin 운영 보드에서 `API 키 발급` 버튼과 `데이터 불러오기` 버튼의 역할을 분리
+- `데이터 불러오기`는 관리자가 계속 사용하는 운영 버튼으로 `POST /api/admin/ingest`를 호출
+- `API 키 발급`은 테스트/수동 검증용 `POST /api/admin/key/activate` 버튼으로 유지
+
+### Changed Files
+
+- `src/__tests__/feature14.admin-operations-board.test.ts`: key activate와 ingest 버튼의 분리된 동작 테스트 추가
+- `src/types/api.ts`: admin key activate / ingest start 응답 타입 추가
+- `src/api/index.ts`: `activateAdminKey`, `startAdminIngestJob` API 함수 추가
+- `src/mocks/data.ts`, `src/mocks/handlers.ts`: admin key activate / ingest mock 응답과 handler 추가
+- `src/pages/AdminEntryPage.vue`: 버튼 활성화, action loading state, 결과 안내 문구, ingest 단독 호출 로직 추가
+- `docs/ai/working-log.md`: 후속 작업 기록 추가
+
+### Commands
+
+- `npm test -- src/__tests__/feature14.admin-operations-board.test.ts`
+
+### Results
+
+- feature14 admin 보드 테스트: passed, 1 file / 7 tests passed
+
+### Notes / Remaining Issues
+
+- `데이터 불러오기` 버튼은 FE에서 `POST /api/admin/ingest`만 호출하고, Admin Key 자동 활성화는 API spec에 따라 서버 내부 처리에 맡긴다.
+- 실제 수집 상태 polling(`GET /api/admin/ingest/status/{jobId}`)과 job progress UI는 아직 이번 범위에 포함하지 않았다.
+
+## 2026-06-09 - follow-up: Admin 자동 key activation 예외 처리 및 수집 상태 시연 UI
+
+### Scope
+
+- `데이터 불러오기` 버튼 클릭 시, Admin Key가 아직 없거나 만료된 경우 FE에서 먼저 key activation을 시도한 뒤 ingest로 이어가도록 예외 처리 추가
+- 수동 `API 키 발급` 이후에는 동일 세션에서 중복 발급 없이 ingest만 진행되도록 로컬 활성 시각 기준 분기 추가
+- 시연용으로 `STARTED`, `IN_PROGRESS`, `COMPLETED` 상태 예시 HTML 3개를 운영 보드에 추가
+
+### Changed Files
+
+- `src/__tests__/feature14.admin-operations-board.test.ts`: 자동 key activation 후 ingest, 수동 발급 후 중복 발급 방지 테스트 추가
+- `src/pages/AdminEntryPage.vue`: key 활성 만료 시각 상태, 자동 key activation 분기, 최신 ingest 상태 표시, 수집 상태 예시 카드 3개 추가
+- `docs/ai/working-log.md`: 후속 작업 기록 추가
+
+### Commands
+
+- `npm test -- src/__tests__/feature14.admin-operations-board.test.ts`
+- `npm run typecheck`
+
+### Results
+
+- feature14 admin 보드 테스트: passed, 1 file / 8 tests passed
+- `npm run typecheck`: failed, `src/__tests__/feature12.auth-login-role-selection.test.ts`의 기존 Vue Test Utils 타입 오류가 남아 있음. 이번 변경으로 추가된 feature14 타입 오류는 정리 완료
+
+### Notes / Remaining Issues
+
+- 현재 자동 key activation 분기는 FE가 직전 활성 성공 시각을 메모리로 기억하는 수준이다. 브라우저 새로고침 후에도 서버 측 활성 상태를 조회하는 API는 아직 없다.
+- 수집 상태 시연 UI 3개는 HTML 예시이며, 실제 `GET /api/admin/ingest/status/{jobId}` polling 결과와 연결되지는 않았다.

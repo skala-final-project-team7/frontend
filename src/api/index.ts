@@ -18,7 +18,12 @@
 import { apiRequest, streamChatRequest } from './client';
 import type {
   AdminDataOverview,
+  AdminIngestStatusResponse,
+  AdminKeyActivationResponse,
+  AdminIngestMode,
   AdminSyncHistoryResponse,
+  StartAdminIngestRequest,
+  StartAdminIngestResponse,
   ChatQuestionRequest,
   ConfluencePagePreview,
   ConversationList,
@@ -65,6 +70,44 @@ export function getAdminDataOverview(): Promise<AdminDataOverview> {
  */
 export function getAdminSyncHistory(): Promise<AdminSyncHistoryResponse> {
   return apiRequest<AdminSyncHistoryResponse>('/api/admin/sync');
+}
+
+/**
+ * 관리자용 Confluence Admin Key를 명시적으로 활성화한다.
+ *
+ * @returns Admin Key 활성 만료 시각
+ */
+export function activateAdminKey(): Promise<AdminKeyActivationResponse> {
+  return apiRequest<AdminKeyActivationResponse>('/api/admin/key/activate', {
+    method: 'POST',
+  });
+}
+
+/**
+ * 전체 또는 delta 데이터 수집 작업을 시작한다.
+ *
+ * @param request 수집 모드 payload
+ * @returns 수집 작업 ID와 시작 상태
+ */
+export function startAdminIngestJob(
+  request: StartAdminIngestRequest = { mode: 'full' satisfies AdminIngestMode },
+): Promise<StartAdminIngestResponse> {
+  return apiRequest<StartAdminIngestResponse>('/api/admin/ingest', {
+    method: 'POST',
+    body: request,
+  });
+}
+
+/**
+ * 현재 실행 중인 데이터 수집 작업의 상태를 조회한다.
+ *
+ * @param jobId 수집 작업 ID
+ * @returns 현재 작업 상태와 진행량
+ */
+export function getAdminIngestStatus(jobId: string): Promise<AdminIngestStatusResponse> {
+  return apiRequest<AdminIngestStatusResponse>(
+    `/api/admin/ingest/status/${encodeURIComponent(jobId)}`,
+  );
 }
 
 /**
