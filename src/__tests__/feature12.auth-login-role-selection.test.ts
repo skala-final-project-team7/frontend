@@ -50,6 +50,9 @@ describe('feature12 Auth / Login + Role Selection', () => {
     expect(wrapper.text()).toContain('scroll');
     expect(wrapper.text()).not.toContain('continue');
     expect(wrapper.find('[data-testid="login-page"]').exists()).toBe(false);
+    expect(wrapper.get('[data-testid="landing-cta-button"]').classes()).toContain(
+      'landing-hero-login-button',
+    );
 
     const scrollIndicators = wrapper.findAll('.landing-scroll-indicator');
     expect(scrollIndicators).toHaveLength(3);
@@ -75,6 +78,10 @@ describe('feature12 Auth / Login + Role Selection', () => {
         plugins: [createPinia(), router],
       },
     });
+
+    await wrapper.get('[data-testid="landing-cta-button"]').trigger('click');
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth' });
+    expect(router.currentRoute.value.path).toBe('/');
 
     await wrapper.get('[data-testid="landing-continue-button"]').trigger('click');
     expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth' });

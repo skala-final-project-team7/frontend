@@ -13,6 +13,8 @@
   - 2026-06-08, UX 개선, 탭 전환 Transition fade 추가, 스냅 스크롤 scroll-smooth 적용
   - 2026-06-09, 디자인 개선, Verify mockup을 고정 높이 list/graph 토글 구조로 변경
   - 2026-06-09, 디자인 조정, Ask 캐릭터 foot shadow 제거
+  - 2026-06-09, 디자인 조정, hero 로그인 버튼을 soft charcoal CTA로 정리
+  - 2026-06-09, UX 조정, hero 로그인 버튼 클릭 시 /login 직접 이동 대신 마지막 패널로 스크롤
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -301,10 +303,10 @@ onMounted(() => {
       <button
         type="button"
         data-testid="landing-cta-button"
-        class="landing-cta-button absolute bottom-20 right-12 z-30 inline-flex items-center gap-3 rounded-full border border-overlay-dark-20 bg-primary-white/80 px-8 py-3.5 text-button font-medium text-overlay-dark-80 backdrop-blur-sm transition-all hover:border-overlay-dark-40 hover:bg-primary-white hover:shadow-sm focus-visible:outline-none focus-visible:shadow-focus"
-        @click="enterLogin"
+        class="landing-cta-button landing-hero-login-button absolute bottom-20 right-12 z-30 inline-flex items-center gap-3 rounded-full px-8 py-3.5 text-button font-medium backdrop-blur-sm focus-visible:outline-none focus-visible:shadow-focus"
+        @click="scrollToLoginPanel"
       >
-        <span>바로가기</span>
+        <span>로그인</span>
         <svg class="size-4 shrink-0" viewBox="0 0 16 16" fill="none" aria-hidden="true">
           <path
             d="M3 8h10M9 4l4 4-4 4"
@@ -962,6 +964,29 @@ onMounted(() => {
 .landing-cta-button {
   opacity: 0;
   animation: landing-cta-rise 900ms cubic-bezier(0.22, 1, 0.36, 1) 1800ms forwards;
+}
+
+.landing-hero-login-button {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--color-primary-white);
+  background: linear-gradient(180deg, #323741 0%, #24272c 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 14px 28px rgba(24, 26, 30, 0.22);
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    filter 180ms ease,
+    border-color 180ms ease;
+}
+
+.landing-hero-login-button:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 20px 34px rgba(24, 26, 30, 0.28);
+  filter: brightness(1.04);
 }
 
 @keyframes landing-cta-rise {
