@@ -17,6 +17,7 @@
  */
 import type {
   AdminDataOverview,
+  AdminIngestStatusResponse,
   AdminKeyActivationResponse,
   StartAdminIngestResponse,
   AdminSyncHistoryResponse,
@@ -101,6 +102,41 @@ export const mockAdminIngestStart: StartAdminIngestResponse = {
   status: 'STARTED',
   startedAt: '2026-06-09T12:00:00+09:00',
 };
+
+export const mockAdminIngestStatusSequence: AdminIngestStatusResponse[] = [
+  {
+    jobId: 'job-uuid-001',
+    status: 'STARTED',
+    totalPages: 150,
+    processedPages: 0,
+    failedPages: 0,
+    startedAt: '2026-06-09T12:00:00+09:00',
+  },
+  {
+    jobId: 'job-uuid-001',
+    status: 'IN_PROGRESS',
+    totalPages: 150,
+    processedPages: 52,
+    failedPages: 0,
+    startedAt: '2026-06-09T12:00:00+09:00',
+  },
+  {
+    jobId: 'job-uuid-001',
+    status: 'IN_PROGRESS',
+    totalPages: 150,
+    processedPages: 109,
+    failedPages: 1,
+    startedAt: '2026-06-09T12:00:00+09:00',
+  },
+  {
+    jobId: 'job-uuid-001',
+    status: 'COMPLETED',
+    totalPages: 150,
+    processedPages: 150,
+    failedPages: 2,
+    startedAt: '2026-06-09T12:00:00+09:00',
+  },
+];
 
 export const mockSources: Source[] = [
   {

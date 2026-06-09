@@ -2581,3 +2581,19 @@
 
 - 현재 자동 key activation 분기는 FE가 직전 활성 성공 시각을 메모리로 기억하는 수준이다. 브라우저 새로고침 후에도 서버 측 활성 상태를 조회하는 API는 아직 없다.
 - 수집 상태 시연 UI 3개는 HTML 예시이며, 실제 `GET /api/admin/ingest/status/{jobId}` polling 결과와 연결되지는 않았다.
+
+## 2026-06-09 - follow-up: Admin 수집 문구 사용자 기준 정리
+
+### Scope
+
+- Admin 운영 보드의 데이터 수집 설명에서 스페이스 기준 문구 제거
+- 사용자 허용 권한 기준으로 Confluence 문서를 수집한다는 설명으로 교체
+
+### Changed Files
+
+- `src/pages/AdminEntryPage.vue`: `Confluence 스페이스: CPC` 문구를 사용자 허용 권한 기반 수집 설명으로 변경
+- `docs/ai/working-log.md`: 후속 작업 기록 추가
+
+### Notes / Remaining Issues
+
+- 현재 `GET /api/admin/data` 계약의 `totalSpaces` 필드와 UI 카드까지 사용자 기준 지표로 바꾸려면 backend/API spec 변경이 선행되어야 한다.

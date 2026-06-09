@@ -18,4 +18,5 @@ export const SERVER_STATE_POLICY = {
   scope: 'server-state',
 } as const;
 
+export { useAdminIngestStore } from './adminIngest';
 export { useChatStore } from './chat';

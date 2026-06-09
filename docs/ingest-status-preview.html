@@ -285,30 +285,34 @@
     .track-msg { font-size: 0.8rem; color: var(--ink-60); transition: color 0.3s; }
     .track-msg.done { color: var(--success); font-weight: 600; }
 
-    /* LINA riding the progress bar (inline D) */
-    .barlina { position: relative; margin-top: 54px; overflow: visible; }
+    /* LINA riding the progress bar edge (inline D) — 바 채워지는 끝에 밀착 */
+    .barlina { position: relative; margin-top: 50px; overflow: visible; }
+    .barlina .bar { height: 10px; }
+    .barlina-edge {
+      position: absolute; left: 0%; bottom: 0;
+      transition: left 0.5s cubic-bezier(0.22,1,0.36,1); /* 바 fill 과 동일 타이밍 */
+      z-index: 2; pointer-events: none;
+    }
     .barlina-char {
-      position: absolute; left: 0%; bottom: 9px;
-      width: 46px; height: 46px; transform: translateX(-50%);
-      transition: left 0.8s cubic-bezier(0.4,0,0.2,1); z-index: 2;
+      position: absolute; left: 0; bottom: 4px; /* 바 위에 발이 닿게 */
+      width: 44px; height: 44px; transform: translateX(-50%);
     }
     .barlina-char img {
       width: 100%; height: 100%; object-fit: contain;
       filter: drop-shadow(0 5px 5px rgba(0,0,0,0.14));
       animation: bob 0.45s ease-in-out infinite;
     }
-    .barlina-char.planted { animation: land 0.55s cubic-bezier(0.22,1,0.36,1); }
     .barlina-char.planted img { animation: none; }
-    /* speed lines while running */
-    .barlina-char::before {
-      content: ''; position: absolute; right: 78%; top: 52%;
-      width: 18px; height: 2px; border-radius: 2px;
-      background: linear-gradient(90deg, transparent, rgba(244,129,34,0.55));
-      box-shadow: 0 7px 0 -0.5px rgba(244,129,34,0.35), 0 -7px 0 -0.5px rgba(244,129,34,0.35);
-      animation: dash 0.4s linear infinite;
+    .barlina-char.planted { animation: land 0.55s cubic-bezier(0.22,1,0.36,1); }
+    /* 살짝 먼지 퍼프 */
+    .barlina-char::after {
+      content: ''; position: absolute; left: -2px; bottom: 2px;
+      width: 12px; height: 4px; border-radius: 99px;
+      background: radial-gradient(circle, rgba(244,129,34,0.35), transparent 70%);
+      animation: puff 0.45s ease-in-out infinite;
     }
-    .barlina-char.planted::before { display: none; }
-    @keyframes dash { 0%{opacity:0; transform:translateX(4px)} 50%{opacity:1} 100%{opacity:0; transform:translateX(-6px)} }
+    .barlina-char.planted::after { display: none; }
+    @keyframes puff { 0%,100%{opacity:0.2; transform:scaleX(0.7)} 50%{opacity:0.6; transform:scaleX(1.2)} }
 
     /* compact stepper inline */
     .mini-step { display: flex; align-items: center; }
@@ -326,6 +330,235 @@
     .mline { flex: 1; height: 2px; margin: 0 7px; margin-bottom: 15px; background: var(--bg-200); border-radius: 2px; transition: background 0.4s; }
     .mline.done { background: rgba(46,185,127,0.4); }
     .mline.act { background: linear-gradient(90deg, var(--orange), var(--bg-200)); }
+
+    /* ════════════════════════════════════════════════
+       COMMERCIAL INLINE VARIANTS (E~H)
+       ════════════════════════════════════════════════ */
+
+    /* E · CI 파이프라인 + 가는 그라데이션 바 */
+    .pipe { display: flex; align-items: center; margin-bottom: 18px; }
+    .pipe-stage { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    .pipe-ic {
+      width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center;
+      font-family: var(--mono); font-size: 0.66rem; font-weight: 700;
+      background: var(--bg-200); color: var(--ink-40); transition: all 0.4s;
+    }
+    .pipe-ic.done { background: rgba(46,185,127,0.15); color: var(--success); }
+    .pipe-ic.act { background: linear-gradient(135deg, var(--orange), var(--orange-2)); color: #fff; box-shadow: 0 5px 12px -4px rgba(244,129,34,0.65); }
+    .pipe-ic.err { background: rgba(255,72,0,0.14); color: var(--error); }
+    .pipe-lbl { font-size: 0.6rem; color: var(--ink-40); white-space: nowrap; }
+    .pipe-lbl.on { color: var(--ink-80); font-weight: 600; }
+    .pipe-conn { flex: 1; height: 3px; margin: 0 6px; margin-bottom: 18px; border-radius: 3px; background: var(--bg-200); overflow: hidden; }
+    .pipe-conn > span { display: block; height: 100%; width: 0%; background: linear-gradient(90deg, var(--orange), var(--orange-2)); transition: width 0.5s ease; }
+    .pipe-conn > span.full { background: var(--success); }
+
+    .bar-thin { height: 5px; border-radius: 99px; background: var(--bg-200); overflow: hidden; }
+    .bar-thin > i {
+      display: block; height: 100%; width: 0%; border-radius: 99px;
+      background: linear-gradient(90deg, var(--orange), var(--orange-2));
+      transition: width 0.6s cubic-bezier(0.22,1,0.36,1);
+    }
+    .bar-thin.is-done > i { background: var(--success); }
+
+    /* F · 메트릭 타일 + 큰 그라데이션 바(% 내장) */
+    .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 16px; }
+    @media (max-width: 520px) { .tiles { grid-template-columns: 1fr 1fr; } }
+    .tile { background: var(--bg-100); border: 1px solid var(--line); border-radius: 12px; padding: 11px 13px; }
+    .tile-k { font-size: 0.64rem; color: var(--ink-40); }
+    .tile-v { font-family: var(--mono); font-size: 1.05rem; font-weight: 700; letter-spacing: -0.02em; margin-top: 3px; }
+    .tile-v.warn { color: var(--error); }
+    .tile-v.eta { color: var(--orange); }
+
+    .bar-xl { height: 26px; border-radius: 13px; background: var(--bg-200); overflow: hidden; }
+    .bar-xl > i {
+      height: 100%; width: 0%; border-radius: 13px; display: flex; align-items: center; justify-content: flex-end;
+      background: linear-gradient(90deg, #ff9d4d, #f48122 55%, #ff7a1a);
+      background-size: 200% 100%; animation: flow 2.2s linear infinite;
+      box-shadow: 0 0 14px -3px rgba(244,129,34,0.7);
+      transition: width 0.6s cubic-bezier(0.22,1,0.36,1);
+    }
+    .bar-xl .pctin { color: #fff; font: 700 0.72rem var(--mono); padding-right: 11px; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+    .bar-xl.is-done > i { background: linear-gradient(90deg, var(--success), #4fd99e); animation: none; box-shadow: 0 0 14px -3px rgba(46,185,127,0.6); }
+    @keyframes flow { to { background-position: -200% 0; } }
+
+    /* G · 코닉 그라데이션 게이지 + 상세 */
+    .gauge-row { display: flex; align-items: center; gap: 24px; }
+    @media (max-width: 520px) { .gauge-row { flex-direction: column; gap: 16px; } }
+    .gauge {
+      --p: 0; position: relative; width: 110px; height: 110px; border-radius: 50%; flex-shrink: 0;
+      background: conic-gradient(from -90deg, var(--orange-2), var(--orange) calc(var(--p) * 1%), var(--bg-200) calc(var(--p) * 1%));
+      transition: background 0.5s ease;
+    }
+    .gauge.done { background: conic-gradient(from -90deg, var(--success), var(--success) calc(var(--p) * 1%), var(--bg-200) 0); }
+    .gauge-hole { position: absolute; inset: 11px; border-radius: 50%; background: var(--card); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .gauge-num { font-family: var(--mono); font-size: 1.5rem; font-weight: 700; letter-spacing: -0.04em; }
+    .gauge-num.done { color: var(--success); }
+    .gauge-sub { font-family: var(--mono); font-size: 0.64rem; color: var(--ink-40); margin-top: 1px; }
+    .dl { display: flex; flex-direction: column; gap: 10px; flex: 1; min-width: 0; }
+    .dl-row { display: flex; align-items: center; justify-content: space-between; font-size: 0.8rem; }
+    .dl-row .k { color: var(--ink-40); }
+    .dl-row .v { font-family: var(--mono); font-weight: 600; }
+    .dl-row .v.warn { color: var(--error); }
+    .dl-row .v.eta { color: var(--orange); }
+
+    /* H · 스트라이프 글로우 바 */
+    .bar-striped { height: 15px; border-radius: 99px; background: var(--bg-200); overflow: hidden; }
+    .bar-striped > i {
+      position: relative; display: block; height: 100%; width: 0%; border-radius: 99px;
+      background: linear-gradient(90deg, var(--orange), var(--orange-2));
+      box-shadow: 0 2px 9px -2px rgba(244,129,34,0.7);
+      transition: width 0.6s cubic-bezier(0.22,1,0.36,1);
+    }
+    .bar-striped > i::after {
+      content: ''; position: absolute; inset: 0; border-radius: 99px;
+      background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.3) 0 8px, transparent 8px 16px);
+      background-size: 22px 22px; animation: stripes 0.55s linear infinite;
+    }
+    .bar-striped.is-done > i { background: linear-gradient(90deg, var(--success), #4fd99e); box-shadow: 0 2px 9px -2px rgba(46,185,127,0.55); }
+    .bar-striped.is-done > i::after { animation: none; opacity: 0.5; }
+    @keyframes stripes { to { background-position: 22px 0; } }
+    .hstats { display: flex; gap: 26px; margin-top: 16px; }
+
+    /* I · 터미널 로그 */
+    .term { background: #16110d; border-radius: 14px; overflow: hidden; }
+    .term-bar { display: flex; gap: 6px; padding: 11px 14px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .term-dot { width: 9px; height: 9px; border-radius: 50%; }
+    .term-body {
+      padding: 12px 16px; height: 118px; overflow: hidden;
+      font-family: var(--mono); font-size: 0.73rem; line-height: 1.75; color: rgba(255,255,255,0.82);
+      display: flex; flex-direction: column; justify-content: flex-end;
+    }
+    .term-body .ok { color: #4fd99e; } .term-body .run { color: #ff9d4d; } .term-body .dim { color: rgba(255,255,255,0.4); }
+    .term-foot {
+      padding: 9px 16px; background: rgba(255,255,255,0.04); border-top: 1px solid rgba(255,255,255,0.08);
+      display: flex; justify-content: space-between; font-family: var(--mono); font-size: 0.72rem; color: rgba(255,255,255,0.65);
+    }
+
+    /* J · 스택 세그먼트 바 */
+    .seg { display: flex; height: 16px; border-radius: 99px; overflow: hidden; background: var(--bg-200); }
+    .seg > span { height: 100%; transition: width 0.5s ease; }
+    .seg .s-done { background: linear-gradient(90deg, var(--success), #4fd99e); position: relative; overflow: hidden; }
+    .seg.run .s-done::after {
+      content: ''; position: absolute; inset: 0;
+      background: repeating-linear-gradient(45deg, rgba(255,255,255,0.28) 0 7px, transparent 7px 14px);
+      background-size: 20px 20px; animation: stripes 0.5s linear infinite;
+    }
+    .seg .s-fail { background: var(--error); }
+    .seg-legend { display: flex; gap: 18px; margin-top: 15px; flex-wrap: wrap; }
+    .lg { display: flex; align-items: center; gap: 6px; font-size: 0.76rem; color: var(--ink-60); }
+    .lg .sw { width: 10px; height: 10px; border-radius: 3px; }
+    .lg b { font-family: var(--mono); color: var(--ink-80); }
+
+    /* K · 액티비티 링 */
+    .aring { position: relative; width: 116px; height: 116px; flex-shrink: 0; }
+    .aring svg { transform: rotate(-90deg); }
+    .aring .trk { stroke: var(--bg-200); }
+    .aring .prg { stroke: url(#agrad); stroke-linecap: round; transition: stroke-dashoffset 0.5s cubic-bezier(0.22,1,0.36,1); }
+    .aring .prg.done { stroke: var(--success); }
+
+    /* L · 라이브 영역 차트 */
+    .lchart { width: 100%; height: 72px; display: block; }
+    .lc-line { fill: none; stroke: var(--orange); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .lc-line.done { stroke: var(--success); }
+
+    /* ════════════════════════════════════════════════
+       PRETTIER VARIANTS (M~P)
+       ════════════════════════════════════════════════ */
+
+    /* M · ETA 버블 라이드 (handle bubble on bar edge) */
+    .mh-wrap { position: relative; margin-top: 46px; }
+    .mh-rail { height: 10px; border-radius: 99px; background: var(--bg-200); overflow: hidden; }
+    .mh-rail > i {
+      display: block; height: 100%; width: 0%; border-radius: 99px;
+      background: linear-gradient(90deg, var(--orange), var(--orange-2));
+      box-shadow: 0 1px 8px -1px rgba(244,129,34,0.6);
+      transition: width 0.5s cubic-bezier(0.22,1,0.36,1);
+    }
+    .mh-rail.done > i { background: linear-gradient(90deg, var(--success), #4fd99e); }
+    .mh-bubble {
+      position: absolute; left: 0%; bottom: 20px; transform: translateX(-50%);
+      background: linear-gradient(135deg, var(--orange), var(--orange-2)); color: #fff;
+      font: 700 0.72rem var(--mono); padding: 5px 10px; border-radius: 9px; white-space: nowrap;
+      box-shadow: 0 8px 16px -6px rgba(244,129,34,0.7);
+      transition: left 0.5s cubic-bezier(0.22,1,0.36,1), background 0.4s;
+    }
+    .mh-bubble::after {
+      content: ''; position: absolute; left: 50%; bottom: -5px; transform: translateX(-50%);
+      border: 5px solid transparent; border-top-color: var(--orange-2); border-bottom: 0;
+    }
+    .mh-bubble.done { background: linear-gradient(135deg, var(--success), #4fd99e); }
+    .mh-bubble.done::after { border-top-color: #4fd99e; }
+
+    /* N · 히어로 ETA */
+    .hero { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+    .hero-pct {
+      font-family: var(--mono); font-size: 2.6rem; font-weight: 800; letter-spacing: -0.05em; line-height: 1;
+      background: linear-gradient(120deg, var(--orange), var(--orange-2));
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .hero-pct.done { background: linear-gradient(120deg, var(--success), #4fd99e); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+    .hero-eta { font-size: 0.84rem; color: var(--ink-40); margin-top: 6px; }
+    .hero-eta b { font-family: var(--mono); color: var(--orange); font-size: 1.05rem; margin-left: 4px; }
+    .bar-tick { height: 9px; border-radius: 99px; background: var(--bg-200); overflow: hidden; position: relative; }
+    .bar-tick > i {
+      display: block; height: 100%; width: 0%; border-radius: 99px;
+      background: linear-gradient(90deg, var(--orange), var(--orange-2));
+      transition: width 0.5s cubic-bezier(0.22,1,0.36,1);
+    }
+    .bar-tick.done > i { background: linear-gradient(90deg, var(--success), #4fd99e); }
+    .bar-tick::after {
+      content: ''; position: absolute; inset: 0; pointer-events: none;
+      background-image: repeating-linear-gradient(90deg, transparent 0 calc(10% - 1px), rgba(255,255,255,0.7) calc(10% - 1px) 10%);
+    }
+
+    /* O · 리퀴드 웨이브 게이지 */
+    .liquid {
+      position: relative; width: 116px; height: 116px; border-radius: 50%; flex-shrink: 0;
+      background: var(--bg-200); overflow: hidden; box-shadow: inset 0 0 0 4px rgba(244,129,34,0.12);
+    }
+    .liquid-fill {
+      position: absolute; left: 0; right: 0; bottom: 0; height: 0%;
+      background: linear-gradient(180deg, var(--orange-2), var(--orange));
+      transition: height 0.6s cubic-bezier(0.22,1,0.36,1), background 0.4s;
+    }
+    .liquid-fill.done { background: linear-gradient(180deg, #4fd99e, var(--success)); }
+    .liquid-fill::before, .liquid-fill::after {
+      content: ''; position: absolute; left: 50%; top: -14px; width: 200%; height: 200%;
+      border-radius: 42%; background: rgba(255,255,255,0.18);
+      transform: translateX(-50%);
+      animation: wave 5s linear infinite;
+    }
+    .liquid-fill::after { border-radius: 46%; background: rgba(255,255,255,0.1); animation: wave 7s linear infinite reverse; }
+    @keyframes wave { from { transform: translateX(-50%) rotate(0); } to { transform: translateX(-50%) rotate(360deg); } }
+    .liquid-num {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      font-family: var(--mono); font-size: 1.4rem; font-weight: 700; letter-spacing: -0.03em;
+      color: var(--ink-80); mix-blend-mode: normal; z-index: 1;
+    }
+
+    /* P · 소프트 그라데이션 카드 */
+    .soft {
+      border-radius: 18px; padding: 22px;
+      background: linear-gradient(135deg, rgba(244,129,34,0.12), rgba(255,157,77,0.04));
+      border: 1px solid rgba(244,129,34,0.18);
+      transition: background 0.5s, border-color 0.5s;
+    }
+    .soft.done { background: linear-gradient(135deg, rgba(46,185,127,0.14), rgba(79,217,158,0.04)); border-color: rgba(46,185,127,0.22); }
+    .soft-top { display: flex; align-items: center; justify-content: space-between; }
+    .soft-eta { font-size: 0.8rem; color: var(--ink-60); }
+    .soft-eta b { font-family: var(--mono); color: var(--orange); margin-left: 4px; }
+    .soft.done .soft-eta b { color: var(--success); }
+    .soft-pct { font-family: var(--mono); font-size: 2.1rem; font-weight: 800; letter-spacing: -0.05em; margin: 10px 0 14px; }
+    .soft.done .soft-pct { color: var(--success); }
+    .bar-glass { height: 12px; border-radius: 99px; background: rgba(255,255,255,0.6); overflow: hidden; box-shadow: inset 0 1px 2px rgba(0,0,0,0.06); }
+    .bar-glass > i {
+      display: block; height: 100%; width: 0%; border-radius: 99px;
+      background: linear-gradient(90deg, var(--orange), var(--orange-2));
+      box-shadow: 0 1px 6px -1px rgba(244,129,34,0.55);
+      transition: width 0.5s cubic-bezier(0.22,1,0.36,1);
+    }
+    .soft.done .bar-glass > i { background: linear-gradient(90deg, var(--success), #4fd99e); }
+    .soft-foot { display: flex; gap: 22px; margin-top: 14px; }
 
     .footnote {
       margin-top: 64px; font-size: 0.74rem; color: var(--ink-40);
@@ -424,7 +657,7 @@
     </div>
 
     <!-- inline D : LINA riding the progress bar -->
-    <div class="block">
+    <div class="block" style="margin-bottom:16px">
       <div class="inline-grid">
         <div class="inline-left">
           <span class="badge">INLINE · D · LINA + 바</span>
@@ -434,6 +667,186 @@
         </div>
         <div class="inline-right" id="id-right">
           <div class="inline-idle"><span class="dot"></span>대기 중 — 버튼을 누르면 LINA가 출발합니다.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- inline E : CI pipeline + thin gradient bar -->
+    <div class="block" style="margin-bottom:16px">
+      <div class="inline-grid">
+        <div class="inline-left">
+          <span class="badge">INLINE · E · 파이프라인</span>
+          <h3>데이터 파이프라인</h3>
+          <p>CI 배포처럼 단계가 흐르고, 가는 그라데이션 바로 진행률을 표시합니다.</p>
+          <button class="btn" id="ie-btn">⬇ 데이터 불러오기</button>
+        </div>
+        <div class="inline-right" id="ie-right">
+          <div class="inline-idle"><span class="dot"></span>대기 중 — 수집 단계가 순서대로 흐릅니다.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- inline F : metric tiles + bold gradient bar -->
+    <div class="block" style="margin-bottom:16px">
+      <div class="inline-grid">
+        <div class="inline-left">
+          <span class="badge">INLINE · F · 메트릭</span>
+          <h3>데이터 파이프라인</h3>
+          <p>핵심 지표 타일과 % 내장 그라데이션 바. 실시간 ETA까지 표시합니다.</p>
+          <button class="btn" id="if-btn">⬇ 데이터 불러오기</button>
+        </div>
+        <div class="inline-right" id="if-right">
+          <div class="inline-idle"><span class="dot"></span>대기 중 — 지표가 채워집니다.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- inline G : conic gauge + detail list -->
+    <div class="block" style="margin-bottom:16px">
+      <div class="inline-grid">
+        <div class="inline-left">
+          <span class="badge">INLINE · G · 게이지</span>
+          <h3>데이터 파이프라인</h3>
+          <p>코닉 그라데이션 도넛 게이지와 상세 항목을 함께 보여줍니다.</p>
+          <button class="btn" id="ig-btn">⬇ 데이터 불러오기</button>
+        </div>
+        <div class="inline-right" id="ig-right">
+          <div class="inline-idle"><span class="dot"></span>대기 중 — 게이지가 차오릅니다.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- inline H : striped glow bar -->
+    <div class="block" style="margin-bottom:16px">
+      <div class="inline-grid">
+        <div class="inline-left">
+          <span class="badge">INLINE · H · 스트라이프</span>
+          <h3>데이터 파이프라인</h3>
+          <p>흐르는 스트라이프 + 글로우 바. 처리율(pages/s)과 ETA를 강조합니다.</p>
+          <button class="btn" id="ih-btn">⬇ 데이터 불러오기</button>
+        </div>
+        <div class="inline-right" id="ih-right">
+          <div class="inline-idle"><span class="dot"></span>대기 중 — 버튼을 누르면 흐릅니다.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- inline I : terminal log -->
+    <div class="block" style="margin-bottom:16px">
+      <div class="inline-grid">
+        <div class="inline-left">
+          <span class="badge">INLINE · I · 터미널</span>
+          <h3>데이터 파이프라인</h3>
+          <p>CI 빌드 로그처럼 처리 과정이 콘솔에 스트리밍됩니다.</p>
+          <button class="btn" id="ii-btn">⬇ 데이터 불러오기</button>
+        </div>
+        <div class="inline-right" id="ii-right">
+          <div class="inline-idle"><span class="dot"></span>대기 중 — 콘솔에 로그가 흐릅니다.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- inline J : stacked segment bar -->
+    <div class="block" style="margin-bottom:16px">
+      <div class="inline-grid">
+        <div class="inline-left">
+          <span class="badge">INLINE · J · 세그먼트</span>
+          <h3>데이터 파이프라인</h3>
+          <p>성공 / 실패 / 남음을 한 줄 스택 바로 나눠 보여줍니다(용량 바 스타일).</p>
+          <button class="btn" id="ij-btn">⬇ 데이터 불러오기</button>
+        </div>
+        <div class="inline-right" id="ij-right">
+          <div class="inline-idle"><span class="dot"></span>대기 중 — 성공·실패·남음 비율이 채워집니다.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- inline K : activity ring -->
+    <div class="block" style="margin-bottom:16px">
+      <div class="inline-grid">
+        <div class="inline-left">
+          <span class="badge">INLINE · K · 링</span>
+          <h3>데이터 파이프라인</h3>
+          <p>그라데이션 액티비티 링과 핵심 수치를 나란히 보여줍니다.</p>
+          <button class="btn" id="ik-btn">⬇ 데이터 불러오기</button>
+        </div>
+        <div class="inline-right" id="ik-right">
+          <div class="inline-idle"><span class="dot"></span>대기 중 — 링이 차오릅니다.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- inline L : live area chart -->
+    <div class="block" style="margin-bottom:16px">
+      <div class="inline-grid">
+        <div class="inline-left">
+          <span class="badge">INLINE · L · 라이브 차트</span>
+          <h3>데이터 파이프라인</h3>
+          <p>수집량 추이를 실시간 영역 차트로 그립니다(폴링마다 점 추가).</p>
+          <button class="btn" id="il-btn">⬇ 데이터 불러오기</button>
+        </div>
+        <div class="inline-right" id="il-right">
+          <div class="inline-idle"><span class="dot"></span>대기 중 — 추이 그래프가 그려집니다.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- inline M : ETA bubble riding the edge -->
+    <div class="block" style="margin-bottom:16px">
+      <div class="inline-grid">
+        <div class="inline-left">
+          <span class="badge">INLINE · M · ETA 버블</span>
+          <h3>데이터 파이프라인</h3>
+          <p>진행바 끝에 % 버블이 함께 달리고, 아래에 ETA를 표시합니다.</p>
+          <button class="btn" id="im-btn">⬇ 데이터 불러오기</button>
+        </div>
+        <div class="inline-right" id="im-right">
+          <div class="inline-idle"><span class="dot"></span>대기 중 — 버블이 바를 따라 달립니다.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- inline N : hero ETA -->
+    <div class="block" style="margin-bottom:16px">
+      <div class="inline-grid">
+        <div class="inline-left">
+          <span class="badge">INLINE · N · 히어로</span>
+          <h3>데이터 파이프라인</h3>
+          <p>큰 진행률 숫자와 남은 시간(ETA)을 강조한 에디토리얼 레이아웃.</p>
+          <button class="btn" id="in-btn">⬇ 데이터 불러오기</button>
+        </div>
+        <div class="inline-right" id="in-right">
+          <div class="inline-idle"><span class="dot"></span>대기 중 — 진행률과 ETA가 표시됩니다.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- inline O : liquid wave gauge -->
+    <div class="block" style="margin-bottom:16px">
+      <div class="inline-grid">
+        <div class="inline-left">
+          <span class="badge">INLINE · O · 리퀴드</span>
+          <h3>데이터 파이프라인</h3>
+          <p>물결치며 차오르는 리퀴드 게이지. 부드럽고 감각적인 느낌.</p>
+          <button class="btn" id="io-btn">⬇ 데이터 불러오기</button>
+        </div>
+        <div class="inline-right" id="io-right">
+          <div class="inline-idle"><span class="dot"></span>대기 중 — 게이지가 물결치며 차오릅니다.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- inline P : soft gradient card -->
+    <div class="block">
+      <div class="inline-grid">
+        <div class="inline-left">
+          <span class="badge">INLINE · P · 소프트</span>
+          <h3>데이터 파이프라인</h3>
+          <p>상태에 따라 은은하게 변하는 그라데이션 카드 + 글래스 바.</p>
+          <button class="btn" id="ip-btn">⬇ 데이터 불러오기</button>
+        </div>
+        <div class="inline-right" id="ip-right">
+          <div class="inline-idle"><span class="dot"></span>대기 중 — 카드가 은은하게 채워집니다.</div>
         </div>
       </div>
     </div>
@@ -541,6 +954,9 @@
     return String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0');
   };
   const isEnd = (st) => st === 'COMPLETED' || st === 'FAILED';
+  const mmss = (t) => String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(Math.round(t % 60)).padStart(2, '0');
+  const rateOf = (s) => { const sec = Math.max(0.4, (Date.now() - new Date(s.startedAt).getTime()) / 1000); return s.processedPages / sec; };
+  const etaOf = (s) => { const r = rateOf(s), rem = s.totalPages - s.processedPages; if (r <= 0 || rem <= 0) return '00:00'; return mmss(rem / r); };
 
   // ── 수집 시뮬레이터 : GET /api/admin/ingest/status/{jobId} 응답 형태로 snapshot emit ──
   function runIngest(onUpdate, opts = {}) {
@@ -790,7 +1206,7 @@
   bindInline('id-btn', 'id-right',
     () => `
       <div class="barlina">
-        <div class="barlina-char" data-char><img src="${RUN_SRC}" data-charimg alt="수집 중" /></div>
+        <div class="barlina-edge" data-edge><div class="barlina-char" data-char><img src="${RUN_SRC}" data-charimg alt="수집 중" /></div></div>
         <div class="bar is-progress" data-bar><i></i></div>
       </div>
       <div class="ir-top" style="margin-top:20px">
@@ -812,11 +1228,389 @@
       root.querySelector('[data-elapsed]').textContent = elapsedOf(s);
       const bar = root.querySelector('[data-bar]'); bar.querySelector('i').style.width = pct + '%';
       bar.classList.toggle('is-progress', !isEnd(s.status)); bar.classList.toggle('is-done', s.status === 'COMPLETED');
-      // LINA rides the fill edge
-      const char = root.querySelector('[data-char]'), img = root.querySelector('[data-charimg]');
-      char.style.left = pct + '%';
+      // LINA rides the fill edge (바 끝에 밀착해 같은 타이밍으로 이동)
+      const edge = root.querySelector('[data-edge]'), char = root.querySelector('[data-char]'), img = root.querySelector('[data-charimg]');
+      edge.style.left = pct + '%';
       if (s.status === 'COMPLETED') { img.src = FLAG_SRC; char.classList.add('planted'); }
       else { img.src = RUN_SRC; char.classList.remove('planted'); }
+    }
+  );
+
+  // ── inline E : CI 파이프라인 + 가는 그라데이션 바 ──
+  bindInline('ie-btn', 'ie-right',
+    () => `
+      <div class="pipe">
+        <div class="pipe-stage"><div class="pipe-ic" data-s0>1</div><div class="pipe-lbl" data-l0>큐 등록</div></div>
+        <div class="pipe-conn"><span data-c0></span></div>
+        <div class="pipe-stage"><div class="pipe-ic" data-s1>2</div><div class="pipe-lbl" data-l1>문서 수집</div></div>
+        <div class="pipe-conn"><span data-c1></span></div>
+        <div class="pipe-stage"><div class="pipe-ic" data-s2>3</div><div class="pipe-lbl" data-l2>임베딩</div></div>
+        <div class="pipe-conn"><span data-c2></span></div>
+        <div class="pipe-stage"><div class="pipe-ic" data-s3>4</div><div class="pipe-lbl" data-l3>인덱싱</div></div>
+        <div class="pipe-conn"><span data-c3></span></div>
+        <div class="pipe-stage"><div class="pipe-ic" data-s4>✓</div><div class="pipe-lbl" data-l4>완료</div></div>
+      </div>
+      <div class="bar-thin" data-bar><i></i></div>
+      <div class="counts" style="margin-top:14px">
+        <div><div class="count-k">수집 / 전체</div><div class="count-v"><span data-proc>0</span> / <span data-total>0</span></div></div>
+        <div><div class="count-k">실패</div><div class="count-v" data-failed>0</div></div>
+        <div><div class="count-k">경과</div><div class="count-v" data-elapsed>00:00</div></div>
+      </div>`,
+    (root) => (s) => {
+      const pct = pctOf(s);
+      root.querySelector('[data-proc]').textContent = nf.format(s.processedPages);
+      root.querySelector('[data-total]').textContent = nf.format(s.totalPages);
+      const fEl = root.querySelector('[data-failed]'); fEl.textContent = nf.format(s.failedPages); fEl.classList.toggle('warn', s.failedPages > 0);
+      root.querySelector('[data-elapsed]').textContent = elapsedOf(s);
+      const bar = root.querySelector('[data-bar]'); bar.querySelector('i').style.width = pct + '%'; bar.classList.toggle('is-done', s.status === 'COMPLETED');
+      const ic = i => root.querySelector('[data-s' + i + ']'), lb = i => root.querySelector('[data-l' + i + ']'), cn = i => root.querySelector('[data-c' + i + ']');
+      for (let i = 0; i <= 4; i++) { ic(i).className = 'pipe-ic'; lb(i).className = 'pipe-lbl'; if (i < 4) cn(i).className = ''; ic(i).textContent = i === 4 ? '✓' : (i + 1); }
+      // active stage by pct
+      let active = 1; // 문서 수집
+      if (pct >= 80) active = 3; else if (pct >= 55) active = 2;
+      if (s.status === 'STARTED') active = 0;
+      if (s.status === 'COMPLETED') active = 4;
+      for (let i = 0; i <= 4; i++) {
+        if (i < active) { ic(i).classList.add('done'); ic(i).textContent = '✓'; lb(i).classList.add('on'); if (i < 4) cn(i).classList.add('full'); if (i < 4) cn(i).style.width = '100%'; }
+        else if (i === active) { ic(i).classList.add(s.status === 'FAILED' ? 'err' : (i === 4 ? 'done' : 'act')); if (s.status === 'FAILED') ic(i).textContent = '✕'; lb(i).classList.add('on'); }
+        else { if (i <= 3) cn(i) && (cn(i).style.width = '0%'); }
+      }
+      // partial connector fill for active conn
+      const connMap = { 1: [0, 55, 'c0'], 2: [55, 80, 'c1'], 3: [80, 100, 'c2'] };
+      if (s.status === 'IN_PROGRESS' && connMap[active]) {
+        const [lo, hi, c] = connMap[active]; const w = Math.max(0, Math.min(100, ((pct - lo) / (hi - lo)) * 100));
+        const span = root.querySelector('[data-' + c + ']'); if (span) span.style.width = w + '%';
+      }
+    }
+  );
+
+  // ── inline F : 메트릭 타일 + 큰 그라데이션 바 ──
+  bindInline('if-btn', 'if-right',
+    () => `
+      <div class="ir-top">
+        <span class="pill st-started" data-pill><span class="led"></span>STARTED</span>
+        <span class="ir-pct" data-pctbig>0%</span>
+      </div>
+      <div class="bar-xl" data-bar><i><span class="pctin" data-pctin>0%</span></i></div>
+      <div class="tiles">
+        <div class="tile"><div class="tile-k">수집 / 전체</div><div class="tile-v"><span data-proc>0</span>/<span data-total>0</span></div></div>
+        <div class="tile"><div class="tile-k">남은 페이지</div><div class="tile-v" data-remain>0</div></div>
+        <div class="tile"><div class="tile-k">실패</div><div class="tile-v" data-failed>0</div></div>
+        <div class="tile"><div class="tile-k">예상 ETA</div><div class="tile-v eta" data-eta>--:--</div></div>
+      </div>`,
+    (root) => (s) => {
+      const pct = pctOf(s), meta = STATUS[s.status];
+      const pill = root.querySelector('[data-pill]'); pill.className = 'pill ' + meta.cls; pill.innerHTML = '<span class="led"></span>' + s.status;
+      root.querySelector('[data-pctbig]').textContent = pct + '%';
+      root.querySelector('[data-pctin]').textContent = pct + '%';
+      root.querySelector('[data-proc]').textContent = nf.format(s.processedPages);
+      root.querySelector('[data-total]').textContent = nf.format(s.totalPages);
+      root.querySelector('[data-remain]').textContent = nf.format(Math.max(0, s.totalPages - s.processedPages));
+      const fEl = root.querySelector('[data-failed]'); fEl.textContent = nf.format(s.failedPages); fEl.classList.toggle('warn', s.failedPages > 0);
+      root.querySelector('[data-eta]').textContent = isEnd(s.status) ? (s.status === 'COMPLETED' ? '완료' : '중단') : etaOf(s);
+      const bar = root.querySelector('[data-bar]'); bar.querySelector('i').style.width = Math.max(pct, 9) + '%'; bar.classList.toggle('is-done', s.status === 'COMPLETED');
+    }
+  );
+
+  // ── inline G : 코닉 게이지 + 상세 ──
+  bindInline('ig-btn', 'ig-right',
+    () => `
+      <div class="gauge-row">
+        <div class="gauge" data-gauge>
+          <div class="gauge-hole">
+            <span class="gauge-num" data-pctbig>0%</span>
+            <span class="gauge-sub"><span data-proc>0</span>/<span data-total>0</span></span>
+          </div>
+        </div>
+        <div class="dl">
+          <div class="dl-row"><span class="k">상태</span><span class="v" data-stt>STARTED</span></div>
+          <div class="dl-row"><span class="k">남은 페이지</span><span class="v" data-remain>0</span></div>
+          <div class="dl-row"><span class="k">실패</span><span class="v" data-failed>0</span></div>
+          <div class="dl-row"><span class="k">예상 ETA</span><span class="v eta" data-eta>--:--</span></div>
+        </div>
+      </div>`,
+    (root) => (s) => {
+      const pct = pctOf(s);
+      const g = root.querySelector('[data-gauge]'); g.style.setProperty('--p', pct); g.classList.toggle('done', s.status === 'COMPLETED');
+      const num = root.querySelector('[data-pctbig]'); num.textContent = pct + '%'; num.classList.toggle('done', s.status === 'COMPLETED');
+      root.querySelector('[data-proc]').textContent = nf.format(s.processedPages);
+      root.querySelector('[data-total]').textContent = nf.format(s.totalPages);
+      root.querySelector('[data-stt]').textContent = s.status;
+      root.querySelector('[data-remain]').textContent = nf.format(Math.max(0, s.totalPages - s.processedPages));
+      const fEl = root.querySelector('[data-failed]'); fEl.textContent = nf.format(s.failedPages); fEl.classList.toggle('warn', s.failedPages > 0);
+      root.querySelector('[data-eta]').textContent = isEnd(s.status) ? (s.status === 'COMPLETED' ? '완료' : '중단') : etaOf(s);
+    }
+  );
+
+  // ── inline H : 스트라이프 글로우 바 ──
+  bindInline('ih-btn', 'ih-right',
+    () => `
+      <div class="ir-top">
+        <span class="pill st-started" data-pill><span class="led"></span>STARTED</span>
+        <span class="ir-pct" data-pctbig>0%</span>
+      </div>
+      <div class="bar-striped" data-bar><i></i></div>
+      <div class="hstats">
+        <div><div class="count-k">처리율</div><div class="count-v"><span data-rate>0</span> <span style="font-size:.7rem;color:var(--ink-40)">pages/s</span></div></div>
+        <div><div class="count-k">남은 페이지</div><div class="count-v" data-remain>0</div></div>
+        <div><div class="count-k">예상 ETA</div><div class="count-v" data-eta style="color:var(--orange)">--:--</div></div>
+        <div><div class="count-k">실패</div><div class="count-v" data-failed>0</div></div>
+      </div>`,
+    (root) => (s) => {
+      const pct = pctOf(s), meta = STATUS[s.status];
+      const pill = root.querySelector('[data-pill]'); pill.className = 'pill ' + meta.cls; pill.innerHTML = '<span class="led"></span>' + s.status;
+      root.querySelector('[data-pctbig]').textContent = pct + '%';
+      const bar = root.querySelector('[data-bar]'); bar.querySelector('i').style.width = pct + '%'; bar.classList.toggle('is-done', s.status === 'COMPLETED');
+      root.querySelector('[data-rate]').textContent = isEnd(s.status) ? '—' : rateOf(s).toFixed(1);
+      root.querySelector('[data-remain]').textContent = nf.format(Math.max(0, s.totalPages - s.processedPages));
+      root.querySelector('[data-eta]').textContent = isEnd(s.status) ? (s.status === 'COMPLETED' ? '완료' : '중단') : etaOf(s);
+      const fEl = root.querySelector('[data-failed]'); fEl.textContent = nf.format(s.failedPages); fEl.classList.toggle('warn', s.failedPages > 0);
+    }
+  );
+
+  // ── inline I : 터미널 로그 ──
+  bindInline('ii-btn', 'ii-right',
+    () => `
+      <div class="term">
+        <div class="term-bar">
+          <span class="term-dot" style="background:#ff5f57"></span>
+          <span class="term-dot" style="background:#febc2e"></span>
+          <span class="term-dot" style="background:#28c840"></span>
+        </div>
+        <div class="term-body" data-body></div>
+        <div class="term-foot"><span data-foot>booting…</span><span data-pctbig>0%</span></div>
+      </div>`,
+    (root) => {
+      const lines = []; let lastTick = -1;
+      const body = root.querySelector('[data-body]'), foot = root.querySelector('[data-foot]');
+      return (s) => {
+        const pct = pctOf(s);
+        root.querySelector('[data-pctbig]').textContent = pct + '%';
+        if (s.status === 'STARTED' && lines.length === 0) {
+          lines.push('<span class="dim">$</span> ingest --mode=full');
+          lines.push('<span class="run">▶</span> admin key activated · job ' + s.jobId);
+        }
+        const tick = Math.floor(s.processedPages / 16);
+        if (s.status === 'IN_PROGRESS' && tick > lastTick) {
+          lastTick = tick;
+          lines.push('<span class="ok">✓</span> indexed page #' + nf.format(s.processedPages) + ' <span class="dim">(' + pct + '% · ETA ' + etaOf(s) + ')</span>');
+        }
+        if (s.status === 'COMPLETED') lines.push('<span class="ok">✓</span> done · ' + nf.format(s.totalPages) + ' pages, ' + nf.format(s.failedPages) + ' failed');
+        if (s.status === 'FAILED') lines.push('<span style="color:#ff7a4d">✕ ingest failed — check admin key / token</span>');
+        while (lines.length > 6) lines.shift();
+        body.innerHTML = lines.map(l => '<div>' + l + '</div>').join('');
+        foot.textContent = s.status === 'COMPLETED' ? 'completed ✓' : s.status === 'FAILED' ? 'failed ✕'
+          : nf.format(s.processedPages) + '/' + nf.format(s.totalPages) + ' · ' + rateOf(s).toFixed(1) + ' p/s';
+      };
+    }
+  );
+
+  // ── inline J : 스택 세그먼트 바 ──
+  bindInline('ij-btn', 'ij-right',
+    () => `
+      <div class="seg" data-seg>
+        <span class="s-done" data-done></span><span class="s-fail" data-fail></span>
+      </div>
+      <div class="seg-legend">
+        <span class="lg"><span class="sw" style="background:var(--success)"></span>성공 <b data-vdone>0</b></span>
+        <span class="lg"><span class="sw" style="background:var(--error)"></span>실패 <b data-vfail>0</b></span>
+        <span class="lg"><span class="sw" style="background:var(--bg-300)"></span>남음 <b data-vrem>0</b></span>
+        <span class="lg" style="margin-left:auto"><span class="sw" style="background:var(--orange)"></span>진행률 <b data-pctbig>0%</b></span>
+      </div>`,
+    (root) => (s) => {
+      const pct = pctOf(s);
+      const success = Math.max(0, s.processedPages - s.failedPages);
+      const seg = root.querySelector('[data-seg]'); seg.classList.toggle('run', s.status === 'IN_PROGRESS' || s.status === 'STARTED');
+      root.querySelector('[data-done]').style.width = (success / s.totalPages * 100) + '%';
+      root.querySelector('[data-fail]').style.width = (s.failedPages / s.totalPages * 100) + '%';
+      root.querySelector('[data-vdone]').textContent = nf.format(success);
+      const vf = root.querySelector('[data-vfail]'); vf.textContent = nf.format(s.failedPages); vf.style.color = s.failedPages > 0 ? 'var(--error)' : '';
+      root.querySelector('[data-vrem]').textContent = nf.format(Math.max(0, s.totalPages - s.processedPages));
+      root.querySelector('[data-pctbig]').textContent = pct + '%';
+    }
+  );
+
+  // ── inline K : 액티비티 링 ──
+  bindInline('ik-btn', 'ik-right',
+    () => `
+      <div style="display:flex; align-items:center; gap:26px">
+        <div class="aring">
+          <svg width="116" height="116" viewBox="0 0 116 116">
+            <defs><linearGradient id="agrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#ff9d4d" /><stop offset="1" stop-color="#f48122" />
+            </linearGradient></defs>
+            <circle class="trk" cx="58" cy="58" r="50" fill="none" stroke-width="12" />
+            <circle class="prg" data-ring cx="58" cy="58" r="50" fill="none" stroke-width="12"
+                    stroke-dasharray="314.16" stroke-dashoffset="314.16" />
+          </svg>
+          <div class="ring-center"><div class="ring-num" data-pctbig>0%</div></div>
+        </div>
+        <div class="dl">
+          <div class="dl-row"><span class="k">수집 / 전체</span><span class="v"><span data-proc>0</span> / <span data-total>0</span></span></div>
+          <div class="dl-row"><span class="k">실패</span><span class="v" data-failed>0</span></div>
+          <div class="dl-row"><span class="k">예상 ETA</span><span class="v eta" data-eta>--:--</span></div>
+        </div>
+      </div>`,
+    (root) => (s) => {
+      const pct = pctOf(s), ring = root.querySelector('[data-ring]');
+      ring.style.strokeDashoffset = 314.16 * (1 - pct / 100); ring.classList.toggle('done', s.status === 'COMPLETED');
+      const num = root.querySelector('[data-pctbig]'); num.textContent = pct + '%'; num.classList.toggle('done', s.status === 'COMPLETED');
+      root.querySelector('[data-proc]').textContent = nf.format(s.processedPages);
+      root.querySelector('[data-total]').textContent = nf.format(s.totalPages);
+      const fEl = root.querySelector('[data-failed]'); fEl.textContent = nf.format(s.failedPages); fEl.classList.toggle('warn', s.failedPages > 0);
+      root.querySelector('[data-eta]').textContent = isEnd(s.status) ? (s.status === 'COMPLETED' ? '완료' : '중단') : etaOf(s);
+    }
+  );
+
+  // ── inline L : 라이브 영역 차트 ──
+  bindInline('il-btn', 'il-right',
+    () => `
+      <svg class="lchart" viewBox="0 0 100 40" preserveAspectRatio="none">
+        <defs><linearGradient id="lcgrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="rgba(244,129,34,0.32)" /><stop offset="1" stop-color="rgba(244,129,34,0)" />
+        </linearGradient></defs>
+        <path data-area fill="url(#lcgrad)" d="" />
+        <path class="lc-line" data-line d="" />
+      </svg>
+      <div class="ir-top" style="margin-top:14px">
+        <span class="pill st-started" data-pill><span class="led"></span>STARTED</span>
+        <span class="ir-pct" data-pctbig>0%</span>
+      </div>
+      <div class="counts" style="margin-top:12px">
+        <div><div class="count-k">수집 / 전체</div><div class="count-v"><span data-proc>0</span> / <span data-total>0</span></div></div>
+        <div><div class="count-k">처리율</div><div class="count-v"><span data-rate>0</span> p/s</div></div>
+        <div><div class="count-k">예상 ETA</div><div class="count-v" data-eta style="color:var(--orange)">--:--</div></div>
+      </div>`,
+    (root) => {
+      const pts = [];
+      const line = root.querySelector('[data-line]'), area = root.querySelector('[data-area]');
+      return (s) => {
+        const pct = pctOf(s), meta = STATUS[s.status];
+        pts.push(pct); if (pts.length > 60) pts.shift();
+        const n = pts.length;
+        const coords = pts.map((p, i) => {
+          const x = n <= 1 ? 0 : (i / (n - 1)) * 100;
+          const y = 39 - (p / 100) * 37;
+          return x.toFixed(1) + ',' + y.toFixed(1);
+        });
+        line.setAttribute('d', 'M ' + coords.join(' L '));
+        area.setAttribute('d', 'M ' + coords.join(' L ') + ' L 100,40 L 0,40 Z');
+        line.classList.toggle('done', s.status === 'COMPLETED');
+        const pill = root.querySelector('[data-pill]'); pill.className = 'pill ' + meta.cls; pill.innerHTML = '<span class="led"></span>' + s.status;
+        root.querySelector('[data-pctbig]').textContent = pct + '%';
+        root.querySelector('[data-proc]').textContent = nf.format(s.processedPages);
+        root.querySelector('[data-total]').textContent = nf.format(s.totalPages);
+        root.querySelector('[data-rate]').textContent = isEnd(s.status) ? '—' : rateOf(s).toFixed(1);
+        root.querySelector('[data-eta]').textContent = isEnd(s.status) ? (s.status === 'COMPLETED' ? '완료' : '중단') : etaOf(s);
+      };
+    }
+  );
+
+  // ── inline M : ETA 버블 라이드 ──
+  bindInline('im-btn', 'im-right',
+    () => `
+      <div class="mh-wrap">
+        <div class="mh-bubble" data-bubble><span data-pctbig>0%</span></div>
+        <div class="mh-rail" data-bar><i></i></div>
+      </div>
+      <div class="counts" style="margin-top:18px">
+        <div><div class="count-k">수집 / 전체</div><div class="count-v"><span data-proc>0</span> / <span data-total>0</span></div></div>
+        <div><div class="count-k">예상 ETA</div><div class="count-v" data-eta style="color:var(--orange)">--:--</div></div>
+        <div><div class="count-k">실패</div><div class="count-v" data-failed>0</div></div>
+      </div>`,
+    (root) => (s) => {
+      const pct = pctOf(s);
+      const bar = root.querySelector('[data-bar]'); bar.querySelector('i').style.width = pct + '%'; bar.classList.toggle('done', s.status === 'COMPLETED');
+      const bub = root.querySelector('[data-bubble]'); bub.style.left = pct + '%'; bub.classList.toggle('done', s.status === 'COMPLETED');
+      root.querySelector('[data-pctbig]').textContent = pct + '%';
+      root.querySelector('[data-proc]').textContent = nf.format(s.processedPages);
+      root.querySelector('[data-total]').textContent = nf.format(s.totalPages);
+      root.querySelector('[data-eta]').textContent = isEnd(s.status) ? (s.status === 'COMPLETED' ? '완료' : '중단') : etaOf(s);
+      const fEl = root.querySelector('[data-failed]'); fEl.textContent = nf.format(s.failedPages); fEl.classList.toggle('warn', s.failedPages > 0);
+    }
+  );
+
+  // ── inline N : 히어로 ETA ──
+  bindInline('in-btn', 'in-right',
+    () => `
+      <div class="hero">
+        <div>
+          <div class="hero-pct" data-pctbig>0%</div>
+          <div class="hero-eta">남은 시간<b data-eta>--:--</b></div>
+        </div>
+        <span class="pill st-started" data-pill><span class="led"></span>STARTED</span>
+      </div>
+      <div class="bar-tick" data-bar><i></i></div>
+      <div class="counts" style="margin-top:14px">
+        <div><div class="count-k">수집 / 전체</div><div class="count-v"><span data-proc>0</span> / <span data-total>0</span></div></div>
+        <div><div class="count-k">처리율</div><div class="count-v"><span data-rate>0</span> p/s</div></div>
+        <div><div class="count-k">실패</div><div class="count-v" data-failed>0</div></div>
+      </div>`,
+    (root) => (s) => {
+      const pct = pctOf(s), meta = STATUS[s.status];
+      const num = root.querySelector('[data-pctbig]'); num.textContent = pct + '%'; num.classList.toggle('done', s.status === 'COMPLETED');
+      root.querySelector('[data-eta]').textContent = isEnd(s.status) ? (s.status === 'COMPLETED' ? '완료' : '중단') : etaOf(s);
+      const pill = root.querySelector('[data-pill]'); pill.className = 'pill ' + meta.cls; pill.innerHTML = '<span class="led"></span>' + s.status;
+      const bar = root.querySelector('[data-bar]'); bar.querySelector('i').style.width = pct + '%'; bar.classList.toggle('done', s.status === 'COMPLETED');
+      root.querySelector('[data-proc]').textContent = nf.format(s.processedPages);
+      root.querySelector('[data-total]').textContent = nf.format(s.totalPages);
+      root.querySelector('[data-rate]').textContent = isEnd(s.status) ? '—' : rateOf(s).toFixed(1);
+      const fEl = root.querySelector('[data-failed]'); fEl.textContent = nf.format(s.failedPages); fEl.classList.toggle('warn', s.failedPages > 0);
+    }
+  );
+
+  // ── inline O : 리퀴드 웨이브 게이지 ──
+  bindInline('io-btn', 'io-right',
+    () => `
+      <div style="display:flex; align-items:center; gap:26px">
+        <div class="liquid">
+          <div class="liquid-fill" data-fill></div>
+          <div class="liquid-num" data-pctbig>0%</div>
+        </div>
+        <div class="dl">
+          <div class="dl-row"><span class="k">수집 / 전체</span><span class="v"><span data-proc>0</span> / <span data-total>0</span></span></div>
+          <div class="dl-row"><span class="k">예상 ETA</span><span class="v eta" data-eta>--:--</span></div>
+          <div class="dl-row"><span class="k">실패</span><span class="v" data-failed>0</span></div>
+        </div>
+      </div>`,
+    (root) => (s) => {
+      const pct = pctOf(s);
+      const fill = root.querySelector('[data-fill]'); fill.style.height = pct + '%'; fill.classList.toggle('done', s.status === 'COMPLETED');
+      root.querySelector('[data-pctbig]').textContent = pct + '%';
+      root.querySelector('[data-proc]').textContent = nf.format(s.processedPages);
+      root.querySelector('[data-total]').textContent = nf.format(s.totalPages);
+      root.querySelector('[data-eta]').textContent = isEnd(s.status) ? (s.status === 'COMPLETED' ? '완료' : '중단') : etaOf(s);
+      const fEl = root.querySelector('[data-failed]'); fEl.textContent = nf.format(s.failedPages); fEl.classList.toggle('warn', s.failedPages > 0);
+    }
+  );
+
+  // ── inline P : 소프트 그라데이션 카드 ──
+  bindInline('ip-btn', 'ip-right',
+    () => `
+      <div class="soft" data-soft>
+        <div class="soft-top">
+          <span class="pill st-started" data-pill><span class="led"></span>STARTED</span>
+          <span class="soft-eta">ETA<b data-eta>--:--</b></span>
+        </div>
+        <div class="soft-pct" data-pctbig>0%</div>
+        <div class="bar-glass" data-bar><i></i></div>
+        <div class="soft-foot">
+          <div><div class="count-k">수집 / 전체</div><div class="count-v"><span data-proc>0</span> / <span data-total>0</span></div></div>
+          <div><div class="count-k">처리율</div><div class="count-v"><span data-rate>0</span> p/s</div></div>
+          <div><div class="count-k">실패</div><div class="count-v" data-failed>0</div></div>
+        </div>
+      </div>`,
+    (root) => (s) => {
+      const pct = pctOf(s), meta = STATUS[s.status];
+      const soft = root.querySelector('[data-soft]'); soft.classList.toggle('done', s.status === 'COMPLETED');
+      const pill = root.querySelector('[data-pill]'); pill.className = 'pill ' + meta.cls; pill.innerHTML = '<span class="led"></span>' + s.status;
+      root.querySelector('[data-eta]').textContent = isEnd(s.status) ? (s.status === 'COMPLETED' ? '완료' : '중단') : etaOf(s);
+      root.querySelector('[data-pctbig]').textContent = pct + '%';
+      const bar = root.querySelector('[data-bar]'); bar.querySelector('i').style.width = pct + '%';
+      root.querySelector('[data-proc]').textContent = nf.format(s.processedPages);
+      root.querySelector('[data-total]').textContent = nf.format(s.totalPages);
+      root.querySelector('[data-rate]').textContent = isEnd(s.status) ? '—' : rateOf(s).toFixed(1);
+      const fEl = root.querySelector('[data-failed]'); fEl.textContent = nf.format(s.failedPages); fEl.classList.toggle('warn', s.failedPages > 0);
     }
   );
 </script>

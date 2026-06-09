@@ -177,6 +177,30 @@ describe('feature14 Admin operations board', () => {
     expect(mockedStartAdminIngestJob).not.toHaveBeenCalled();
   });
 
+  it('changes the ingest CTA to 다시 시도 when the latest ingest job failed', async () => {
+    mockAdminBoardBase();
+    mockedActivateAdminKey.mockResolvedValue({
+      activatedUntil: '2026-06-09T23:59:00+09:00',
+    });
+    mockedStartAdminIngestJob.mockResolvedValueOnce({
+      jobId: 'job-uuid-003',
+      status: 'FAILED',
+      startedAt: '2026-06-09T12:20:00+09:00',
+    });
+
+    const wrapper = mount(AdminEntryPage, {
+      global: {
+        plugins: [createPinia(), router],
+      },
+    });
+
+    await flushPromises();
+    await wrapper.get('[data-testid="admin-start-ingest-button"]').trigger('click');
+    await flushPromises();
+
+    expect(wrapper.get('[data-testid="admin-start-ingest-button"]').text()).toContain('다시 시도');
+  });
+
   it('skips redundant key activation when the admin key was already activated manually', async () => {
     mockAdminBoardBase();
     mockedActivateAdminKey.mockResolvedValue({

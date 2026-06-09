@@ -60,6 +60,7 @@ const latestIngestJob = ref<StartAdminIngestResponse | null>(null);
 const { showToast } = useToast();
 
 const isAccessDenied = computed(() => currentUser.value?.role !== 'ADMIN');
+const shouldShowRetryIngest = computed(() => latestIngestJob.value?.status === 'FAILED');
 
 type SectionKey = 'operations' | 'dashboard' | 'feedback' | 'sync';
 const activeSection = ref<SectionKey>('operations');
@@ -376,7 +377,9 @@ async function handleStartIngest(mode: AdminIngestMode = 'full') {
                     {{ getIngestStatusLabel(latestIngestJob?.status) }}
                   </span>
                 </div>
-                <p class="mt-1 text-[0.8rem] text-overlay-dark-40">Confluence 스페이스: CPC</p>
+                <p class="mt-1 text-[0.8rem] text-overlay-dark-40">
+                  관리자.
+                </p>
               </div>
               <div class="flex gap-2">
                 <BaseButton
@@ -393,7 +396,13 @@ async function handleStartIngest(mode: AdminIngestMode = 'full') {
                   :disabled="isStartingIngest || isActivatingAdminKey"
                   @click="handleStartIngest('full')"
                 >
-                  {{ isStartingIngest ? '데이터 불러오는 중' : '데이터 불러오기' }}
+                  {{
+                    isStartingIngest
+                      ? '데이터 불러오는 중'
+                      : shouldShowRetryIngest
+                        ? '다시 시도'
+                        : '데이터 불러오기'
+                  }}
                 </BaseButton>
               </div>
             </div>
