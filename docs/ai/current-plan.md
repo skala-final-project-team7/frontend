@@ -202,7 +202,6 @@
 [x] 일반 사용자 선택은 향후 `GET /api/auth/login?returnTo=/chat` 호출로 연결될 수 있게 mock 또는 placeholder 경계로 처리한다
 [x] 관리자 선택은 향후 `GET /api/auth/login?mode=admin&returnTo=/admin` 호출로 연결될 수 있게 mock 또는 placeholder 경계로 처리한다
 [x] 사용자가 선택한 역할은 클라이언트 표시/라우팅 의도일 뿐이며, 최종 권한 판단은 `GET /api/users/me`의 `role` 및 BFF의 `mode=admin` 검증 결과를 따른다
-[ ] LandingPage.vue에서 landing headline feature 중 search section 수정 - ![이미지 참고](image.png)
 
 **주의사항**
 [x] feature12에서는 accessToken/refreshToken 저장, refresh, logout 실제 처리를 구현하지 않고 feature13 인증 백엔드 연결 범위로 남긴다
