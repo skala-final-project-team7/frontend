@@ -2431,3 +2431,10 @@
 - 관리자 카드에는 권한 확인 note와 작은 shield icon을 추가했다.
 - 사용자/관리자 설명 문구를 서비스 톤으로 다듬고 `whitespace-pre-line`으로 의도한 줄바꿈이 보이게 했다.
 - graph용 blue/sky/purple/indigo 디자인 토큰을 추가해 랜딩 그래프 색상을 토큰 기반으로 관리한다.
+
+## 2026-06-09 - refactor: feature12 Landing/Login 인터랙션 정리
+
+- `/login` 역할 카드의 rise animation을 내부 래퍼로 분리해, 페이지 진입 직후에도 hover impact가 즉시 보이도록 조정했다.
+- 랜딩 `Verify` mockup을 상하 2박스 구조에서 고정 높이 `list / graph` 토글 구조로 정리하고 기본값을 `graph`로 맞췄다.
+- 랜딩 `Ask` 섹션의 입력 박스와 화살표 위치를 여러 차례 조정해 겹침을 줄이고 시선 흐름을 정리했다.
+- `Ask` 캐릭터 foot shadow 실험은 제거하고, 현재는 원본 이미지 그대로 사용한다.

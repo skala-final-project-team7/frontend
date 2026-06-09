@@ -11,6 +11,8 @@
   - 2026-06-08, 디자인 개선, Ask 탭 화살표 SVG 스웁 곡선으로 개선
   - 2026-06-08, 디자인 개선, lina-ask/search/verify 캐릭터 이미지 각 탭 하단에 배치
   - 2026-06-08, UX 개선, 탭 전환 Transition fade 추가, 스냅 스크롤 scroll-smooth 적용
+  - 2026-06-09, 디자인 개선, Verify mockup을 고정 높이 list/graph 토글 구조로 변경
+  - 2026-06-09, 디자인 조정, Ask 캐릭터 foot shadow 제거
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -159,6 +161,12 @@ function scrollToLoginPanel() {
   loginPanelRef.value?.scrollIntoView({ behavior: 'smooth' });
 }
 
+const heroPanelRef = ref<HTMLElement | null>(null);
+
+function scrollToHeroPanel() {
+  heroPanelRef.value?.scrollIntoView({ behavior: 'smooth' });
+}
+
 const headlinePanelRef = ref<HTMLElement | null>(null);
 const featurePhase = ref(false);
 const activeTab = ref<'ask' | 'search' | 'verify'>('ask');
@@ -200,6 +208,7 @@ const verifyDocs = [
   { title: 'SSO 로그인 절차 안내', space: 'IT Support', date: '1주 전' },
   { title: '신입사원 온보딩 FAQ', space: 'HR', date: '3일 전' },
 ] as const;
+const verifyView = ref<'graph' | 'list'>('graph');
 
 onMounted(() => {
   // 탭별 캐릭터 이미지를 미리 fetch+decode 해두어 탭 전환 시 이미지 pop-in 버벅임을 막는다.
@@ -236,6 +245,7 @@ onMounted(() => {
     class="h-screen scroll-smooth snap-y snap-mandatory overflow-y-auto overflow-x-hidden bg-bg-100 text-overlay-dark-80 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
   >
     <section
+      ref="heroPanelRef"
       data-testid="landing-hero-panel"
       class="relative flex h-screen snap-start snap-always flex-col items-center justify-center overflow-hidden bg-bg-100 px-6"
       aria-label="LINA 브랜드 소개"
@@ -404,293 +414,92 @@ onMounted(() => {
 
         <!-- 탭 콘텐츠 -->
         <Transition name="tab-fade" mode="out-in">
-          <div :key="activeTab" class="mt-10 grid w-full max-w-5xl grid-cols-2 items-start gap-14" style="min-height: 380px">
-          <!-- 좌측: 설명 텍스트 -->
-          <div class="text-left" style="min-height: 320px">
-            <div class="mb-5 flex size-14 items-center justify-center rounded-2xl bg-primary/10">
-              <MessageCircle
-                v-if="activeTab === 'ask'"
-                data-testid="landing-feature-icon-ask"
-                class="size-7 text-primary"
-                aria-hidden="true"
-              />
-              <Search
-                v-else-if="activeTab === 'search'"
-                data-testid="landing-feature-icon-search"
-                class="size-7 text-primary"
-                aria-hidden="true"
-              />
-              <BookOpenCheck
-                v-else
-                data-testid="landing-feature-icon-verify"
-                class="size-7 text-primary"
-                aria-hidden="true"
-              />
-            </div>
-
-            <h3 class="text-[30px] font-light leading-tight text-overlay-dark-80">
-              <template v-if="activeTab === 'ask'">무엇이든 물어보세요</template>
-              <template v-else-if="activeTab === 'search'">
-                수백 개 문서를 <span class="text-primary">3초</span> 안에
-              </template>
-              <template v-else>출처를 리스트와 그래프로</template>
-            </h3>
-
-            <p class="mt-4 text-body leading-relaxed text-overlay-dark-40">
-              {{ tabData[activeTab].description }}
-            </p>
-
-            <ul class="mt-6 space-y-3">
-              <li
-                v-for="bullet in tabData[activeTab].bullets"
-                :key="bullet"
-                class="flex items-center gap-3 text-body text-overlay-dark-60"
-              >
-                <span
-                  class="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/15"
-                >
-                  <Check class="size-3 text-primary" aria-hidden="true" />
-                </span>
-                {{ bullet }}
-              </li>
-            </ul>
-
-            <div class="-mt-10 flex min-h-[150px] items-start justify-end">
-              <img
-                v-if="activeTab === 'ask'"
-                :src="linaAskImageUrl"
-                alt=""
-                aria-hidden="true"
-                class="w-36 object-contain drop-shadow-sm"
-              />
-              <img
-                v-else-if="activeTab === 'search'"
-                :src="linaSearchImageUrl"
-                alt=""
-                aria-hidden="true"
-                class="w-36 object-contain drop-shadow-sm"
-              />
-              <img
-                v-else
-                :src="linaVerifyImageUrl"
-                alt=""
-                aria-hidden="true"
-                class="w-36 object-contain mix-blend-darken"
-              />
-            </div>
-          </div>
-
-          <!-- 우측: 시각적 목업 -->
-          <div style="min-height: 340px">
-            <!-- Search 탭: 브라우저 채팅 목업 -->
-            <div
-              v-if="activeTab === 'search'"
-              class="overflow-hidden rounded-2xl border border-bg-300 shadow-lg"
-            >
-              <div class="flex items-center gap-3 border-b border-bg-300 bg-bg-200 px-4 py-2.5">
-                <div class="flex gap-1.5">
-                  <span class="size-3 rounded-full bg-red-400/60" />
-                  <span class="size-3 rounded-full bg-yellow-400/60" />
-                  <span class="size-3 rounded-full bg-green-400/60" />
-                </div>
-                <div
-                  class="mx-auto w-36 rounded-md bg-bg-300 py-1 text-center text-[10px] text-overlay-dark-40"
-                >
-                  lina.ai.com
-                </div>
+          <div
+            :key="activeTab"
+            class="mt-10 grid w-full max-w-5xl grid-cols-2 items-start gap-14"
+            style="min-height: 380px"
+          >
+            <!-- 좌측: 설명 텍스트 -->
+            <div class="text-left" style="min-height: 320px">
+              <div class="mb-5 flex size-14 items-center justify-center rounded-2xl bg-primary/10">
+                <MessageCircle
+                  v-if="activeTab === 'ask'"
+                  data-testid="landing-feature-icon-ask"
+                  class="size-7 text-primary"
+                  aria-hidden="true"
+                />
+                <Search
+                  v-else-if="activeTab === 'search'"
+                  data-testid="landing-feature-icon-search"
+                  class="size-7 text-primary"
+                  aria-hidden="true"
+                />
+                <BookOpenCheck
+                  v-else
+                  data-testid="landing-feature-icon-verify"
+                  class="size-7 text-primary"
+                  aria-hidden="true"
+                />
               </div>
-              <div class="flex h-[300px] bg-bg-100">
-                <div class="flex w-11 flex-col items-center gap-4 border-r border-bg-200 pt-4">
+
+              <h3 class="text-[30px] font-light leading-tight text-overlay-dark-80">
+                <template v-if="activeTab === 'ask'">무엇이든 물어보세요</template>
+                <template v-else-if="activeTab === 'search'">
+                  수백 개 문서를 <span class="text-primary">3초</span> 안에
+                </template>
+                <template v-else>출처를 리스트와 그래프로</template>
+              </h3>
+
+              <p class="mt-4 text-body leading-relaxed text-overlay-dark-40">
+                {{ tabData[activeTab].description }}
+              </p>
+
+              <ul class="mt-6 space-y-3">
+                <li
+                  v-for="bullet in tabData[activeTab].bullets"
+                  :key="bullet"
+                  class="flex items-center gap-3 text-body text-overlay-dark-60"
+                >
                   <span
-                    class="flex size-6 items-center justify-center rounded-md bg-primary/10 text-[10px] font-bold text-primary"
-                    >L</span
+                    class="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/15"
                   >
-                  <span class="size-1.5 rounded-full bg-overlay-dark-20" />
-                  <span class="size-1.5 rounded-full bg-overlay-dark-10" />
-                  <span class="size-1.5 rounded-full bg-overlay-dark-10" />
-                </div>
-                <div class="flex flex-1 flex-col">
-                  <div class="border-b border-bg-200 px-4 py-3">
-                    <p class="text-[10px] font-semibold text-overlay-dark-60">
-                      S3 버킷 권한 오류
-                    </p>
-                  </div>
-                  <div class="flex flex-1 flex-col gap-3 overflow-hidden px-4 py-4">
-                    <div
-                      class="ml-10 self-end rounded-2xl bg-bg-200 px-3 py-2 text-xs leading-relaxed text-overlay-dark-80"
-                    >
-                      지난 S3 버킷 권한 오류 때 어떻게 해결했어?
-                    </div>
-                    <div class="origin-left scale-75 self-start">
-                      <BaseSpinner label="답변을 작성하고 있어요" />
-                    </div>
-                    <p class="self-start text-xs leading-relaxed text-overlay-dark-80">
-                      S3 권한 오류는 IAM 정책과 버킷 정책을<br />함께 점검해 해결했습니다.
-                    </p>
-                  </div>
-                  <div class="border-t border-bg-200 px-3 py-2.5">
-                    <div class="rounded-full bg-bg-200 px-4 py-2 text-xs text-overlay-dark-40">
-                      무엇이든 물어보세요...
-                    </div>
-                  </div>
-                </div>
+                    <Check class="size-3 text-primary" aria-hidden="true" />
+                  </span>
+                  {{ bullet }}
+                </li>
+              </ul>
+
+              <div class="-mt-10 flex min-h-[150px] items-start justify-end">
+                <img
+                  v-if="activeTab === 'ask'"
+                  :src="linaAskImageUrl"
+                  alt=""
+                  aria-hidden="true"
+                  class="w-36 object-contain"
+                />
+                <img
+                  v-else-if="activeTab === 'search'"
+                  :src="linaSearchImageUrl"
+                  alt=""
+                  aria-hidden="true"
+                  class="w-36 object-contain drop-shadow-sm"
+                />
+                <img
+                  v-else
+                  :src="linaVerifyImageUrl"
+                  alt=""
+                  aria-hidden="true"
+                  class="w-36 object-contain mix-blend-darken"
+                />
               </div>
             </div>
 
-            <!-- Verify 탭: 참고문서 + 지식그래프 목업 -->
-            <div v-else-if="activeTab === 'verify'" class="flex flex-col gap-3">
-              <div class="overflow-hidden rounded-2xl border border-bg-300 shadow-sm">
-                <div class="border-b border-bg-200 bg-bg-50 px-5 py-3">
-                  <p class="text-xs font-medium text-overlay-dark-80">
-                    참고 문서
-                    <span class="font-normal text-overlay-dark-40">(3)</span>
-                  </p>
-                </div>
-                <div class="divide-y divide-bg-200 bg-bg-50">
-                  <div
-                    v-for="doc in verifyDocs"
-                    :key="doc.title"
-                    class="flex items-center gap-3 px-5 py-2.5"
-                  >
-                    <div
-                      class="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/10"
-                    >
-                      <FileText class="size-3.5 text-primary" aria-hidden="true" />
-                    </div>
-                    <div class="min-w-0">
-                      <p class="truncate text-xs font-medium text-overlay-dark-80">
-                        {{ doc.title }}
-                      </p>
-                      <p class="text-[10px] text-overlay-dark-40">
-                        {{ doc.space }} · {{ doc.date }}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
+            <!-- 우측: 시각적 목업 -->
+            <div style="min-height: 340px">
+              <!-- Search 탭: 브라우저 채팅 목업 -->
               <div
-                class="overflow-hidden rounded-2xl border border-bg-300 bg-bg-50 px-5 py-4 shadow-sm"
-              >
-                <p class="mb-3 text-xs font-medium text-overlay-dark-80">지식 연결 그래프</p>
-                <svg viewBox="0 0 360 88" class="h-20 w-full" aria-hidden="true">
-                  <!-- colored lines matching node hues -->
-                  <line
-                    x1="180"
-                    y1="44"
-                    x2="80"
-                    y2="18"
-                    style="stroke: var(--color-graph-sky); opacity: 0.45"
-                    stroke-width="1.5"
-                  />
-                  <line
-                    x1="180"
-                    y1="44"
-                    x2="280"
-                    y2="18"
-                    style="stroke: var(--color-graph-indigo); opacity: 0.45"
-                    stroke-width="1.5"
-                  />
-                  <line
-                    x1="180"
-                    y1="44"
-                    x2="110"
-                    y2="70"
-                    style="stroke: var(--color-graph-purple); opacity: 0.35"
-                    stroke-width="1.2"
-                  />
-                  <line
-                    x1="180"
-                    y1="44"
-                    x2="260"
-                    y2="70"
-                    style="stroke: var(--color-success); opacity: 0.35"
-                    stroke-width="1.2"
-                  />
-                  <line
-                    x1="80"
-                    y1="18"
-                    x2="30"
-                    y2="44"
-                    style="stroke: var(--color-bg-300)"
-                    stroke-width="1"
-                  />
-                  <line
-                    x1="280"
-                    y1="18"
-                    x2="334"
-                    y2="44"
-                    style="stroke: var(--color-bg-300)"
-                    stroke-width="1"
-                  />
-                  <!-- center node halo + fill -->
-                  <circle
-                    cx="180"
-                    cy="44"
-                    r="16"
-                    style="fill: var(--color-graph-blue); opacity: 0.15"
-                  />
-                  <circle cx="180" cy="44" r="9" style="fill: var(--color-graph-blue)" />
-                  <text
-                    x="180"
-                    y="62"
-                    text-anchor="middle"
-                    font-size="7.5"
-                    style="fill: var(--color-overlay-dark-60)"
-                  >
-                    AWS 접속
-                  </text>
-                  <circle cx="80" cy="18" r="6" style="fill: var(--color-graph-sky)" />
-                  <text
-                    x="80"
-                    y="10"
-                    text-anchor="middle"
-                    font-size="7"
-                    style="fill: var(--color-overlay-dark-40)"
-                  >
-                    SSO 설정
-                  </text>
-                  <circle cx="280" cy="18" r="6" style="fill: var(--color-graph-indigo)" />
-                  <text
-                    x="280"
-                    y="10"
-                    text-anchor="middle"
-                    font-size="7"
-                    style="fill: var(--color-overlay-dark-40)"
-                  >
-                    VPN 가이드
-                  </text>
-                  <circle cx="110" cy="70" r="4.5" style="fill: var(--color-graph-purple)" />
-                  <text
-                    x="110"
-                    y="83"
-                    text-anchor="middle"
-                    font-size="7"
-                    style="fill: var(--color-overlay-dark-40)"
-                  >
-                    IAM 권한
-                  </text>
-                  <circle cx="260" cy="70" r="4.5" style="fill: var(--color-success)" />
-                  <text
-                    x="260"
-                    y="83"
-                    text-anchor="middle"
-                    font-size="7"
-                    style="fill: var(--color-overlay-dark-40)"
-                  >
-                    보안 정책
-                  </text>
-                  <circle cx="30" cy="44" r="3" style="fill: var(--color-overlay-dark-10)" />
-                  <circle cx="334" cy="44" r="3" style="fill: var(--color-overlay-dark-10)" />
-                </svg>
-              </div>
-            </div>
-
-            <!-- Ask 탭: 브라우저에서 질문 입력 박스로 이어지는 흐름 -->
-            <div v-else data-testid="landing-ask-mockup" class="relative h-[340px]">
-              <div
-                class="absolute left-0 top-2 z-10 w-[58%] overflow-hidden rounded-2xl border border-bg-200 shadow-lg"
-                style="height: 265px"
+                v-if="activeTab === 'search'"
+                class="overflow-hidden rounded-2xl border border-bg-300 shadow-lg"
               >
                 <div class="flex items-center gap-3 border-b border-bg-300 bg-bg-200 px-4 py-2.5">
                   <div class="flex gap-1.5">
@@ -704,53 +513,297 @@ onMounted(() => {
                     lina.ai.com
                   </div>
                 </div>
-                <img
-                  :src="chatScreenshotImageUrl"
-                  alt="LINA 채팅 화면"
-                  class="w-full object-cover object-top"
-                  style="height: 227px"
-                />
+                <div class="flex h-[300px] bg-bg-100">
+                  <div class="flex w-11 flex-col items-center gap-4 border-r border-bg-200 pt-4">
+                    <span
+                      class="flex size-6 items-center justify-center rounded-md bg-primary/10 text-[10px] font-bold text-primary"
+                      >L</span
+                    >
+                    <span class="size-1.5 rounded-full bg-overlay-dark-20" />
+                    <span class="size-1.5 rounded-full bg-overlay-dark-10" />
+                    <span class="size-1.5 rounded-full bg-overlay-dark-10" />
+                  </div>
+                  <div class="flex flex-1 flex-col">
+                    <div class="border-b border-bg-200 px-4 py-3">
+                      <p class="text-[10px] font-semibold text-overlay-dark-60">
+                        S3 버킷 권한 오류
+                      </p>
+                    </div>
+                    <div class="flex flex-1 flex-col gap-3 overflow-hidden px-4 py-4">
+                      <div
+                        class="ml-10 self-end rounded-2xl bg-bg-200 px-3 py-2 text-xs leading-relaxed text-overlay-dark-80"
+                      >
+                        지난 S3 버킷 권한 오류 때 어떻게 해결했어?
+                      </div>
+                      <div class="origin-left scale-75 self-start">
+                        <BaseSpinner label="답변을 작성하고 있어요" />
+                      </div>
+                      <p class="self-start text-xs leading-relaxed text-overlay-dark-80">
+                        S3 권한 오류는 IAM 정책과 버킷 정책을<br />함께 점검해 해결했습니다.
+                      </p>
+                    </div>
+                    <div class="border-t border-bg-200 px-3 py-2.5">
+                      <div class="rounded-full bg-bg-200 px-4 py-2 text-xs text-overlay-dark-40">
+                        무엇이든 물어보세요...
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <svg
-                data-testid="landing-ask-arrow"
-                class="landing-ask-arrow pointer-events-none absolute inset-0 z-20 h-full w-full"
-                viewBox="0 0 520 340"
-                fill="none"
-                aria-hidden="true"
-              >
-                <path
-                  data-testid="landing-ask-arrow-path"
-                  d="M 152 236 C 168 168 268 140 310 140"
-                  stroke="var(--color-primary)"
-                  stroke-width="5"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
+              <!-- Verify 탭: list / graph 토글 목업 -->
+              <div v-else-if="activeTab === 'verify'">
+                <div class="overflow-hidden rounded-2xl border border-bg-300 bg-bg-50 shadow-sm">
+                  <div class="flex items-center justify-between border-b border-bg-200 px-5 py-3">
+                    <div>
+                      <p class="text-xs font-medium text-overlay-dark-80">출처</p>
+                      <p class="mt-1 text-[10px] text-overlay-dark-40">
+                        토글을 전환하여 리스트 혹은 그래프 형식으로 확인할 수 있습니다.
+                      </p>
+                    </div>
+                    <div class="flex rounded-full border border-bg-300 bg-bg-100 p-1">
+                      <button
+                        type="button"
+                        data-testid="landing-verify-toggle-list"
+                        class="rounded-full px-4 py-1.5 text-[11px] transition"
+                        :class="
+                          verifyView === 'list'
+                            ? 'bg-overlay-dark-80 text-primary-white'
+                            : 'text-overlay-dark-40 hover:text-overlay-dark-80'
+                        "
+                        @click="verifyView = 'list'"
+                      >
+                        list
+                      </button>
+                      <button
+                        type="button"
+                        data-testid="landing-verify-toggle-graph"
+                        class="rounded-full px-4 py-1.5 text-[11px] transition"
+                        :class="
+                          verifyView === 'graph'
+                            ? 'bg-overlay-dark-80 text-primary-white'
+                            : 'text-overlay-dark-40 hover:text-overlay-dark-80'
+                        "
+                        @click="verifyView = 'graph'"
+                      >
+                        graph
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="h-[268px] bg-bg-50 px-5 py-4">
+                    <div
+                      v-if="verifyView === 'list'"
+                      data-testid="landing-verify-list-panel"
+                      class="divide-y divide-bg-200 overflow-hidden rounded-2xl border border-bg-200 bg-primary-white"
+                    >
+                      <div
+                        v-for="doc in verifyDocs"
+                        :key="doc.title"
+                        class="flex items-center gap-3 px-5 py-4"
+                      >
+                        <div
+                          class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10"
+                        >
+                          <FileText class="size-4 text-primary" aria-hidden="true" />
+                        </div>
+                        <div class="min-w-0">
+                          <p class="truncate text-xs font-medium text-overlay-dark-80">
+                            {{ doc.title }}
+                          </p>
+                          <p class="mt-1 text-[10px] text-overlay-dark-40">
+                            {{ doc.space }} · {{ doc.date }}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div
+                      v-else
+                      data-testid="landing-verify-graph-panel"
+                      class="flex h-full flex-col overflow-hidden rounded-2xl border border-bg-200 bg-primary-white px-5 py-4"
+                    >
+                      <p class="mb-3 text-xs font-medium text-overlay-dark-80">지식 연결 그래프</p>
+                      <svg viewBox="0 0 360 88" class="h-full w-full" aria-hidden="true">
+                        <!-- colored lines matching node hues -->
+                        <line
+                          x1="180"
+                          y1="44"
+                          x2="80"
+                          y2="18"
+                          style="stroke: var(--color-graph-sky); opacity: 0.45"
+                          stroke-width="1.5"
+                        />
+                        <line
+                          x1="180"
+                          y1="44"
+                          x2="280"
+                          y2="18"
+                          style="stroke: var(--color-graph-indigo); opacity: 0.45"
+                          stroke-width="1.5"
+                        />
+                        <line
+                          x1="180"
+                          y1="44"
+                          x2="110"
+                          y2="70"
+                          style="stroke: var(--color-graph-purple); opacity: 0.35"
+                          stroke-width="1.2"
+                        />
+                        <line
+                          x1="180"
+                          y1="44"
+                          x2="260"
+                          y2="70"
+                          style="stroke: var(--color-success); opacity: 0.35"
+                          stroke-width="1.2"
+                        />
+                        <line
+                          x1="80"
+                          y1="18"
+                          x2="30"
+                          y2="44"
+                          style="stroke: var(--color-bg-300)"
+                          stroke-width="1"
+                        />
+                        <line
+                          x1="280"
+                          y1="18"
+                          x2="334"
+                          y2="44"
+                          style="stroke: var(--color-bg-300)"
+                          stroke-width="1"
+                        />
+                        <!-- center node halo + fill -->
+                        <circle
+                          cx="180"
+                          cy="44"
+                          r="16"
+                          style="fill: var(--color-graph-blue); opacity: 0.15"
+                        />
+                        <circle cx="180" cy="44" r="9" style="fill: var(--color-graph-blue)" />
+                        <text
+                          x="180"
+                          y="62"
+                          text-anchor="middle"
+                          font-size="7.5"
+                          style="fill: var(--color-overlay-dark-60)"
+                        >
+                          AWS 접속
+                        </text>
+                        <circle cx="80" cy="18" r="6" style="fill: var(--color-graph-sky)" />
+                        <text
+                          x="80"
+                          y="10"
+                          text-anchor="middle"
+                          font-size="7"
+                          style="fill: var(--color-overlay-dark-40)"
+                        >
+                          SSO 설정
+                        </text>
+                        <circle cx="280" cy="18" r="6" style="fill: var(--color-graph-indigo)" />
+                        <text
+                          x="280"
+                          y="10"
+                          text-anchor="middle"
+                          font-size="7"
+                          style="fill: var(--color-overlay-dark-40)"
+                        >
+                          VPN 가이드
+                        </text>
+                        <circle cx="110" cy="70" r="4.5" style="fill: var(--color-graph-purple)" />
+                        <text
+                          x="110"
+                          y="83"
+                          text-anchor="middle"
+                          font-size="7"
+                          style="fill: var(--color-overlay-dark-40)"
+                        >
+                          IAM 권한
+                        </text>
+                        <circle cx="260" cy="70" r="4.5" style="fill: var(--color-success)" />
+                        <text
+                          x="260"
+                          y="83"
+                          text-anchor="middle"
+                          font-size="7"
+                          style="fill: var(--color-overlay-dark-40)"
+                        >
+                          보안 정책
+                        </text>
+                        <circle cx="30" cy="44" r="3" style="fill: var(--color-overlay-dark-10)" />
+                        <circle cx="334" cy="44" r="3" style="fill: var(--color-overlay-dark-10)" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Ask 탭: 브라우저에서 질문 입력 박스로 이어지는 흐름 -->
+              <div v-else data-testid="landing-ask-mockup" class="relative h-[340px]">
+                <div
+                  class="absolute left-0 top-2 z-10 w-[58%] overflow-hidden rounded-2xl border border-bg-200 shadow-lg"
+                  style="height: 265px"
+                >
+                  <div class="flex items-center gap-3 border-b border-bg-300 bg-bg-200 px-4 py-2.5">
+                    <div class="flex gap-1.5">
+                      <span class="size-3 rounded-full bg-red-400/60" />
+                      <span class="size-3 rounded-full bg-yellow-400/60" />
+                      <span class="size-3 rounded-full bg-green-400/60" />
+                    </div>
+                    <div
+                      class="mx-auto w-36 rounded-md bg-bg-300 py-1 text-center text-[10px] text-overlay-dark-40"
+                    >
+                      lina.ai.com
+                    </div>
+                  </div>
+                  <img
+                    :src="chatScreenshotImageUrl"
+                    alt="LINA 채팅 화면"
+                    class="w-full object-cover object-top"
+                    style="height: 227px"
+                  />
+                </div>
+
+                <svg
+                  data-testid="landing-ask-arrow"
+                  class="landing-ask-arrow pointer-events-none absolute inset-0 z-20 h-full w-full"
+                  viewBox="0 0 520 340"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <path
+                    data-testid="landing-ask-arrow-path"
+                    d="M 152 236 C 168 168 268 140 310 140"
+                    stroke="var(--color-primary)"
+                    stroke-width="5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M 287 130 L 310 140 L 290 155"
+                    stroke="var(--color-primary)"
+                    stroke-width="5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+
+                <img
+                  :src="iconsImageUrl"
+                  alt=""
+                  aria-hidden="true"
+                  class="absolute right-14 -top-10 z-20 w-28 object-contain opacity-90 drop-shadow-sm"
                 />
-                <path
-                  d="M 287 130 L 310 140 L 290 155"
-                  stroke="var(--color-primary)"
-                  stroke-width="5"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
+                <img
+                  data-testid="landing-ask-input-box"
+                  :src="chatInputBoxImageUrl"
+                  alt="질문 입력"
+                  class="absolute -right-28 top-24 z-30 w-[60%] drop-shadow-xl"
                 />
-              </svg>
-              
-              <img
-                :src="iconsImageUrl"
-                alt=""
-                aria-hidden="true"
-                class="absolute -right-6 top-4 z-20 w-16 object-contain opacity-90 drop-shadow-sm"
-              />
-              <img
-                data-testid="landing-ask-input-box"
-                :src="chatInputBoxImageUrl"
-                alt="질문 입력"
-                class="absolute -right-20 top-24 z-30 w-[54%] drop-shadow-xl"
-              />
+              </div>
             </div>
           </div>
-        </div>
         </Transition>
       </div>
 
@@ -808,6 +861,14 @@ onMounted(() => {
         </nav>
       </section>
 
+      <button
+        type="button"
+        class="landing-scroll-indicator absolute bottom-16 left-1/2 z-10 inline-flex -translate-x-1/2 flex-col items-center gap-2 text-button font-normal text-overlay-dark-60 transition hover:text-overlay-dark-80 focus-visible:outline-none focus-visible:shadow-focus"
+        @click="scrollToHeroPanel"
+      >
+        <span class="text-xl leading-none" aria-hidden="true">⌃</span>
+        <span>scroll</span>
+      </button>
       <footer
         class="absolute inset-x-0 bottom-8 text-center text-button font-normal text-overlay-dark-40"
       >

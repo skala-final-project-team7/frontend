@@ -52,7 +52,7 @@ describe('feature12 Auth / Login + Role Selection', () => {
     expect(wrapper.find('[data-testid="login-page"]').exists()).toBe(false);
 
     const scrollIndicators = wrapper.findAll('.landing-scroll-indicator');
-    expect(scrollIndicators).toHaveLength(2);
+    expect(scrollIndicators).toHaveLength(3);
     expect(scrollIndicators[0].classes()).toContain('text-overlay-dark-60');
 
     const acronymWords = wrapper.findAll('[data-testid="landing-acronym-word"]');
@@ -106,16 +106,26 @@ describe('feature12 Auth / Login + Role Selection', () => {
     expect(wrapper.get('[data-testid="landing-feature-icon-ask"]').classes()).toContain(
       'text-primary',
     );
-    expect(wrapper.get('[data-testid="landing-ask-input-box"]').classes()).toContain('-right-20');
+    expect(wrapper.get('[data-testid="landing-ask-input-box"]').classes()).toContain('-right-28');
     expect(wrapper.get('[data-testid="landing-ask-input-box"]').classes()).toContain('top-24');
     expect(wrapper.get('[data-testid="landing-ask-arrow-path"]').attributes('d')).toBe(
-      'M 196 226 C 260 204 318 194 360 196',
+      'M 152 236 C 168 168 268 140 310 140',
     );
 
     await wrapper.get('[data-testid="landing-feature-tab-verify"]').trigger('click');
 
     expect(wrapper.get('[data-testid="landing-verify-tab-icon"]').exists()).toBe(true);
     expect(wrapper.get('[data-testid="landing-feature-icon-verify"]').exists()).toBe(true);
+    expect(wrapper.get('[data-testid="landing-verify-toggle-graph"]').classes()).toContain(
+      'bg-overlay-dark-80',
+    );
+    expect(wrapper.get('[data-testid="landing-verify-graph-panel"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="landing-verify-list-panel"]').exists()).toBe(false);
+
+    await wrapper.get('[data-testid="landing-verify-toggle-list"]').trigger('click');
+
+    expect(wrapper.get('[data-testid="landing-verify-list-panel"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="landing-verify-graph-panel"]').exists()).toBe(false);
   });
 
   it('shows only role selection cards on the Login page', async () => {
@@ -128,6 +138,9 @@ describe('feature12 Auth / Login + Role Selection', () => {
     expect(wrapper.find('[data-testid="confluence-login-button"]').exists()).toBe(false);
     expect(wrapper.find('[data-testid="role-selection-panel"]').exists()).toBe(true);
     expect(wrapper.get('[data-testid="user-role-button"]').classes()).toContain('login-role-card');
+    expect(wrapper.get('[data-testid="user-role-motion"]').classes()).toContain(
+      'login-role-card-motion',
+    );
     expect(wrapper.get('[data-testid="user-role-button"]').classes()).toContain('items-center');
     expect(wrapper.get('[data-testid="user-role-button"]').classes()).toContain('text-center');
     expect(wrapper.get('[data-testid="user-role-button"]').classes()).toContain(
@@ -137,6 +150,9 @@ describe('feature12 Auth / Login + Role Selection', () => {
       'hover:border-primary',
     );
     expect(wrapper.get('[data-testid="admin-role-button"]').classes()).toContain('login-role-card');
+    expect(wrapper.get('[data-testid="admin-role-motion"]').classes()).toContain(
+      'login-role-card-motion',
+    );
     expect(wrapper.get('[data-testid="user-role-image"]').attributes('src')).toContain(
       'lina-user.png',
     );

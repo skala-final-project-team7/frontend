@@ -6,6 +6,7 @@
 작성일 : 2026-06-05
 변경사항 내역 (날짜, 변경목적, 변경내용 순)
   - 2026-06-05, feature12 구현, LoginPage와 역할 선택 mock 경계 작성
+  - 2026-06-09, UX 개선, 카드 hover transform과 rise animation을 분리해 진입 직후 hover impact가 바로 보이도록 조정
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -51,30 +52,35 @@ const roleImageUrlByRole = {
           :data-return-to="option.returnTo"
           class="login-role-card flex min-h-[260px] flex-col items-center rounded-card border border-bg-300 bg-primary-white p-8 text-center shadow-floating transition duration-200 ease-out hover:-translate-y-2 hover:border-primary hover:brightness-105 hover:shadow-primary focus-visible:outline-none focus-visible:shadow-focus"
         >
-          <img
-            class="mb-6 h-28 w-auto object-contain"
-            :src="roleImageUrlByRole[option.role]"
-            :alt="`${option.label} 로그인`"
-            :data-testid="`${option.role}-role-image`"
-          />
-          <span class="text-heading font-bold text-overlay-dark-80">{{ option.label }}</span>
-          <span
-            class="mt-6 max-w-md whitespace-pre-line text-xl leading-relaxed text-overlay-dark-40"
+          <div
+            :data-testid="`${option.role}-role-motion`"
+            class="login-role-card-motion flex min-h-[260px] w-full flex-col items-center"
           >
-            {{ option.description }}
-          </span>
-          <span
-            v-if="option.note"
-            data-testid="admin-role-note"
-            class="mt-5 inline-flex items-center gap-1.5 text-small text-overlay-dark-40"
-          >
-            <ShieldCheck
-              data-testid="admin-role-note-icon"
-              class="size-3.5 text-primary"
-              aria-hidden="true"
+            <img
+              class="mb-6 h-28 w-auto object-contain"
+              :src="roleImageUrlByRole[option.role]"
+              :alt="`${option.label} 로그인`"
+              :data-testid="`${option.role}-role-image`"
             />
-            {{ option.note }}
-          </span>
+            <span class="text-heading font-bold text-overlay-dark-80">{{ option.label }}</span>
+            <span
+              class="mt-6 max-w-md whitespace-pre-line text-xl leading-relaxed text-overlay-dark-40"
+            >
+              {{ option.description }}
+            </span>
+            <span
+              v-if="option.note"
+              data-testid="admin-role-note"
+              class="mt-5 inline-flex items-center gap-1.5 text-small text-overlay-dark-40"
+            >
+              <ShieldCheck
+                data-testid="admin-role-note-icon"
+                class="size-3.5 text-primary"
+                aria-hidden="true"
+              />
+              {{ option.note }}
+            </span>
+          </div>
         </a>
       </section>
     </section>
@@ -86,12 +92,12 @@ const roleImageUrlByRole = {
 </template>
 
 <style scoped>
-.login-role-card {
+.login-role-card-motion {
   opacity: 0;
   animation: login-role-card-rise 900ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
-.login-role-card:nth-child(2) {
+.login-role-card:nth-child(2) .login-role-card-motion {
   animation-delay: 160ms;
 }
 

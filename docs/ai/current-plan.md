@@ -223,15 +223,7 @@
 [ ] 인증 실패 / 세션 만료 / 로그아웃 상태 처리
 [ ] 인증/인가 흐름 변경 시 관련 문서 갱신
 
-# feature14: Settings 모달 구현 (SCR-700~720)
-
-[ ] Settings 중앙 모달 shell 구현
-[ ] 일반 / 계정 / 데이터 탭 구현
-[ ] ESC / 백드롭 / X 닫기와 포커스 트랩 구현
-[ ] 일반 설정의 히스토리 관리 UI 구현
-[ ] 계정 관리와 데이터 관리 UI 구현
-
-# feature15: Admin 기본 shell 및 데이터 수집 메인 보드 구현 (SCR-800)
+# feature14: Admin 기본 shell 및 데이터 수집 메인 보드 구현 (SCR-800)
 
 [ ] `frontend/docs/frames/[SCR-800] 관리자 데이터 수집 메인 보드.pdf` 기준으로 Admin shell, 좌측 nav, 관리자 프로필 영역, 데이터 파이프라인 영역을 구현
 [ ] `/admin` 또는 `/admin/operations` route를 추가하고 기본 진입 시 SCR-800 화면을 표시
@@ -241,7 +233,7 @@
 [ ] 관리자 API는 모두 Common Response wrapper를 사용하고, `/api/admin/*`의 Loading / Error / Empty 상태를 처리
 [ ] `role !== "ADMIN"` 접근 차단 회귀 테스트와 관리자 shell 렌더링 테스트 작성
 
-# feature16: Admin 대시보드 구현 (SCR-810)
+# feature15: Admin 대시보드 구현 (SCR-810)
 
 [ ] `frontend/docs/frames/[SCR-810] 관리자 추이 확인 대시보드.pdf` 기준으로 대시보드 화면을 구현
 [ ] `/admin/dashboard` route를 추가하고 Admin shell nav에서 이동 가능하게 구성
@@ -250,7 +242,7 @@
 [ ] 기간 탭(오늘/7일/30일)은 `docs/api-spec.md`의 공통 query parameter 확정 상태를 확인한 뒤 연결하고, 미확정이면 UI 상태만 mock으로 격리
 [ ] 사용자 목록 pagination과 empty/error 상태 테스트 작성
 
-# feature17: Admin 피드백 확인 구현 (SCR-820)
+# feature16: Admin 피드백 확인 구현 (SCR-820)
 
 [ ] `frontend/docs/frames/[SCR-820] 관리자 피드백 확인.pdf` 기준으로 피드백 화면을 구현
 [ ] `/admin/feedback` route를 추가하고 Admin shell nav에서 이동 가능하게 구성
@@ -259,7 +251,7 @@
 [ ] 기간 탭(7일/14일/30일)은 query parameter 확정 상태를 확인한 뒤 연결하고, 미확정이면 mock으로 격리
 [ ] 피드백 목록 pagination, empty/error 상태 테스트 작성
 
-# feature18: Admin 동기화 이력 구현 (SCR-830)
+# feature17: Admin 동기화 이력 구현 (SCR-830)
 
 [ ] `frontend/docs/frames/[SCR-830] 관리자 동기화 이력 확인.pdf` 기준으로 전체 동기화 이력 화면을 구현
 [ ] `/admin/sync` route를 추가하고 Admin shell nav에서 이동 가능하게 구성
@@ -267,13 +259,13 @@
 [ ] 실패 상태를 완료 상태와 시각적으로 구분하되 임의 status 값을 만들지 않고 API enum을 따른다
 [ ] pagination, loading, empty, error 상태 테스트 작성
 
-# feature19: Chat 후속 기능 - 인라인 수정 backend 연결
+# feature18: Chat 후속 기능 - 인라인 수정 backend 연결
 
 [ ] feature11 완료 후 message version/답변 재생성 API 계약을 확정하고 `docs/api-spec.md` 및 FE 타입을 갱신
 [ ] 사용자 메시지 inline edit와 version navigation을 backend version 응답 기준으로 활성화
 [ ] 수정 version 전환 핵심 플로우 테스트 작성
 
-# feature20: 출처 패널 그래프 뷰 후속 구현
+# feature19: 출처 패널 그래프 뷰 후속 구현
 
 [ ] feature10 출처 패널 및 List/Graph 토글 기본 UI 구현 완료 후 진행
 [ ] backend 또는 RAG와 출처 graph node/edge 데이터 계약 확정
@@ -284,6 +276,14 @@
 [ ] source 목록과 graph 선택 상태가 동일 문서를 기준으로 동기화되도록 처리
 [ ] 그래프 loading/error/empty 상태와 접근성 대체 표시를 구현
 [ ] 그래프 렌더링 및 node 선택/줌/팬 동작을 관련 테스트로 검증
+
+# feature20: Settings 모달 구현 (SCR-700~720)
+
+[ ] Settings 중앙 모달 shell 구현
+[ ] 일반 / 계정 / 데이터 탭 구현
+[ ] ESC / 백드롭 / X 닫기와 포커스 트랩 구현
+[ ] 일반 설정의 히스토리 관리 UI 구현
+[ ] 계정 관리와 데이터 관리 UI 구현
 
 # feature21: 테스트 및 검증 기반 확장
 
