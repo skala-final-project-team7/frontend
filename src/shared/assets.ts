@@ -13,14 +13,34 @@
  *   - Vue 3.5.x, Vite 5.4.x 기준
  * --------------------------------------------------
  */
-import mascotRealizeImageUrl from '../../frontend/assets/mascot-realize-nobg.png';
-import mascotSearchImageUrl from '../../frontend/assets/mascot-search-nobg.png';
-import mascotImageUrl from '../../frontend/assets/mascot.png';
-import mascotWrongImageUrl from '../../frontend/assets/mascot-wrong.png';
-import searchImageUrl from '../../frontend/assets/search.png';
-import skpSymbolImageUrl from '../../frontend/assets/skp_symbol-nobg.png';
+import confluenceIconImageUrl from '../../frontend/assets/icons/confluence-icon.png';
+import iconsImageUrl from '../../frontend/assets/icons/icons.png';
+import searchImageUrl from '../../frontend/assets/icons/search.png';
+import skpSymbolImageUrl from '../../frontend/assets/icons/skp_symbol-nobg.png';
+import linaAdminImageUrl from '../../frontend/assets/lina-character/lina-admin.png';
+import linaAskImageUrl from '../../frontend/assets/lina-character/lina-ask.png';
+import linaSearchImageUrl from '../../frontend/assets/lina-character/lina-search.png';
+import linaUserImageUrl from '../../frontend/assets/lina-character/lina-user.png';
+import linaVerifyImageUrl from '../../frontend/assets/lina-character/lina-verify.png';
+import mascotRealizeImageUrl from '../../frontend/assets/lina-character/mascot-realize-nobg.png';
+import mascotSearchImageUrl from '../../frontend/assets/lina-character/mascot-search-nobg.png';
+import mascotWrongImageUrl from '../../frontend/assets/lina-character/mascot-wrong.png';
+import mascotImageUrl from '../../frontend/assets/lina-character/mascot.png';
+import logoLinaCuteImageUrl from '../../frontend/assets/logos/logo-lina-cute4.png';
+import chatScreenshotImageUrl from '../../frontend/assets/screenshots/chat-screenshot.png';
+import chatInputBoxImageUrl from '../../frontend/assets/ui/chat-input-box.png';
 
 export {
+  chatInputBoxImageUrl,
+  chatScreenshotImageUrl,
+  confluenceIconImageUrl,
+  iconsImageUrl,
+  linaAdminImageUrl,
+  linaAskImageUrl,
+  linaSearchImageUrl,
+  linaUserImageUrl,
+  linaVerifyImageUrl,
+  logoLinaCuteImageUrl,
   mascotImageUrl,
   mascotRealizeImageUrl,
   mascotSearchImageUrl,

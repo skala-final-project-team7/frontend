@@ -192,22 +192,22 @@
 
 # feature12: Auth / Login + Role Selection 화면 구현 (SCR-100~200 기반, SCR-300~310 제거)
 
-[ ] `frontend/docs/components.md`의 기존 Phase 2가 Onboarding(SCR-300~310)을 포함하더라도, 이번 흐름에서는 Onboarding 화면을 구현하지 않고 라우팅 대상에서도 제외한다
-[ ] LandingPage(SCR-100)는 유지하되 `Continue with Confluence` CTA가 LoginPage 또는 역할 선택 진입으로 자연스럽게 이어지도록 화면 흐름만 정리
-[ ] LoginPage(SCR-200)에 `Continue with Confluence` CTA를 배치하고, 클릭 후 사용자/관리자 선택 UI를 표시한다
-[ ] `Continue with Confluence` CTA는 즉시 OAuth를 시작하지 않고 역할 선택 UI를 여는 진입점으로 둔다
-[ ] 역할 선택 UI에는 일반 사용자와 관리자 버튼을 명확히 구분해 제공한다
-[ ] 일반 사용자 선택 시 사용자 로그인 모드로 진행하고, 인증 완료 후 현재 구현된 Chat 화면(`/chat`)으로 이동하는 흐름을 준비한다
-[ ] 관리자 선택 시 관리자 로그인 모드로 진행하고, 인증 완료 후 Admin 화면(`/admin`)으로 이동하는 흐름을 준비한다
-[ ] 일반 사용자 선택은 향후 `GET /api/auth/login?returnTo=/chat` 호출로 연결될 수 있게 mock 또는 placeholder 경계로 처리한다
-[ ] 관리자 선택은 향후 `GET /api/auth/login?mode=admin&returnTo=/admin` 호출로 연결될 수 있게 mock 또는 placeholder 경계로 처리한다
-[ ] 사용자가 선택한 역할은 클라이언트 표시/라우팅 의도일 뿐이며, 최종 권한 판단은 `GET /api/users/me`의 `role` 및 BFF의 `mode=admin` 검증 결과를 따른다
+[x] `frontend/docs/components.md`의 기존 Phase 2가 Onboarding(SCR-300~310)을 포함하더라도, 이번 흐름에서는 Onboarding 화면을 구현하지 않고 라우팅 대상에서도 제외한다
+[x] LandingPage(SCR-100)는 유지하되 `Continue with Confluence` CTA가 LoginPage 또는 역할 선택 진입으로 자연스럽게 이어지도록 화면 흐름만 정리
+[x] LoginPage(SCR-200)에 `Continue with Confluence` CTA를 배치하고, 클릭 후 사용자/관리자 선택 UI를 표시한다
+[x] `Continue with Confluence` CTA는 즉시 OAuth를 시작하지 않고 역할 선택 UI를 여는 진입점으로 둔다
+[x] 역할 선택 UI에는 일반 사용자와 관리자 버튼을 명확히 구분해 제공한다
+[x] 일반 사용자 선택 시 사용자 로그인 모드로 진행하고, 인증 완료 후 현재 구현된 Chat 화면(`/chat`)으로 이동하는 흐름을 준비한다
+[x] 관리자 선택 시 관리자 로그인 모드로 진행하고, 인증 완료 후 Admin 화면(`/admin`)으로 이동하는 흐름을 준비한다
+[x] 일반 사용자 선택은 향후 `GET /api/auth/login?returnTo=/chat` 호출로 연결될 수 있게 mock 또는 placeholder 경계로 처리한다
+[x] 관리자 선택은 향후 `GET /api/auth/login?mode=admin&returnTo=/admin` 호출로 연결될 수 있게 mock 또는 placeholder 경계로 처리한다
+[x] 사용자가 선택한 역할은 클라이언트 표시/라우팅 의도일 뿐이며, 최종 권한 판단은 `GET /api/users/me`의 `role` 및 BFF의 `mode=admin` 검증 결과를 따른다
 
 **주의사항**
-[ ] feature12에서는 accessToken/refreshToken 저장, refresh, logout 실제 처리를 구현하지 않고 feature13 인증 백엔드 연결 범위로 남긴다
-[ ] feature12 mock 흐름에서도 `docs/api-spec.md`의 Bearer token 기반 세션 계약과 충돌하는 cookie 기반 인증 가정을 추가하지 않는다
-[ ] Onboarding 관련 route/page/component/test가 이미 존재하면 제거 또는 비활성화하고, 새 흐름 회귀 테스트로 대체한다
-[ ] 인증 API가 불명확한 항목은 mock 또는 placeholder로 격리하되, `docs/api-spec.md`의 `/api/auth/login?mode=admin` 계약과 충돌하지 않게 둔다
+[x] feature12에서는 accessToken/refreshToken 저장, refresh, logout 실제 처리를 구현하지 않고 feature13 인증 백엔드 연결 범위로 남긴다
+[x] feature12 mock 흐름에서도 `docs/api-spec.md`의 Bearer token 기반 세션 계약과 충돌하는 cookie 기반 인증 가정을 추가하지 않는다
+[x] Onboarding 관련 route/page/component/test가 이미 존재하면 제거 또는 비활성화하고, 새 흐름 회귀 테스트로 대체한다
+[x] 인증 API가 불명확한 항목은 mock 또는 placeholder로 격리하되, `docs/api-spec.md`의 `/api/auth/login?mode=admin` 계약과 충돌하지 않게 둔다
 
 # feature13: Auth 백엔드 연결 전환
 
@@ -222,15 +222,7 @@
 [ ] 인증 실패 / 세션 만료 / 로그아웃 상태 처리
 [ ] 인증/인가 흐름 변경 시 관련 문서 갱신
 
-# feature14: Settings 모달 구현 (SCR-700~720)
-
-[ ] Settings 중앙 모달 shell 구현
-[ ] 일반 / 계정 / 데이터 탭 구현
-[ ] ESC / 백드롭 / X 닫기와 포커스 트랩 구현
-[ ] 일반 설정의 히스토리 관리 UI 구현
-[ ] 계정 관리와 데이터 관리 UI 구현
-
-# feature15: Admin 기본 shell 및 데이터 수집 메인 보드 구현 (SCR-800)
+# feature14: Admin 기본 shell 및 데이터 수집 메인 보드 구현 (SCR-800)
 
 [ ] `frontend/docs/frames/[SCR-800] 관리자 데이터 수집 메인 보드.pdf` 기준으로 Admin shell, 좌측 nav, 관리자 프로필 영역, 데이터 파이프라인 영역을 구현
 [ ] `/admin` 또는 `/admin/operations` route를 추가하고 기본 진입 시 SCR-800 화면을 표시
@@ -240,7 +232,7 @@
 [ ] 관리자 API는 모두 Common Response wrapper를 사용하고, `/api/admin/*`의 Loading / Error / Empty 상태를 처리
 [ ] `role !== "ADMIN"` 접근 차단 회귀 테스트와 관리자 shell 렌더링 테스트 작성
 
-# feature16: Admin 대시보드 구현 (SCR-810)
+# feature15: Admin 대시보드 구현 (SCR-810)
 
 [ ] `frontend/docs/frames/[SCR-810] 관리자 추이 확인 대시보드.pdf` 기준으로 대시보드 화면을 구현
 [ ] `/admin/dashboard` route를 추가하고 Admin shell nav에서 이동 가능하게 구성
@@ -249,7 +241,7 @@
 [ ] 기간 탭(오늘/7일/30일)은 `docs/api-spec.md`의 공통 query parameter 확정 상태를 확인한 뒤 연결하고, 미확정이면 UI 상태만 mock으로 격리
 [ ] 사용자 목록 pagination과 empty/error 상태 테스트 작성
 
-# feature17: Admin 피드백 확인 구현 (SCR-820)
+# feature16: Admin 피드백 확인 구현 (SCR-820)
 
 [ ] `frontend/docs/frames/[SCR-820] 관리자 피드백 확인.pdf` 기준으로 피드백 화면을 구현
 [ ] `/admin/feedback` route를 추가하고 Admin shell nav에서 이동 가능하게 구성
@@ -258,7 +250,7 @@
 [ ] 기간 탭(7일/14일/30일)은 query parameter 확정 상태를 확인한 뒤 연결하고, 미확정이면 mock으로 격리
 [ ] 피드백 목록 pagination, empty/error 상태 테스트 작성
 
-# feature18: Admin 동기화 이력 구현 (SCR-830)
+# feature17: Admin 동기화 이력 구현 (SCR-830)
 
 [ ] `frontend/docs/frames/[SCR-830] 관리자 동기화 이력 확인.pdf` 기준으로 전체 동기화 이력 화면을 구현
 [ ] `/admin/sync` route를 추가하고 Admin shell nav에서 이동 가능하게 구성
@@ -266,13 +258,13 @@
 [ ] 실패 상태를 완료 상태와 시각적으로 구분하되 임의 status 값을 만들지 않고 API enum을 따른다
 [ ] pagination, loading, empty, error 상태 테스트 작성
 
-# feature19: Chat 후속 기능 - 인라인 수정 backend 연결
+# feature18: Chat 후속 기능 - 인라인 수정 backend 연결
 
 [ ] feature11 완료 후 message version/답변 재생성 API 계약을 확정하고 `docs/api-spec.md` 및 FE 타입을 갱신
 [ ] 사용자 메시지 inline edit와 version navigation을 backend version 응답 기준으로 활성화
 [ ] 수정 version 전환 핵심 플로우 테스트 작성
 
-# feature20: 출처 패널 그래프 뷰 후속 구현
+# feature19: 출처 패널 그래프 뷰 후속 구현
 
 [ ] feature10 출처 패널 및 List/Graph 토글 기본 UI 구현 완료 후 진행
 [ ] backend 또는 RAG와 출처 graph node/edge 데이터 계약 확정
@@ -283,6 +275,14 @@
 [ ] source 목록과 graph 선택 상태가 동일 문서를 기준으로 동기화되도록 처리
 [ ] 그래프 loading/error/empty 상태와 접근성 대체 표시를 구현
 [ ] 그래프 렌더링 및 node 선택/줌/팬 동작을 관련 테스트로 검증
+
+# feature20: Settings 모달 구현 (SCR-700~720)
+
+[ ] Settings 중앙 모달 shell 구현
+[ ] 일반 / 계정 / 데이터 탭 구현
+[ ] ESC / 백드롭 / X 닫기와 포커스 트랩 구현
+[ ] 일반 설정의 히스토리 관리 UI 구현
+[ ] 계정 관리와 데이터 관리 UI 구현
 
 # feature21: 테스트 및 검증 기반 확장
 

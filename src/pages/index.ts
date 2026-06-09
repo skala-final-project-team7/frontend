@@ -6,10 +6,14 @@
  * 작성일 : 2026-05-18
  * 변경사항 내역 (날짜, 변경목적, 변경내용 순)
  *   - 2026-05-18, feature3 구현, ChatPage export 추가
+ *   - 2026-06-05, feature12 구현, Auth page export 추가
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
  *   - Vue 3.5.x, Vite 5.4.x 기준
  * --------------------------------------------------
  */
+export { default as AdminEntryPage } from './AdminEntryPage.vue';
 export { default as ChatPage } from './ChatPage.vue';
+export { default as LandingPage } from './LandingPage.vue';
+export { default as LoginPage } from './LoginPage.vue';

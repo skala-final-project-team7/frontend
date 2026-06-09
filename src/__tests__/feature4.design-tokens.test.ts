@@ -20,6 +20,7 @@ type Feature4ThemeExtension = {
     primary: Record<string, string>;
     bg: Record<number, string>;
     status: Record<string, string>;
+    graph: Record<string, string>;
     overlay: {
       dark: Record<number, string>;
       white: Record<number, string>;
@@ -48,6 +49,12 @@ describe('feature4 design tokens and base styles', () => {
       success: 'var(--color-success)',
       error: 'var(--color-error)',
       warning: 'var(--color-warning)',
+    });
+    expect(extension.colors.graph).toMatchObject({
+      blue: 'var(--color-graph-blue)',
+      sky: 'var(--color-graph-sky)',
+      purple: 'var(--color-graph-purple)',
+      indigo: 'var(--color-graph-indigo)',
     });
     expect(extension.colors.overlay).toMatchObject({
       dark: {
@@ -110,21 +117,21 @@ describe('feature4 design tokens and base styles', () => {
 
   it('exports importable URLs for existing frontend asset images', () => {
     const requiredAssetPaths = [
-      'frontend/assets/mascot.png',
-      'frontend/assets/mascot-realize-nobg.png',
-      'frontend/assets/mascot-search-nobg.png',
-      'frontend/assets/search.png',
-      'frontend/assets/skp_symbol-nobg.png',
+      'frontend/assets/lina-character/mascot.png',
+      'frontend/assets/lina-character/mascot-realize-nobg.png',
+      'frontend/assets/lina-character/mascot-search-nobg.png',
+      'frontend/assets/icons/search.png',
+      'frontend/assets/icons/skp_symbol-nobg.png',
     ];
 
     for (const assetPath of requiredAssetPaths) {
       expect(existsSync(join(projectRoot, assetPath)), assetPath).toBe(true);
     }
 
-    expect(mascotImageUrl).toContain('mascot.png');
-    expect(mascotRealizeImageUrl).toContain('mascot-realize-nobg.png');
-    expect(mascotSearchImageUrl).toContain('mascot-search-nobg.png');
-    expect(searchImageUrl).toContain('search.png');
-    expect(skpSymbolImageUrl).toContain('skp_symbol-nobg.png');
+    expect(mascotImageUrl).toContain('lina-character/mascot.png');
+    expect(mascotRealizeImageUrl).toContain('lina-character/mascot-realize-nobg.png');
+    expect(mascotSearchImageUrl).toContain('lina-character/mascot-search-nobg.png');
+    expect(searchImageUrl).toContain('icons/search.png');
+    expect(skpSymbolImageUrl).toContain('icons/skp_symbol-nobg.png');
   });
 });
