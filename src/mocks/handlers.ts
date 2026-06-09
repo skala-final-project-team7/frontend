@@ -20,6 +20,8 @@
 import { HttpResponse, http } from 'msw';
 
 import {
+  mockAdminDataOverview,
+  mockAdminSyncHistory,
   mockConfluencePreviewPages,
   mockConversationSearchResponse,
   mockConversations,
@@ -48,6 +50,26 @@ export const mockHandlers = [
       code: 200,
       message: '사용자 정보 조회 성공',
       data: mockCurrentUser,
+    });
+  }),
+
+  // TODO(MOCK): GET /api/admin/data
+  http.get('*/api/admin/data', () => {
+    return HttpResponse.json<ApiSuccessResponse<typeof mockAdminDataOverview>>({
+      isSuccess: true,
+      code: 200,
+      message: '데이터 현황 조회 성공',
+      data: mockAdminDataOverview,
+    });
+  }),
+
+  // TODO(MOCK): GET /api/admin/sync
+  http.get('*/api/admin/sync', () => {
+    return HttpResponse.json<ApiSuccessResponse<typeof mockAdminSyncHistory>>({
+      isSuccess: true,
+      code: 200,
+      message: '동기화 이력 조회 성공',
+      data: mockAdminSyncHistory,
     });
   }),
 

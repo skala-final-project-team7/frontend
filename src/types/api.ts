@@ -122,6 +122,30 @@ export type CurrentUser = {
   lastLoginAt: string;
 };
 
+export type AdminDataOverview = {
+  totalSpaces: number;
+  totalPages: number;
+  totalAttachments: number;
+  vectorDbSize: string;
+  totalChunks: number;
+  lastSyncAt: string;
+};
+
+export type AdminSyncStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED';
+
+export type AdminSyncHistoryItem = {
+  syncId: string;
+  status: AdminSyncStatus;
+  updatedPages: number;
+  deletedPages: number;
+  duration: number;
+  completedAt: string;
+};
+
+export type AdminSyncHistoryResponse = {
+  syncHistory: AdminSyncHistoryItem[];
+};
+
 export type VerificationResult = 'SUPPORTED' | 'PARTIALLY_SUPPORTED' | 'NOT_SUPPORTED';
 
 export type MessageRole = 'user' | 'assistant';

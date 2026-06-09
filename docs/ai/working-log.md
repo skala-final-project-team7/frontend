@@ -27,6 +27,60 @@
 
 - lina-verify.png는 흰 배경이 포함된 원본 파일이다. PNG 배경 제거 버전 파일로 교체 시 `mix-blend-darken` 클래스 제거 필요.
 
+## 2026-06-09 - feature14: Admin 기본 shell 및 데이터 수집 메인 보드 구현
+
+### Scope
+
+- `docs/ai/current-plan.md`의 feature14 요구사항을 기준으로 Admin 운영 메인 보드(SCR-800)만 구현
+- `/admin`과 `/admin/operations`에서 동일한 Admin shell 진입 화면을 렌더링
+- `GET /api/admin/data`, `GET /api/admin/sync` 응답 타입과 mock handler를 추가하고 보드 카드/최근 동기화 이력에 매핑
+- `POST /api/admin/ingest`는 feature14 범위에서 placeholder 상태로 분리
+- ADMIN 권한 확인, loading/error/empty/access denied 상태를 화면에 분리
+
+### Test Cases
+
+- `/admin`과 `/admin/operations`가 Admin 보드 entry에 연결된다.
+- ADMIN 사용자는 Admin shell, 데이터 현황 카드, 최근 동기화 이력, ingest placeholder를 본다.
+- 최근 동기화 이력이 비어 있으면 empty state를 표시한다.
+- 현재 사용자가 `ADMIN`이 아니면 admin data/sync API 호출 없이 접근 차단 상태를 표시한다.
+- admin data 요청이 실패하면 retry 가능한 error state를 표시하고 재시도 후 정상 보드로 복구된다.
+
+### Changed Files
+
+- `src/__tests__/feature14.admin-operations-board.test.ts`: feature14 전용 route/admin board/access guard 테스트 추가
+- `src/pages/AdminEntryPage.vue`: placeholder를 실제 Admin shell, 운영 보드, 상태 분기 UI로 교체
+- `src/router/index.ts`: `/admin/operations` route 추가
+- `src/api/index.ts`: `getAdminDataOverview`, `getAdminSyncHistory` API 함수 추가
+- `src/types/api.ts`: admin data overview / sync history 타입 추가
+- `src/mocks/data.ts`, `src/mocks/handlers.ts`: admin data/sync mock payload와 handler 추가
+- `docs/ai/current-plan.md`: feature14 완료 체크 처리
+- `docs/ai/working-log.md`: feature14 작업 로그 기록
+
+### Commands
+
+- `npm test -- src/__tests__/feature14.admin-operations-board.test.ts` 최초 실행: failed
+- `npm test -- src/__tests__/feature14.admin-operations-board.test.ts`
+- `npm test`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- `npm test -- src/__tests__/feature14.admin-operations-board.test.ts` 최초 실행: failed, `/admin/operations` route와 Admin 보드 UI/상태 분기 미구현 확인
+- `npm test -- src/__tests__/feature14.admin-operations-board.test.ts`: passed
+- `npm test`: passed, 14 files / 114 tests passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed
+- `./scripts/verify.sh`: passed
+
+### Notes / Remaining Issues
+
+- `POST /api/admin/ingest` 실제 연결은 feature14 요구사항에 따라 placeholder 상태로 남겨두었고, feature15 이후 범위는 수정하지 않음.
+- 인증 백엔드 연결(feature13)이 아직 제외 상태이므로 Admin 접근 제어는 `GET /api/users/me` role 확인 기준으로만 동작한다.
+
 ## Log Template
 
 ```md

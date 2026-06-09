@@ -17,6 +17,8 @@
  */
 import { apiRequest, streamChatRequest } from './client';
 import type {
+  AdminDataOverview,
+  AdminSyncHistoryResponse,
   ChatQuestionRequest,
   ConfluencePagePreview,
   ConversationList,
@@ -45,6 +47,24 @@ export const API_LAYER_BOUNDARY = {
  */
 export function getCurrentUser(): Promise<CurrentUser> {
   return apiRequest<CurrentUser>('/api/users/me');
+}
+
+/**
+ * 관리자 데이터 수집 보드의 데이터 현황 요약을 조회한다.
+ *
+ * @returns 스페이스/페이지/첨부/벡터DB/청크/최종 동기화 시각 요약
+ */
+export function getAdminDataOverview(): Promise<AdminDataOverview> {
+  return apiRequest<AdminDataOverview>('/api/admin/data');
+}
+
+/**
+ * 관리자 데이터 수집 보드의 최근 동기화 이력을 조회한다.
+ *
+ * @returns 최근 동기화 이력 목록
+ */
+export function getAdminSyncHistory(): Promise<AdminSyncHistoryResponse> {
+  return apiRequest<AdminSyncHistoryResponse>('/api/admin/sync');
 }
 
 /**

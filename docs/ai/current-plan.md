@@ -224,13 +224,13 @@
 
 # feature14: Admin 기본 shell 및 데이터 수집 메인 보드 구현 (SCR-800)
 
-[ ] `frontend/docs/frames/[SCR-800] 관리자 데이터 수집 메인 보드.pdf` 기준으로 Admin shell, 좌측 nav, 관리자 프로필 영역, 데이터 파이프라인 영역을 구현
-[ ] `/admin` 또는 `/admin/operations` route를 추가하고 기본 진입 시 SCR-800 화면을 표시
-[ ] 데이터 현황 카드에 `GET /api/admin/data` 응답 필드(`totalSpaces`, `totalPages`, `totalAttachments`, `vectorDbSize`, `totalChunks`, `lastSyncAt`)를 매핑
-[ ] 최근 동기화 이력에는 `GET /api/admin/sync` 응답의 `status`, `updatedPages`, `deletedPages`, `duration`, `completedAt`을 매핑
-[ ] 데이터 수집/싱크 버튼은 `POST /api/admin/ingest` 계약을 확인한 뒤 연결하고, 연결 전에는 mock/placeholder 상태로 분리
-[ ] 관리자 API는 모두 Common Response wrapper를 사용하고, `/api/admin/*`의 Loading / Error / Empty 상태를 처리
-[ ] `role !== "ADMIN"` 접근 차단 회귀 테스트와 관리자 shell 렌더링 테스트 작성
+[x] `frontend/docs/frames/[SCR-800] 관리자 데이터 수집 메인 보드.pdf` 기준으로 Admin shell, 좌측 nav, 관리자 프로필 영역, 데이터 파이프라인 영역을 구현
+[x] `/admin` 또는 `/admin/operations` route를 추가하고 기본 진입 시 SCR-800 화면을 표시
+[x] 데이터 현황 카드에 `GET /api/admin/data` 응답 필드(`totalSpaces`, `totalPages`, `totalAttachments`, `vectorDbSize`, `totalChunks`, `lastSyncAt`)를 매핑
+[x] 최근 동기화 이력에는 `GET /api/admin/sync` 응답의 `status`, `updatedPages`, `deletedPages`, `duration`, `completedAt`을 매핑
+[x] 데이터 수집/싱크 버튼은 `POST /api/admin/ingest` 계약을 확인한 뒤 연결하고, 연결 전에는 mock/placeholder 상태로 분리
+[x] 관리자 API는 모두 Common Response wrapper를 사용하고, `/api/admin/*`의 Loading / Error / Empty 상태를 처리
+[x] `role !== "ADMIN"` 접근 차단 회귀 테스트와 관리자 shell 렌더링 테스트 작성
 
 # feature15: Admin 대시보드 구현 (SCR-810)
 
