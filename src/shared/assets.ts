@@ -19,6 +19,8 @@ import searchImageUrl from '../../frontend/assets/icons/search.png';
 import skpSymbolImageUrl from '../../frontend/assets/icons/skp_symbol-nobg.png';
 import linaAdminImageUrl from '../../frontend/assets/lina-character/lina-admin.png';
 import linaAskImageUrl from '../../frontend/assets/lina-character/lina-ask.png';
+import linaFlagImageUrl from '../../frontend/assets/lina-character/lina-flag.png';
+import linaRunningImageUrl from '../../frontend/assets/lina-character/lina-running.png';
 import linaSearchImageUrl from '../../frontend/assets/lina-character/lina-search.png';
 import linaUserImageUrl from '../../frontend/assets/lina-character/lina-user.png';
 import linaVerifyImageUrl from '../../frontend/assets/lina-character/lina-verify.png';
@@ -37,6 +39,8 @@ export {
   iconsImageUrl,
   linaAdminImageUrl,
   linaAskImageUrl,
+  linaFlagImageUrl,
+  linaRunningImageUrl,
   linaSearchImageUrl,
   linaUserImageUrl,
   linaVerifyImageUrl,

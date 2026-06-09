@@ -7,6 +7,7 @@ import router from '@/router';
 import {
   activateAdminKey,
   getAdminDataOverview,
+  getAdminIngestStatus,
   getAdminSyncHistory,
   getCurrentUser,
   startAdminIngestJob,
@@ -16,6 +17,7 @@ vi.mock('@/api', () => ({
   activateAdminKey: vi.fn(),
   getCurrentUser: vi.fn(),
   getAdminDataOverview: vi.fn(),
+  getAdminIngestStatus: vi.fn(),
   getAdminSyncHistory: vi.fn(),
   startAdminIngestJob: vi.fn(),
 }));
@@ -23,12 +25,30 @@ vi.mock('@/api', () => ({
 const mockedActivateAdminKey = vi.mocked(activateAdminKey);
 const mockedGetCurrentUser = vi.mocked(getCurrentUser);
 const mockedGetAdminDataOverview = vi.mocked(getAdminDataOverview);
+const mockedGetAdminIngestStatus = vi.mocked(getAdminIngestStatus);
 const mockedGetAdminSyncHistory = vi.mocked(getAdminSyncHistory);
 const mockedStartAdminIngestJob = vi.mocked(startAdminIngestJob);
+
+function createDeferredPromise<T>() {
+  let resolvePromise: (value: T) => void;
+  let rejectPromise: (reason?: unknown) => void;
+
+  const promise = new Promise<T>((resolve, reject) => {
+    resolvePromise = resolve;
+    rejectPromise = reject;
+  });
+
+  return {
+    promise,
+    resolve: resolvePromise!,
+    reject: rejectPromise!,
+  };
+}
 
 describe('feature14 Admin operations board', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.useRealTimers();
   });
 
   function mockAdminBoardBase() {
@@ -105,7 +125,8 @@ describe('feature14 Admin operations board', () => {
     expect(mockedGetAdminDataOverview).toHaveBeenCalledTimes(1);
     expect(mockedGetAdminSyncHistory).toHaveBeenCalledTimes(1);
     expect(wrapper.find('[data-testid="admin-page"]').exists()).toBe(true);
-    expect(wrapper.text()).toContain('Confluence 데이터 수집 및 동기화를 관리하세요');
+    expect(wrapper.text()).toContain('데이터 수집 및 동기화 관리');
+    expect(wrapper.text()).toContain('사용자별 문서를 최신 상태로 유지합니다.');
     expect(wrapper.text()).toContain('운영');
     expect(wrapper.text()).toContain('대시보드');
     expect(wrapper.text()).toContain('피드백');
@@ -120,8 +141,8 @@ describe('feature14 Admin operations board', () => {
     expect(wrapper.get('[data-testid="admin-last-sync-at"]').text()).toContain('06. 04.');
     expect(wrapper.get('[data-testid="admin-sync-row-sync-001"]').text()).toContain('COMPLETED');
     expect(wrapper.get('[data-testid="admin-sync-row-sync-002"]').text()).toContain('FAILED');
-    expect(wrapper.get('[data-testid="admin-ingest-placeholder"]').text()).toContain(
-      'API 연결 전 placeholder 상태',
+    expect(wrapper.get('[data-testid="admin-ingest-pipeline-card"]').text()).toContain(
+      '새로고침하면 진행 상태가 초기화될 수 있습니다',
     );
     expect(wrapper.get('[data-testid="admin-activate-key-button"]').text()).toContain(
       'API 키 발급',
@@ -155,6 +176,54 @@ describe('feature14 Admin operations board', () => {
     expect(mockedActivateAdminKey).toHaveBeenCalledTimes(1);
     expect(mockedStartAdminIngestJob).toHaveBeenCalledTimes(1);
     expect(mockedStartAdminIngestJob).toHaveBeenCalledWith({ mode: 'full' });
+  });
+
+  it('shows sequential action hints for key activation and ingest start while the request is in progress', async () => {
+    vi.useFakeTimers();
+    mockAdminBoardBase();
+    const activationDeferred = createDeferredPromise<{ activatedUntil: string }>();
+    const ingestDeferred = createDeferredPromise<{
+      jobId: string;
+      status: 'STARTED';
+      startedAt: string;
+    }>();
+
+    mockedActivateAdminKey.mockReturnValue(activationDeferred.promise);
+    mockedStartAdminIngestJob.mockReturnValue(ingestDeferred.promise);
+
+    const wrapper = mount(AdminEntryPage, {
+      global: {
+        plugins: [createPinia(), router],
+      },
+    });
+
+    await flushPromises();
+    await wrapper.get('[data-testid="admin-start-ingest-button"]').trigger('click');
+    await flushPromises();
+
+    expect(wrapper.get('[data-testid="admin-ingest-action-hint"]').text()).toContain(
+      'API Key를 발급하고 있습니다.',
+    );
+
+    activationDeferred.resolve({
+      activatedUntil: '2026-06-09T23:59:00+09:00',
+    });
+    await flushPromises();
+
+    expect(wrapper.get('[data-testid="admin-ingest-action-hint"]').text()).toContain(
+      '데이터 수집을 시작하고 있습니다.',
+    );
+
+    ingestDeferred.resolve({
+      jobId: 'job-uuid-011',
+      status: 'STARTED',
+      startedAt: '2026-06-09T12:00:00+09:00',
+    });
+    await flushPromises();
+
+    expect(wrapper.get('[data-testid="admin-ingest-action-hint"]').text()).toContain(
+      '데이터 불러오기를 시작했습니다.',
+    );
   });
 
   it('keeps the admin key activation button available as a separate test action', async () => {
@@ -246,6 +315,69 @@ describe('feature14 Admin operations board', () => {
     expect(wrapper.text()).toContain('최근 동기화 이력이 없습니다');
   });
 
+  it('renders the INLINE D ingest progress card with ETA and updates it on each polling tick', async () => {
+    vi.useFakeTimers();
+    mockAdminBoardBase();
+    mockedActivateAdminKey.mockResolvedValue({
+      activatedUntil: '2026-06-09T23:59:00+09:00',
+    });
+    mockedStartAdminIngestJob.mockResolvedValue({
+      jobId: 'job-uuid-010',
+      status: 'STARTED',
+      startedAt: '2026-06-09T12:00:00+09:00',
+    });
+    mockedGetAdminIngestStatus
+      .mockResolvedValueOnce({
+        jobId: 'job-uuid-010',
+        status: 'STARTED',
+        totalPages: 150,
+        processedPages: 0,
+        failedPages: 0,
+        startedAt: '2026-06-09T12:00:00+09:00',
+      })
+      .mockResolvedValueOnce({
+        jobId: 'job-uuid-010',
+        status: 'IN_PROGRESS',
+        totalPages: 150,
+        processedPages: 60,
+        failedPages: 1,
+        startedAt: '2026-06-09T12:00:00+09:00',
+      });
+
+    const wrapper = mount(AdminEntryPage, {
+      global: {
+        plugins: [createPinia(), router],
+      },
+    });
+
+    await flushPromises();
+    await wrapper.get('[data-testid="admin-start-ingest-button"]').trigger('click');
+    await flushPromises();
+
+    expect(wrapper.get('[data-testid="admin-ingest-pipeline-card"]').text()).toContain(
+      '새로고침하면 진행 상태가 초기화될 수 있습니다',
+    );
+
+    await vi.advanceTimersByTimeAsync(3000);
+    await flushPromises();
+
+    expect(mockedGetAdminIngestStatus).toHaveBeenCalledWith('job-uuid-010');
+    expect(wrapper.get('[data-testid="admin-ingest-status-pill"]').text()).toContain('STARTED');
+    expect(wrapper.get('[data-testid="admin-ingest-metric-elapsed"]').text()).not.toContain(
+      '00:00',
+    );
+
+    await vi.advanceTimersByTimeAsync(3000);
+    await flushPromises();
+
+    expect(wrapper.get('[data-testid="admin-ingest-status-pill"]').text()).toContain('IN_PROGRESS');
+    expect(wrapper.get('[data-testid="admin-ingest-progress-percent"]').text()).toContain('40%');
+    expect(wrapper.get('[data-testid="admin-ingest-metric-processed"]').text()).toContain(
+      '60 / 150',
+    );
+    expect(wrapper.get('[data-testid="admin-ingest-metric-eta"]').text()).not.toContain('계산 중');
+  });
+
   it('blocks non-admin users before requesting admin board APIs', async () => {
     mockedGetCurrentUser.mockResolvedValue({
       userId: 'user-001',
@@ -280,6 +412,17 @@ describe('feature14 Admin operations board', () => {
   });
 
   it('shows a retryable error state when the admin board request fails', async () => {
+    const reloadSpy = vi.fn();
+    const originalLocation = window.location;
+
+    // jsdom의 location.reload는 configurable하지 않아 테스트에서 location 객체를 교체한다.
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: {
+        ...originalLocation,
+        reload: reloadSpy,
+      },
+    });
     mockedGetCurrentUser.mockResolvedValue({
       userId: 'admin-001',
       name: '관 관리자',
@@ -317,7 +460,11 @@ describe('feature14 Admin operations board', () => {
     await wrapper.get('[data-testid="admin-board-error"] button').trigger('click');
     await flushPromises();
 
-    expect(mockedGetAdminDataOverview).toHaveBeenCalledTimes(2);
-    expect(wrapper.find('[data-testid="admin-sync-empty"]').exists()).toBe(true);
+    expect(reloadSpy).toHaveBeenCalledTimes(1);
+
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: originalLocation,
+    });
   });
 });

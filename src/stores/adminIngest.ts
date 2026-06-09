@@ -14,20 +14,20 @@
  */
 import { defineStore } from 'pinia';
 
-import {
-  activateAdminKey,
-  getAdminIngestStatus,
-  startAdminIngestJob,
-} from '@/api';
-import type {
-  AdminIngestJobStatus,
-  AdminIngestMode,
-  AdminIngestStatusResponse,
-} from '@/types/api';
+import { activateAdminKey, getAdminIngestStatus, startAdminIngestJob } from '@/api';
+import type { AdminIngestJobStatus, AdminIngestMode, AdminIngestStatusResponse } from '@/types/api';
 
 const INGEST_POLL_INTERVAL_MS = 3000;
+const ELAPSED_CLOCK_INTERVAL_MS = 1000;
+const MAX_SPEED_SAMPLES = 4;
 
-let activeIngestPollTimer: ReturnType<typeof window.setInterval> | null = null;
+let activeIngestPollTimer: number | null = null;
+let activeElapsedClockTimer: number | null = null;
+
+type IngestSpeedSample = {
+  processedPages: number;
+  elapsedSeconds: number;
+};
 
 type AdminIngestState = {
   activatedUntil: string | null;
@@ -41,6 +41,8 @@ type AdminIngestState = {
   isStartingIngest: boolean;
   isPolling: boolean;
   lastError: string;
+  speedSamples: IngestSpeedSample[];
+  clockNowMs: number;
 };
 
 export const useAdminIngestStore = defineStore('adminIngest', {
@@ -56,6 +58,8 @@ export const useAdminIngestStore = defineStore('adminIngest', {
     isStartingIngest: false,
     isPolling: false,
     lastError: '',
+    speedSamples: [],
+    clockNowMs: Date.now(),
   }),
 
   getters: {
@@ -78,6 +82,76 @@ export const useAdminIngestStore = defineStore('adminIngest', {
     isAdminKeyActive(state): boolean {
       return state.activatedUntil ? new Date(state.activatedUntil).getTime() > Date.now() : false;
     },
+
+    elapsedSeconds(state): number {
+      if (!state.startedAt) {
+        return 0;
+      }
+
+      return Math.max(
+        0,
+        Math.floor((state.clockNowMs - new Date(state.startedAt).getTime()) / 1000),
+      );
+    },
+
+    formattedElapsed(): string {
+      return formatDuration(this.elapsedSeconds);
+    },
+
+    averagePagesPerSecond(state): number {
+      if (state.speedSamples.length < 2) {
+        return 0;
+      }
+
+      const intervalRates: number[] = [];
+
+      for (let index = 1; index < state.speedSamples.length; index += 1) {
+        const previousSample = state.speedSamples[index - 1];
+        const currentSample = state.speedSamples[index];
+        const elapsedDelta = currentSample.elapsedSeconds - previousSample.elapsedSeconds;
+        const processedDelta = currentSample.processedPages - previousSample.processedPages;
+
+        if (elapsedDelta > 0 && processedDelta >= 0) {
+          intervalRates.push(processedDelta / elapsedDelta);
+        }
+      }
+
+      if (intervalRates.length === 0) {
+        return 0;
+      }
+
+      return intervalRates.reduce((sum, rate) => sum + rate, 0) / intervalRates.length;
+    },
+
+    estimatedRemainingSeconds(): number | null {
+      if (this.status === 'COMPLETED') {
+        return 0;
+      }
+
+      if (this.status === 'FAILED' || this.totalPages <= 0) {
+        return null;
+      }
+
+      const remainingPages = Math.max(0, this.totalPages - this.processedPages);
+
+      if (remainingPages === 0) {
+        return 0;
+      }
+
+      if (this.averagePagesPerSecond <= 0) {
+        return null;
+      }
+
+      return Math.ceil(remainingPages / this.averagePagesPerSecond);
+    },
+
+    formattedEta(): string {
+      if (this.estimatedRemainingSeconds === null) {
+        return '계산 중';
+      }
+
+      return formatDuration(this.estimatedRemainingSeconds);
+    },
   },
 
   actions: {
@@ -94,6 +168,26 @@ export const useAdminIngestStore = defineStore('adminIngest', {
       this.processedPages = response.processedPages;
       this.failedPages = response.failedPages;
       this.lastError = '';
+      this.clockNowMs = Date.now();
+      this.captureSpeedSample(response);
+    },
+
+    captureSpeedSample(response: Pick<AdminIngestStatusResponse, 'processedPages' | 'startedAt'>) {
+      const elapsedSeconds = Math.max(
+        0,
+        Math.floor((Date.now() - new Date(response.startedAt).getTime()) / 1000),
+      );
+      const nextSample: IngestSpeedSample = {
+        processedPages: response.processedPages,
+        elapsedSeconds,
+      };
+
+      if (this.speedSamples.at(-1)?.elapsedSeconds === nextSample.elapsedSeconds) {
+        this.speedSamples[this.speedSamples.length - 1] = nextSample;
+        return;
+      }
+
+      this.speedSamples = [...this.speedSamples, nextSample].slice(-MAX_SPEED_SAMPLES);
     },
 
     async ensureAdminKeyActive() {
@@ -126,8 +220,14 @@ export const useAdminIngestStore = defineStore('adminIngest', {
         this.totalPages = 0;
         this.processedPages = 0;
         this.failedPages = 0;
+        this.speedSamples = [];
+        this.clockNowMs = Date.now();
 
-        this.startPolling();
+        if (response.status === 'COMPLETED' || response.status === 'FAILED') {
+          this.stopPolling();
+        } else {
+          this.startPolling();
+        }
 
         return response;
       } finally {
@@ -157,16 +257,30 @@ export const useAdminIngestStore = defineStore('adminIngest', {
     startPolling() {
       this.stopPolling();
       this.isPolling = true;
+      this.startElapsedClock();
 
       activeIngestPollTimer = window.setInterval(() => {
         void this.pollStatus();
       }, INGEST_POLL_INTERVAL_MS);
     },
 
+    startElapsedClock() {
+      this.clockNowMs = Date.now();
+
+      activeElapsedClockTimer = window.setInterval(() => {
+        this.clockNowMs = Date.now();
+      }, ELAPSED_CLOCK_INTERVAL_MS);
+    },
+
     stopPolling() {
       if (activeIngestPollTimer) {
         window.clearInterval(activeIngestPollTimer);
         activeIngestPollTimer = null;
+      }
+
+      if (activeElapsedClockTimer) {
+        window.clearInterval(activeElapsedClockTimer);
+        activeElapsedClockTimer = null;
       }
 
       this.isPolling = false;
@@ -183,6 +297,19 @@ export const useAdminIngestStore = defineStore('adminIngest', {
       this.isActivatingKey = false;
       this.isStartingIngest = false;
       this.lastError = '';
+      this.speedSamples = [];
+      this.clockNowMs = Date.now();
     },
   },
 });
+
+function formatDuration(totalSeconds: number): string {
+  const minutes = Math.floor(totalSeconds / 60)
+    .toString()
+    .padStart(2, '0');
+  const seconds = Math.floor(totalSeconds % 60)
+    .toString()
+    .padStart(2, '0');
+
+  return `${minutes}:${seconds}`;
+}

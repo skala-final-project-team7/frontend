@@ -69,7 +69,7 @@ describe('feature6 Chat mock API foundation', () => {
       userId: 'user-001',
       name: '이다연',
       email: 'dayeon@example.com',
-      role: 'USER',
+      role: mockCurrentUser.role,
       profileImageUrl: mockCurrentUser.profileImageUrl,
       lastLoginAt: '2026-05-20T18:00:00+09:00',
     });

@@ -125,13 +125,13 @@ export const mockHandlers = [
     const job = mockAdminIngestJobs.get(jobId);
 
     if (!job) {
-      return HttpResponse.json<ApiErrorResponse>(
+      return HttpResponse.json(
         {
           isSuccess: false,
           code: 404,
           errorCode: 'RESOURCE_NOT_FOUND',
           message: '수집 작업을 찾을 수 없습니다',
-        },
+        } satisfies ApiErrorResponse,
         { status: 404 },
       );
     }
@@ -143,7 +143,7 @@ export const mockHandlers = [
     );
     const sequence = mockAdminIngestStatusSequence[sequenceIndex];
 
-    return HttpResponse.json<ApiSuccessResponse<typeof sequence>>({
+    return HttpResponse.json({
       isSuccess: true,
       code: 200,
       message: '수집 상태 조회 성공',
@@ -152,7 +152,7 @@ export const mockHandlers = [
         jobId,
         startedAt: job.startedAtIso,
       },
-    });
+    } satisfies ApiSuccessResponse<typeof sequence>);
   }),
 
   // TODO(MOCK): GET /api/conversations

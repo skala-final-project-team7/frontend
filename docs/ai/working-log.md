@@ -2397,7 +2397,6 @@
 - 실제 `/api/auth/login`, OAuth callback, `GET /api/users/me`, 토큰 저장/갱신/로그아웃 처리는 feature13 범위로 남긴다.
 - API, DB, 인증/인가 명세는 변경하지 않음.
 
-
 ## 2026-06-08 - refactor: feature12 Landing/Login 디자인 정리
 
 - `/` 랜딩을 3패널 스크롤 구조로 정리하고, 첫 화면에 큐트 LINA 로고와 장식용 지식 그래프 배경을 배치했다.
@@ -2433,14 +2432,12 @@
 
 - lina-verify.png는 흰 배경이 포함된 원본 파일이다. PNG 배경 제거 버전 파일로 교체 시 `mix-blend-darken` 클래스 제거 필요.
 
-
 ## 2026-06-09 - refactor: feature12 Landing/Login 인터랙션 정리
 
 - `/login` 역할 카드의 rise animation을 내부 래퍼로 분리해, 페이지 진입 직후에도 hover impact가 즉시 보이도록 조정했다.
 - 랜딩 `Verify` mockup을 상하 2박스 구조에서 고정 높이 `list / graph` 토글 구조로 정리하고 기본값을 `graph`로 맞췄다.
 - 랜딩 `Ask` 섹션의 입력 박스와 화살표 위치를 여러 차례 조정해 겹침을 줄이고 시선 흐름을 정리했다.
 - `Ask` 캐릭터 foot shadow 실험은 제거하고, 현재는 원본 이미지 그대로 사용한다.
-
 
 ## 2026-06-09 - feature14: Admin 기본 shell 및 데이터 수집 메인 보드 구현
 
@@ -2597,3 +2594,236 @@
 ### Notes / Remaining Issues
 
 - 현재 `GET /api/admin/data` 계약의 `totalSpaces` 필드와 UI 카드까지 사용자 기준 지표로 바꾸려면 backend/API spec 변경이 선행되어야 한다.
+
+## 2026-06-09 - follow-up: Admin ingest store 연결 및 INLINE D 진행 카드 반영
+
+### Scope
+
+- `adminIngest` Pinia store 오류를 수정하고 Admin 운영 보드 상단 `데이터 파이프라인` 영역에 `ingest-status-preview.html`의 `INLINE · D` 인라인 진행 시안을 적용
+- `POST /api/admin/ingest` 이후 `GET /api/admin/ingest/status/{jobId}` polling 결과를 3초 간격으로 반영
+- 최근 몇 개 polling 샘플의 이동평균 속도로 ETA를 계산하고, `FAILED` 상태에서는 CTA를 `다시 시도`로 유지
+
+### Test Cases
+
+- `/admin` 운영 보드가 인라인 진행 카드와 새로고침 note를 렌더링한다
+- `데이터 불러오기` 클릭 후 polling tick마다 `STARTED -> IN_PROGRESS` 상태, 진행률, 실패 수, ETA가 갱신된다
+- `feature6` mock API 테스트가 현재 `mockCurrentUser` 계약과 일치한다
+
+### Changed Files
+
+- `src/stores/adminIngest.ts`: polling timer 타입 오류 수정, 이동평균 속도/ETA/경과 시간 getter 추가, terminal status 분기 정리
+- `src/pages/AdminEntryPage.vue`: local ingest state를 store로 대체하고 `INLINE · D` 스타일 인라인 진행 카드 및 ETA/속도/상태 pill UI 적용
+- `src/shared/assets.ts`: running/flag 캐릭터 asset export 추가
+- `src/mocks/handlers.ts`: ingest status MSW handler 응답 타입 충돌 수정
+- `src/__tests__/feature14.admin-operations-board.test.ts`: polling 기반 진행 카드/ETA 업데이트 테스트 추가
+- `src/__tests__/feature6.mock-api.test.ts`: 현재 mock user role 계약에 맞게 기대값 보정
+
+### Commands
+
+- `npm test -- src/__tests__/feature14.admin-operations-board.test.ts`
+- `npm run typecheck`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- feature14 admin 보드 테스트: passed, 1 file / 10 tests passed
+- `./scripts/lint.sh`: passed
+
+## 2026-06-09 - follow-up: Admin ingest 시작 단계 문구 및 경과 시간 갱신 보정
+
+### Scope
+
+- 자동 key activation이 있어도 시작 토스트를 `데이터 불러오기를 시작했습니다.` 1회로 통일
+- Admin 진행 카드 하단 안내 문구가 실제 API 호출 단계에 맞춰 `API Key 발급 -> 데이터 수집 시작 -> 시작 완료` 순서로 보이도록 조정
+- 경과 시간이 00:00에 머무르지 않도록 store에 1초 clock tick을 추가
+
+### Changed Files
+
+- `src/stores/adminIngest.ts`: polling과 별도로 1초 elapsed clock timer 추가
+- `src/pages/AdminEntryPage.vue`: 단계형 action hint 추가, 시작 토스트 단일화, elapsed/action hint test id 추가
+- `src/__tests__/feature14.admin-operations-board.test.ts`: 단계형 안내 문구와 elapsed 갱신 테스트 추가
+- `docs/ai/working-log.md`: 후속 작업 기록 추가
+
+### Commands
+
+- `npm test -- src/__tests__/feature14.admin-operations-board.test.ts`
+- `./scripts/lint.sh`
+
+### Results
+
+- feature14 admin 보드 테스트: passed, 1 file / 11 tests passed
+- `./scripts/lint.sh`: passed
+
+## 2026-06-09 - follow-up: Admin 에러 상태 마스코트 추가
+
+### Scope
+
+- 관리자 보드 로딩 에러 화면 상단에 `mascotWrongImageUrl` 이미지를 추가해 빈 에러 상태의 시각 밀도를 보강
+
+### Changed Files
+
+- `src/pages/AdminEntryPage.vue`: 에러 상태 상단에 wrong mascot 이미지 추가
+- `docs/ai/working-log.md`: 후속 작업 기록 추가
+
+### Commands
+
+- `npm test -- src/__tests__/feature14.admin-operations-board.test.ts`
+- `./scripts/lint.sh`
+
+### Results
+
+- feature14 admin 보드 테스트: passed, 1 file / 11 tests passed
+- `./scripts/lint.sh`: passed
+
+## 2026-06-09 - follow-up: Admin ETA idle 표기 정리
+
+### Scope
+
+- 속도와 동일하게 ETA도 시작 전/초반 샘플 부족 구간에는 `계산 중` 대신 `-`로 표시되도록 조정
+
+### Changed Files
+
+- `src/pages/AdminEntryPage.vue`: ETA 표시 computed를 `계산 중 -> -` 규칙으로 보정
+- `docs/ai/working-log.md`: 후속 작업 기록 추가
+
+### Commands
+
+- `npm test -- src/__tests__/feature14.admin-operations-board.test.ts`
+- `./scripts/lint.sh`
+
+### Results
+
+- feature14 admin 보드 테스트: passed, 1 file / 11 tests passed
+- `./scripts/lint.sh`: passed
+
+## 2026-06-09 - follow-up: Admin 진행 카드 idle 표기 및 note 위치 조정
+
+### Scope
+
+- 진행 카드 설명 문구 색을 이전 대비로 되돌림
+- 새로고침 note를 버튼 아래로 이동
+- 상태 pill idle 표기를 `IDLE`로 변경
+- idle 상태의 ETA/속도는 `계산 중` 대신 `-`로 표시
+
+### Changed Files
+
+- `src/pages/AdminEntryPage.vue`: 카피 색상/배치 수정, idle 상태 표시값 조정
+- `docs/ai/working-log.md`: 후속 작업 기록 추가
+
+### Commands
+
+- `npm test -- src/__tests__/feature14.admin-operations-board.test.ts`
+- `./scripts/lint.sh`
+
+### Results
+
+- feature14 admin 보드 테스트: passed, 1 file / 11 tests passed
+- `./scripts/lint.sh`: passed
+
+## 2026-06-09 - follow-up: Admin 설명 문구 대비 조정
+
+### Scope
+
+- `사용자별 문서를 최신 상태로 유지합니다.` 설명 문구의 가독성을 높이기 위해 텍스트 색을 한 단계 진하게 조정
+- 바뀐 카피에 맞춰 feature14 테스트 기대 문자열 갱신
+
+### Changed Files
+
+- `src/pages/AdminEntryPage.vue`: 진행 카드 설명 문구 색을 `text-overlay-dark-60`로 조정
+- `src/__tests__/feature14.admin-operations-board.test.ts`: 현재 운영 탭 카피 기준으로 기대값 갱신
+- `docs/ai/working-log.md`: 후속 작업 기록 추가
+
+### Commands
+
+- `npm test -- src/__tests__/feature14.admin-operations-board.test.ts`
+- `./scripts/lint.sh`
+
+### Results
+
+- feature14 admin 보드 테스트: passed, 1 file / 11 tests passed
+- `./scripts/lint.sh`: passed
+
+## 2026-06-09 - follow-up: Admin note 아이콘 추가 및 사이드바 고정 스크롤
+
+### Scope
+
+- 새로고침 안내 note 앞에 정보 아이콘 추가
+- Admin 레이아웃에서 사이드바는 화면에 고정하고 메인 콘텐츠 영역만 세로 스크롤되도록 조정
+
+### Changed Files
+
+- `src/pages/AdminEntryPage.vue`: note 아이콘 추가, `h-screen`/`overflow` 레이아웃으로 사이드바 고정
+- `docs/ai/working-log.md`: 후속 작업 기록 추가
+
+### Commands
+
+- `npm test -- src/__tests__/feature14.admin-operations-board.test.ts`
+- `./scripts/lint.sh`
+
+### Results
+
+- feature14 admin 보드 테스트: passed, 1 file / 11 tests passed
+- `./scripts/lint.sh`: passed
+
+## 2026-06-09 - follow-up: Admin 진행 카드 카피 정리 및 완료 flag 위치 미세 조정
+
+### Scope
+
+- `Inline · D` 태그를 제거하고 `데이터 파이프라인` 설명 문구를 더 제품형 카피로 정리
+- 완료 상태 flag LINA가 진행바를 더 자연스럽게 덮도록 오른쪽 위치를 소폭 조정
+
+### Changed Files
+
+- `src/pages/AdminEntryPage.vue`: 태그 제거, 상태별 설명 문구 정리, 완료 flag offset 조정
+- `docs/ai/working-log.md`: 후속 작업 기록 추가
+
+### Commands
+
+- `npm test -- src/__tests__/feature14.admin-operations-board.test.ts`
+- `./scripts/lint.sh`
+
+### Results
+
+- feature14 admin 보드 테스트: passed, 1 file / 11 tests passed
+- `./scripts/lint.sh`: passed
+
+## 2026-06-09 - follow-up: Admin 에러 재조회 동작 및 로그 EOF 기준 재확인
+
+### Scope
+
+- `보드 다시 불러오기` 버튼이 전체 브라우저 새로고침이 아니라 `loadAdminBoard()` 재호출임을 확인
+- `working-log.md` 기록은 앞으로도 파일 맨 마지막 EOF에만 append한다는 기준 재확인
+
+### Changed Files
+
+- `docs/ai/working-log.md`: EOF append 기준 확인용 후속 작업 기록 추가
+
+### Notes / Remaining Issues
+
+- 이후 `working-log.md` 추가 기록은 tail 확인 후 EOF에만 append한다.
+
+## 2026-06-09 - follow-up: Admin 에러 재시도 전체 새로고침 전환
+
+### Scope
+
+- 관리자 보드 에러 상태의 `보드 다시 불러오기` 버튼 동작을 데이터 재조회에서 `location.reload()` 기반 전체 페이지 새로고침으로 변경
+- 관련 주석 제거 및 feature14 에러 상태 테스트를 reload 호출 검증으로 갱신
+
+### Changed Files
+
+- `src/pages/AdminEntryPage.vue`: `ErrorRetryState` retry handler를 `reloadAdminBoard()`로 교체
+- `src/__tests__/feature14.admin-operations-board.test.ts`: jsdom에서 `window.location` 교체 방식으로 reload 호출 검증
+- `docs/ai/working-log.md`: 후속 작업 기록 추가
+
+### Commands
+
+- `npm test -- src/__tests__/feature14.admin-operations-board.test.ts`
+- `./scripts/lint.sh`
+
+### Results
+
+- feature14 admin 보드 테스트: passed, 1 file / 11 tests passed
+- `./scripts/lint.sh`: passed
