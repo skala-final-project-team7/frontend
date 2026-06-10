@@ -23,6 +23,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useRouter } from 'vue-router';
 import {
+  AlertTriangle,
   ArrowLeft,
   Database,
   HardDriveDownload,
@@ -154,6 +155,7 @@ const syncChartBars = computed(() => {
     label: dateLabels[index],
     timeLabel: hasDuplicateDateLabels ? formatChartHour(item.completedAt) : '',
     heightPercent: Math.max(Math.round((item.updatedPages / maxUpdatedPages) * 100), 6),
+    updatedPages: item.updatedPages,
     isFailed: item.status === 'FAILED',
     isLatest: index === syncItems.length - 1,
   }));
@@ -213,13 +215,39 @@ const durationChart = computed(() => {
   };
 });
 
+// Qdrant 기본 플랜 상한: 4 GB — 플랜 변경 시 이 값을 수정한다.
+const VECTOR_DB_CAPACITY_GB = 4;
+const vectorDbUsedGb = computed(() => {
+  if (!adminDataOverview.value) return 0;
+  const m = adminDataOverview.value.vectorDbSize.match(/^([\d.]+)/);
+  return m ? parseFloat(m[1]) : 0;
+});
+const vectorDbUsagePercent = computed(() =>
+  Math.min(100, Math.round((vectorDbUsedGb.value / VECTOR_DB_CAPACITY_GB) * 100)),
+);
+const isVectorDbLow = computed(() => vectorDbUsagePercent.value >= 80);
+const vectorDbFillColor = computed(() => {
+  if (vectorDbUsagePercent.value >= 80) return 'var(--color-error)'; // 위험 — 빨강
+  if (vectorDbUsagePercent.value >= 60) return 'var(--color-warning)'; // 주의 — 노랑
+  return 'var(--color-success)'; // 여유 — 초록
+});
+
 const hoveredDurationPoint = ref<{
   syncId: string;
   xPercent: number;
+  yPercent: number;
   isFailed: boolean;
   dateLabel: string;
   durationSeconds: number;
 } | null>(null);
+
+const hoveredBarId = ref<string | null>(null);
+
+// 페이드아웃(150ms) 중 null이 된 hoveredDurationPoint 대신 마지막 값을 유지해 컨텐츠 공백 방지
+const displayedDurationPoint = ref<typeof hoveredDurationPoint.value>(null);
+watch(hoveredDurationPoint, (val) => {
+  if (val !== null) displayedDurationPoint.value = val;
+});
 
 const pipelineStatusLabel = computed(() =>
   status.value ? getStatusLabel(status.value) : '대기 중',
@@ -449,7 +477,6 @@ function goToLogin() {
   void router.push('/login');
 }
 
-
 async function handleStartIngest() {
   try {
     await adminIngestStore.startIngest('full');
@@ -591,8 +618,12 @@ async function handleStartIngest() {
         <!-- ── 운영 (SCR-800) ── -->
         <section v-if="activeSection === 'operations'" class="px-8 py-8">
           <header class="mb-7">
-            <h2 class="text-[1.55rem] font-bold tracking-[-0.04em] text-overlay-dark-80">문서 데이터 관리</h2>
-            <p class="mt-1 text-[0.88rem] text-overlay-dark-40">검색에 사용할 사용자 문서를 수집하고 최신 상태로 유지합니다.</p>
+            <h2 class="text-[1.55rem] font-bold tracking-[-0.04em] text-overlay-dark-80">
+              문서 데이터 관리
+            </h2>
+            <p class="mt-1 text-[0.88rem] text-overlay-dark-40">
+              검색에 사용할 사용자 문서를 수집하고 최신 상태로 유지합니다.
+            </p>
           </header>
 
           <!-- 데이터 파이프라인 -->
@@ -605,7 +636,9 @@ async function handleStartIngest() {
                 <h3 class="text-[1.08rem] font-semibold tracking-[-0.03em] text-overlay-dark-80">
                   문서 수집 현황
                 </h3>
-                <p class="mt-2 line-clamp-2 min-h-[3rem] text-[0.8rem] leading-6 text-overlay-dark-40">
+                <p
+                  class="mt-2 line-clamp-2 min-h-[3rem] text-[0.8rem] leading-6 text-overlay-dark-40"
+                >
                   {{ pipelineDescription }}
                 </p>
                 <div class="mt-5 flex flex-wrap gap-2">
@@ -735,7 +768,7 @@ async function handleStartIngest() {
             <div class="grid grid-cols-2 gap-3 xl:grid-cols-4">
               <!-- 마지막 동기화 -->
               <article
-                class="col-span-2 flex items-center justify-between gap-2.5 rounded-2xl border border-bg-300/60 bg-primary-white py-4 pl-5 pr-2 shadow-[0_2px_8px_rgba(15,23,42,0.03)] transition-[transform,box-shadow] duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_32px_-20px_rgba(15,23,42,0.22)]"
+                class="col-span-2 flex items-center justify-between gap-2.5 rounded-2xl border border-bg-300/60 bg-primary-white py-4 pl-5 pr-2 shadow-[0_2px_8px_rgba(15,23,42,0.03)]"
               >
                 <div class="min-w-0">
                   <p
@@ -768,7 +801,7 @@ async function handleStartIngest() {
               <!-- 최근 동기화 · 업데이트 페이지 바차트 -->
               <article
                 data-testid="admin-sync-bar-chart"
-                class="col-span-2 row-span-2 flex min-h-[150px] flex-col rounded-2xl border border-bg-300/60 bg-primary-white px-[18px] py-4 shadow-[0_2px_8px_rgba(15,23,42,0.03)] transition-[transform,box-shadow] duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_32px_-20px_rgba(15,23,42,0.22)]"
+                class="col-span-2 row-span-2 flex min-h-[150px] flex-col rounded-2xl border border-bg-300/60 bg-primary-white px-[18px] py-4 shadow-[0_2px_8px_rgba(15,23,42,0.03)]"
               >
                 <div class="flex items-baseline justify-between gap-2">
                   <p class="text-[0.7rem] text-overlay-dark-40">최근 동기화 · 업데이트 페이지</p>
@@ -781,20 +814,40 @@ async function handleStartIngest() {
                   <div
                     v-for="bar in syncChartBars"
                     :key="bar.syncId"
-                    class="flex flex-1 flex-col items-center gap-1.5"
+                    class="relative flex flex-1 flex-col items-center gap-1.5"
+                    @mouseenter="hoveredBarId = bar.syncId"
+                    @mouseleave="hoveredBarId = null"
                   >
                     <div class="flex w-full flex-1 items-end justify-center">
+                      <!-- 바 element에 relative 적용 → 툴팁이 바 상단 바로 위에 밀착 -->
                       <div
-                        class="w-full max-w-7 rounded-t"
+                        class="relative w-full max-w-7 rounded-t transition-opacity duration-150"
                         :class="
                           bar.isFailed
                             ? 'bg-bg-300'
-                            : bar.isLatest
+                            : bar.isLatest || hoveredBarId === bar.syncId
                               ? 'bg-gradient-to-b from-primary-light to-primary'
                               : 'bg-gradient-to-b from-primary-light to-primary opacity-50'
                         "
                         :style="{ height: `${bar.heightPercent}%` }"
-                      />
+                      >
+                        <!-- 툴팁: bottom-full 로 바 상단 바로 위 -->
+                        <div
+                          v-if="hoveredBarId === bar.syncId"
+                          class="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-lg border border-bg-300/60 bg-primary-white px-2.5 py-1.5 text-[0.66rem] shadow-[0_6px_16px_-8px_rgba(15,23,42,0.25)]"
+                        >
+                          <p
+                            class="font-semibold"
+                            :class="bar.isFailed ? 'text-status-error' : 'text-overlay-dark-80'"
+                          >
+                            {{ bar.label }}{{ bar.timeLabel ? ` ${bar.timeLabel}` : '' }}
+                            <b v-if="!bar.isFailed" class="text-primary"
+                              >{{ formatNumber(bar.updatedPages) }}p</b
+                            >
+                            <span v-else>수집 실패</span>
+                          </p>
+                        </div>
+                      </div>
                     </div>
                     <span
                       class="text-center text-[0.58rem] leading-tight"
@@ -819,9 +872,136 @@ async function handleStartIngest() {
                 </p>
               </article>
 
+              <!-- VectorDB 스토리지 -->
+              <article
+                data-testid="admin-data-card-vectorDbSize"
+                class="col-span-2 rounded-2xl border bg-primary-white px-[18px] py-4 shadow-[0_2px_8px_rgba(15,23,42,0.03)]"
+                :class="isVectorDbLow ? 'border-status-error/40' : 'border-bg-300/60'"
+              >
+                <!-- 타이틀 행: 카드 좌측 상단 정렬 -->
+                <div class="mb-3 flex items-baseline justify-between gap-2">
+                  <p class="text-[0.7rem] text-overlay-dark-40">VectorDB 스토리지</p>
+                  <p
+                    data-testid="admin-data-card-totalChunks"
+                    class="text-[0.66rem] text-overlay-dark-30"
+                  >
+                    청크 {{ formatNumber(adminDataOverview.totalChunks) }}개
+                  </p>
+                </div>
+
+                <div class="flex items-center gap-5">
+                  <!-- 원통 SVG: 링 없는 클린 디자인, 가득 찼을 때 뚜껑 없는 자연스러운 모양 -->
+                  <div class="shrink-0">
+                    <svg viewBox="0 0 36 52" width="36" height="52" aria-hidden="true">
+                      <defs>
+                        <clipPath id="vdb-body-clip">
+                          <rect x="0" y="8" width="36" height="36" />
+                        </clipPath>
+                      </defs>
+                      <!-- 빈 바디 -->
+                      <rect x="0" y="8" width="36" height="36" fill="#e4e6e8" />
+                      <!-- 채움 레벨 (아래부터) -->
+                      <rect
+                        x="0"
+                        :y="8 + 36 * (1 - vectorDbUsagePercent / 100)"
+                        width="36"
+                        :height="36 * (vectorDbUsagePercent / 100)"
+                        :fill="vectorDbFillColor"
+                        clip-path="url(#vdb-body-clip)"
+                      />
+                      <!-- 바닥 캡 -->
+                      <ellipse
+                        cx="18"
+                        cy="44"
+                        rx="18"
+                        ry="7"
+                        :fill="vectorDbUsagePercent > 3 ? vectorDbFillColor : '#d6d8da'"
+                      />
+                      <!-- 채움면 상단 타원 (가득 찰 때는 숨겨 뚜껑처럼 안 보이게) -->
+                      <ellipse
+                        v-if="vectorDbUsagePercent > 3 && vectorDbUsagePercent < 90"
+                        cx="18"
+                        :cy="8 + 36 * (1 - vectorDbUsagePercent / 100)"
+                        rx="18"
+                        ry="7"
+                        :fill="vectorDbFillColor"
+                      />
+                      <!-- 중간 수평 링 선 (구조감) -->
+                      <ellipse
+                        cx="18"
+                        cy="20"
+                        rx="18"
+                        ry="7"
+                        fill="none"
+                        stroke="rgba(255,255,255,0.45)"
+                        stroke-width="1.5"
+                      />
+                      <ellipse
+                        cx="18"
+                        cy="32"
+                        rx="18"
+                        ry="7"
+                        fill="none"
+                        stroke="rgba(255,255,255,0.45)"
+                        stroke-width="1.5"
+                      />
+                      <!-- 상단 캡: ≥90%일 때 채움 색으로 자연스럽게 연결 -->
+                      <ellipse
+                        cx="18"
+                        cy="8"
+                        rx="18"
+                        ry="7"
+                        :fill="vectorDbUsagePercent >= 90 ? vectorDbFillColor : '#f2f3f5'"
+                      />
+                      <!-- 상단 링 (캡 위에 그려야 보임) -->
+                      <ellipse
+                        cx="18"
+                        cy="8"
+                        rx="18"
+                        ry="7"
+                        fill="none"
+                        stroke="rgba(255,255,255,0.45)"
+                        stroke-width="1.5"
+                      />
+                    </svg>
+                  </div>
+
+                  <!-- 데이터 영역 -->
+                  <div class="min-w-0 flex-1">
+                    <p class="text-[1.3rem] font-bold tracking-[-0.05em] text-overlay-dark-80">
+                      {{ adminDataOverview.vectorDbSize }}
+                      <span class="text-[0.78rem] font-normal text-overlay-dark-30">
+                        / {{ VECTOR_DB_CAPACITY_GB }} GB
+                      </span>
+                    </p>
+                    <!-- 프로그레스바 -->
+                    <div class="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-bg-200">
+                      <div
+                        class="h-full rounded-full transition-[width] duration-700 ease-out"
+                        :style="{
+                          width: `${vectorDbUsagePercent}%`,
+                          background: vectorDbFillColor,
+                        }"
+                      />
+                    </div>
+                    <p class="mt-1 text-[0.62rem] text-overlay-dark-30">
+                      {{ vectorDbUsagePercent }}% 사용 중
+                    </p>
+                    <!-- 경고 문구 -->
+                    <div
+                      v-if="isVectorDbLow"
+                      class="mt-2 flex items-start gap-1.5 text-[0.7rem] text-status-error"
+                    >
+                      <AlertTriangle aria-hidden="true" class="mt-px size-3 shrink-0" />
+                      <p>저장공간이 부족합니다. 프로그램 책임자에게 문의하세요.</p>
+                    </div>
+                  </div>
+                </div>
+              </article>
+
               <!-- 스페이스 / 페이지 / 첨부파일 -->
               <article
-                class="col-span-2 rounded-2xl border border-bg-300/60 bg-primary-white px-[18px] py-4 shadow-[0_2px_8px_rgba(15,23,42,0.03)] transition-[transform,box-shadow] duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_32px_-20px_rgba(15,23,42,0.22)]"
+                class="col-span-2 rounded-2xl border border-bg-300/60 bg-primary-white px-[18px] py-4 shadow-[0_2px_8px_rgba(15,23,42,0.03)]"
               >
                 <div class="flex h-full items-stretch">
                   <div
@@ -841,57 +1021,45 @@ async function handleStartIngest() {
                 </div>
               </article>
 
-              <!-- VectorDB -->
-              <article
-                data-testid="admin-data-card-vectorDbSize"
-                class="rounded-2xl border border-bg-300/60 bg-primary-white px-[18px] py-4 shadow-[0_2px_8px_rgba(15,23,42,0.03)] transition-[transform,box-shadow] duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_32px_-20px_rgba(15,23,42,0.22)]"
-              >
-                <p class="text-[0.7rem] text-overlay-dark-40">VectorDB</p>
-                <p class="mt-1.5 text-[1.4rem] font-bold tracking-[-0.05em] text-overlay-dark-80">
-                  {{ adminDataOverview.vectorDbSize }}
-                </p>
-              </article>
-
-              <!-- 청크 -->
-              <article
-                data-testid="admin-data-card-totalChunks"
-                class="rounded-2xl border border-bg-300/60 bg-primary-white px-[18px] py-4 shadow-[0_2px_8px_rgba(15,23,42,0.03)] transition-[transform,box-shadow] duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_32px_-20px_rgba(15,23,42,0.22)]"
-              >
-                <p class="text-[0.7rem] text-overlay-dark-40">청크</p>
-                <p class="mt-1.5 text-[1.4rem] font-bold tracking-[-0.05em] text-overlay-dark-80">
-                  {{ formatNumber(adminDataOverview.totalChunks) }}
-                </p>
-              </article>
-
               <!-- 동기화 소요시간 추이 -->
               <article
                 data-testid="admin-sync-duration-chart"
-                class="group relative col-span-2 rounded-2xl border border-bg-300/60 bg-primary-white px-[18px] py-4 shadow-[0_2px_8px_rgba(15,23,42,0.03)] transition-[transform,box-shadow] duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_32px_-20px_rgba(15,23,42,0.22)]"
+                class="group relative col-span-2 rounded-2xl border border-bg-300/60 bg-primary-white px-[18px] py-4 shadow-[0_2px_8px_rgba(15,23,42,0.03)]"
               >
                 <div class="flex items-baseline justify-between gap-2">
                   <p class="text-[0.7rem] text-overlay-dark-40">동기화 소요시간 추이 (초)</p>
                 </div>
 
                 <template v-if="durationChart">
-                  <!-- dot hover 시 해당 날짜 소요시간 + 평균 툴팁 -->
-                  <div
-                    class="pointer-events-none absolute top-3 z-20 -translate-x-1/2 rounded-lg border border-bg-300/60 bg-primary-white px-2.5 py-1.5 text-[0.66rem] shadow-[0_6px_16px_-8px_rgba(15,23,42,0.25)] transition-opacity duration-150"
-                    :class="hoveredDurationPoint ? 'opacity-100' : 'opacity-0'"
-                    :style="{
-                      left: hoveredDurationPoint
-                        ? `clamp(40px, calc(${hoveredDurationPoint.xPercent}% + 18px), calc(100% - 40px))`
-                        : '50%',
-                    }"
-                  >
-                    <p class="font-semibold" :class="hoveredDurationPoint?.isFailed ? 'text-status-error' : 'text-overlay-dark-80'">
-                      {{ hoveredDurationPoint?.dateLabel }}
-                      <b class="text-primary">{{ hoveredDurationPoint?.durationSeconds }}초</b>
-                    </p>
-                    <p class="mt-0.5 text-overlay-dark-40">
-                      평균 <b class="text-primary">{{ durationChart.averageDuration }}초</b>
-                    </p>
-                  </div>
                   <div class="relative mt-2.5 h-14 w-full">
+                    <!-- dot 위에 표시되는 툴팁: 위치는 dot xPercent/yPercent 기준, 부드럽게 이동 -->
+                    <div
+                      class="pointer-events-none absolute z-20 -translate-x-1/2 rounded-lg border border-bg-300/60 bg-primary-white px-2.5 py-1.5 text-[0.66rem] shadow-[0_6px_16px_-8px_rgba(15,23,42,0.25)] transition-[left,top,opacity] duration-150"
+                      :class="hoveredDurationPoint ? 'opacity-100' : 'opacity-0'"
+                      :style="
+                        displayedDurationPoint
+                          ? {
+                              left: `clamp(42px, ${displayedDurationPoint.xPercent}%, calc(100% - 42px))`,
+                              top: `calc(${displayedDurationPoint.yPercent}% - 38px)`,
+                            }
+                          : { left: '50%', top: '0' }
+                      "
+                    >
+                      <p
+                        class="font-semibold"
+                        :class="
+                          displayedDurationPoint?.isFailed
+                            ? 'text-status-error'
+                            : 'text-overlay-dark-80'
+                        "
+                      >
+                        {{ displayedDurationPoint?.dateLabel }}
+                        <b class="text-primary">{{ displayedDurationPoint?.durationSeconds }}초</b>
+                      </p>
+                      <p class="mt-0.5 text-overlay-dark-40">
+                        평균 <b class="text-primary">{{ durationChart.averageDuration }}초</b>
+                      </p>
+                    </div>
                     <svg
                       viewBox="0 0 300 56"
                       preserveAspectRatio="none"

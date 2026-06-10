@@ -3084,3 +3084,65 @@
 - 전체 테스트: passed, 14 files / 120 tests passed
 - `eslint src/pages/AdminEntryPage.vue`: passed
 - 완료 직후 연속 프레임에서 주황·초록 크로스페이드 중간 상태 확인
+
+## 2026-06-10 - follow-up: VectorDB 카드 색상 수정 및 SVG 개선
+
+### Scope
+
+- CSS 변수명 오류 수정: `var(--color-status-error/warning)`이 `main.css`에 존재하지 않아 SVG fill이 검정, 프로그레스바 background가 투명으로 렌더링되던 문제 → 실제 변수명 `var(--color-error/warning)`으로 교정
+- VectorDB 색상 체계 변경: 정상(< 60%) = `var(--color-success)` 초록(여유 있는 느낌), 주의(60–79%) = `var(--color-warning)` 노랑, 위험(≥ 80%) = `var(--color-error)` 빨강
+- SVG 실린더 디자인 개선: 수평 링 선 2개 유지, 상단 캡이 사용량 ≥ 90%일 때 채움 색과 동일하게 연결(뚜껑처럼 보이던 문제 제거), 채움 표면 타원 ≥ 90% 이상에서 숨김, viewBox 32×52 → 36×52로 미세 조정
+- "VectorDB 스토리지" 타이틀 행을 카드 최상단으로 분리 — 기존에는 SVG와 같은 flex 컨테이너 안에 있어 SVG 폭만큼 우측으로 밀려 보였음
+
+### Changed Files
+
+- `src/pages/AdminEntryPage.vue`: `vectorDbFillColor` computed 변수명 수정, 색상 체계 변경, SVG 실린더 재설계, 타이틀 레이아웃 분리
+
+### Commands
+
+- `npm test`
+
+### Results
+
+- 전체 테스트: passed, 14 files / 119 tests passed
+
+## 2026-06-10 - follow-up: 데이터 현황 카드 hover lift 제거 및 바 차트 툴팁 추가
+
+### Scope
+
+- 데이터 현황 섹션 카드 5개 전체에서 `hover:-translate-y-0.5` + hover shadow 제거 — 클릭 동작이 없는 정보 표시 카드에서 인터랙티브 암시를 주는 side effect 제거
+- 바 차트("최근 동기화 · 업데이트 페이지") hover 툴팁 추가: 각 바에 mouseenter/mouseleave 연결, 날짜·업데이트 페이지 수 표시(실패 건은 "수집 실패"), hover된 바는 opacity 50% → 100%로 강조
+- `syncChartBars` computed에 `updatedPages` 필드 추가, `hoveredBarId` ref 추가
+
+### Changed Files
+
+- `src/pages/AdminEntryPage.vue`: 카드 hover 클래스 일괄 제거, 바 차트 hover 인터랙션 및 툴팁 템플릿 추가, `syncChartBars`에 `updatedPages` 포함
+
+### Commands
+
+- `npm test`
+
+### Results
+
+- 전체 테스트: passed, 14 files / 119 tests passed
+
+## 2026-06-10 - follow-up: 차트 툴팁 위치 개선 및 소요시간 툴팁 버그 수정
+
+### Scope
+
+- 바 차트 툴팁 스타일 통일: 검정 배경 → 소요시간 추이와 동일한 흰 배경 + 테두리 + 그림자, 날짜·시간 같은 줄 표시
+- 바 차트 툴팁 위치: 열 컨테이너 상단이 아닌 바 element(`relative`) 기준 `bottom-full`로 바 바로 위에 밀착
+- 소요시간 추이 툴팁 버그 수정: `transition-opacity duration-150` 페이드아웃 중 `hoveredDurationPoint`가 null이 되면 컨텐츠가 비어 "평균 N초"만 보이던 문제 → `displayedDurationPoint` ref(마지막 non-null 값 캐시)로 해결
+- 소요시간 추이 툴팁 위치: 헤더 우측 고정 → dot 위로 복귀, 차트 div 내부 absolute로 dot xPercent/yPercent 기준 배치, `transition-[left,top,opacity]`로 dot 간 이동 시 부드럽게 슬라이드
+
+### Changed Files
+
+- `src/pages/AdminEntryPage.vue`: `displayedDurationPoint` ref + watch 추가, 소요시간 툴팁 위치/컨텐츠 개선, 바 차트 툴팁 스타일·위치 개선
+
+### Commands
+
+- `npm test`
+
+### Results
+
+- 전체 테스트: passed, 14 files / 119 tests passed

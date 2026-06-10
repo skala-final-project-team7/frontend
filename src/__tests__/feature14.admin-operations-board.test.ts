@@ -125,7 +125,9 @@ describe('feature14 Admin operations board', () => {
     expect(mockedGetAdminDataOverview).toHaveBeenCalledTimes(1);
     expect(mockedGetAdminSyncHistory).toHaveBeenCalledTimes(1);
     expect(wrapper.find('[data-testid="admin-page"]').exists()).toBe(true);
-    expect(wrapper.text()).toContain('검색에 사용할 사용자 문서를 수집하고 최신 상태로 유지합니다.');
+    expect(wrapper.text()).toContain(
+      '검색에 사용할 사용자 문서를 수집하고 최신 상태로 유지합니다.',
+    );
     expect(wrapper.text()).toContain(
       '데이터 불러오기 버튼을 누르면 Admin Key 활성화 후 전체 수집을 시작합니다.',
     );
@@ -215,7 +217,6 @@ describe('feature14 Admin operations board', () => {
       '데이터 불러오기를 시작했습니다.',
     );
   });
-
 
   it('changes the ingest CTA to 다시 시도 when the latest ingest job failed', async () => {
     mockAdminBoardBase();
