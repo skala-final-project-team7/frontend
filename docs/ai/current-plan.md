@@ -232,6 +232,15 @@
 [x] 관리자 API는 모두 Common Response wrapper를 사용하고, `/api/admin/*`의 Loading / Error / Empty 상태를 처리
 [x] `role !== "ADMIN"` 접근 차단 회귀 테스트와 관리자 shell 렌더링 테스트 작성
 
+# feature14-refactor: AdminEntryPage 탭별 독립 페이지네이션, 컴포넌트 분리 리팩토링
+
+[x] 각 탭(문서 데이터 관리 / 대시보드 / 피드백 / 동기화 이력)이 독립적인 페이지네이션 상태(`currentPage`, `pageSize`)를 갖도록 분리
+[x] 탭 전환 시 다른 탭의 페이지 상태가 초기화되지 않도록 탭 키 기준 상태 맵으로 관리
+[x] feature15~17 구현 전에 완료하여 각 탭 화면이 처음부터 독립 상태를 사용하도록 기반 마련
+[x] `AdminShellLayout.vue` 분리 — 사이드바, 로고, 탭 내비게이션, 관리자 프로필 렌더링; `activeSection`, `navigationItems`, `currentUser`를 props로 받고 `section-change` 이벤트 emit, 메인 컨텐츠는 default slot
+[x] `AdminOperationsSection.vue` 분리 — SCR-800 운영 탭 전체 컨텐츠(데이터 파이프라인, 데이터 현황 벤토, 최근 동기화 이력); `adminDataOverview`, `adminSyncHistory`를 props로 받고 `useAdminIngestStore` 직접 접근, `view-all-sync`·`refresh-requested` 이벤트 emit
+[x] `AdminEntryPage.vue`는 route shell로만 — 데이터 로딩(`loadAdminBoard`, `refreshAdminBoardData`), 전역 상태 관리(`isLoading`, `errorMessage`, `currentUser`, `activeSection`, `tabPagination` provide), `AdminShellLayout` + 탭 컨텐츠 조립만 담당
+
 # feature15: Admin 대시보드 구현 (SCR-810)
 
 [ ] `frontend/docs/frames/[SCR-810] 관리자 추이 확인 대시보드.pdf` 기준으로 대시보드 화면을 구현

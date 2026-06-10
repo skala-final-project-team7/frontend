@@ -129,7 +129,7 @@ describe('feature14 Admin operations board', () => {
       '검색에 사용할 사용자 문서를 수집하고 최신 상태로 유지합니다.',
     );
     expect(wrapper.text()).toContain(
-      '데이터 불러오기 버튼을 누르면 Admin Key 활성화 후 전체 수집을 시작합니다.',
+      '데이터 불러오기 버튼을 누르면 관리자 모드 활성화 후 전체 수집을 시작합니다.',
     );
     expect(wrapper.text()).toContain('문서 데이터 관리');
     expect(wrapper.text()).toContain('대시보드');
