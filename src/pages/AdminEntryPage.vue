@@ -64,7 +64,7 @@ const currentUser = ref<CurrentUser | null>(null);
 const adminDataOverview = ref<AdminDataOverview | null>(null);
 const adminSyncHistory = ref<AdminSyncHistoryResponse['syncHistory']>([]);
 const DEFAULT_ADMIN_ACTION_HINT =
-  '데이터 불러오기 버튼을 누르면 Admin Key 활성화 후 전체 수집을 시작합니다.';
+  '데이터 불러오기 버튼을 누르면 관리자 모드 활성화 후 전체 수집을 시작합니다.';
 const adminActionHint = ref(DEFAULT_ADMIN_ACTION_HINT);
 const { showToast } = useToast();
 const adminIngestStore = useAdminIngestStore();
@@ -283,7 +283,7 @@ const pipelineDescription = computed(() => {
     case 'FAILED':
       return '수집에 실패했습니다. 다시 시도해 주세요.';
     default:
-      return '문서를 최신 상태로 유지합니다.';
+      return '검색에 사용할 사용자 문서를 수집하고 최신 상태로 유지합니다.';
   }
 });
 const pipelineActionHint = computed(() => {
@@ -621,9 +621,6 @@ async function handleStartIngest() {
             <h2 class="text-[1.55rem] font-bold tracking-[-0.04em] text-overlay-dark-80">
               문서 데이터 관리
             </h2>
-            <p class="mt-1 text-[0.88rem] text-overlay-dark-40">
-              검색에 사용할 사용자 문서를 수집하고 최신 상태로 유지합니다.
-            </p>
           </header>
 
           <!-- 데이터 파이프라인 -->
@@ -631,7 +628,7 @@ async function handleStartIngest() {
             data-testid="admin-ingest-pipeline-card"
             class="mb-6 rounded-[1.75rem] border border-bg-300/70 bg-primary-white p-6 shadow-[0_8px_28px_rgba(15,23,42,0.05)]"
           >
-            <div class="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)] lg:items-center">
+            <div class="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)] lg:items-start">
               <div class="lg:pr-4">
                 <h3 class="text-[1.08rem] font-semibold tracking-[-0.03em] text-overlay-dark-80">
                   문서 수집 현황
