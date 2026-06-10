@@ -9,6 +9,9 @@
   - 2026-06-09, feature14 구현, Admin shell 및 데이터 수집 메인 보드 추가
   - 2026-06-09, 디자인 개선, 섹션 전환 nav, 운영 레이아웃 전면 개선
   - 2026-06-10, 디자인 개선, 데이터 현황 섹션을 벤토 레이아웃(동기화 바차트·소요시간 추이 포함)으로 교체
+  - 2026-06-10, UI/UX 개선, IDLE 파이프라인 정리(메트릭/캐릭터/힌트), 상태 한글 라벨, 차트 라벨·점 보정, stale LED, 전체 보기 연결
+  - 2026-06-10, 캐릭터 연출 보강, IDLE 대기 캐릭터(lina-waiting) 추가·완료 캐릭터 확대 및 위치 조정·카드 높이 고정
+  - 2026-06-10, 카피·연출 정리, 진행 문구 자연스럽게 수정(Confluence 표현 제거), 완료 캐릭터 우측 이동·전환 잔상 제거, multiply 블렌드 제거
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -22,6 +25,7 @@ import { useRouter } from 'vue-router';
 import {
   ArrowLeft,
   Database,
+  HardDriveDownload,
   Info,
   LayoutDashboard,
   MessageSquareQuote,
@@ -48,6 +52,7 @@ import {
   linaDeskImageUrl,
   linaFlagImageUrl,
   linaRunningImageUrl,
+  linaWaitingImageUrl,
   mascotWrongImageUrl,
 } from '@/shared';
 
@@ -57,9 +62,9 @@ const errorMessage = ref('');
 const currentUser = ref<CurrentUser | null>(null);
 const adminDataOverview = ref<AdminDataOverview | null>(null);
 const adminSyncHistory = ref<AdminSyncHistoryResponse['syncHistory']>([]);
-const adminActionHint = ref(
-  '데이터 불러오기 버튼을 누르면 Admin Key 활성화 후 전체 수집을 시작합니다.',
-);
+const DEFAULT_ADMIN_ACTION_HINT =
+  '데이터 불러오기 버튼을 누르면 Admin Key 활성화 후 전체 수집을 시작합니다.';
+const adminActionHint = ref(DEFAULT_ADMIN_ACTION_HINT);
 const { showToast } = useToast();
 const adminIngestStore = useAdminIngestStore();
 const {
@@ -67,7 +72,6 @@ const {
   failedPages,
   formattedElapsed,
   formattedEta,
-  isActivatingKey,
   isPolling,
   isStartingIngest,
   lastError,
@@ -81,7 +85,6 @@ const isAccessDenied = computed(() => currentUser.value?.role !== 'ADMIN');
 const shouldShowRetryIngest = computed(() => status.value === 'FAILED');
 const shouldDisablePipelineActions = computed(
   () =>
-    isActivatingKey.value ||
     isStartingIngest.value ||
     (isPolling.value && status.value !== 'FAILED' && status.value !== 'COMPLETED'),
 );
@@ -90,7 +93,7 @@ type SectionKey = 'operations' | 'dashboard' | 'feedback' | 'sync';
 const activeSection = ref<SectionKey>('operations');
 
 const navigationItems: { key: SectionKey; label: string; icon: unknown }[] = [
-  { key: 'operations', label: '운영', icon: Database },
+  { key: 'operations', label: '문서 데이터 관리', icon: Database },
   { key: 'dashboard', label: '대시보드', icon: LayoutDashboard },
   { key: 'feedback', label: '피드백', icon: MessageSquareQuote },
   { key: 'sync', label: '동기화 이력', icon: RefreshCw },
@@ -124,6 +127,14 @@ const lastSyncRelativeText = computed(() =>
   adminDataOverview.value ? formatRelativeTime(adminDataOverview.value.lastSyncAt) : '',
 );
 
+// 마지막 동기화가 24시간을 넘기면 LED를 경고색으로 바꿔 지연을 드러낸다.
+const isLastSyncStale = computed(() => {
+  if (!adminDataOverview.value) {
+    return false;
+  }
+  return Date.now() - new Date(adminDataOverview.value.lastSyncAt).getTime() > 24 * 60 * 60_000;
+});
+
 // 데이터 현황 차트는 GET /api/admin/sync 의 syncHistory(최신순)를 최근 7건만
 // 시간순(과거→최신)으로 뒤집어 그린다.
 const MAX_SYNC_CHART_ITEMS = 7;
@@ -135,9 +146,13 @@ const recentSyncItemsChronological = computed(() =>
 const syncChartBars = computed(() => {
   const syncItems = recentSyncItemsChronological.value;
   const maxUpdatedPages = Math.max(...syncItems.map((item) => item.updatedPages), 1);
+  // 하루에 여러 번 동기화되면 날짜 라벨이 중복되므로 시각 라벨을 함께 노출한다.
+  const dateLabels = syncItems.map((item) => formatChartDate(item.completedAt));
+  const hasDuplicateDateLabels = new Set(dateLabels).size !== dateLabels.length;
   return syncItems.map((item, index) => ({
     syncId: item.syncId,
-    label: formatChartDate(item.completedAt),
+    label: dateLabels[index],
+    timeLabel: hasDuplicateDateLabels ? formatChartHour(item.completedAt) : '',
     heightPercent: Math.max(Math.round((item.updatedPages / maxUpdatedPages) * 100), 6),
     isFailed: item.status === 'FAILED',
     isLatest: index === syncItems.length - 1,
@@ -158,16 +173,24 @@ const durationChart = computed(() => {
     return null;
   }
 
+  // viewBox(300x56) 가장자리에서 점·선이 잘리지 않도록 양끝에 여백을 두고 좌표를 잡는다.
+  // 점은 SVG 대신 % 좌표 HTML 요소로 그려 가로 스트레치 시에도 정원을 유지한다.
   const maxDuration = Math.max(...syncItems.map((item) => item.duration), 1);
-  const points = syncItems.map((item, index) => ({
-    syncId: item.syncId,
-    x: syncItems.length === 1 ? 150 : Math.round((index / (syncItems.length - 1)) * 300),
-    y: Math.round(50 - (item.duration / maxDuration) * 42),
-    isFailed: item.status === 'FAILED',
-    title: `${formatChartDate(item.completedAt)} · ${formatNumber(item.duration)}초 · ${
-      item.status === 'FAILED' ? '실패' : '성공'
-    }`,
-  }));
+  const points = syncItems.map((item, index) => {
+    const x = syncItems.length === 1 ? 150 : 10 + (index / (syncItems.length - 1)) * 280;
+    const y = 48 - (item.duration / maxDuration) * 38;
+    return {
+      syncId: item.syncId,
+      x: Math.round(x),
+      y: Math.round(y),
+      xPercent: (x / 300) * 100,
+      yPercent: (y / 56) * 100,
+      isFailed: item.status === 'FAILED',
+      isLatest: index === syncItems.length - 1,
+      dateLabel: formatChartDate(item.completedAt),
+      durationSeconds: item.duration,
+    };
+  });
   const linePath = points
     .map((point, index) => `${index === 0 ? 'M' : 'L'}${point.x},${point.y}`)
     .join(' ');
@@ -190,7 +213,17 @@ const durationChart = computed(() => {
   };
 });
 
-const pipelineStatusLabel = computed(() => status.value || 'IDLE');
+const hoveredDurationPoint = ref<{
+  syncId: string;
+  xPercent: number;
+  isFailed: boolean;
+  dateLabel: string;
+  durationSeconds: number;
+} | null>(null);
+
+const pipelineStatusLabel = computed(() =>
+  status.value ? getStatusLabel(status.value) : '대기 중',
+);
 const pipelineStatusClasses = computed(() =>
   status.value ? getStatusClasses(status.value) : 'bg-bg-200 text-overlay-dark-80',
 );
@@ -212,53 +245,73 @@ const pipelineDescription = computed(() => {
 
   switch (status.value) {
     case 'STARTED':
-      return 'Confluence 제한 문서를 확인하고 수집 작업을 준비하고 있습니다.';
+      return '수집할 문서를 확인하고 있습니다.';
     case 'IN_PROGRESS':
       return failedPages.value > 0
-        ? '허용 사용자 기준 문서를 수집 중이며 재시도 대상 문서를 함께 정리하고 있습니다.'
-        : '허용 사용자 기준 Confluence 제한 문서를 순차적으로 수집하고 있습니다.';
+        ? '문서를 수집하고 있습니다. 실패한 문서는 다시 시도합니다.'
+        : '문서를 수집하고 있습니다. 잠시만 기다려 주세요.';
     case 'COMPLETED':
-      return '전체 수집이 완료되었습니다. 최신 동기화 현황이 아래 카드에 반영됩니다.';
+      return '전체 수집이 완료되었습니다. 아래 데이터 현황에서 확인할 수 있습니다.';
     case 'FAILED':
-      return '수집 작업이 완료되지 않았습니다. 다시 시도해주세요.';
+      return '수집에 실패했습니다. 다시 시도해 주세요.';
     default:
-      return '사용자별 문서를 최신 상태로 유지합니다.';
+      return '문서를 최신 상태로 유지합니다.';
   }
 });
 const pipelineActionHint = computed(() => {
-  if (isActivatingKey.value) {
-    return 'API Key를 발급하고 있습니다.';
-  }
-
   if (isStartingIngest.value) {
     return '데이터 수집을 시작하고 있습니다.';
   }
 
   return adminActionHint.value;
 });
-const pipelineCharacterImageUrl = computed(() =>
-  status.value === 'COMPLETED' ? linaFlagImageUrl : linaRunningImageUrl,
-);
-const pipelineCharacterAlt = computed(() =>
-  status.value === 'COMPLETED' ? '수집 완료' : '수집 진행 중',
-);
-const pipelineCharacterStyle = computed(() =>
-  status.value === 'COMPLETED'
-    ? {
-        left: `calc(${progressPercent.value}% - 44px)`,
-        top: '-1.6rem',
-      }
-    : {
-        left: `calc(${progressPercent.value}% - 36px)`,
-        top: '-0.15rem',
-      },
-);
+const pipelineCharacterImageUrl = computed(() => {
+  if (status.value === 'COMPLETED') {
+    return linaFlagImageUrl;
+  }
+  return status.value ? linaRunningImageUrl : linaWaitingImageUrl;
+});
+const pipelineCharacterAlt = computed(() => {
+  if (status.value === 'COMPLETED') {
+    return '수집 완료';
+  }
+  return status.value ? '수집 진행 중' : '수집 대기 중';
+});
+const pipelineCharacterStyle = computed(() => {
+  // 완료 시에는 캐릭터를 키우고 중심이 진행바 끝을 넘도록 둬 결승점에 선 느낌을 준다.
+  if (status.value === 'COMPLETED') {
+    return {
+      left: `calc(${progressPercent.value}% - 50px)`,
+      top: '0rem',
+    };
+  }
+  // IDLE에서는 출발선(좌측 끝)에 캐릭터 몸이 걸치도록 세워 둔다.
+  if (!status.value) {
+    return {
+      left: '-1.75rem',
+      top: '-0.15rem',
+    };
+  }
+  return {
+    left: `calc(${progressPercent.value}% - 36px)`,
+    top: '-0.15rem',
+  };
+});
+// lina-flag.png는 캔버스 여백이 커서 박스를 진행 캐릭터보다 훨씬 키워야 비슷한 체감 크기가 된다.
 const pipelineCharacterClasses = computed(() =>
-  status.value === 'COMPLETED' ? 'h-[8rem] w-[8rem] scale-[1.18]' : 'h-[4.75rem] w-[4.75rem]',
+  status.value === 'COMPLETED' ? 'h-[4rem] w-[4rem]' : 'h-[4.75rem] w-[4.75rem]',
 );
-const processedMetricText = computed(
-  () => `${formatNumber(processedPages.value)} / ${formatNumber(totalPages.value)}`,
+// 진행 중에만 좌표 이동을 애니메이션한다. 완료 시점에는 크기·위치가 함께 바뀌므로
+// 전환 효과를 끄고 즉시 결승점에 세워 크기가 변하는 듯한 잔상을 막는다.
+const pipelineCharacterMotionClasses = computed(() =>
+  status.value === 'STARTED' || status.value === 'IN_PROGRESS'
+    ? 'transition-[left] duration-500 ease-out'
+    : '',
 );
+const processedMetricText = computed(() =>
+  status.value ? `${formatNumber(processedPages.value)} / ${formatNumber(totalPages.value)}` : '-',
+);
+const ingestElapsedText = computed(() => (status.value ? formattedElapsed.value : '-'));
 const ingestEtaText = computed(() =>
   status.value && formattedEta.value !== '계산 중' ? formattedEta.value : '-',
 );
@@ -368,8 +421,20 @@ function formatRelativeTime(value: string): string {
   return `${Math.floor(elapsedHours / 24)}일 전`;
 }
 
-function getStatusLabel(status: AdminSyncStatus): string {
-  return status;
+function formatChartHour(value: string): string {
+  return `${String(new Date(value).getHours()).padStart(2, '0')}시`;
+}
+
+// 저장 enum(UPPER_SNAKE_CASE)은 그대로 두고 화면 표기만 한글로 매핑한다.
+const STATUS_DISPLAY_LABELS: Record<AdminDisplayStatus, string> = {
+  STARTED: '수집 준비',
+  IN_PROGRESS: '수집 중',
+  COMPLETED: '완료',
+  FAILED: '실패',
+};
+
+function getStatusLabel(status: AdminDisplayStatus): string {
+  return STATUS_DISPLAY_LABELS[status] ?? status;
 }
 
 function getStatusClasses(status: AdminDisplayStatus): string {
@@ -384,18 +449,6 @@ function goToLogin() {
   void router.push('/login');
 }
 
-async function handleActivateAdminKey() {
-  try {
-    const activated = await adminIngestStore.ensureAdminKeyActive();
-    adminActionHint.value = `Admin Key 활성 완료: ${formatDateTime(activated ?? '')}까지 사용 가능합니다.`;
-    showToast('Admin Key를 활성화했습니다.', { variant: 'success' });
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'Admin Key를 활성화하는 중 오류가 발생했습니다.';
-    adminActionHint.value = message;
-    showToast(message, { variant: 'error' });
-  }
-}
 
 async function handleStartIngest() {
   try {
@@ -479,7 +532,7 @@ async function handleStartIngest() {
         <!-- 로고 -->
         <div class="border-b border-bg-300/60 px-7 py-6">
           <h1 class="text-[1.35rem] font-bold tracking-[-0.06em] text-overlay-dark-80">LINA</h1>
-          <p class="mt-0.5 text-[0.74rem] text-overlay-dark-40">Admin</p>
+          <p class="mt-0.5 text-[0.74rem] text-overlay-dark-40">Admin Dashboard</p>
         </div>
 
         <!-- 내비게이션 -->
@@ -538,8 +591,8 @@ async function handleStartIngest() {
         <!-- ── 운영 (SCR-800) ── -->
         <section v-if="activeSection === 'operations'" class="px-8 py-8">
           <header class="mb-7">
-            <h2 class="text-[1.55rem] font-bold tracking-[-0.04em] text-overlay-dark-80">운영</h2>
-            <p class="mt-1 text-[0.88rem] text-overlay-dark-40">데이터 수집 및 동기화 관리</p>
+            <h2 class="text-[1.55rem] font-bold tracking-[-0.04em] text-overlay-dark-80">문서 데이터 관리</h2>
+            <p class="mt-1 text-[0.88rem] text-overlay-dark-40">검색에 사용할 사용자 문서를 수집하고 최신 상태로 유지합니다.</p>
           </header>
 
           <!-- 데이터 파이프라인 -->
@@ -550,26 +603,19 @@ async function handleStartIngest() {
             <div class="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)] lg:items-center">
               <div class="lg:pr-4">
                 <h3 class="text-[1.08rem] font-semibold tracking-[-0.03em] text-overlay-dark-80">
-                  데이터 파이프라인
+                  문서 수집 현황
                 </h3>
-                <p class="mt-2 text-[0.8rem] leading-6 text-overlay-dark-40">
+                <p class="mt-2 line-clamp-2 min-h-[3rem] text-[0.8rem] leading-6 text-overlay-dark-40">
                   {{ pipelineDescription }}
                 </p>
                 <div class="mt-5 flex flex-wrap gap-2">
-                  <BaseButton
-                    variant="secondary"
-                    data-testid="admin-activate-key-button"
-                    :disabled="shouldDisablePipelineActions"
-                    @click="handleActivateAdminKey"
-                  >
-                    {{ isActivatingKey ? 'API 키 발급 중' : 'API 키 발급' }}
-                  </BaseButton>
                   <BaseButton
                     variant="primary"
                     data-testid="admin-start-ingest-button"
                     :disabled="shouldDisablePipelineActions"
                     @click="handleStartIngest"
                   >
+                    <HardDriveDownload aria-hidden="true" class="size-4 shrink-0" />
                     {{ ingestPrimaryButtonLabel }}
                   </BaseButton>
                 </div>
@@ -588,25 +634,30 @@ async function handleStartIngest() {
                       class="absolute left-0 right-0 top-1/2 h-[10px] -translate-y-1/2 overflow-hidden rounded-full bg-bg-200"
                     >
                       <div
-                        class="h-full rounded-full transition-[width] duration-500 ease-out"
+                        class="relative h-full rounded-full transition-[width] duration-500 ease-out"
                         :class="
-                          status === 'COMPLETED'
-                            ? 'bg-[#2EB97F]'
-                            : status === 'FAILED'
-                              ? 'bg-status-error'
-                              : 'bg-gradient-to-r from-primary via-[#FFAA63] to-[#FFC48E]'
+                          status === 'FAILED'
+                            ? 'bg-status-error'
+                            : 'bg-gradient-to-r from-primary via-[#FFAA63] to-[#FFC48E]'
                         "
                         :style="{ width: `${progressPercent}%` }"
-                      />
+                      >
+                        <!-- 완료 시 초록을 opacity로 페이드해 채움(width)과 색 전환이 자연스럽게 겹치게 한다. -->
+                        <div
+                          class="absolute inset-0 rounded-full bg-[#2EB97F] transition-opacity duration-700 ease-out"
+                          :class="status === 'COMPLETED' ? 'opacity-100' : 'opacity-0'"
+                        />
+                      </div>
                     </div>
                     <div
-                      class="absolute top-0 z-10 transition-[left] duration-500 ease-out"
+                      class="absolute top-0 z-10"
+                      :class="pipelineCharacterMotionClasses"
                       :style="pipelineCharacterStyle"
                     >
                       <img
                         :src="pipelineCharacterImageUrl"
                         :alt="pipelineCharacterAlt"
-                        class="object-contain drop-shadow-[0_10px_16px_rgba(15,23,42,0.12)]"
+                        class="max-w-none object-contain drop-shadow-[0_10px_16px_rgba(15,23,42,0.12)]"
                         :class="pipelineCharacterClasses"
                       />
                     </div>
@@ -644,7 +695,7 @@ async function handleStartIngest() {
                         data-testid="admin-ingest-metric-elapsed"
                         class="mt-1 text-[1rem] font-bold tracking-[-0.03em] text-overlay-dark-80"
                       >
-                        {{ formattedElapsed }}
+                        {{ ingestElapsedText }}
                       </p>
                     </div>
                     <div class="rounded-2xl bg-bg-100 px-4 py-3">
@@ -688,7 +739,7 @@ async function handleStartIngest() {
               >
                 <div class="min-w-0">
                   <p
-                    class="text-[0.62rem] font-semibold uppercase tracking-[0.1em] text-overlay-dark-40"
+                    class="text-[0.7rem] font-semibold uppercase tracking-[0.1em] text-overlay-dark-40"
                   >
                     마지막 동기화
                   </p>
@@ -699,7 +750,11 @@ async function handleStartIngest() {
                     {{ formatDateTime(adminDataOverview.lastSyncAt) }}
                   </p>
                   <p class="mt-1.5 flex items-center gap-1.5 text-[0.7rem] text-overlay-dark-40">
-                    <span aria-hidden="true" class="size-1.5 rounded-full bg-status-success" />
+                    <span
+                      aria-hidden="true"
+                      class="size-1.5 rounded-full"
+                      :class="isLastSyncStale ? 'bg-status-warning' : 'bg-status-success'"
+                    />
                     {{ lastSyncRelativeText }}
                   </p>
                 </div>
@@ -730,7 +785,7 @@ async function handleStartIngest() {
                   >
                     <div class="flex w-full flex-1 items-end justify-center">
                       <div
-                        class="w-full max-w-4 rounded-t"
+                        class="w-full max-w-7 rounded-t"
                         :class="
                           bar.isFailed
                             ? 'bg-bg-300'
@@ -742,10 +797,17 @@ async function handleStartIngest() {
                       />
                     </div>
                     <span
-                      class="text-[0.58rem]"
+                      class="text-center text-[0.58rem] leading-tight"
                       :class="bar.isLatest ? 'font-bold text-primary' : 'text-overlay-dark-40'"
                     >
                       {{ bar.label }}
+                      <span
+                        v-if="bar.timeLabel"
+                        class="block text-[0.54rem] font-normal"
+                        :class="bar.isLatest ? 'text-primary/70' : 'text-overlay-dark-20'"
+                      >
+                        {{ bar.timeLabel }}
+                      </span>
                     </span>
                   </div>
                 </div>
@@ -808,55 +870,69 @@ async function handleStartIngest() {
               >
                 <div class="flex items-baseline justify-between gap-2">
                   <p class="text-[0.7rem] text-overlay-dark-40">동기화 소요시간 추이 (초)</p>
-                  <p v-if="durationChart" class="text-[0.6rem] text-overlay-dark-20">
-                    hover로 상세
-                  </p>
                 </div>
 
                 <template v-if="durationChart">
+                  <!-- dot hover 시 해당 날짜 소요시간 + 평균 툴팁 -->
                   <div
-                    class="pointer-events-none absolute right-4 top-3.5 rounded-lg border border-bg-300/60 bg-primary-white px-2.5 py-1.5 text-[0.66rem] text-overlay-dark-80 opacity-0 shadow-[0_6px_16px_-8px_rgba(15,23,42,0.25)] transition-opacity duration-200 group-hover:opacity-100"
+                    class="pointer-events-none absolute top-3 z-20 -translate-x-1/2 rounded-lg border border-bg-300/60 bg-primary-white px-2.5 py-1.5 text-[0.66rem] shadow-[0_6px_16px_-8px_rgba(15,23,42,0.25)] transition-opacity duration-150"
+                    :class="hoveredDurationPoint ? 'opacity-100' : 'opacity-0'"
+                    :style="{
+                      left: hoveredDurationPoint
+                        ? `clamp(40px, calc(${hoveredDurationPoint.xPercent}% + 18px), calc(100% - 40px))`
+                        : '50%',
+                    }"
                   >
-                    평균
-                    <b class="font-bold text-primary">{{ durationChart.averageDuration }}초</b>
-                    · 성공
-                    <span class="text-status-success">
-                      {{ durationChart.completedCount }}/{{ durationChart.totalCount }}
-                    </span>
+                    <p class="font-semibold" :class="hoveredDurationPoint?.isFailed ? 'text-status-error' : 'text-overlay-dark-80'">
+                      {{ hoveredDurationPoint?.dateLabel }}
+                      <b class="text-primary">{{ hoveredDurationPoint?.durationSeconds }}초</b>
+                    </p>
+                    <p class="mt-0.5 text-overlay-dark-40">
+                      평균 <b class="text-primary">{{ durationChart.averageDuration }}초</b>
+                    </p>
                   </div>
-                  <svg
-                    viewBox="0 0 300 56"
-                    preserveAspectRatio="none"
-                    class="mt-2.5 block h-14 w-full"
-                  >
-                    <defs>
-                      <linearGradient id="adminSyncDurationGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0" stop-color="var(--color-primary)" stop-opacity="0.2" />
-                        <stop offset="1" stop-color="var(--color-primary)" stop-opacity="0" />
-                      </linearGradient>
-                    </defs>
-                    <path :d="durationChart.areaPath" fill="url(#adminSyncDurationGradient)" />
-                    <path
-                      :d="durationChart.linePath"
-                      fill="none"
-                      stroke="var(--color-primary)"
-                      stroke-width="2.5"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                    <circle
+                  <div class="relative mt-2.5 h-14 w-full">
+                    <svg
+                      viewBox="0 0 300 56"
+                      preserveAspectRatio="none"
+                      class="absolute inset-0 h-full w-full"
+                    >
+                      <defs>
+                        <linearGradient id="adminSyncDurationGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0" stop-color="var(--color-primary)" stop-opacity="0.14" />
+                          <stop offset="1" stop-color="var(--color-primary)" stop-opacity="0" />
+                        </linearGradient>
+                      </defs>
+                      <path :d="durationChart.areaPath" fill="url(#adminSyncDurationGradient)" />
+                      <path
+                        :d="durationChart.linePath"
+                        fill="none"
+                        stroke="var(--color-primary)"
+                        stroke-width="1.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        vector-effect="non-scaling-stroke"
+                      />
+                    </svg>
+                    <!-- 투명 hit-area로 hover 범위를 넓히고, 안쪽 dot만 시각 표시한다. -->
+                    <span
                       v-for="point in durationChart.points"
                       :key="point.syncId"
-                      :cx="point.x"
-                      :cy="point.y"
-                      r="3"
-                      fill="var(--color-primary-white)"
-                      stroke-width="2"
-                      :stroke="point.isFailed ? 'var(--color-error)' : 'var(--color-primary)'"
+                      class="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer p-[8px]"
+                      :style="{ left: `${point.xPercent}%`, top: `${point.yPercent}%` }"
+                      @mouseenter="hoveredDurationPoint = point"
+                      @mouseleave="hoveredDurationPoint = null"
                     >
-                      <title>{{ point.title }}</title>
-                    </circle>
-                  </svg>
+                      <span
+                        class="block rounded-full border-[1.5px] bg-primary-white transition-transform duration-150"
+                        :class="[
+                          point.isFailed ? 'border-status-error' : 'border-primary',
+                          point.isLatest ? 'size-[9px]' : 'size-[7px]',
+                          hoveredDurationPoint?.syncId === point.syncId ? 'scale-150' : '',
+                        ]"
+                      />
+                    </span>
+                  </div>
                 </template>
                 <p
                   v-else
@@ -874,8 +950,9 @@ async function handleStartIngest() {
               <h3 class="text-[0.95rem] font-semibold text-overlay-dark-80">최근 동기화 이력</h3>
               <button
                 type="button"
-                disabled
-                class="text-[0.8rem] font-medium text-primary/70 disabled:cursor-default"
+                data-testid="admin-sync-view-all-button"
+                class="text-[0.8rem] font-medium text-primary transition-colors hover:text-primary/70"
+                @click="activeSection = 'sync'"
               >
                 전체 보기
               </button>

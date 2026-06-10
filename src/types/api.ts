@@ -131,7 +131,7 @@ export type AdminDataOverview = {
   lastSyncAt: string;
 };
 
-export type AdminSyncStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED';
+export type AdminSyncStatus = 'STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED';
 
 export type AdminSyncHistoryItem = {
   syncId: string;

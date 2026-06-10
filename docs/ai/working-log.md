@@ -2888,3 +2888,199 @@
 
 - MSW mock(`mockAdminSyncHistory`)은 5건이라 차트가 5포인트로 표시됨 — 백엔드 통합 시 `syncHistory` 응답 그대로 최근 7건까지 자동 반영
 - `frontend/assets/lina-character/lina-desk.png`는 신규 에셋으로 커밋에 포함 필요
+
+## 2026-06-10 - follow-up: 운영 화면 UI/UX 개선 (스크린샷 점검 기반)
+
+### Scope
+
+- headless Chrome으로 `/admin` 화면을 직접 캡처해 점검한 뒤 합의된 개선 항목을 일괄 적용
+- 소요시간 추이 차트 미화: 선 1.5px(`vector-effect="non-scaling-stroke"`), 점을 SVG circle 대신 % 좌표 HTML 요소로 교체해 가로 스트레치 시 타원 왜곡 제거, viewBox 양끝 여백으로 점 잘림 해결, 그라데이션 옅게, 최신 점만 살짝 크게
+- IDLE 파이프라인 정리: 수집/전체·경과 메트릭을 작업 전 `-` 표시, 진행 캐릭터는 작업 상태가 있을 때만 표시, 좌측 설명을 액션 안내문으로 통합하고 중복되던 하단 힌트 박스는 작업 발생 후에만 노출
+- 상태 표기 한글화: 저장 enum(UPPER_SNAKE_CASE)은 유지하고 화면 라벨만 매핑(대기 중/수집 준비/수집 중/완료/실패 등) — 파이프라인 pill과 동기화 이력 테이블 공통
+- 바차트 라벨 중복 해결: 같은 날짜가 여러 번이면 시각(`HH시`)을 두 번째 줄로 병기, 바 최대 폭 16px→28px
+- 마지막 동기화 LED: 24시간 초과 시 `status-warning` 색으로 전환
+- '전체 보기' 버튼을 disabled에서 동기화 이력 섹션 전환(`activeSection = 'sync'`)으로 연결
+
+### Changed Files
+
+- `src/pages/AdminEntryPage.vue`: 위 항목 전체
+- `src/__tests__/feature14.admin-operations-board.test.ts`: 상태 라벨 한글화·IDLE 기본 문구 변경에 맞춰 단언 갱신(`COMPLETED`→`완료`, `STARTED`→`수집 준비` 등)
+- `docs/ai/working-log.md`: 작업 기록 추가
+
+### Commands
+
+- `./scripts/format.sh`
+- `npm test -- src/__tests__/feature14.admin-operations-board.test.ts`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+
+### Results
+
+- feature14 admin 보드 테스트: passed, 1 file / 11 tests passed
+- 전체 테스트: passed, 14 files / 120 tests passed
+- `./scripts/lint.sh`: passed
+- 적용 전/후 headless Chrome 스크린샷으로 IDLE 카드·차트·테이블 표시 확인
+
+### Notes / Remaining Issues
+
+- '전체 보기'와 nav의 동기화 이력 섹션은 현재 feature17 전이라 "준비 중" placeholder로 연결됨 — feature17(SCR-830) 구현 시 자연 해소
+
+## 2026-06-10 - follow-up: 파이프라인 캐릭터 연출 보강 및 카드 높이 고정
+
+### Scope
+
+- IDLE 상태에 신규 에셋 `lina-waiting.png` 캐릭터를 진행바 출발선에 표시 (직전 작업의 "IDLE 캐릭터 숨김"을 사용자 피드백으로 대체)
+- `lina-waiting.png`가 알파 채널 없는 흰 배경이라 캐릭터 wrapper에 `mix-blend-multiply`를 적용해 라이트 톤 카드 위에서 배경 제거 — img가 아닌 wrapper에 적용한 이유는 `z-10` wrapper가 stacking context를 만들어 img 단독 블렌드로는 뒤의 진행바와 섞이지 않기 때문
+- 완료 상태 캐릭터를 scale 트릭 없이 10rem으로 확대하고, 이미지 폭 기준으로 중심이 진행바 끝을 살짝 넘도록 offset 재계산(`calc(% - 60px)`, top -2.5rem) — 기존에는 진행 중 캐릭터보다 작아 보이고 끝에 어정쩡하게 걸쳐 보였음
+- IDLE에서 힌트 박스를 숨기던 직전 변경을 되돌려 항상 표시 — 작업 시작 시 카드 높이가 출렁이던 문제 해소, 좌측 설명은 원래 문구("사용자별 문서를 최신 상태로 유지합니다.")로 복원해 중복 없음
+- Playwright(임시, /tmp)로 IDLE→수집→완료 전 과정을 실제 클릭해 상태별 스크린샷 검증
+
+### Changed Files
+
+- `src/pages/AdminEntryPage.vue`: 캐릭터 이미지/위치/크기 상태 분기, 힌트 박스 상시 표시, 헤더 변경이력 추가
+- `src/shared/assets.ts`: `linaWaitingImageUrl` import/export 추가
+- `docs/ai/working-log.md`: 작업 기록 추가
+
+### Commands
+
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+
+### Results
+
+- 전체 테스트: passed, 14 files / 120 tests passed
+- `./scripts/lint.sh`: passed
+- IDLE/완료 상태 스크린샷으로 캐릭터 표시·카드 높이 고정 확인
+
+### Notes / Remaining Issues
+
+- `frontend/assets/lina-character/lina-waiting.png`는 흰 배경 PNG라 multiply 블렌드에 의존 — 다크 배경 카드로 바뀌면 알파 채널 있는 원본으로 교체 필요
+- `frontend/assets/lina-character/lina-waiting.png` 신규 에셋 커밋 포함 필요
+
+## 2026-06-10 - follow-up: 파이프라인 카피 정리 및 완료 캐릭터 연출 마무리
+
+### Scope
+
+- 진행 상태 문구를 자연스러운 톤으로 정리하고 Confluence 종속 표현 제거(다른 문서 소스 확장 가능성 대비) — "Confluence 제한 문서…" → "문서를 수집하고 있습니다…" 등 상태별 5종
+- 완료 캐릭터를 더 오른쪽으로 이동(`calc(% - 60px)` → `calc(% - 40px)`)
+- 완료 시 크기가 늘었다 줄었다 보이던 잔상 제거: 좌표 이동 transition을 STARTED/IN_PROGRESS에서만 적용하고 완료 시점에는 즉시 결승점에 배치 — 완료 직후 연속 프레임 캡처로 캐릭터 크기·위치 불변(진행바 채움 애니메이션만 동작) 확인
+- `lina-waiting.png`가 알파 채널 있는 누끼 이미지로 교체되어 multiply 블렌드 우회 제거, 다른 상태와 동일하게 원본 렌더링
+
+### Changed Files
+
+- `src/pages/AdminEntryPage.vue`: 상태 문구 수정, 캐릭터 위치/전환 로직 정리, multiply 제거
+- `docs/ai/working-log.md`: 작업 기록 추가
+
+### Commands
+
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+
+### Results
+
+- 전체 테스트: passed, 14 files / 120 tests passed
+- `./scripts/lint.sh`: passed
+- IDLE/완료 스크린샷 및 완료 직후 4연속 프레임 비교로 잔상 제거 확인
+
+### Notes / Remaining Issues
+
+- 직전 로그의 "multiply 블렌드 의존" 노트는 에셋 교체로 해소됨
+
+## 2026-06-10 - follow-up: 완료 캐릭터 확대 및 IDLE 캐릭터 출발선 정렬
+
+### Scope
+
+- 완료 캐릭터가 진행 캐릭터보다 작아 보이던 문제 수정 — `lina-flag.png`는 캔버스 여백이 커서 박스 10rem으로는 체감 크기가 작았음. 박스를 13rem으로 확대하고 offset(`calc(% - 64px)`, top -4rem)을 재조정해 진행 캐릭터보다 확실히 크게 표시
+- IDLE 대기 캐릭터를 왼쪽(-1.75rem)으로 이동해 진행바 시작 가장자리에 몸이 걸치도록 정렬
+- 상태별 IDLE/완료 스크린샷으로 크기·위치 확인
+
+### Changed Files
+
+- `src/pages/AdminEntryPage.vue`: `pipelineCharacterStyle`/`pipelineCharacterClasses` 수치 조정
+- `docs/ai/working-log.md`: 작업 기록 추가
+
+### Commands
+
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+
+### Results
+
+- 전체 테스트: passed, 14 files / 120 tests passed
+- `./scripts/lint.sh`: passed
+
+## 2026-06-10 - follow-up: 완료 캐릭터 위치 조정 불가 원인(max-width) 수정
+
+### Scope
+
+- 완료 캐릭터를 오른쪽으로 옮길수록 작아지고, 진행바 끝(100%)에선 아예 사라지던 문제의 근본 원인 수정
+- 원인: Tailwind preflight의 `img { max-width: 100% }` — absolute wrapper가 `left: calc(100% - Npx)`에 위치하면 컨테이너 오른쪽까지 남은 공간(Npx)으로 wrapper가 줄고, 이미지가 max-width에 걸려 가로로 압축됨(측정: 34×208px)
+- 수정: 캐릭터 `img`에 `max-w-none` 추가로 위치·크기 독립 분리
+- 압축 보정으로 키워뒀던 박스(13rem)를 실제 렌더 기준 7rem으로 재조정, offset `calc(% - 66px)`/top `-1.6rem`으로 결승점에 걸친 연출 확정
+
+### Changed Files
+
+- `src/pages/AdminEntryPage.vue`: 캐릭터 img `max-w-none` 추가, `pipelineCharacterStyle`/`pipelineCharacterClasses` 수치 재조정
+- `docs/ai/working-log.md`: 작업 기록 추가
+
+### Commands
+
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+
+### Results
+
+- 전체 테스트: passed, 14 files / 120 tests passed
+- `eslint src/pages/AdminEntryPage.vue`: passed
+- Playwright 측정으로 img computed width 34px → 112px(7rem) 정상화 확인, IDLE/완료 스크린샷 검증
+
+## 2026-06-10 - follow-up: 완료 시 진행바 '리셋 후 재채움' 착시 제거
+
+### Scope
+
+- 완료 순간 초록 바가 안으로 들어갔다가 다시 채워지는 듯 보이던 문제 수정
+- 원인: 폭 측정 결과 너비는 줄지 않으나, 완료 시점에 색(주황 그라데이션→초록)이 즉시 바뀌는 동시에 너비가 73%→100%로 전환되어 '초록 바가 중간부터 새로 채워지는' 착시 발생
+- 수정: `isCompletionBarSettled` ref + status watch로 width 전환(500ms)이 끝난 뒤(550ms) 초록색을 적용 — 주황 바가 끝까지 채워진 후 초록으로 전환되는 순서로 분리, `onUnmounted`에서 타이머 정리
+
+### Changed Files
+
+- `src/pages/AdminEntryPage.vue`: `isCompletionBarSettled` watch/타이머 추가, 진행바 색 분기를 settled 기준으로 변경
+- `docs/ai/working-log.md`: 작업 기록 추가
+
+### Commands
+
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+
+### Results
+
+- 전체 테스트: passed, 14 files / 120 tests passed
+- `eslint src/pages/AdminEntryPage.vue`: passed
+- 60ms 간격 진행바 폭 트레이스 및 완료 직후 연속 프레임 스크린샷으로 '주황 채움 완료 → 초록 전환' 순서 확인
+
+## 2026-06-10 - follow-up: 진행바 완료 색 전환을 타이머 없이 opacity 크로스페이드로 단순화
+
+### Scope
+
+- 직전의 `isCompletionBarSettled` 타이머 방식(watch + setTimeout + onUnmounted)이 '채움 완료 후 초록 스냅'으로 어색하다는 피드백 반영
+- fill 내부에 초록(`#2EB97F`) 오버레이 레이어를 두고 완료 시 `opacity 0→1`(700ms)로 페이드 — width 전환(500ms)과 겹치며 주황→초록이 자연스럽게 섞임
+- JS 타이머/ref/watch/onUnmounted 전부 제거, CSS 전환만으로 처리
+
+### Changed Files
+
+- `src/pages/AdminEntryPage.vue`: settled 타이머 로직 제거, 진행바 fill에 초록 오버레이 + `transition-opacity` 추가
+- `docs/ai/working-log.md`: 작업 기록 추가
+
+### Commands
+
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+
+### Results
+
+- 전체 테스트: passed, 14 files / 120 tests passed
+- `eslint src/pages/AdminEntryPage.vue`: passed
+- 완료 직후 연속 프레임에서 주황·초록 크로스페이드 중간 상태 확인

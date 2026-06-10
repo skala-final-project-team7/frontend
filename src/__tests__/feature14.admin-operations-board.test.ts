@@ -125,9 +125,11 @@ describe('feature14 Admin operations board', () => {
     expect(mockedGetAdminDataOverview).toHaveBeenCalledTimes(1);
     expect(mockedGetAdminSyncHistory).toHaveBeenCalledTimes(1);
     expect(wrapper.find('[data-testid="admin-page"]').exists()).toBe(true);
-    expect(wrapper.text()).toContain('데이터 수집 및 동기화 관리');
-    expect(wrapper.text()).toContain('사용자별 문서를 최신 상태로 유지합니다.');
-    expect(wrapper.text()).toContain('운영');
+    expect(wrapper.text()).toContain('검색에 사용할 사용자 문서를 수집하고 최신 상태로 유지합니다.');
+    expect(wrapper.text()).toContain(
+      '데이터 불러오기 버튼을 누르면 Admin Key 활성화 후 전체 수집을 시작합니다.',
+    );
+    expect(wrapper.text()).toContain('문서 데이터 관리');
     expect(wrapper.text()).toContain('대시보드');
     expect(wrapper.text()).toContain('피드백');
     expect(wrapper.text()).toContain('동기화 이력');
@@ -139,13 +141,10 @@ describe('feature14 Admin operations board', () => {
     expect(wrapper.get('[data-testid="admin-data-card-vectorDbSize"]').text()).toContain('1.2 GB');
     expect(wrapper.get('[data-testid="admin-data-card-totalChunks"]').text()).toContain('18,432');
     expect(wrapper.get('[data-testid="admin-last-sync-at"]').text()).toContain('06. 04.');
-    expect(wrapper.get('[data-testid="admin-sync-row-sync-001"]').text()).toContain('COMPLETED');
-    expect(wrapper.get('[data-testid="admin-sync-row-sync-002"]').text()).toContain('FAILED');
+    expect(wrapper.get('[data-testid="admin-sync-row-sync-001"]').text()).toContain('완료');
+    expect(wrapper.get('[data-testid="admin-sync-row-sync-002"]').text()).toContain('실패');
     expect(wrapper.get('[data-testid="admin-ingest-pipeline-card"]').text()).toContain(
       '새로고침하면 진행 상태가 초기화될 수 있습니다',
-    );
-    expect(wrapper.get('[data-testid="admin-activate-key-button"]').text()).toContain(
-      'API 키 발급',
     );
     expect(wrapper.get('[data-testid="admin-start-ingest-button"]').text()).toContain(
       '데이터 불러오기',
@@ -178,17 +177,17 @@ describe('feature14 Admin operations board', () => {
     expect(mockedStartAdminIngestJob).toHaveBeenCalledWith({ mode: 'full' });
   });
 
-  it('shows sequential action hints for key activation and ingest start while the request is in progress', async () => {
-    vi.useFakeTimers();
+  it('shows action hints while ingest is in progress then on completion', async () => {
     mockAdminBoardBase();
-    const activationDeferred = createDeferredPromise<{ activatedUntil: string }>();
     const ingestDeferred = createDeferredPromise<{
       jobId: string;
       status: 'STARTED';
       startedAt: string;
     }>();
 
-    mockedActivateAdminKey.mockReturnValue(activationDeferred.promise);
+    mockedActivateAdminKey.mockResolvedValue({
+      activatedUntil: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+    });
     mockedStartAdminIngestJob.mockReturnValue(ingestDeferred.promise);
 
     const wrapper = mount(AdminEntryPage, {
@@ -199,15 +198,6 @@ describe('feature14 Admin operations board', () => {
 
     await flushPromises();
     await wrapper.get('[data-testid="admin-start-ingest-button"]').trigger('click');
-    await flushPromises();
-
-    expect(wrapper.get('[data-testid="admin-ingest-action-hint"]').text()).toContain(
-      'API Key를 발급하고 있습니다.',
-    );
-
-    activationDeferred.resolve({
-      activatedUntil: '2026-06-09T23:59:00+09:00',
-    });
     await flushPromises();
 
     expect(wrapper.get('[data-testid="admin-ingest-action-hint"]').text()).toContain(
@@ -226,25 +216,6 @@ describe('feature14 Admin operations board', () => {
     );
   });
 
-  it('keeps the admin key activation button available as a separate test action', async () => {
-    mockAdminBoardBase();
-    mockedActivateAdminKey.mockResolvedValue({
-      activatedUntil: '2026-06-09T13:00:00+09:00',
-    });
-
-    const wrapper = mount(AdminEntryPage, {
-      global: {
-        plugins: [createPinia(), router],
-      },
-    });
-
-    await flushPromises();
-    await wrapper.get('[data-testid="admin-activate-key-button"]').trigger('click');
-    await flushPromises();
-
-    expect(mockedActivateAdminKey).toHaveBeenCalledTimes(1);
-    expect(mockedStartAdminIngestJob).not.toHaveBeenCalled();
-  });
 
   it('changes the ingest CTA to 다시 시도 when the latest ingest job failed', async () => {
     mockAdminBoardBase();
@@ -270,15 +241,15 @@ describe('feature14 Admin operations board', () => {
     expect(wrapper.get('[data-testid="admin-start-ingest-button"]').text()).toContain('다시 시도');
   });
 
-  it('skips redundant key activation when the admin key was already activated manually', async () => {
+  it('skips redundant key activation when 데이터 불러오기 is clicked while the key is still active', async () => {
     mockAdminBoardBase();
-    // 고정 날짜는 실행 시점이 지나면 키가 만료된 것으로 판정되므로 항상 미래 시각을 사용한다.
     mockedActivateAdminKey.mockResolvedValue({
       activatedUntil: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
     });
+    // 첫 번째 수집은 즉시 COMPLETED로 끝나야 버튼이 재활성화돼 두 번째 클릭 가능
     mockedStartAdminIngestJob.mockResolvedValue({
       jobId: 'job-uuid-002',
-      status: 'STARTED',
+      status: 'COMPLETED',
       startedAt: '2026-06-09T12:10:00+09:00',
     });
 
@@ -289,13 +260,15 @@ describe('feature14 Admin operations board', () => {
     });
 
     await flushPromises();
-    await wrapper.get('[data-testid="admin-activate-key-button"]').trigger('click');
+    // 첫 번째 클릭 — 키 발급 + 수집 시작
+    await wrapper.get('[data-testid="admin-start-ingest-button"]').trigger('click');
     await flushPromises();
+    // 두 번째 클릭 — 키가 아직 유효하므로 activateAdminKey 추가 호출 없음
     await wrapper.get('[data-testid="admin-start-ingest-button"]').trigger('click');
     await flushPromises();
 
     expect(mockedActivateAdminKey).toHaveBeenCalledTimes(1);
-    expect(mockedStartAdminIngestJob).toHaveBeenCalledTimes(1);
+    expect(mockedStartAdminIngestJob).toHaveBeenCalledTimes(2);
   });
 
   it('shows an empty state when the admin sync history has no rows', async () => {
@@ -363,7 +336,7 @@ describe('feature14 Admin operations board', () => {
     await flushPromises();
 
     expect(mockedGetAdminIngestStatus).toHaveBeenCalledWith('job-uuid-010');
-    expect(wrapper.get('[data-testid="admin-ingest-status-pill"]').text()).toContain('STARTED');
+    expect(wrapper.get('[data-testid="admin-ingest-status-pill"]').text()).toContain('수집 준비');
     expect(wrapper.get('[data-testid="admin-ingest-metric-elapsed"]').text()).not.toContain(
       '00:00',
     );
@@ -371,7 +344,7 @@ describe('feature14 Admin operations board', () => {
     await vi.advanceTimersByTimeAsync(3000);
     await flushPromises();
 
-    expect(wrapper.get('[data-testid="admin-ingest-status-pill"]').text()).toContain('IN_PROGRESS');
+    expect(wrapper.get('[data-testid="admin-ingest-status-pill"]').text()).toContain('수집 중');
     expect(wrapper.get('[data-testid="admin-ingest-progress-percent"]').text()).toContain('40%');
     expect(wrapper.get('[data-testid="admin-ingest-metric-processed"]').text()).toContain(
       '60 / 150',
