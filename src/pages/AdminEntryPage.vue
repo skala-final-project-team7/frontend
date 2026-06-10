@@ -8,6 +8,7 @@
   - 2026-06-05, feature12 구현, /admin placeholder route 추가
   - 2026-06-09, feature14 구현, Admin shell 및 데이터 수집 메인 보드 추가
   - 2026-06-09, 디자인 개선, 섹션 전환 nav, 운영 레이아웃 전면 개선
+  - 2026-06-10, 디자인 개선, 데이터 현황 섹션을 벤토 레이아웃(동기화 바차트·소요시간 추이 포함)으로 교체
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -44,6 +45,7 @@ import {
   EmptyState,
   ErrorRetryState,
   linaAdminImageUrl,
+  linaDeskImageUrl,
   linaFlagImageUrl,
   linaRunningImageUrl,
   mascotWrongImageUrl,
@@ -97,7 +99,7 @@ const navigationItems: { key: SectionKey; label: string; icon: unknown }[] = [
 type AdminDisplayStatus = AdminSyncStatus | AdminIngestJobStatus;
 
 // ── feature14 운영 보드 ──────────────────────────────────────────────
-const dataOverviewCards = computed(() => {
+const contentVolumeCards = computed(() => {
   if (!adminDataOverview.value) return [];
   return [
     {
@@ -115,13 +117,77 @@ const dataOverviewCards = computed(() => {
       label: '첨부파일',
       value: formatNumber(adminDataOverview.value.totalAttachments),
     },
-    { testId: 'vectorDbSize', label: 'VectorDB', value: adminDataOverview.value.vectorDbSize },
-    {
-      testId: 'totalChunks',
-      label: '청크',
-      value: formatNumber(adminDataOverview.value.totalChunks),
-    },
   ];
+});
+
+const lastSyncRelativeText = computed(() =>
+  adminDataOverview.value ? formatRelativeTime(adminDataOverview.value.lastSyncAt) : '',
+);
+
+// 데이터 현황 차트는 GET /api/admin/sync 의 syncHistory(최신순)를 최근 7건만
+// 시간순(과거→최신)으로 뒤집어 그린다.
+const MAX_SYNC_CHART_ITEMS = 7;
+
+const recentSyncItemsChronological = computed(() =>
+  [...adminSyncHistory.value.slice(0, MAX_SYNC_CHART_ITEMS)].reverse(),
+);
+
+const syncChartBars = computed(() => {
+  const syncItems = recentSyncItemsChronological.value;
+  const maxUpdatedPages = Math.max(...syncItems.map((item) => item.updatedPages), 1);
+  return syncItems.map((item, index) => ({
+    syncId: item.syncId,
+    label: formatChartDate(item.completedAt),
+    heightPercent: Math.max(Math.round((item.updatedPages / maxUpdatedPages) * 100), 6),
+    isFailed: item.status === 'FAILED',
+    isLatest: index === syncItems.length - 1,
+  }));
+});
+
+const syncChartMaxLabel = computed(() => {
+  const maxUpdatedPages = Math.max(
+    ...recentSyncItemsChronological.value.map((item) => item.updatedPages),
+    0,
+  );
+  return `최대 ${formatNumber(maxUpdatedPages)}p`;
+});
+
+const durationChart = computed(() => {
+  const syncItems = recentSyncItemsChronological.value;
+  if (syncItems.length === 0) {
+    return null;
+  }
+
+  const maxDuration = Math.max(...syncItems.map((item) => item.duration), 1);
+  const points = syncItems.map((item, index) => ({
+    syncId: item.syncId,
+    x: syncItems.length === 1 ? 150 : Math.round((index / (syncItems.length - 1)) * 300),
+    y: Math.round(50 - (item.duration / maxDuration) * 42),
+    isFailed: item.status === 'FAILED',
+    title: `${formatChartDate(item.completedAt)} · ${formatNumber(item.duration)}초 · ${
+      item.status === 'FAILED' ? '실패' : '성공'
+    }`,
+  }));
+  const linePath = points
+    .map((point, index) => `${index === 0 ? 'M' : 'L'}${point.x},${point.y}`)
+    .join(' ');
+  const areaPath = `${linePath} L${points[points.length - 1].x},56 L${points[0].x},56 Z`;
+  const completedItems = syncItems.filter((item) => item.status === 'COMPLETED');
+  const averageDuration =
+    completedItems.length > 0
+      ? Math.round(
+          completedItems.reduce((total, item) => total + item.duration, 0) / completedItems.length,
+        )
+      : 0;
+
+  return {
+    points,
+    linePath,
+    areaPath,
+    averageDuration,
+    completedCount: completedItems.length,
+    totalCount: syncItems.length,
+  };
 });
 
 const pipelineStatusLabel = computed(() => status.value || 'IDLE');
@@ -278,6 +344,28 @@ function formatDateTime(value: string): string {
     minute: '2-digit',
     hour12: true,
   }).format(new Date(value));
+}
+
+function formatChartDate(value: string): string {
+  const date = new Date(value);
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${month}.${day}`;
+}
+
+function formatRelativeTime(value: string): string {
+  const elapsedMinutes = Math.floor((Date.now() - new Date(value).getTime()) / 60_000);
+  if (elapsedMinutes < 1) {
+    return '방금 전';
+  }
+  if (elapsedMinutes < 60) {
+    return `${elapsedMinutes}분 전`;
+  }
+  const elapsedHours = Math.floor(elapsedMinutes / 60);
+  if (elapsedHours < 24) {
+    return `${elapsedHours}시간 전`;
+  }
+  return `${Math.floor(elapsedHours / 24)}일 전`;
 }
 
 function getStatusLabel(status: AdminSyncStatus): string {
@@ -590,33 +678,191 @@ async function handleStartIngest() {
           </div>
 
           <!-- 데이터 현황 -->
-          <section class="mb-6">
+          <section v-if="adminDataOverview" class="mb-6">
             <h3 class="mb-3 text-[0.95rem] font-semibold text-overlay-dark-80">데이터 현황</h3>
 
-            <div
-              class="mb-3 rounded-2xl border border-primary/25 bg-primary-white px-6 py-4 shadow-[0_2px_10px_rgba(244,129,34,0.08)]"
-            >
-              <p class="text-[0.7rem] font-semibold uppercase tracking-wider text-primary">
-                마지막 동기화
-              </p>
-              <p
-                data-testid="admin-last-sync-at"
-                class="mt-1.5 text-[1.3rem] font-bold tracking-[-0.04em] text-overlay-dark-80"
-              >
-                {{ adminDataOverview ? formatDateTime(adminDataOverview.lastSyncAt) : '—' }}
-              </p>
-            </div>
-
-            <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+            <div class="grid grid-cols-2 gap-3 xl:grid-cols-4">
+              <!-- 마지막 동기화 -->
               <article
-                v-for="card in dataOverviewCards"
-                :key="card.testId"
-                :data-testid="`admin-data-card-${card.testId}`"
-                class="rounded-2xl border border-bg-300/60 bg-primary-white px-5 py-4 shadow-[0_2px_8px_rgba(15,23,42,0.03)]"
+                class="col-span-2 flex items-center justify-between gap-2.5 rounded-2xl border border-bg-300/60 bg-primary-white py-4 pl-5 pr-2 shadow-[0_2px_8px_rgba(15,23,42,0.03)] transition-[transform,box-shadow] duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_32px_-20px_rgba(15,23,42,0.22)]"
               >
-                <p class="text-[0.7rem] text-overlay-dark-40">{{ card.label }}</p>
-                <p class="mt-2 text-[1.4rem] font-bold tracking-[-0.05em] text-overlay-dark-80">
-                  {{ card.value }}
+                <div class="min-w-0">
+                  <p
+                    class="text-[0.62rem] font-semibold uppercase tracking-[0.1em] text-overlay-dark-40"
+                  >
+                    마지막 동기화
+                  </p>
+                  <p
+                    data-testid="admin-last-sync-at"
+                    class="mt-1.5 text-[1.35rem] font-extrabold tracking-[-0.04em] text-overlay-dark-80"
+                  >
+                    {{ formatDateTime(adminDataOverview.lastSyncAt) }}
+                  </p>
+                  <p class="mt-1.5 flex items-center gap-1.5 text-[0.7rem] text-overlay-dark-40">
+                    <span aria-hidden="true" class="size-1.5 rounded-full bg-status-success" />
+                    {{ lastSyncRelativeText }}
+                  </p>
+                </div>
+                <img
+                  :src="linaDeskImageUrl"
+                  alt=""
+                  class="h-[84px] w-auto shrink-0 object-contain drop-shadow-[0_8px_10px_rgba(15,23,42,0.08)]"
+                />
+              </article>
+
+              <!-- 최근 동기화 · 업데이트 페이지 바차트 -->
+              <article
+                data-testid="admin-sync-bar-chart"
+                class="col-span-2 row-span-2 flex min-h-[150px] flex-col rounded-2xl border border-bg-300/60 bg-primary-white px-[18px] py-4 shadow-[0_2px_8px_rgba(15,23,42,0.03)] transition-[transform,box-shadow] duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_32px_-20px_rgba(15,23,42,0.22)]"
+              >
+                <div class="flex items-baseline justify-between gap-2">
+                  <p class="text-[0.7rem] text-overlay-dark-40">최근 동기화 · 업데이트 페이지</p>
+                  <p class="text-[0.6rem] text-overlay-dark-20">{{ syncChartMaxLabel }}</p>
+                </div>
+                <div
+                  v-if="syncChartBars.length > 0"
+                  class="mt-3.5 flex flex-1 items-stretch gap-1.5"
+                >
+                  <div
+                    v-for="bar in syncChartBars"
+                    :key="bar.syncId"
+                    class="flex flex-1 flex-col items-center gap-1.5"
+                  >
+                    <div class="flex w-full flex-1 items-end justify-center">
+                      <div
+                        class="w-full max-w-4 rounded-t"
+                        :class="
+                          bar.isFailed
+                            ? 'bg-bg-300'
+                            : bar.isLatest
+                              ? 'bg-gradient-to-b from-primary-light to-primary'
+                              : 'bg-gradient-to-b from-primary-light to-primary opacity-50'
+                        "
+                        :style="{ height: `${bar.heightPercent}%` }"
+                      />
+                    </div>
+                    <span
+                      class="text-[0.58rem]"
+                      :class="bar.isLatest ? 'font-bold text-primary' : 'text-overlay-dark-40'"
+                    >
+                      {{ bar.label }}
+                    </span>
+                  </div>
+                </div>
+                <p
+                  v-else
+                  class="flex flex-1 items-center justify-center text-[0.74rem] text-overlay-dark-40"
+                >
+                  아직 동기화 이력이 없습니다
+                </p>
+              </article>
+
+              <!-- 스페이스 / 페이지 / 첨부파일 -->
+              <article
+                class="col-span-2 rounded-2xl border border-bg-300/60 bg-primary-white px-[18px] py-4 shadow-[0_2px_8px_rgba(15,23,42,0.03)] transition-[transform,box-shadow] duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_32px_-20px_rgba(15,23,42,0.22)]"
+              >
+                <div class="flex h-full items-stretch">
+                  <div
+                    v-for="(card, index) in contentVolumeCards"
+                    :key="card.testId"
+                    :data-testid="`admin-data-card-${card.testId}`"
+                    class="flex flex-1 flex-col justify-center"
+                    :class="index > 0 ? 'ml-4 border-l border-bg-200 pl-4' : ''"
+                  >
+                    <p class="text-[0.7rem] text-overlay-dark-40">{{ card.label }}</p>
+                    <p
+                      class="mt-1.5 text-[1.4rem] font-bold tracking-[-0.05em] text-overlay-dark-80"
+                    >
+                      {{ card.value }}
+                    </p>
+                  </div>
+                </div>
+              </article>
+
+              <!-- VectorDB -->
+              <article
+                data-testid="admin-data-card-vectorDbSize"
+                class="rounded-2xl border border-bg-300/60 bg-primary-white px-[18px] py-4 shadow-[0_2px_8px_rgba(15,23,42,0.03)] transition-[transform,box-shadow] duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_32px_-20px_rgba(15,23,42,0.22)]"
+              >
+                <p class="text-[0.7rem] text-overlay-dark-40">VectorDB</p>
+                <p class="mt-1.5 text-[1.4rem] font-bold tracking-[-0.05em] text-overlay-dark-80">
+                  {{ adminDataOverview.vectorDbSize }}
+                </p>
+              </article>
+
+              <!-- 청크 -->
+              <article
+                data-testid="admin-data-card-totalChunks"
+                class="rounded-2xl border border-bg-300/60 bg-primary-white px-[18px] py-4 shadow-[0_2px_8px_rgba(15,23,42,0.03)] transition-[transform,box-shadow] duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_32px_-20px_rgba(15,23,42,0.22)]"
+              >
+                <p class="text-[0.7rem] text-overlay-dark-40">청크</p>
+                <p class="mt-1.5 text-[1.4rem] font-bold tracking-[-0.05em] text-overlay-dark-80">
+                  {{ formatNumber(adminDataOverview.totalChunks) }}
+                </p>
+              </article>
+
+              <!-- 동기화 소요시간 추이 -->
+              <article
+                data-testid="admin-sync-duration-chart"
+                class="group relative col-span-2 rounded-2xl border border-bg-300/60 bg-primary-white px-[18px] py-4 shadow-[0_2px_8px_rgba(15,23,42,0.03)] transition-[transform,box-shadow] duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_32px_-20px_rgba(15,23,42,0.22)]"
+              >
+                <div class="flex items-baseline justify-between gap-2">
+                  <p class="text-[0.7rem] text-overlay-dark-40">동기화 소요시간 추이 (초)</p>
+                  <p v-if="durationChart" class="text-[0.6rem] text-overlay-dark-20">
+                    hover로 상세
+                  </p>
+                </div>
+
+                <template v-if="durationChart">
+                  <div
+                    class="pointer-events-none absolute right-4 top-3.5 rounded-lg border border-bg-300/60 bg-primary-white px-2.5 py-1.5 text-[0.66rem] text-overlay-dark-80 opacity-0 shadow-[0_6px_16px_-8px_rgba(15,23,42,0.25)] transition-opacity duration-200 group-hover:opacity-100"
+                  >
+                    평균
+                    <b class="font-bold text-primary">{{ durationChart.averageDuration }}초</b>
+                    · 성공
+                    <span class="text-status-success">
+                      {{ durationChart.completedCount }}/{{ durationChart.totalCount }}
+                    </span>
+                  </div>
+                  <svg
+                    viewBox="0 0 300 56"
+                    preserveAspectRatio="none"
+                    class="mt-2.5 block h-14 w-full"
+                  >
+                    <defs>
+                      <linearGradient id="adminSyncDurationGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0" stop-color="var(--color-primary)" stop-opacity="0.2" />
+                        <stop offset="1" stop-color="var(--color-primary)" stop-opacity="0" />
+                      </linearGradient>
+                    </defs>
+                    <path :d="durationChart.areaPath" fill="url(#adminSyncDurationGradient)" />
+                    <path
+                      :d="durationChart.linePath"
+                      fill="none"
+                      stroke="var(--color-primary)"
+                      stroke-width="2.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                    <circle
+                      v-for="point in durationChart.points"
+                      :key="point.syncId"
+                      :cx="point.x"
+                      :cy="point.y"
+                      r="3"
+                      fill="var(--color-primary-white)"
+                      stroke-width="2"
+                      :stroke="point.isFailed ? 'var(--color-error)' : 'var(--color-primary)'"
+                    >
+                      <title>{{ point.title }}</title>
+                    </circle>
+                  </svg>
+                </template>
+                <p
+                  v-else
+                  class="flex h-14 items-center justify-center text-[0.74rem] text-overlay-dark-40"
+                >
+                  아직 동기화 이력이 없습니다
                 </p>
               </article>
             </div>

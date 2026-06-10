@@ -272,8 +272,9 @@ describe('feature14 Admin operations board', () => {
 
   it('skips redundant key activation when the admin key was already activated manually', async () => {
     mockAdminBoardBase();
+    // 고정 날짜는 실행 시점이 지나면 키가 만료된 것으로 판정되므로 항상 미래 시각을 사용한다.
     mockedActivateAdminKey.mockResolvedValue({
-      activatedUntil: '2026-06-09T23:59:00+09:00',
+      activatedUntil: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
     });
     mockedStartAdminIngestJob.mockResolvedValue({
       jobId: 'job-uuid-002',

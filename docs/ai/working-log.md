@@ -2678,6 +2678,32 @@
 - feature14 admin 보드 테스트: passed, 1 file / 11 tests passed
 - `./scripts/lint.sh`: passed
 
+## 2026-06-09 - follow-up: data-overview preview 22 확장 시안 추가
+
+### Scope
+
+- `docs/data-overview-preview.html`의 22번 계열을 덜 블럭형이고 덜 생성형처럼 보이도록 확장
+- 실제 제품 화면에 가까운 데이터 현황 시안 3종을 정적 preview 문서에 추가
+
+### Changed Files
+
+- `docs/data-overview-preview.html`: 27~29번 상업형 데이터 현황 시안과 관련 스타일 추가
+- `docs/ai/working-log.md`: 후속 작업 기록 추가
+
+### Commands
+
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed, 14 files / 120 tests passed
+- `./scripts/verify.sh`: passed
+
 ## 2026-06-09 - follow-up: Admin ETA idle 표기 정리
 
 ### Scope
@@ -2827,3 +2853,38 @@
 
 - feature14 admin 보드 테스트: passed, 1 file / 11 tests passed
 - `./scripts/lint.sh`: passed
+
+## 2026-06-10 - feature15 디자인 개선: 데이터 현황 섹션 17번 벤토 시안 적용
+
+### Scope
+
+- 시안(정리형 벤토)을 `AdminEntryPage.vue` 데이터 현황 섹션에 적용
+- 마지막 동기화 카드(lina-desk 일러스트 + 상대 시간), 스페이스/페이지/첨부파일 3분할 타일, VectorDB/청크 타일, 최근 동기화 업데이트 페이지 바차트, 동기화 소요시간 추이 라인차트(hover 요약 툴팁)로 구성
+- 모든 표시 데이터는 `docs/api-spec.md` 기준 — 카드 값은 `GET /api/admin/data`(`totalSpaces`/`totalPages`/`totalAttachments`/`vectorDbSize`/`totalChunks`/`lastSyncAt`), 두 차트는 `GET /api/admin/sync`의 `syncHistory`(`updatedPages`/`duration`/`status`/`completedAt`) 최근 7건을 시간순으로 렌더링. 임의 필드 추가 없음
+- 동기화 이력이 비어 있을 때 두 차트 타일에 빈 상태 문구 표시
+- 색상은 디자인 토큰(`primary`/`primary-light`/`status-success`/`--color-error`)만 사용
+
+### Changed Files
+
+- `src/pages/AdminEntryPage.vue`: 데이터 현황 영역을 벤토 그리드로 교체, 차트 계산 computed(`syncChartBars`/`durationChart`)와 `formatChartDate`/`formatRelativeTime` 추가. 기존 `admin-last-sync-at`, `admin-data-card-*` testid 유지
+- `src/shared/assets.ts`: `linaDeskImageUrl` import/export 추가
+- `src/__tests__/feature14.admin-operations-board.test.ts`: 날짜 의존으로 깨진 key 활성화 스킵 테스트의 `activatedUntil` fixture를 미래 시각 상대값으로 수정 (고정 날짜 `2026-06-09T23:59`가 실행일 경과로 만료 판정되어 실패하던 기존 문제 — 본 작업과 무관하게 main에서도 재현 확인)
+- `docs/ai/working-log.md`: 작업 기록 추가
+
+### Commands
+
+- `./scripts/format.sh`
+- `npm test -- src/__tests__/feature14.admin-operations-board.test.ts`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+
+### Results
+
+- feature14 admin 보드 테스트: passed, 1 file / 11 tests passed
+- 전체 테스트: passed, 14 files / 120 tests passed
+- `./scripts/lint.sh`: passed
+
+### Notes / Remaining Issues
+
+- MSW mock(`mockAdminSyncHistory`)은 5건이라 차트가 5포인트로 표시됨 — 백엔드 통합 시 `syncHistory` 응답 그대로 최근 7건까지 자동 반영
+- `frontend/assets/lina-character/lina-desk.png`는 신규 에셋으로 커밋에 포함 필요
