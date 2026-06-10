@@ -50,6 +50,11 @@ const router = createRouter({
       name: 'admin-entry',
       component: AdminEntryPage,
     },
+    {
+      path: '/admin/operations',
+      name: 'admin-operations',
+      component: AdminEntryPage,
+    },
   ],
 });
 

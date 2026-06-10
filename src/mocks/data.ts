@@ -16,6 +16,11 @@
  * --------------------------------------------------
  */
 import type {
+  AdminDataOverview,
+  AdminIngestStatusResponse,
+  AdminKeyActivationResponse,
+  StartAdminIngestResponse,
+  AdminSyncHistoryResponse,
   ConfluencePagePreview,
   Conversation,
   ConversationSearchResponse,
@@ -28,11 +33,110 @@ export const mockCurrentUser: CurrentUser = {
   userId: 'user-001',
   name: '이다연',
   email: 'dayeon@example.com',
-  role: 'USER',
+  role: 'ADMIN',
   profileImageUrl:
     'https://mblogthumb-phinf.pstatic.net/MjAyNTA5MDNfMzEg/MDAxNzU2ODk5ODI4NTYx.VzhqoiUeu5-JgOSajxHFRO4o5Bh8LrowuEfxEPKVG6cg.RurBKZOGbgkY5ROekysZZSBL0fgKAB6itfMC3kGU-DIg.JPEG/IMG%EF%BC%BF3630.JPG?type=w800',
   lastLoginAt: '2026-05-20T18:00:00+09:00',
 };
+
+export const mockAdminDataOverview: AdminDataOverview = {
+  totalSpaces: 6,
+  totalPages: 2847,
+  totalAttachments: 934,
+  vectorDbSize: '1.2 GB',
+  totalChunks: 18432,
+  lastSyncAt: '2026-06-04T07:23:00+09:00',
+};
+
+export const mockAdminSyncHistory: AdminSyncHistoryResponse = {
+  syncHistory: [
+    {
+      syncId: 'sync-001',
+      status: 'COMPLETED',
+      updatedPages: 15,
+      deletedPages: 5,
+      duration: 140,
+      completedAt: '2026-06-04T10:23:00+09:00',
+    },
+    {
+      syncId: 'sync-002',
+      status: 'COMPLETED',
+      updatedPages: 24,
+      deletedPages: 6,
+      duration: 55,
+      completedAt: '2026-06-04T02:23:00+09:00',
+    },
+    {
+      syncId: 'sync-003',
+      status: 'COMPLETED',
+      updatedPages: 79,
+      deletedPages: 0,
+      duration: 138,
+      completedAt: '2026-06-03T18:23:00+09:00',
+    },
+    {
+      syncId: 'sync-004',
+      status: 'FAILED',
+      updatedPages: 10,
+      deletedPages: 1,
+      duration: 67,
+      completedAt: '2026-06-03T10:23:00+09:00',
+    },
+    {
+      syncId: 'sync-005',
+      status: 'COMPLETED',
+      updatedPages: 5,
+      deletedPages: 2,
+      duration: 248,
+      completedAt: '2026-06-03T02:23:00+09:00',
+    },
+  ],
+};
+
+export const mockAdminKeyActivation: AdminKeyActivationResponse = {
+  activatedUntil: '2026-06-09T13:00:00+09:00',
+};
+
+export const mockAdminIngestStart: StartAdminIngestResponse = {
+  jobId: 'job-uuid-001',
+  status: 'STARTED',
+  startedAt: '2026-06-09T12:00:00+09:00',
+};
+
+export const mockAdminIngestStatusSequence: AdminIngestStatusResponse[] = [
+  {
+    jobId: 'job-uuid-001',
+    status: 'STARTED',
+    totalPages: 150,
+    processedPages: 0,
+    failedPages: 0,
+    startedAt: '2026-06-09T12:00:00+09:00',
+  },
+  {
+    jobId: 'job-uuid-001',
+    status: 'IN_PROGRESS',
+    totalPages: 150,
+    processedPages: 52,
+    failedPages: 0,
+    startedAt: '2026-06-09T12:00:00+09:00',
+  },
+  {
+    jobId: 'job-uuid-001',
+    status: 'IN_PROGRESS',
+    totalPages: 150,
+    processedPages: 109,
+    failedPages: 1,
+    startedAt: '2026-06-09T12:00:00+09:00',
+  },
+  {
+    jobId: 'job-uuid-001',
+    status: 'COMPLETED',
+    totalPages: 150,
+    processedPages: 150,
+    failedPages: 2,
+    startedAt: '2026-06-09T12:00:00+09:00',
+  },
+];
 
 export const mockSources: Source[] = [
   {

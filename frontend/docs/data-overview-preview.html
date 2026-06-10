@@ -1,0 +1,2235 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LINA · 데이터 현황 디자인 시안</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --orange:   #f48122;
+      --orange-2: #ff9d4d;
+      --success:  #2eb97f;
+      --ink-80: rgba(0,0,0,0.82);
+      --ink-60: rgba(0,0,0,0.6);
+      --ink-40: rgba(0,0,0,0.4);
+      --ink-25: rgba(0,0,0,0.25);
+      --bg-100: #fcfcfc;
+      --bg-200: #f3f2f0;
+      --bg-300: #e6e6e6;
+      --card:   #ffffff;
+      --line:   rgba(0,0,0,0.08);
+      --mono: 'JetBrains Mono', ui-monospace, monospace;
+      --sans: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--sans); background: var(--bg-100); color: var(--ink-80);
+      -webkit-font-smoothing: antialiased; padding: 48px clamp(20px,5vw,64px) 96px; letter-spacing: -0.01em;
+    }
+    .wrap { max-width: 1000px; margin: 0 auto; }
+    .eyebrow { font-family: var(--mono); font-size: 0.7rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--orange); }
+    .page-title { font-size: clamp(1.5rem,3.5vw,2rem); font-weight: 800; letter-spacing: -0.04em; margin-top: 10px; }
+    .page-sub { margin-top: 12px; font-size: 0.9rem; color: var(--ink-60); line-height: 1.65; max-width: 640px; }
+
+    .section { margin-top: 50px; }
+    .section-label { display: flex; align-items: baseline; gap: 11px; margin-bottom: 6px; }
+    .section-label .num { font-family: var(--mono); font-size: 0.74rem; font-weight: 700; color: var(--orange); }
+    .section-label h2 { font-size: 1.12rem; font-weight: 700; letter-spacing: -0.025em; }
+    .section-desc { font-size: 0.82rem; color: var(--ink-40); margin-bottom: 20px; line-height: 1.5; }
+
+    /* 미니 컨테이너(화면 폭 흉내) */
+    .frame { background: var(--bg-100); border: 1px dashed var(--bg-300); border-radius: 16px; padding: 26px; }
+
+    /* ════════════════════════════════════════════════
+       시안 1 · 리포트 레저 (Report Ledger)
+       문서/명세서 느낌. dotted leader, 모노 숫자, 좌측 악센트.
+       ════════════════════════════════════════════════ */
+    .ledger { background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+    .ledger-head {
+      display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
+      padding: 18px 24px; border-bottom: 1.5px solid var(--ink-80);
+    }
+    .ledger-head .t { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.02em; }
+    .ledger-head .sync { font-family: var(--mono); font-size: 0.78rem; color: var(--ink-60); }
+    .ledger-head .sync b { color: var(--orange); font-weight: 700; }
+    .ledger-rows { padding: 6px 24px 14px; }
+    .led-row { display: flex; align-items: baseline; gap: 10px; padding: 13px 0; border-bottom: 1px solid var(--line); }
+    .led-row:last-child { border-bottom: 0; }
+    .led-row .k { font-size: 0.86rem; color: var(--ink-60); white-space: nowrap; }
+    .led-row .dots { flex: 1; border-bottom: 1.5px dotted var(--ink-25); transform: translateY(-3px); }
+    .led-row .v { font-family: var(--mono); font-size: 1.35rem; font-weight: 700; letter-spacing: -0.04em; white-space: nowrap; }
+    .led-row .v small { font-size: 0.8rem; color: var(--ink-40); font-weight: 500; margin-left: 3px; }
+
+    /* ════════════════════════════════════════════════
+       시안 2 · 벤토 (Asymmetric Bento)
+       마지막 동기화를 큰 타일로, 지표는 크기 다른 타일로.
+       ════════════════════════════════════════════════ */
+    .bento { display: grid; grid-template-columns: 1.3fr 1fr 1fr; grid-auto-rows: 1fr; gap: 12px; }
+    @media (max-width: 620px) { .bento { grid-template-columns: 1fr 1fr; } }
+    .bt {
+      background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px;
+      display: flex; flex-direction: column; justify-content: space-between; min-height: 104px;
+    }
+    .bt-k { font-size: 0.72rem; color: var(--ink-40); }
+    .bt-v { font-family: var(--mono); font-size: 1.7rem; font-weight: 700; letter-spacing: -0.05em; margin-top: 10px; }
+    .bt-v small { font-size: 0.82rem; color: var(--ink-40); font-weight: 500; margin-left: 2px; }
+    /* hero tile : 마지막 동기화 */
+    .bt-hero {
+      grid-row: span 2; background: linear-gradient(150deg, var(--orange), #e8700f);
+      color: #fff; border: none; justify-content: space-between;
+    }
+    .bt-hero .bt-k { color: rgba(255,255,255,0.85); font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; }
+    .bt-hero .big { font-size: 1.9rem; font-weight: 800; letter-spacing: -0.04em; line-height: 1.1; margin-top: 8px; }
+    .bt-hero .rel { font-family: var(--mono); font-size: 0.76rem; color: rgba(255,255,255,0.8); margin-top: 8px; display: inline-flex; align-items: center; gap: 6px; }
+    .bt-hero .rel .led { width: 6px; height: 6px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 0 rgba(255,255,255,0.6); animation: ping 1.8s ease-out infinite; }
+    @keyframes ping { 0%{box-shadow:0 0 0 0 rgba(255,255,255,0.5)} 70%{box-shadow:0 0 0 7px rgba(255,255,255,0)} 100%{box-shadow:0 0 0 0 rgba(255,255,255,0)} }
+    /* accent tile */
+    .bt-accent { border-color: rgba(244,129,34,0.3); background: rgba(244,129,34,0.05); }
+    .bt-accent .bt-v { color: var(--orange); }
+
+    /* ════════════════════════════════════════════════
+       시안 3 · 시스템 스트립 (Status Strip)
+       한 줄 ops 콘솔 느낌. 좌측 sync hero + 인라인 지표.
+       ════════════════════════════════════════════════ */
+    .strip {
+      display: flex; align-items: stretch; flex-wrap: wrap;
+      background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden;
+    }
+    .strip-sync {
+      display: flex; flex-direction: column; justify-content: center; gap: 4px;
+      padding: 16px 22px; background: #16110d; color: #fff; min-width: 210px;
+    }
+    .strip-sync .k { font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.55); display: flex; align-items: center; gap: 7px; }
+    .strip-sync .k .led { width: 6px; height: 6px; border-radius: 50%; background: var(--orange-2); animation: blink 1.3s ease-in-out infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .strip-sync .v { font-family: var(--mono); font-size: 1.05rem; font-weight: 700; letter-spacing: -0.02em; }
+    .strip-metrics { display: flex; flex: 1; flex-wrap: wrap; }
+    .sm {
+      flex: 1; min-width: 120px; padding: 16px 20px;
+      border-left: 1px solid var(--line); display: flex; flex-direction: column; gap: 3px; justify-content: center;
+    }
+    .sm .k { font-size: 0.7rem; color: var(--ink-40); display: flex; align-items: center; gap: 6px; }
+    .sm .v { font-family: var(--mono); font-size: 1.4rem; font-weight: 700; letter-spacing: -0.04em; }
+    .sm .v small { font-size: 0.78rem; color: var(--ink-40); font-weight: 500; }
+    .sm .ic { width: 14px; height: 14px; opacity: 0.5; }
+
+    /* ════════════════════════════════════════════════
+       시안 4 · 타이포 우선 (Editorial, no boxes)
+       카드 없음. 큰 숫자 + 작은 모노 라벨 + hairline 칼럼.
+       ════════════════════════════════════════════════ */
+    .editorial { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 26px 28px; }
+    .ed-kicker {
+      font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.04em; color: var(--ink-40);
+      padding-bottom: 18px; margin-bottom: 22px; border-bottom: 1px solid var(--line);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .ed-kicker b { color: var(--ink-80); font-weight: 700; }
+    .ed-kicker .tag { font-weight: 700; color: var(--orange); letter-spacing: 0.12em; text-transform: uppercase; }
+    .ed-grid { display: grid; grid-template-columns: repeat(5, 1fr); }
+    @media (max-width: 620px) { .ed-grid { grid-template-columns: repeat(2, 1fr); gap: 24px 0; } }
+    .ed-cell { padding: 0 22px; border-left: 1px solid var(--line); }
+    .ed-cell:first-child { padding-left: 0; border-left: 0; }
+    .ed-k { font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-40); }
+    .ed-v { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.06em; margin-top: 10px; line-height: 1; }
+    .ed-v small { font-size: 0.86rem; font-weight: 600; color: var(--ink-40); letter-spacing: -0.02em; margin-left: 2px; }
+    .ed-v .bar { display: block; width: 26px; height: 3px; background: var(--orange); border-radius: 2px; margin-top: 12px; }
+
+    /* ════════════════════════════════════════════════
+       시안 5 · 스파크라인 메트릭 카드
+       ════════════════════════════════════════════════ */
+    .sgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px,1fr)); gap: 12px; }
+    .scard { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; }
+    .scard .k { font-size: 0.72rem; color: var(--ink-40); }
+    .scard .vrow { display: flex; align-items: baseline; gap: 8px; margin-top: 8px; }
+    .scard .v { font-family: var(--mono); font-size: 1.5rem; font-weight: 700; letter-spacing: -0.05em; }
+    .scard .v small { font-size: 0.78rem; color: var(--ink-40); font-weight: 500; }
+    .chip { font-family: var(--mono); font-size: 0.66rem; font-weight: 700; padding: 2px 6px; border-radius: 6px; }
+    .chip.up { background: rgba(46,185,127,0.14); color: var(--success); }
+    .chip.flat { background: var(--bg-200); color: var(--ink-40); }
+    .spk { margin-top: 12px; width: 100%; height: 34px; display: block; }
+    .spk-line { fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+    .scard .sync-mini { font-family: var(--mono); font-size: 0.68rem; color: var(--ink-40); margin-top: 8px; }
+
+    /* sync hero card (05 전용) */
+    .scard.sync { background: linear-gradient(150deg, #1d1712, #100c09); color: #fff; border: none; }
+    .scard.sync .k { color: rgba(255,255,255,0.5); font-family: var(--mono); letter-spacing: 0.1em; text-transform: uppercase; font-size: 0.64rem; }
+    .scard.sync .v { color: #fff; }
+    .scard.sync .rel { font-family: var(--mono); font-size: 0.7rem; color: rgba(255,255,255,0.6); margin-top: 10px; display: flex; align-items: center; gap: 6px; }
+    .scard.sync .rel .led { width: 6px; height: 6px; border-radius: 50%; background: var(--orange-2); animation: blink 1.3s ease-in-out infinite; }
+
+    /* ════════════════════════════════════════════════
+       시안 6 · 히어로 추이 차트 + 사이드 스탯
+       ════════════════════════════════════════════════ */
+    .hero6 { display: grid; grid-template-columns: 1.7fr 1fr; gap: 0; background: var(--card); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+    @media (max-width: 640px) { .hero6 { grid-template-columns: 1fr; } }
+    .hero6-chart { padding: 22px 24px; }
+    .hero6-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+    .hero6-top .lab { font-size: 0.74rem; color: var(--ink-40); }
+    .hero6-top .big { font-family: var(--mono); font-size: 1.9rem; font-weight: 800; letter-spacing: -0.05em; }
+    .hero6-top .big small { font-size: 0.8rem; color: var(--ink-40); font-weight: 500; }
+    .areachart { width: 100%; height: 120px; display: block; margin-top: 12px; }
+    .ac-line { fill: none; stroke: var(--orange); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+    .ac-dot { fill: #fff; stroke: var(--orange); stroke-width: 2; }
+    .ac-x { display: flex; justify-content: space-between; margin-top: 8px; }
+    .ac-x span { font-family: var(--mono); font-size: 0.62rem; color: var(--ink-25); }
+    .hero6-side { border-left: 1px solid var(--line); display: flex; flex-direction: column; }
+    @media (max-width: 640px) { .hero6-side { border-left: 0; border-top: 1px solid var(--line); } }
+    .hero6-side .sync { padding: 16px 20px; border-bottom: 1px solid var(--line); }
+    .hero6-side .sync .k { font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--orange); }
+    .hero6-side .sync .v { font-size: 0.95rem; font-weight: 700; margin-top: 5px; }
+    .hero6-side .rows { display: grid; grid-template-columns: 1fr 1fr; flex: 1; }
+    .hero6-side .cell { padding: 13px 20px; border-bottom: 1px solid var(--line); }
+    .hero6-side .cell:nth-child(odd) { border-right: 1px solid var(--line); }
+    .hero6-side .cell .k { font-size: 0.66rem; color: var(--ink-40); }
+    .hero6-side .cell .v { font-family: var(--mono); font-size: 1.15rem; font-weight: 700; letter-spacing: -0.03em; margin-top: 4px; }
+    .hero6-side .cell .v small { font-size: 0.7rem; color: var(--ink-40); font-weight: 500; }
+
+    /* ════════════════════════════════════════════════
+       시안 7 · 컴포지션 도넛 + 레전드
+       ════════════════════════════════════════════════ */
+    .comp { display: grid; grid-template-columns: auto 1fr; gap: 30px; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 24px 28px; }
+    @media (max-width: 560px) { .comp { grid-template-columns: 1fr; justify-items: center; gap: 22px; } }
+    .donut { position: relative; width: 150px; height: 150px; }
+    .donut svg { transform: rotate(-90deg); }
+    .donut-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .donut-center .v { font-family: var(--mono); font-size: 1.55rem; font-weight: 800; letter-spacing: -0.05em; }
+    .donut-center .k { font-size: 0.66rem; color: var(--ink-40); margin-top: 2px; }
+    .comp-side { min-width: 0; }
+    .comp-sync { font-family: var(--mono); font-size: 0.72rem; color: var(--ink-40); padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px solid var(--line); }
+    .comp-sync b { color: var(--orange); }
+    .legend7 { display: flex; flex-direction: column; gap: 11px; }
+    .lg7 { display: flex; align-items: center; gap: 10px; font-size: 0.84rem; }
+    .lg7 .sw { width: 11px; height: 11px; border-radius: 4px; flex-shrink: 0; }
+    .lg7 .nm { color: var(--ink-60); }
+    .lg7 .vl { margin-left: auto; font-family: var(--mono); font-weight: 700; }
+    .lg7 .pc { font-family: var(--mono); font-size: 0.72rem; color: var(--ink-40); width: 42px; text-align: right; }
+    .comp-foot { display: flex; gap: 22px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+    .comp-foot .k { font-size: 0.66rem; color: var(--ink-40); }
+    .comp-foot .v { font-family: var(--mono); font-size: 1.05rem; font-weight: 700; letter-spacing: -0.03em; margin-top: 3px; }
+    .comp-foot .v small { font-size: 0.72rem; color: var(--ink-40); font-weight: 500; }
+
+    /* ════════════════════════════════════════════════
+       시안 8 · 믹스드 벤토 (그래프 포함)
+       ════════════════════════════════════════════════ */
+    .mix { display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-rows: 92px; gap: 12px; }
+    @media (max-width: 640px) { .mix { grid-template-columns: repeat(2, 1fr); } }
+    .mx { background: var(--card); border: 1px solid var(--line); border-radius: 15px; padding: 15px 17px; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; }
+    .mx .k { font-size: 0.68rem; color: var(--ink-40); }
+    .mx .v { font-family: var(--mono); font-size: 1.4rem; font-weight: 700; letter-spacing: -0.05em; }
+    .mx .v small { font-size: 0.74rem; color: var(--ink-40); font-weight: 500; }
+    .mx-sync { grid-column: span 2; background: linear-gradient(150deg, var(--orange), #e8700f); color: #fff; border: none; }
+    .mx-sync .k { color: rgba(255,255,255,0.85); font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.12em; text-transform: uppercase; }
+    .mx-sync .big { font-size: 1.55rem; font-weight: 800; letter-spacing: -0.04em; }
+    .mx-sync .rel { font-family: var(--mono); font-size: 0.7rem; color: rgba(255,255,255,0.82); display: flex; align-items: center; gap: 6px; }
+    .mx-sync .rel .led { width: 6px; height: 6px; border-radius: 50%; background: #fff; animation: ping 1.8s ease-out infinite; }
+    .mx-chart { grid-column: span 2; }
+    .mx-chart .head { display: flex; align-items: baseline; justify-content: space-between; }
+    .mx-spk { width: 100%; height: 30px; display: block; }
+    .mx-bars { display: flex; align-items: flex-end; gap: 4px; height: 30px; }
+    .mx-bars i { flex: 1; background: var(--orange); border-radius: 2px 2px 0 0; opacity: 0.85; }
+    .mx-bars i.dim { background: var(--bg-300); }
+
+    /* draw-in animation */
+    .draw { stroke-dasharray: 600; stroke-dashoffset: 600; animation: draw 1.6s cubic-bezier(0.22,1,0.36,1) forwards; }
+    @keyframes draw { to { stroke-dashoffset: 0; } }
+
+    /* ════════════════════════════════════════════════
+       시계열 — 동기화 활동 (실데이터: /api/admin/sync)
+       ════════════════════════════════════════════════ */
+    .real-note {
+      display: inline-flex; align-items: center; gap: 7px; margin-bottom: 20px;
+      font-family: var(--mono); font-size: 0.72rem; color: var(--success);
+      background: rgba(46,185,127,0.1); border: 1px solid rgba(46,185,127,0.25);
+      padding: 6px 12px; border-radius: 99px;
+    }
+
+    /* 09 · 그룹 바차트 */
+    .sync-chart { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 22px 24px; }
+    .sc-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+    .sc-head .t { font-size: 0.78rem; font-weight: 700; }
+    .sc-legend { display: flex; gap: 14px; }
+    .sc-lg { display: flex; align-items: center; gap: 6px; font-size: 0.72rem; color: var(--ink-60); }
+    .sc-lg .sw { width: 10px; height: 10px; border-radius: 3px; }
+    .sc-bars { display: flex; align-items: stretch; gap: 16px; height: 150px; margin-top: 20px; }
+    .scol { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .scol-bars { flex: 1; display: flex; align-items: flex-end; justify-content: center; gap: 4px; width: 100%; }
+    .scol-bars i { width: 13px; border-radius: 3px 3px 0 0; transition: height 0.4s; }
+    .scol-bars i.up { background: linear-gradient(180deg, var(--orange-2), var(--orange)); }
+    .scol-bars i.del { background: var(--bg-300); }
+    .scol .x { font-family: var(--mono); font-size: 0.62rem; color: var(--ink-40); }
+    .scol .x.fail { color: var(--orange); font-weight: 700; }
+
+    /* 10 · 소요시간 추이 (area + 상태 점) */
+    .dur-chart { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 22px 24px; }
+    .dur-line { fill: none; stroke: var(--orange); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+    .dur-x { display: flex; justify-content: space-between; margin-top: 8px; }
+    .dur-x span { font-family: var(--mono); font-size: 0.62rem; color: var(--ink-25); }
+    .dur-foot { display: flex; gap: 26px; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
+    .dur-foot .k { font-size: 0.66rem; color: var(--ink-40); }
+    .dur-foot .v { font-family: var(--mono); font-size: 1.15rem; font-weight: 700; letter-spacing: -0.03em; margin-top: 3px; }
+    .dur-foot .v small { font-size: 0.7rem; color: var(--ink-40); font-weight: 500; }
+
+    /* 11 · 콤보 요약 + 상태 타임라인 */
+    .combo { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 560px) { .combo { grid-template-columns: 1fr; } }
+    .combo-card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px 22px; }
+    .combo-card .lab { font-size: 0.72rem; color: var(--ink-40); margin-bottom: 14px; }
+    .timeline-dots { display: flex; align-items: center; gap: 0; }
+    .tld { display: flex; flex-direction: column; align-items: center; gap: 7px; flex: 1; }
+    .tld .dot { width: 16px; height: 16px; border-radius: 50%; display: grid; place-items: center; }
+    .tld .dot.ok { background: rgba(46,185,127,0.18); }
+    .tld .dot.ok::after { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--success); }
+    .tld .dot.fail { background: rgba(255,72,0,0.16); }
+    .tld .dot.fail::after { content: '✕'; font-size: 0.6rem; color: var(--error); font-weight: 700; }
+    .tld .x { font-family: var(--mono); font-size: 0.58rem; color: var(--ink-40); }
+    .combo-stats { display: flex; flex-direction: column; gap: 14px; justify-content: center; }
+    .cstat { display: flex; align-items: baseline; justify-content: space-between; }
+    .cstat .k { font-size: 0.8rem; color: var(--ink-60); }
+    .cstat .v { font-family: var(--mono); font-size: 1.3rem; font-weight: 700; letter-spacing: -0.04em; }
+    .cstat .v small { font-size: 0.72rem; color: var(--ink-40); font-weight: 500; }
+
+    /* 12 · 업데이트 중심 + 삭제 급증 경고 */
+    .upd-bars { display: flex; align-items: stretch; gap: 16px; height: 150px; margin-top: 22px; }
+    .ucol { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .ucol-bar { flex: 1; display: flex; align-items: flex-end; justify-content: center; width: 100%; position: relative; }
+    .ucol-bar i { width: 22px; border-radius: 4px 4px 0 0; background: linear-gradient(180deg, var(--orange-2), var(--orange)); transition: height 0.4s; }
+    .ucol-bar i.fail { background: repeating-linear-gradient(45deg, var(--bg-300) 0 5px, var(--bg-200) 5px 10px); height: 6px !important; }
+    .ucol .x { font-family: var(--mono); font-size: 0.62rem; color: var(--ink-40); }
+    .ucol .x.fail { color: var(--ink-25); }
+    .del-badge {
+      position: absolute; top: -8px; left: 50%; transform: translateX(-50%);
+      font-family: var(--mono); font-size: 0.6rem; font-weight: 700; white-space: nowrap;
+      color: var(--error); background: rgba(255,72,0,0.1); border: 1px solid rgba(255,72,0,0.3);
+      padding: 1px 6px; border-radius: 99px;
+    }
+    .upd-warn {
+      margin-top: 16px; padding: 11px 14px; display: flex; align-items: center; gap: 9px;
+      background: rgba(255,72,0,0.05); border: 1px solid rgba(255,72,0,0.18); border-radius: 11px;
+      font-size: 0.78rem; color: var(--ink-60);
+    }
+    .upd-warn b { color: var(--error); }
+
+    /* 13 · 발산형(업↑/삭제↓) */
+    .div-bars { display: flex; gap: 16px; height: 180px; margin-top: 18px; }
+    .dvcol { flex: 1; display: flex; flex-direction: column; align-items: center; }
+    .dv-up { flex: 1; display: flex; align-items: flex-end; justify-content: center; width: 100%; }
+    .dv-mid { height: 1.5px; width: 100%; background: var(--ink-25); }
+    .dv-down { flex: 1; display: flex; align-items: flex-start; justify-content: center; width: 100%; position: relative; }
+    .dvcol i { width: 18px; }
+    .dvcol .bu { background: linear-gradient(180deg, var(--orange-2), var(--orange)); border-radius: 4px 4px 0 0; }
+    .dvcol .bd { background: #ffb39a; border-radius: 0 0 4px 4px; }
+    .dvcol .bd.spike { background: var(--error); }
+    .dvcol .x { font-family: var(--mono); font-size: 0.6rem; color: var(--ink-40); margin-top: 6px; }
+
+    /* ════════════════════════════════════════════════
+       벤토 변주 (14~16) — sync 활동 바차트 주인공, 전부 실데이터
+       ════════════════════════════════════════════════ */
+    .bn {
+      background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px;
+      display: flex; flex-direction: column; justify-content: space-between; min-height: 88px; overflow: hidden;
+      transition: transform 0.3s cubic-bezier(0.22,1,0.36,1), box-shadow 0.3s, border-color 0.3s;
+    }
+    .bn:hover { transform: translateY(-2px); box-shadow: 0 16px 32px -20px rgba(0,0,0,0.22); border-color: rgba(0,0,0,0.14); }
+    .bn .k { font-size: 0.7rem; color: var(--ink-40); }
+    .bn .v { font-family: var(--mono); font-size: 1.5rem; font-weight: 700; letter-spacing: -0.05em; margin-top: 8px; }
+    .bn .v small { font-size: 0.74rem; color: var(--ink-40); font-weight: 500; }
+    .bn.accent { background: rgba(244,129,34,0.05); border-color: rgba(244,129,34,0.25); }
+    .bn.accent .v { color: var(--orange); }
+    .bn.hero { background: linear-gradient(150deg, var(--orange), #e8700f); color: #fff; border: none; }
+    .bn.hero .k { color: rgba(255,255,255,0.85); font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.1em; text-transform: uppercase; }
+    .bn.hero .big { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.04em; }
+    .bn.hero .rel { font-family: var(--mono); font-size: 0.7rem; color: rgba(255,255,255,0.82); display: flex; align-items: center; gap: 6px; }
+    .bn.hero .rel .led { width: 6px; height: 6px; border-radius: 50%; background: #fff; animation: ping 1.8s ease-out infinite; }
+    .bn.dark { background: linear-gradient(150deg, #1d1712, #100c09); color: #fff; border: none; }
+    .bn.dark .k { color: rgba(255,255,255,0.5); font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; }
+    .bn.dark .big { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.04em; }
+    .bn.dark .rel { font-family: var(--mono); font-size: 0.68rem; color: rgba(255,255,255,0.55); display: flex; align-items: center; gap: 6px; }
+    .bn.dark .rel .led { width: 6px; height: 6px; border-radius: 50%; background: var(--orange-2); animation: blink 1.3s ease-in-out infinite; }
+
+    /* 바차트 타일 */
+    .bn-chart .head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+    .bn-chart .cap { font-family: var(--mono); font-size: 0.6rem; color: var(--ink-25); }
+    .bn-bars { display: flex; align-items: stretch; gap: 5px; flex: 1; min-height: 64px; margin-top: 14px; }
+    .bn-bars .c { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+    .bn-bars .c .bw { flex: 1; width: 100%; display: flex; align-items: flex-end; justify-content: center; }
+    .bn-bars .c .bar { width: 100%; max-width: 16px; border-radius: 3px 3px 0 0; background: linear-gradient(180deg, var(--orange-2), var(--orange)); opacity: 0.5; transition: opacity 0.2s, height 0.4s; }
+    .bn-bars .c.last .bar { opacity: 1; }
+    .bn-bars .c.fail .bar { background: repeating-linear-gradient(45deg, var(--bg-300) 0 4px, var(--bg-200) 4px 8px); }
+    .bn-bars .c .l { font-family: var(--mono); font-size: 0.54rem; color: var(--ink-40); }
+    .bn-bars .c.last .l { color: var(--orange); font-weight: 700; }
+
+    /* 소요시간 라인 타일 */
+    .bn-dur { position: relative; }
+    .bn-dur svg { width: 100%; height: 56px; display: block; margin-top: 10px; }
+    .bn-dur .dl { fill: none; stroke: var(--orange); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+    .bn-dur .dot { fill: #fff; stroke: var(--orange); stroke-width: 2; cursor: pointer; transition: r 0.15s; }
+    .bn-dur .dot:hover { r: 5; }
+    .bn-dur .dot.fail { stroke: var(--error); }
+    /* hover 요약 툴팁 */
+    .dur-tip {
+      position: absolute; top: 14px; right: 16px;
+      font-family: var(--mono); font-size: 0.66rem; color: var(--ink-60);
+      background: var(--card); border: 1px solid var(--line); border-radius: 8px;
+      padding: 5px 9px; box-shadow: 0 6px 16px -8px rgba(0,0,0,0.25);
+      opacity: 0; transform: translateY(-3px); pointer-events: none; transition: opacity 0.2s, transform 0.2s;
+    }
+    .bn-dur:hover .dur-tip { opacity: 1; transform: none; }
+    .dur-tip b { color: var(--orange); }
+    .dur-tip .ok { color: var(--success); }
+    .dur-hint { font-family: var(--mono); font-size: 0.6rem; color: var(--ink-25); }
+
+    /* 14 · 와이드 차트 */
+    .bento14 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    @media (max-width: 640px) { .bento14 { grid-template-columns: repeat(2, 1fr); } }
+    .bento14 .i-hero { grid-column: span 2; }
+    .bento14 .i-page { grid-column: span 2; }
+    .bento14 .i-chart { grid-column: span 4; min-height: 150px; }
+
+    /* 15 · 좌측 차트 (grid areas) */
+    .bento15 {
+      display: grid; gap: 12px; grid-template-columns: 1.5fr 1fr 1fr;
+      grid-template-areas:
+        "chart hero  hero"
+        "chart page  chunk"
+        "chart att   vdb"
+        "chart space space";
+    }
+    @media (max-width: 640px) {
+      .bento15 { grid-template-columns: 1fr 1fr;
+        grid-template-areas: "chart chart" "hero hero" "page chunk" "att vdb" "space space"; }
+    }
+    .bento15 .i-chart { grid-area: chart; }
+    .bento15 .i-hero { grid-area: hero; }
+    .bento15 .i-page { grid-area: page; }
+    .bento15 .i-chunk { grid-area: chunk; }
+    .bento15 .i-att { grid-area: att; }
+    .bento15 .i-vdb { grid-area: vdb; }
+    .bento15 .i-space { grid-area: space; }
+
+    /* 16 · 프리미엄 (다크 히어로 + 두 차트) */
+    .bento16 {
+      display: grid; gap: 12px; grid-template-columns: repeat(4, 1fr);
+      grid-template-areas:
+        "sync   sync   bars   bars"
+        "space  page   bars   bars"
+        "att    chunk  vdb    vdb"
+        "dur    dur    dur    dur";
+    }
+    @media (max-width: 640px) {
+      .bento16 { grid-template-columns: repeat(2, 1fr);
+        grid-template-areas: "sync sync" "bars bars" "space page" "att chunk" "vdb vdb" "dur dur"; }
+    }
+    .bento16 .i-sync { grid-area: sync; }
+    .bento16 .i-bars { grid-area: bars; min-height: 150px; }
+    .bento16 .i-space { grid-area: space; }
+    .bento16 .i-page { grid-area: page; }
+    .bento16 .i-att { grid-area: att; }
+    .bento16 .i-chunk { grid-area: chunk; }
+    .bento16 .i-vdb { grid-area: vdb; }
+    .bento16 .i-dur { grid-area: dur; }
+
+    /* 17 · 16 정리형 (스페이스+페이지 합침, VectorDB 좌하단, 소요시간 옆에) */
+    .bento17 {
+      display: grid; gap: 12px; grid-template-columns: repeat(4, 1fr);
+      grid-template-areas:
+        "sync sync bars bars"
+        "cont cont bars bars"
+        "vdb  chunk dur  dur";
+    }
+    @media (max-width: 640px) {
+      .bento17 { grid-template-columns: repeat(2, 1fr);
+        grid-template-areas: "sync sync" "bars bars" "cont cont" "vdb chunk" "dur dur"; }
+    }
+    .bento17 .i-sync { grid-area: sync; }
+    .bento17 .i-bars { grid-area: bars; min-height: 150px; }
+    .bento17 .i-cont { grid-area: cont; }
+    .bento17 .i-vdb { grid-area: vdb; }
+    .bento17 .i-chunk { grid-area: chunk; }
+    .bento17 .i-dur { grid-area: dur; }
+    /* 합친 스페이스+페이지 타일 */
+    .combo2 { display: flex; align-items: stretch; height: 100%; }
+    .combo2 .c2 { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+    .combo2 .c2 + .c2 { border-left: 1px solid var(--line); padding-left: 16px; margin-left: 16px; }
+    .combo2 .c2 .v { margin-top: 6px; }
+    /* 17 · 화이트 마지막 동기화 카드 + LINA 일러스트 */
+    .bn.synccard { flex-direction: row; align-items: center; justify-content: space-between; gap: 10px; padding-right: 8px; }
+    .bn.synccard .txt { min-width: 0; }
+    .bn.synccard .k { font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-40); }
+    .bn.synccard .big { font-size: 1.35rem; font-weight: 800; letter-spacing: -0.04em; color: var(--ink-80); margin-top: 6px; }
+    .bn.synccard .rel { font-family: var(--mono); font-size: 0.7rem; color: var(--ink-40); display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+    .bn.synccard .rel .led { width: 6px; height: 6px; border-radius: 50%; background: var(--success); }
+    .bn.synccard img { height: 84px; width: auto; object-fit: contain; flex-shrink: 0; filter: drop-shadow(0 8px 10px rgba(0,0,0,0.08)); }
+
+    /* ════════════════════════════════════════════════
+       상업 레퍼런스 — 다른 방향 (18~21)
+       ════════════════════════════════════════════════ */
+
+    /* 18 · 핀테크 잔고 카드 */
+    .fin {
+      position: relative; border-radius: 20px; padding: 28px 30px; overflow: hidden;
+      background: linear-gradient(158deg, #ffffff 40%, #fdf4ea);
+      border: 1px solid var(--line); box-shadow: 0 18px 40px -28px rgba(0,0,0,0.3);
+    }
+    .fin-kick { font-family: var(--mono); font-size: 0.7rem; color: var(--ink-40); display: flex; align-items: center; gap: 7px; }
+    .fin-kick .led { width: 6px; height: 6px; border-radius: 50%; background: var(--success); }
+    .fin-hero { display: flex; align-items: flex-end; gap: 14px; margin-top: 14px; }
+    .fin-num { font-family: var(--mono); font-size: 3rem; font-weight: 800; letter-spacing: -0.06em; line-height: 0.85; }
+    .fin-lab { font-size: 0.82rem; color: var(--ink-40); padding-bottom: 5px; }
+    .fin-chip { font-family: var(--mono); font-size: 0.68rem; font-weight: 700; padding: 3px 8px; border-radius: 7px; background: rgba(46,185,127,0.14); color: var(--success); margin-bottom: 6px; }
+    .fin-bars { display: flex; align-items: flex-end; gap: 5px; height: 40px; margin-top: 20px; }
+    .fin-bars i { flex: 1; border-radius: 3px 3px 0 0; background: var(--orange); opacity: 0.4; }
+    .fin-bars i.last { opacity: 1; }
+    .fin-bars i.fail { background: var(--bg-300); }
+    .fin-foot { display: flex; margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line); }
+    .fin-foot > div { flex: 1; padding: 0 16px; border-left: 1px solid var(--line); }
+    .fin-foot > div:first-child { padding-left: 0; border-left: 0; }
+    .fin-foot .k { font-size: 0.66rem; color: var(--ink-40); }
+    .fin-foot .v { font-family: var(--mono); font-size: 1.05rem; font-weight: 700; letter-spacing: -0.03em; margin-top: 4px; }
+    .fin-foot .v small { font-size: 0.7rem; color: var(--ink-40); font-weight: 500; }
+
+    /* 19 · iOS 그룹 인셋 리스트 */
+    .ios { background: var(--bg-200); border-radius: 18px; padding: 18px 18px 20px; }
+    .ios-cap { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 2px 4px 14px; }
+    .ios-cap .t { font-size: 0.84rem; font-weight: 700; }
+    .ios-cap .s { font-family: var(--mono); font-size: 0.72rem; color: var(--ink-40); }
+    .ios-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 560px) { .ios-cols { grid-template-columns: 1fr; } }
+    .ios-gh { font-size: 0.64rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-40); padding: 0 6px 7px; }
+    .ios-gh.mt { margin-top: 16px; }
+    .ios-group { background: var(--card); border-radius: 14px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+    .ios-row { display: flex; align-items: center; justify-content: space-between; padding: 13px 16px; border-top: 1px solid var(--line); }
+    .ios-row:first-child { border-top: 0; }
+    .ios-row .k { font-size: 0.88rem; color: var(--ink-80); }
+    .ios-row .v { font-family: var(--mono); font-size: 0.95rem; font-weight: 700; color: var(--ink-60); }
+    .ios-row .v small { font-size: 0.7rem; color: var(--ink-40); font-weight: 500; }
+
+    /* 20 · Datadog 모니터링 */
+    .dd-head { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-family: var(--mono); font-size: 0.72rem; color: var(--ink-60); }
+    .dd-head .st { width: 7px; height: 7px; border-radius: 50%; background: var(--success); box-shadow: 0 0 0 3px rgba(46,185,127,0.15); }
+    .dd { display: grid; grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+    .dd-tile { background: var(--card); padding: 14px 16px; display: flex; flex-direction: column; gap: 7px; min-height: 92px; }
+    .dd-k { font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-40); display: flex; align-items: center; gap: 6px; }
+    .dd-k .st { width: 5px; height: 5px; border-radius: 50%; background: var(--success); }
+    .dd-v { font-family: var(--mono); font-size: 1.45rem; font-weight: 700; letter-spacing: -0.04em; margin-top: auto; }
+    .dd-v small { font-size: 0.72rem; color: var(--ink-40); font-weight: 500; }
+    .dd-spark { width: 100%; height: 22px; display: block; }
+    .dd-spark path { fill: none; stroke: var(--orange); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .dd-mbars { display: flex; align-items: flex-end; gap: 3px; height: 22px; }
+    .dd-mbars i { flex: 1; background: var(--orange); opacity: 0.5; border-radius: 1.5px 1.5px 0 0; }
+    .dd-mbars i.last { opacity: 1; }
+    .dd-mbars i.fail { background: var(--bg-300); }
+
+    /* 21 · Vercel 차트 중심 */
+    .vc-strip { display: flex; flex-wrap: wrap; align-items: center; padding: 6px 2px 16px; }
+    .vc-stat { padding: 0 18px; border-left: 1px solid var(--line); }
+    .vc-stat:first-child { padding-left: 0; border-left: 0; }
+    .vc-stat .k { font-size: 0.64rem; color: var(--ink-40); }
+    .vc-stat .v { font-family: var(--mono); font-size: 1.05rem; font-weight: 700; letter-spacing: -0.03em; margin-top: 3px; }
+    .vc-stat .v small { font-size: 0.68rem; color: var(--ink-40); font-weight: 500; }
+    .vc-sync { margin-left: auto; font-family: var(--mono); font-size: 0.72rem; color: var(--ink-40); display: flex; align-items: center; gap: 7px; }
+    .vc-sync .led { width: 6px; height: 6px; border-radius: 50%; background: var(--success); }
+    .vc-chart { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 22px 24px 18px; }
+    .vc-chart .head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px; }
+    .vc-chart .head .t { font-size: 0.82rem; font-weight: 700; }
+    .vc-chart .head .cap { font-family: var(--mono); font-size: 0.64rem; color: var(--ink-25); }
+    .vc-bars { display: flex; align-items: stretch; gap: 10px; height: 180px; margin-top: 18px; position: relative; padding-bottom: 2px; }
+    .vc-bars .grid { position: absolute; inset: 0 0 18px 0; background-image: repeating-linear-gradient(180deg, var(--bg-200) 0 1px, transparent 1px 25%); pointer-events: none; }
+    .vc-bars .c { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; z-index: 1; }
+    .vc-bars .c .bw { flex: 1; width: 100%; display: flex; align-items: flex-end; justify-content: center; }
+    .vc-bars .c .bar { width: 100%; max-width: 30px; border-radius: 5px 5px 0 0; background: linear-gradient(180deg, var(--orange-2), var(--orange)); opacity: 0.5; transition: opacity 0.2s; }
+    .vc-bars .c:hover .bar { opacity: 0.85; }
+    .vc-bars .c.last .bar { opacity: 1; }
+    .vc-bars .c.fail .bar { background: repeating-linear-gradient(45deg, var(--bg-300) 0 5px, var(--bg-200) 5px 10px); }
+    .vc-bars .c .l { font-family: var(--mono); font-size: 0.62rem; color: var(--ink-40); }
+    .vc-bars .c.last .l { color: var(--orange); font-weight: 700; }
+
+    /* ════════════════════════════════════════════════
+       더 많은 레퍼런스 (22~25)
+       ════════════════════════════════════════════════ */
+
+    /* 22 · 21-튠 (차트 주인공 + 인벤토리 미니 카드) */
+    .t22-kick { font-family: var(--mono); font-size: 0.72rem; color: var(--ink-40); display: flex; align-items: center; gap: 7px; margin-bottom: 12px; }
+    .t22-kick .led { width: 6px; height: 6px; border-radius: 50%; background: var(--success); }
+    .t22-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 12px; }
+    @media (max-width: 640px) { .t22-stats { grid-template-columns: repeat(2, 1fr); } }
+    .t22-stat { background: var(--card); border: 1px solid var(--line); border-radius: 13px; padding: 13px 15px; transition: transform 0.25s, box-shadow 0.25s; }
+    .t22-stat:hover { transform: translateY(-2px); box-shadow: 0 12px 24px -18px rgba(0,0,0,0.2); }
+    .t22-stat.accent { background: rgba(244,129,34,0.05); border-color: rgba(244,129,34,0.25); }
+    .t22-stat .k { font-size: 0.68rem; color: var(--ink-40); }
+    .t22-stat .v { font-family: var(--mono); font-size: 1.35rem; font-weight: 700; letter-spacing: -0.04em; margin-top: 6px; }
+    .t22-stat .v small { font-size: 0.72rem; color: var(--ink-40); font-weight: 500; }
+    .t22-stat.accent .v { color: var(--orange); }
+
+    /* 23 · Geckoboard 월보드 */
+    .gk { background: linear-gradient(160deg, #1d1712, #0f0b08); border-radius: 20px; padding: 32px 34px; color: #fff; }
+    .gk-top { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.45); display: flex; align-items: center; gap: 8px; margin-bottom: 24px; }
+    .gk-top .led { width: 7px; height: 7px; border-radius: 50%; background: var(--success); box-shadow: 0 0 0 3px rgba(46,185,127,0.18); }
+    .gk-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+    @media (max-width: 640px) { .gk-grid { grid-template-columns: 1fr; gap: 20px; } }
+    .gk-k { font-size: 0.8rem; color: rgba(255,255,255,0.55); }
+    .gk-v { font-family: var(--mono); font-size: 3.4rem; font-weight: 800; letter-spacing: -0.06em; line-height: 0.92; margin-top: 8px; background: linear-gradient(120deg, #fff, #fcdaac); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+    .gk-v small { font-size: 1.1rem; -webkit-text-fill-color: rgba(255,255,255,0.55); }
+    .gk-delta { font-family: var(--mono); font-size: 0.78rem; color: #4fd99e; margin-top: 8px; }
+    .gk-foot { display: flex; flex-wrap: wrap; gap: 28px; margin-top: 28px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); }
+    .gk-foot .k { font-size: 0.66rem; color: rgba(255,255,255,0.4); }
+    .gk-foot .v { font-family: var(--mono); font-size: 1.05rem; font-weight: 700; margin-top: 3px; }
+
+    /* 24 · Plausible 미니멀 애널리틱스 */
+    .pl { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 24px 26px; }
+    .pl-tabs { display: flex; gap: 22px; border-bottom: 1px solid var(--line); }
+    .pl-tab { padding-bottom: 12px; font-size: 0.8rem; color: var(--ink-40); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color 0.2s; }
+    .pl-tab:hover { color: var(--ink-60); }
+    .pl-tab.on { color: var(--ink-80); font-weight: 700; border-bottom-color: var(--orange); }
+    .pl-hero { display: flex; align-items: flex-end; gap: 14px; margin: 22px 0 2px; }
+    .pl-num { font-family: var(--mono); font-size: 2.4rem; font-weight: 800; letter-spacing: -0.05em; line-height: 0.9; }
+    .pl-lab { font-size: 0.8rem; color: var(--ink-40); padding-bottom: 5px; }
+    .pl-chip { font-family: var(--mono); font-size: 0.68rem; font-weight: 700; padding: 3px 8px; border-radius: 7px; background: rgba(46,185,127,0.14); color: var(--success); margin-left: auto; margin-bottom: 6px; }
+    .pl-bars { display: flex; align-items: flex-end; gap: 8px; height: 120px; margin-top: 20px; }
+    .pl-bars .c { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 7px; }
+    .pl-bars .bw { flex: 1; width: 100%; display: flex; align-items: flex-end; justify-content: center; }
+    .pl-bars .bar { width: 100%; max-width: 34px; background: var(--orange); opacity: 0.18; border-radius: 4px 4px 0 0; transition: opacity 0.2s; }
+    .pl-bars .c:hover .bar { opacity: 0.45; }
+    .pl-bars .c.last .bar { opacity: 1; }
+    .pl-bars .c.fail .bar { background: repeating-linear-gradient(45deg, var(--bg-300) 0 5px, var(--bg-200) 5px 10px); opacity: 1; }
+    .pl-bars .l { font-family: var(--mono); font-size: 0.6rem; color: var(--ink-40); }
+
+    /* 25 · Stripe KPI 행 */
+    .sk { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+    @media (max-width: 640px) { .sk { grid-template-columns: 1fr 1fr; } }
+    .sk-cell { background: var(--card); padding: 18px 20px; }
+    .sk-k { font-size: 0.7rem; color: var(--ink-40); }
+    .sk-v { font-family: var(--mono); font-size: 1.55rem; font-weight: 700; letter-spacing: -0.04em; margin-top: 8px; display: flex; align-items: baseline; gap: 8px; }
+    .sk-v small { font-size: 0.72rem; color: var(--ink-40); font-weight: 500; }
+    .sk-delta { font-family: var(--mono); font-size: 0.64rem; font-weight: 700; padding: 1px 6px; border-radius: 5px; background: rgba(46,185,127,0.14); color: var(--success); }
+    .sk-delta.flat { background: var(--bg-200); color: var(--ink-40); }
+    .sk-spark { width: 100%; height: 22px; display: block; margin-top: 10px; }
+    .sk-spark path { fill: none; stroke: var(--orange); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+    /* ════════════════════════════════════════════════
+       26 · 22 정제 — 한 패널 (블록 최소화, 비-AI)
+       ════════════════════════════════════════════════ */
+    .op { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 26px 30px 24px; }
+    .op-sync { font-family: var(--mono); font-size: 0.7rem; color: var(--ink-40); display: flex; align-items: center; gap: 7px; }
+    .op-sync .led { width: 6px; height: 6px; border-radius: 50%; background: var(--success); }
+    .op-top { display: flex; align-items: flex-end; justify-content: space-between; gap: 28px; flex-wrap: wrap; margin-top: 14px; }
+    .op-lead-k { font-size: 0.76rem; color: var(--ink-40); }
+    .op-lead-v { font-family: var(--mono); font-size: 2.6rem; font-weight: 800; letter-spacing: -0.06em; line-height: 0.85; margin-top: 7px; display: flex; align-items: center; gap: 11px; }
+    .op-chip { font-family: var(--mono); font-size: 0.66rem; font-weight: 700; padding: 3px 8px; border-radius: 7px; background: rgba(46,185,127,0.14); color: var(--success); }
+    .op-mini { display: flex; align-items: flex-start; padding-bottom: 4px; }
+    .op-mini > div { padding: 0 20px; border-left: 1px solid var(--line); }
+    .op-mini > div:first-child { border-left: 0; padding-left: 0; }
+    .op-mini .k { font-size: 0.66rem; color: var(--ink-40); }
+    .op-mini .v { font-family: var(--mono); font-size: 1.1rem; font-weight: 700; letter-spacing: -0.03em; margin-top: 5px; }
+    .op-mini .v small { font-size: 0.7rem; color: var(--ink-40); font-weight: 500; }
+    .op-rule { border: 0; border-top: 1px solid var(--line); margin: 22px 0 0; }
+    .op-chart { margin-top: 18px; }
+    .op-chart .head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+    .op-chart .head .t { font-size: 0.8rem; font-weight: 700; color: var(--ink-80); }
+    .op-chart .head .cap { font-family: var(--mono); font-size: 0.64rem; color: var(--ink-25); }
+    .op-bars { display: flex; align-items: stretch; gap: 12px; height: 132px; margin-top: 16px; border-bottom: 1px solid var(--line); padding-bottom: 0; }
+    .op-bars .c { flex: 1; display: flex; flex-direction: column; align-items: center; }
+    .op-bars .c .bw { flex: 1; width: 100%; display: flex; align-items: flex-end; justify-content: center; }
+    .op-bars .c .bar { width: 100%; max-width: 30px; border-radius: 5px 5px 0 0; background: linear-gradient(180deg, var(--orange-2), var(--orange)); opacity: 0.42; transition: opacity 0.2s; }
+    .op-bars .c:hover .bar { opacity: 0.72; }
+    .op-bars .c.last .bar { opacity: 1; }
+    .op-bars .c.fail .bar { background: repeating-linear-gradient(45deg, var(--bg-300) 0 5px, var(--bg-200) 5px 10px); }
+    .op-xlabels { display: flex; gap: 12px; margin-top: 8px; }
+    .op-xlabels span { flex: 1; text-align: center; font-family: var(--mono); font-size: 0.62rem; color: var(--ink-40); }
+    .op-xlabels span.last { color: var(--orange); font-weight: 700; }
+
+    /* ════════════════════════════════════════════════
+       27~29 · 22 확장 — 상업형 제품 시안
+       ════════════════════════════════════════════════ */
+    .pv-grid { display: grid; gap: 18px; }
+    .pv-grid-2 { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); }
+    @media (max-width: 760px) { .pv-grid-2 { grid-template-columns: 1fr; } }
+
+    .pr27 {
+      background:
+        radial-gradient(circle at top right, rgba(244,129,34,0.09), transparent 34%),
+        linear-gradient(180deg, #fffdf9, #fff);
+      border: 1px solid rgba(28, 24, 21, 0.08);
+      border-radius: 22px;
+      padding: 30px 32px 26px;
+      box-shadow: 0 24px 60px -48px rgba(40, 28, 18, 0.32);
+    }
+    .pr27-sync,
+    .pr28-sync,
+    .pr29-sync { font-family: var(--mono); font-size: 0.69rem; color: var(--ink-40); display: flex; align-items: center; gap: 7px; }
+    .pr27-sync .led,
+    .pr28-sync .led,
+    .pr29-sync .led { width: 6px; height: 6px; border-radius: 50%; background: var(--success); }
+    .pr27-main { display: grid; grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr); gap: 24px; margin-top: 18px; }
+    @media (max-width: 760px) { .pr27-main { grid-template-columns: 1fr; } }
+    .pr27-hero { padding-right: 24px; border-right: 1px solid rgba(28, 24, 21, 0.08); }
+    @media (max-width: 760px) { .pr27-hero { padding-right: 0; border-right: 0; border-bottom: 1px solid rgba(28, 24, 21, 0.08); padding-bottom: 18px; } }
+    .pr27-k { font-size: 0.74rem; color: var(--ink-40); }
+    .pr27-v { margin-top: 8px; font-family: var(--mono); font-size: 4rem; line-height: 0.9; font-weight: 800; letter-spacing: -0.08em; }
+    .pr27-copy { margin-top: 14px; font-size: 0.9rem; line-height: 1.62; color: var(--ink-60); max-width: 25rem; }
+    .pr27-inline { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 18px; }
+    .pr27-inline div { min-width: 88px; }
+    .pr27-inline .k,
+    .pr28-strip .k,
+    .pr29-side .k { font-size: 0.64rem; color: var(--ink-40); }
+    .pr27-inline .v,
+    .pr28-strip .v,
+    .pr29-side .v { margin-top: 4px; font-family: var(--mono); font-size: 1.02rem; font-weight: 700; letter-spacing: -0.03em; }
+    .pr27-inline .v small,
+    .pr28-strip .v small,
+    .pr29-side .v small { font-size: 0.68rem; color: var(--ink-40); font-weight: 500; }
+    .pr27-board .head,
+    .pr28-chart .head,
+    .pr29-chart .head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+    .pr27-board .head .t,
+    .pr28-chart .head .t,
+    .pr29-chart .head .t { font-size: 0.81rem; font-weight: 700; color: var(--ink-80); }
+    .pr27-board .head .cap,
+    .pr28-chart .head .cap,
+    .pr29-chart .head .cap { font-family: var(--mono); font-size: 0.64rem; color: var(--ink-25); }
+    .pr27-bars,
+    .pr28-bars,
+    .pr29-bars { display: flex; align-items: stretch; gap: 12px; margin-top: 18px; }
+    .pr27-bars { height: 154px; padding-bottom: 8px; border-bottom: 1px solid rgba(28, 24, 21, 0.08); }
+    .pr28-bars,
+    .pr29-bars { height: 132px; }
+    .pr27-bars .c,
+    .pr28-bars .c,
+    .pr29-bars .c { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .pr27-bars .bw,
+    .pr28-bars .bw,
+    .pr29-bars .bw { flex: 1; width: 100%; display: flex; align-items: flex-end; justify-content: center; }
+    .pr27-bars .bar,
+    .pr28-bars .bar,
+    .pr29-bars .bar { width: 100%; max-width: 28px; border-radius: 6px 6px 0 0; background: linear-gradient(180deg, var(--orange-2), var(--orange)); opacity: 0.42; }
+    .pr27-bars .c.last .bar,
+    .pr28-bars .c.last .bar,
+    .pr29-bars .c.last .bar { opacity: 1; }
+    .pr27-bars .c.fail .bar,
+    .pr28-bars .c.fail .bar,
+    .pr29-bars .c.fail .bar { background: repeating-linear-gradient(45deg, var(--bg-300) 0 5px, var(--bg-200) 5px 10px); }
+    .pr27-xlabels,
+    .pr28-xlabels,
+    .pr29-xlabels { display: flex; gap: 12px; margin-top: 8px; }
+    .pr27-xlabels span,
+    .pr28-xlabels span,
+    .pr29-xlabels span { flex: 1; text-align: center; font-family: var(--mono); font-size: 0.61rem; color: var(--ink-40); }
+    .pr27-xlabels span.last,
+    .pr28-xlabels span.last,
+    .pr29-xlabels span.last { color: var(--orange); font-weight: 700; }
+
+    .pr28 {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      padding: 28px 30px 24px;
+      box-shadow: 0 28px 56px -52px rgba(24, 18, 12, 0.4);
+    }
+    .pr28-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; margin-top: 14px; }
+    @media (max-width: 760px) { .pr28-top { flex-direction: column; } }
+    .pr28-title { max-width: 26rem; }
+    .pr28-title .eyebrow { display: inline-flex; align-items: center; gap: 7px; padding: 4px 10px; border-radius: 999px; background: rgba(244,129,34,0.09); color: var(--orange); font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.08em; text-transform: uppercase; }
+    .pr28-title h3 { margin: 12px 0 0; font-size: 1.55rem; letter-spacing: -0.05em; line-height: 1.03; }
+    .pr28-title p { margin: 12px 0 0; font-size: 0.92rem; line-height: 1.64; color: var(--ink-60); }
+    .pr28-big { align-self: flex-end; text-align: right; }
+    .pr28-big .k { font-size: 0.66rem; color: var(--ink-40); }
+    .pr28-big .v { margin-top: 7px; font-family: var(--mono); font-size: 3.3rem; font-weight: 800; line-height: 0.9; letter-spacing: -0.07em; }
+    .pr28-big .delta { margin-top: 10px; display: inline-flex; padding: 4px 9px; border-radius: 999px; background: rgba(46,185,127,0.14); color: var(--success); font-family: var(--mono); font-size: 0.66rem; font-weight: 700; }
+    .pr28-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-top: 20px; padding: 18px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    @media (max-width: 760px) { .pr28-strip { grid-template-columns: repeat(2, 1fr); } }
+    .pr28-chart { margin-top: 18px; }
+
+    .pr29 {
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,255,255,1)),
+        linear-gradient(120deg, rgba(244,129,34,0.05), transparent 40%);
+      border: 1px solid rgba(28, 24, 21, 0.08);
+      border-radius: 24px;
+      padding: 30px 30px 26px;
+      box-shadow: 0 30px 80px -62px rgba(24, 18, 12, 0.44);
+    }
+    .pr29-main { margin-top: 18px; }
+    .pr29-side { display: flex; flex-direction: column; justify-content: space-between; gap: 20px; padding-left: 10px; }
+    .pr29-side .hero .k { font-size: 0.72rem; color: var(--ink-40); }
+    .pr29-side .hero .v { margin-top: 8px; font-family: var(--mono); font-size: 3.7rem; font-weight: 800; letter-spacing: -0.08em; line-height: 0.88; }
+    .pr29-side .hero p { margin: 12px 0 0; font-size: 0.88rem; line-height: 1.62; color: var(--ink-60); }
+    .pr29-side .list { display: grid; gap: 12px; }
+    .pr29-side .row { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding-bottom: 12px; border-bottom: 1px dashed rgba(28,24,21,0.12); }
+    .pr29-side .row:last-child { border-bottom: 0; padding-bottom: 0; }
+    .pr29-side .row .v { margin-top: 0; font-size: 0.98rem; }
+
+    /* scroll-reveal (27~29 공통) */
+    .riv { opacity: 0; transform: translateY(14px); transition: opacity 0.8s cubic-bezier(0.22,1,0.36,1), transform 0.8s cubic-bezier(0.22,1,0.36,1); }
+    .riv.in { opacity: 1; transform: none; }
+    .riv-stagger.in > * { animation: rivRise 0.7s cubic-bezier(0.22,1,0.36,1) backwards; }
+    .riv-stagger.in > *:nth-child(2) { animation-delay: 0.08s; }
+    .riv-stagger.in > *:nth-child(3) { animation-delay: 0.16s; }
+    .riv-stagger.in > *:nth-child(4) { animation-delay: 0.24s; }
+    @keyframes rivRise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
+    /* ════════════════════════════════════════════════
+       27 · 에디토리얼 매거진 (Fraunces 세리프, 인쇄 스프레드)
+       ════════════════════════════════════════════════ */
+    .ed2 {
+      position: relative; background: #fdfbf7; border: 1px solid rgba(0,0,0,0.1);
+      border-radius: 4px; padding: 44px 48px 40px; overflow: hidden;
+    }
+    .ed2::before { /* 좌상단 장식 룰 */
+      content: ''; position: absolute; top: 0; left: 0; width: 64px; height: 4px; background: var(--orange);
+    }
+    .ed2-kick { font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.24em; text-transform: uppercase; color: var(--orange); }
+    .ed2-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 44px; margin-top: 22px; align-items: end; }
+    @media (max-width: 640px) { .ed2-grid { grid-template-columns: 1fr; gap: 28px; } }
+    .ed2-num {
+      font-family: 'Fraunces', Georgia, serif; font-optical-sizing: auto;
+      font-size: 6.2rem; font-weight: 600; line-height: 0.8; letter-spacing: -0.02em; color: var(--ink-80);
+    }
+    .ed2-num .pct { font-family: var(--mono); font-size: 0.9rem; font-weight: 700; color: var(--success); vertical-align: super; margin-left: 8px; letter-spacing: 0; }
+    .ed2-sub { font-family: 'Fraunces', Georgia, serif; font-style: italic; font-weight: 500; font-size: 1.15rem; color: var(--ink-60); margin-top: 12px; }
+    .ed2-caption {
+      margin-top: 22px; font-size: 0.84rem; color: var(--ink-60); line-height: 1.8; max-width: 40ch;
+      border-top: 1.5px solid var(--ink-80); padding-top: 13px;
+    }
+    .ed2-caption b { font-family: var(--mono); font-weight: 700; color: var(--ink-80); }
+    .ed2-caption .dot { color: var(--orange); margin: 0 7px; }
+    .ed2-fig { border-left: 1px solid rgba(0,0,0,0.12); padding-left: 28px; }
+    @media (max-width: 640px) { .ed2-fig { border-left: 0; padding-left: 0; border-top: 1px solid rgba(0,0,0,0.12); padding-top: 22px; } }
+    .ed2-fig svg { width: 100%; height: 90px; display: block; }
+    .ed2-figcap { font-family: 'Fraunces', Georgia, serif; font-style: italic; font-size: 0.8rem; color: var(--ink-40); margin-top: 10px; }
+    .ed2-figcap b { font-style: normal; font-family: var(--mono); color: var(--orange); font-size: 0.68rem; }
+    .ed2-area { fill: url(#ed2grad); }
+    .ed2-stroke { fill: none; stroke: var(--orange); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+
+    /* ════════════════════════════════════════════════
+       28 · 스위스 미니멀 럭셔리 (여백·라인·light weight)
+       ════════════════════════════════════════════════ */
+    .lux { background: #fff; border: 1px solid var(--line); border-radius: 4px; padding: 44px 46px 40px; }
+    .lux-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding-bottom: 22px; border-bottom: 1px solid var(--ink-80); }
+    .lux-head .ttl { font-size: 0.7rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--ink-80); font-weight: 600; }
+    .lux-head .sync { font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.08em; color: var(--ink-40); }
+    .lux-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 38px; margin-top: 36px; }
+    .lux-stat .k { font-size: 0.58rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--ink-40); }
+    .lux-stat .v { font-family: var(--mono); font-size: 1.9rem; font-weight: 300; letter-spacing: -0.03em; margin-top: 14px; color: var(--ink-80); }
+    .lux-stat .v small { font-size: 0.7rem; color: var(--ink-40); font-weight: 400; }
+    .lux-stat.lead { margin-right: 14px; }
+    .lux-stat.lead .v { font-size: 3.4rem; font-weight: 300; }
+    .lux-stat.lead .v .pct { font-family: var(--mono); font-size: 0.8rem; font-weight: 700; color: var(--success); vertical-align: super; margin-left: 6px; }
+    .lux-chart { margin-top: 40px; }
+    .lux-chart-head { display: flex; justify-content: space-between; align-items: baseline; }
+    .lux-chart-head .k { font-size: 0.58rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--ink-40); }
+    .lux-chart-head .cap { font-family: var(--mono); font-size: 0.62rem; color: var(--ink-25); }
+    .lux-chart svg { width: 100%; height: 60px; display: block; margin-top: 14px; }
+    .lux-stroke { fill: none; stroke: var(--orange); stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }
+    .lux-xlabels { display: flex; justify-content: space-between; margin-top: 10px; }
+    .lux-xlabels span { font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.08em; color: var(--ink-25); }
+    .lux-xlabels span.last { color: var(--orange); }
+
+    /* ════════════════════════════════════════════════
+       29 · 오가닉 소프트 (따뜻한 메시 + 곡선)
+       ════════════════════════════════════════════════ */
+    .soft2 {
+      position: relative; border-radius: 28px; padding: 32px 36px 28px; overflow: hidden;
+      background:
+        radial-gradient(120% 130% at 0% 0%, #fff4e8, transparent 52%),
+        radial-gradient(120% 130% at 100% 110%, #fde9d6, transparent 56%),
+        #fffdfa;
+      box-shadow: 0 24px 60px -34px rgba(244,129,34,0.4), inset 0 1px 0 rgba(255,255,255,0.9);
+    }
+    .soft2::after { /* grain */
+      content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0.035; mix-blend-mode: multiply;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+    .soft2 > * { position: relative; z-index: 1; }
+    .soft2-sync { font-family: var(--mono); font-size: 0.7rem; color: #c47a2e; display: flex; align-items: center; gap: 7px; }
+    .soft2-sync .led { width: 6px; height: 6px; border-radius: 50%; background: var(--orange); box-shadow: 0 0 0 3px rgba(244,129,34,0.18); }
+    .soft2-top { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; margin-top: 14px; }
+    .soft2-num { font-family: var(--mono); font-size: 3.1rem; font-weight: 800; letter-spacing: -0.06em; line-height: 0.85; color: var(--ink-80); }
+    .soft2-lab { font-size: 0.84rem; color: var(--ink-40); padding-bottom: 6px; }
+    .soft2-chip { font-family: var(--mono); font-size: 0.68rem; font-weight: 700; padding: 3px 9px; border-radius: 99px; background: rgba(46,185,127,0.16); color: var(--success); margin-bottom: 6px; }
+    .soft2-stats { display: flex; flex-wrap: wrap; gap: 30px; margin-top: 20px; }
+    .soft2-stat .k { font-size: 0.66rem; color: var(--ink-40); }
+    .soft2-stat .v { font-family: var(--mono); font-size: 1.1rem; font-weight: 700; letter-spacing: -0.03em; margin-top: 4px; color: var(--ink-80); }
+    .soft2-stat .v small { font-size: 0.7rem; color: var(--ink-40); font-weight: 500; }
+    .soft2-curve { margin-top: 22px; position: relative; }
+    .soft2-curve svg { width: 100%; height: 96px; display: block; }
+    .soft2-area { fill: url(#soft2grad); }
+    .soft2-stroke { fill: none; stroke: var(--orange); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; filter: drop-shadow(0 4px 6px rgba(244,129,34,0.25)); }
+    .soft2-curve .endpt { fill: var(--orange); }
+    .soft2-curve .endhalo { fill: var(--orange); opacity: 0.18; }
+    .soft2-cap { display: flex; justify-content: space-between; margin-top: 8px; }
+    .soft2-cap span { font-family: var(--mono); font-size: 0.6rem; color: var(--ink-40); }
+    .soft2-cap span.last { color: var(--orange); font-weight: 700; }
+
+    .footnote { margin-top: 60px; font-size: 0.74rem; color: var(--ink-40); border-top: 1px solid var(--line); padding-top: 20px; font-family: var(--mono); }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <span class="eyebrow">LINA Admin · Data Overview</span>
+    <h1 class="page-title">데이터 현황 디자인 시안</h1>
+    <p class="page-sub">
+      "마지막 동기화 + 스페이스 / 페이지 / 첨부파일 / VectorDB / 청크" 를 한눈에 들어오면서도
+      흔한 대시보드 같지 않게 풀어낸 4가지 방향입니다. 모노스페이스 숫자·하프라인·비대칭으로 손으로 디자인한 느낌을 줍니다.
+    </p>
+  </header>
+
+  <!-- ═══════════ 시안 1 ═══════════ -->
+  <section class="section">
+    <div class="section-label"><span class="num">01</span><h2>리포트 레저</h2></div>
+    <p class="section-desc">재무 명세서처럼. 점선 리더(leader)로 라벨↔값을 잇고, 굵은 상단 룰과 모노 숫자로 "문서" 느낌. 스캔이 아주 쉬움.</p>
+    <div class="frame">
+      <div class="ledger">
+        <div class="ledger-head">
+          <span class="t">데이터 현황</span>
+          <span class="sync">마지막 동기화 · <b>2026. 06. 09. 오후 02:14</b></span>
+        </div>
+        <div class="ledger-rows">
+          <div class="led-row"><span class="k">스페이스</span><span class="dots"></span><span class="v">3</span></div>
+          <div class="led-row"><span class="k">페이지</span><span class="dots"></span><span class="v">1,284</span></div>
+          <div class="led-row"><span class="k">첨부파일</span><span class="dots"></span><span class="v">462</span></div>
+          <div class="led-row"><span class="k">VectorDB</span><span class="dots"></span><span class="v">2.4<small>GB</small></span></div>
+          <div class="led-row"><span class="k">청크</span><span class="dots"></span><span class="v">8,741</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 시안 2 ═══════════ -->
+  <section class="section">
+    <div class="section-label"><span class="num">02</span><h2>비대칭 벤토</h2></div>
+    <p class="section-desc">마지막 동기화를 큰 오렌지 타일로 주인공 삼고, 지표는 크기·강조가 다른 타일로 배치. 균일 카드 4개의 "AI 슬롭"에서 벗어남.</p>
+    <div class="frame">
+      <div class="bento">
+        <div class="bt bt-hero">
+          <div class="bt-k">마지막 동기화</div>
+          <div>
+            <div class="big">02:14<span style="font-size:1rem;opacity:.8;font-weight:600"> PM</span></div>
+            <div class="rel"><span class="led"></span>3시간 전 · 2026.06.09</div>
+          </div>
+        </div>
+        <div class="bt"><div class="bt-k">스페이스</div><div class="bt-v">3</div></div>
+        <div class="bt bt-accent"><div class="bt-k">페이지</div><div class="bt-v">1,284</div></div>
+        <div class="bt"><div class="bt-k">첨부파일</div><div class="bt-v">462</div></div>
+        <div class="bt"><div class="bt-k">VectorDB</div><div class="bt-v">2.4<small>GB</small></div></div>
+        <div class="bt" style="grid-column: span 1"><div class="bt-k">청크</div><div class="bt-v">8,741</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 시안 3 ═══════════ -->
+  <section class="section">
+    <div class="section-label"><span class="num">03</span><h2>시스템 스트립</h2></div>
+    <p class="section-desc">한 줄 ops 콘솔. 좌측 다크 블록에 마지막 동기화(라이브 점), 나머지는 얇은 구분선으로 나눈 인라인 지표. 세로 공간 최소·밀도 높음.</p>
+    <div class="frame">
+      <div class="strip">
+        <div class="strip-sync">
+          <span class="k"><span class="led"></span>LAST SYNC</span>
+          <span class="v">02:14 PM</span>
+          <span class="k" style="text-transform:none;letter-spacing:0;color:rgba(255,255,255,0.4)">3시간 전 · 06.09</span>
+        </div>
+        <div class="strip-metrics">
+          <div class="sm"><span class="k">스페이스</span><span class="v">3</span></div>
+          <div class="sm"><span class="k">페이지</span><span class="v">1,284</span></div>
+          <div class="sm"><span class="k">첨부파일</span><span class="v">462</span></div>
+          <div class="sm"><span class="k">VectorDB</span><span class="v">2.4<small>GB</small></span></div>
+          <div class="sm"><span class="k">청크</span><span class="v">8,741</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 시안 4 ═══════════ -->
+  <section class="section">
+    <div class="section-label"><span class="num">04</span><h2>타이포 우선 (에디토리얼)</h2></div>
+    <p class="section-desc">카드 박스를 없애고 타이포 위계로만. 큰 숫자 + 작은 모노 라벨 + 세로 하프라인 칼럼, 숫자 아래 짧은 오렌지 악센트 바. 가장 "사람이 디자인한" 느낌.</p>
+    <div class="frame">
+      <div class="editorial">
+        <div class="ed-kicker"><span class="tag">Last sync</span> <b>2026. 06. 09. 오후 02:14</b> · 3시간 전</div>
+        <div class="ed-grid">
+          <div class="ed-cell"><div class="ed-k">Spaces</div><div class="ed-v">3<span class="bar"></span></div></div>
+          <div class="ed-cell"><div class="ed-k">Pages</div><div class="ed-v">1,284<span class="bar"></span></div></div>
+          <div class="ed-cell"><div class="ed-k">Attachments</div><div class="ed-v">462<span class="bar"></span></div></div>
+          <div class="ed-cell"><div class="ed-k">VectorDB</div><div class="ed-v">2.4<small>GB</small><span class="bar"></span></div></div>
+          <div class="ed-cell"><div class="ed-k">Chunks</div><div class="ed-v">8,741<span class="bar"></span></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 시안 5 ═══════════ -->
+  <section class="section">
+    <div class="section-label"><span class="num">05</span><h2>스파크라인 메트릭 카드</h2></div>
+    <p class="section-desc">각 지표에 최근 동기화 추이를 작은 라인으로. 증감 칩(↑12%)으로 변화까지 한눈에. Stripe·Linear 류의 상업 대시보드 감성.</p>
+    <div class="frame">
+      <div class="sgrid">
+        <div class="scard sync">
+          <div class="k">마지막 동기화</div>
+          <div class="vrow"><span class="v">02:14<small style="color:rgba(255,255,255,.6)"> PM</small></span></div>
+          <div class="rel"><span class="led"></span>3시간 전 · 06.09</div>
+        </div>
+        <div class="scard">
+          <div class="k">페이지</div>
+          <div class="vrow"><span class="v">1,284</span><span class="chip up">↑ 12%</span></div>
+          <svg class="spk" viewBox="0 0 100 34" preserveAspectRatio="none"><path class="spk-line draw" stroke="var(--orange)" d="M0,28 L20,24 L40,25 L60,17 L80,13 L100,6" /></svg>
+        </div>
+        <div class="scard">
+          <div class="k">청크</div>
+          <div class="vrow"><span class="v">8,741</span><span class="chip up">↑ 9%</span></div>
+          <svg class="spk" viewBox="0 0 100 34" preserveAspectRatio="none"><path class="spk-line draw" stroke="var(--success)" d="M0,26 L20,28 L40,20 L60,22 L80,14 L100,8" /></svg>
+        </div>
+        <div class="scard">
+          <div class="k">첨부파일</div>
+          <div class="vrow"><span class="v">462</span><span class="chip up">↑ 4%</span></div>
+          <svg class="spk" viewBox="0 0 100 34" preserveAspectRatio="none"><path class="spk-line draw" stroke="var(--orange)" d="M0,24 L20,22 L40,23 L60,19 L80,18 L100,14" /></svg>
+        </div>
+        <div class="scard">
+          <div class="k">VectorDB</div>
+          <div class="vrow"><span class="v">2.4<small>GB</small></span><span class="chip up">↑ 8%</span></div>
+          <svg class="spk" viewBox="0 0 100 34" preserveAspectRatio="none"><path class="spk-line draw" stroke="var(--orange)" d="M0,27 L20,25 L40,21 L60,18 L80,12 L100,7" /></svg>
+        </div>
+        <div class="scard">
+          <div class="k">스페이스</div>
+          <div class="vrow"><span class="v">3</span><span class="chip flat">변동 없음</span></div>
+          <svg class="spk" viewBox="0 0 100 34" preserveAspectRatio="none"><path class="spk-line draw" stroke="var(--ink-25)" d="M0,18 L20,18 L40,18 L60,18 L80,18 L100,18" /></svg>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 시안 6 ═══════════ -->
+  <section class="section">
+    <div class="section-label"><span class="num">06</span><h2>히어로 추이 차트 + 사이드 스탯</h2></div>
+    <p class="section-desc">최근 6회 동기화의 페이지 누적 추이를 큰 영역 차트로 주인공 삼고, 오른쪽에 마지막 동기화와 나머지 지표를 격자로. 분석 느낌의 대시보드.</p>
+    <div class="frame">
+      <div class="hero6">
+        <div class="hero6-chart">
+          <div class="hero6-top">
+            <div>
+              <div class="lab">페이지 추이 · 최근 6회 동기화</div>
+              <div class="big">1,284<small> pages</small></div>
+            </div>
+            <span class="chip up">↑ 12%</span>
+          </div>
+          <svg class="areachart" viewBox="0 0 300 110" preserveAspectRatio="none">
+            <defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(244,129,34,0.28)" /><stop offset="1" stop-color="rgba(244,129,34,0)" /></linearGradient></defs>
+            <path fill="url(#ag)" d="M0,92 L60,71 L120,59 L180,45 L240,31 L300,17 L300,110 L0,110 Z" />
+            <path class="ac-line draw" d="M0,92 L60,71 L120,59 L180,45 L240,31 L300,17" />
+            <circle class="ac-dot" cx="300" cy="17" r="3.5" />
+          </svg>
+          <div class="ac-x"><span>05.28</span><span>05.31</span><span>06.02</span><span>06.05</span><span>06.07</span><span>06.09</span></div>
+        </div>
+        <div class="hero6-side">
+          <div class="sync">
+            <div class="k">마지막 동기화</div>
+            <div class="v">06. 09. 오후 02:14</div>
+          </div>
+          <div class="rows">
+            <div class="cell"><div class="k">스페이스</div><div class="v">3</div></div>
+            <div class="cell"><div class="k">첨부파일</div><div class="v">462</div></div>
+            <div class="cell"><div class="k">VectorDB</div><div class="v">2.4<small>GB</small></div></div>
+            <div class="cell"><div class="k">청크</div><div class="v">8,741</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 시안 7 ═══════════ -->
+  <section class="section">
+    <div class="section-label"><span class="num">07</span><h2>컴포지션 도넛 + 레전드</h2></div>
+    <p class="section-desc">전체 페이지가 어느 스페이스에 분포하는지 도넛으로. 숫자만으로 안 보이던 "구성"이 한눈에. 오렌지 단색 램프로 톤을 유지.</p>
+    <div class="frame">
+      <div class="comp">
+        <div class="donut">
+          <svg width="150" height="150" viewBox="0 0 150 150">
+            <circle cx="75" cy="75" r="42" fill="none" stroke="var(--bg-200)" stroke-width="16" />
+            <circle cx="75" cy="75" r="42" fill="none" stroke="#f48122" stroke-width="16" stroke-dasharray="131.95 263.9" stroke-dashoffset="0" />
+            <circle cx="75" cy="75" r="42" fill="none" stroke="#ff9d4d" stroke-width="16" stroke-dasharray="82.42 263.9" stroke-dashoffset="-131.95" />
+            <circle cx="75" cy="75" r="42" fill="none" stroke="#ffce9e" stroke-width="16" stroke-dasharray="49.54 263.9" stroke-dashoffset="-214.37" />
+          </svg>
+          <div class="donut-center"><span class="v">1,284</span><span class="k">총 페이지</span></div>
+        </div>
+        <div class="comp-side">
+          <div class="comp-sync">마지막 동기화 · <b>2026. 06. 09. 오후 02:14</b> · 3시간 전</div>
+          <div class="legend7">
+            <div class="lg7"><span class="sw" style="background:#f48122"></span><span class="nm">CPC</span><span class="vl">642</span><span class="pc">50.0%</span></div>
+            <div class="lg7"><span class="sw" style="background:#ff9d4d"></span><span class="nm">DEV</span><span class="vl">401</span><span class="pc">31.2%</span></div>
+            <div class="lg7"><span class="sw" style="background:#ffce9e"></span><span class="nm">OPS</span><span class="vl">241</span><span class="pc">18.8%</span></div>
+          </div>
+          <div class="comp-foot">
+            <div><div class="k">스페이스</div><div class="v">3</div></div>
+            <div><div class="k">첨부파일</div><div class="v">462</div></div>
+            <div><div class="k">VectorDB</div><div class="v">2.4<small>GB</small></div></div>
+            <div><div class="k">청크</div><div class="v">8,741</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 시안 8 ═══════════ -->
+  <section class="section">
+    <div class="section-label"><span class="num">08</span><h2>믹스드 벤토 (그래프 포함)</h2></div>
+    <p class="section-desc">숫자 타일 · 스파크라인 타일 · 미니 바차트 타일을 크기 다르게 섞은 벤토. 동기화 히어로 + 추이까지 한 판에. 가장 풍부하고 "디자인된" 느낌.</p>
+    <div class="frame">
+      <div class="mix">
+        <div class="mx mx-sync">
+          <div class="k">마지막 동기화</div>
+          <div class="big">06. 09. 오후 02:14</div>
+          <div class="rel"><span class="led"></span>3시간 전</div>
+        </div>
+        <div class="mx mx-chart">
+          <div class="head"><span class="k">페이지 추이</span><span class="chip up">↑ 12%</span></div>
+          <svg class="mx-spk" viewBox="0 0 120 30" preserveAspectRatio="none">
+            <defs><linearGradient id="mg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(244,129,34,0.25)" /><stop offset="1" stop-color="rgba(244,129,34,0)" /></linearGradient></defs>
+            <path fill="url(#mg)" d="M0,24 L24,21 L48,22 L72,14 L96,10 L120,4 L120,30 L0,30 Z" />
+            <path class="spk-line draw" stroke="var(--orange)" stroke-width="2" d="M0,24 L24,21 L48,22 L72,14 L96,10 L120,4" />
+          </svg>
+        </div>
+        <div class="mx"><div class="k">스페이스</div><div class="v">3</div></div>
+        <div class="mx"><div class="k">페이지</div><div class="v">1,284</div></div>
+        <div class="mx"><div class="k">첨부파일</div><div class="v">462</div></div>
+        <div class="mx"><div class="k">청크</div><div class="v">8,741</div></div>
+        <div class="mx"><div class="k">VectorDB</div><div class="v">2.4<small>GB</small></div></div>
+        <div class="mx mx-chart">
+          <div class="head"><span class="k">최근 동기화 · 업데이트 페이지</span></div>
+          <div class="mx-bars">
+            <i style="height:38%"></i><i style="height:55%"></i><i style="height:42%"></i><i style="height:70%"></i><i style="height:60%"></i><i style="height:100%"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 시계열 그룹 헤더 ═══════════ -->
+  <section class="section">
+    <div class="section-label"><span class="num">★</span><h2>시계열 — 동기화 활동</h2></div>
+    <p class="section-desc">
+      이 운영 페이지에서 <b>실데이터로 차트가 가능한 유일한 시계열</b>입니다 — <code style="font-family:var(--mono);background:var(--bg-200);padding:1px 5px;border-radius:5px">GET /api/admin/sync</code>의
+      <code style="font-family:var(--mono);background:var(--bg-200);padding:1px 5px;border-radius:5px">syncHistory[]</code> (completedAt · updatedPages · deletedPages · duration · status).
+      mock 아님, 실제로 내려오는 필드만 사용.
+    </p>
+    <div class="real-note">✓ 실데이터 · /api/admin/sync</div>
+
+    <!-- 09 · 그룹 바차트 -->
+    <div class="section-label" style="margin-top:10px"><span class="num">09</span><h2 style="font-size:1rem">동기화 활동 바차트</h2></div>
+    <p class="section-desc">동기화별 업데이트/삭제 페이지를 막대로. 실패(FAILED) 회차는 날짜를 오렌지로 표시.</p>
+    <div class="frame" style="margin-bottom:28px">
+      <div class="sync-chart">
+        <div class="sc-head">
+          <span class="t">최근 동기화 활동</span>
+          <div class="sc-legend">
+            <span class="sc-lg"><span class="sw" style="background:var(--orange)"></span>업데이트</span>
+            <span class="sc-lg"><span class="sw" style="background:var(--bg-300)"></span>삭제</span>
+          </div>
+        </div>
+        <div class="sc-bars">
+          <div class="scol"><div class="scol-bars"><i class="up" style="height:29%"></i><i class="del" style="height:2%"></i></div><span class="x">05.20</span></div>
+          <div class="scol"><div class="scol-bars"><i class="up" style="height:68%"></i><i class="del" style="height:7%"></i></div><span class="x">05.24</span></div>
+          <div class="scol"><div class="scol-bars"><i class="up" style="height:46%"></i><i class="del" style="height:0%"></i></div><span class="x">05.28</span></div>
+          <div class="scol"><div class="scol-bars"><i class="up" style="height:83%"></i><i class="del" style="height:12%"></i></div><span class="x">06.01</span></div>
+          <div class="scol"><div class="scol-bars"><i class="up" style="height:0%"></i><i class="del" style="height:0%"></i></div><span class="x fail">06.04 ✕</span></div>
+          <div class="scol"><div class="scol-bars"><i class="up" style="height:100%"></i><i class="del" style="height:10%"></i></div><span class="x">06.07</span></div>
+          <div class="scol"><div class="scol-bars"><i class="up" style="height:76%"></i><i class="del" style="height:2%"></i></div><span class="x">06.09</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 10 · 소요시간 추이 -->
+    <div class="section-label"><span class="num">10</span><h2 style="font-size:1rem">소요시간 추이 + 상태</h2></div>
+    <p class="section-desc">동기화 소요시간(duration)을 추이선으로. 점 색으로 성공/실패 표시, 아래에 요약 통계.</p>
+    <div class="frame" style="margin-bottom:28px">
+      <div class="dur-chart">
+        <div class="sc-head"><span class="t">동기화 소요시간 (초)</span><span class="chip up">평균 64초</span></div>
+        <svg class="areachart" viewBox="0 0 300 110" preserveAspectRatio="none" style="margin-top:14px">
+          <defs><linearGradient id="dg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(244,129,34,0.22)" /><stop offset="1" stop-color="rgba(244,129,34,0)" /></linearGradient></defs>
+          <path fill="url(#dg)" d="M0,55 L50,40 L100,49 L150,25 L200,43 L250,14 L300,35 L300,110 L0,110 Z" />
+          <path class="dur-line draw" d="M0,55 L50,40 L100,49 L150,25 L200,43 L250,14 L300,35" />
+          <circle cx="0" cy="55" r="3.5" fill="#fff" stroke="var(--success)" stroke-width="2" />
+          <circle cx="50" cy="40" r="3.5" fill="#fff" stroke="var(--success)" stroke-width="2" />
+          <circle cx="100" cy="49" r="3.5" fill="#fff" stroke="var(--success)" stroke-width="2" />
+          <circle cx="150" cy="25" r="3.5" fill="#fff" stroke="var(--success)" stroke-width="2" />
+          <circle cx="200" cy="43" r="4" fill="#fff" stroke="var(--error)" stroke-width="2.5" />
+          <circle cx="250" cy="14" r="3.5" fill="#fff" stroke="var(--success)" stroke-width="2" />
+          <circle cx="300" cy="35" r="3.5" fill="#fff" stroke="var(--success)" stroke-width="2" />
+        </svg>
+        <div class="dur-x"><span>05.20</span><span>05.24</span><span>05.28</span><span>06.01</span><span>06.04</span><span>06.07</span><span>06.09</span></div>
+        <div class="dur-foot">
+          <div><div class="k">평균 소요</div><div class="v">64<small>초</small></div></div>
+          <div><div class="k">총 업데이트</div><div class="v">187<small>p</small></div></div>
+          <div><div class="k">총 삭제</div><div class="v">16<small>p</small></div></div>
+          <div><div class="k">성공률</div><div class="v">6<small>/7</small></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 11 · 콤보 요약 + 상태 타임라인 -->
+    <div class="section-label"><span class="num">11</span><h2 style="font-size:1rem">콤보 — 요약 + 상태 타임라인</h2></div>
+    <p class="section-desc">핵심 요약 수치와 회차별 성공/실패 타임라인을 나란히. 테이블 위에 얹기 좋은 컴팩트 카드.</p>
+    <div class="frame">
+      <div class="combo">
+        <div class="combo-card combo-stats">
+          <div class="cstat"><span class="k">마지막 동기화</span><span class="v" style="font-size:1rem">06.09 14:00</span></div>
+          <div class="cstat"><span class="k">평균 소요시간</span><span class="v">64<small>초</small></span></div>
+          <div class="cstat"><span class="k">최근 7회 성공률</span><span class="v">86<small>%</small></span></div>
+        </div>
+        <div class="combo-card">
+          <div class="lab">최근 동기화 상태</div>
+          <div class="timeline-dots">
+            <div class="tld"><span class="dot ok"></span><span class="x">05.20</span></div>
+            <div class="tld"><span class="dot ok"></span><span class="x">05.24</span></div>
+            <div class="tld"><span class="dot ok"></span><span class="x">05.28</span></div>
+            <div class="tld"><span class="dot ok"></span><span class="x">06.01</span></div>
+            <div class="tld"><span class="dot fail"></span><span class="x">06.04</span></div>
+            <div class="tld"><span class="dot ok"></span><span class="x">06.07</span></div>
+            <div class="tld"><span class="dot ok"></span><span class="x">06.09</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 12 · 업데이트 중심 + 삭제 급증 경고 (추천) -->
+    <div class="section-label" style="margin-top:32px"><span class="num">12</span><h2 style="font-size:1rem">업데이트 중심 + 삭제 급증 경고 <span style="font-size:0.7rem;color:var(--success);font-family:var(--mono)">추천</span></h2></div>
+    <p class="section-desc">차트는 업데이트 페이지 하나로 깔끔하게. 삭제는 평소엔 숨기고, <b>비정상적으로 클 때만</b> 막대 위 빨간 배지 + 하단 경고로 surface. (삭제 상세는 아래 동기화 이력 테이블에 그대로 둠)</p>
+    <div class="frame" style="margin-bottom:28px">
+      <div class="sync-chart">
+        <div class="sc-head"><span class="t">동기화별 업데이트 페이지</span><span class="chip flat">삭제 급증만 경고</span></div>
+        <div class="upd-bars">
+          <div class="ucol"><div class="ucol-bar"><i style="height:29%"></i></div><span class="x">05.20</span></div>
+          <div class="ucol"><div class="ucol-bar"><i style="height:68%"></i></div><span class="x">05.24</span></div>
+          <div class="ucol"><div class="ucol-bar"><i style="height:46%"></i></div><span class="x">05.28</span></div>
+          <div class="ucol"><div class="ucol-bar"><i style="height:83%"></i></div><span class="x">06.01</span></div>
+          <div class="ucol"><div class="ucol-bar"><i class="fail"></i></div><span class="x fail">06.04 실패</span></div>
+          <div class="ucol"><div class="ucol-bar"><span class="del-badge">−23 삭제</span><i style="height:100%"></i></div><span class="x">06.07</span></div>
+          <div class="ucol"><div class="ucol-bar"><i style="height:76%"></i></div><span class="x">06.09</span></div>
+        </div>
+        <div class="upd-warn">⚠ <span><b>06.07 동기화에서 삭제 23건</b> — 평소(0~3건)보다 많습니다. 스페이스 대량 삭제 여부를 확인하세요.</span></div>
+      </div>
+    </div>
+
+    <!-- 13 · 발산형 (업↑ / 삭제↓) -->
+    <div class="section-label"><span class="num">13</span><h2 style="font-size:1rem">발산형 — 업데이트↑ / 삭제↓</h2></div>
+    <p class="section-desc">둘 다 보여주되 짝대기 대신 방향에 의미를 실음. 위=업데이트, 아래=삭제. 삭제 급증 회차는 빨갛게. 삭제도 항상 추적하고 싶을 때 대안.</p>
+    <div class="frame">
+      <div class="sync-chart">
+        <div class="sc-head">
+          <span class="t">동기화 활동 (발산형)</span>
+          <div class="sc-legend">
+            <span class="sc-lg"><span class="sw" style="background:var(--orange)"></span>업데이트 ↑</span>
+            <span class="sc-lg"><span class="sw" style="background:#ffb39a"></span>삭제 ↓</span>
+          </div>
+        </div>
+        <div class="div-bars">
+          <div class="dvcol"><div class="dv-up"><i class="bu" style="height:29%"></i></div><div class="dv-mid"></div><div class="dv-down"><i class="bd" style="height:4%"></i></div><span class="x">05.20</span></div>
+          <div class="dvcol"><div class="dv-up"><i class="bu" style="height:68%"></i></div><div class="dv-mid"></div><div class="dv-down"><i class="bd" style="height:0%"></i></div><span class="x">05.24</span></div>
+          <div class="dvcol"><div class="dv-up"><i class="bu" style="height:46%"></i></div><div class="dv-mid"></div><div class="dv-down"><i class="bd" style="height:9%"></i></div><span class="x">05.28</span></div>
+          <div class="dvcol"><div class="dv-up"><i class="bu" style="height:83%"></i></div><div class="dv-mid"></div><div class="dv-down"><i class="bd" style="height:4%"></i></div><span class="x">06.01</span></div>
+          <div class="dvcol"><div class="dv-up"><i class="bu" style="height:3%"></i></div><div class="dv-mid"></div><div class="dv-down"><i class="bd" style="height:0%"></i></div><span class="x fail">06.04</span></div>
+          <div class="dvcol"><div class="dv-up"><i class="bu" style="height:100%"></i></div><div class="dv-mid"></div><div class="dv-down"><i class="bd spike" style="height:100%"></i></div><span class="x">06.07</span></div>
+          <div class="dvcol"><div class="dv-up"><i class="bu" style="height:76%"></i></div><div class="dv-mid"></div><div class="dv-down"><i class="bd" style="height:4%"></i></div><span class="x">06.09</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 벤토 변주 그룹 ═══════════ -->
+  <section class="section">
+    <div class="section-label"><span class="num">★</span><h2>벤토 변주 (8번 발전형)</h2></div>
+    <p class="section-desc">
+      8번을 다듬은 3가지. 가짜 "페이지 추이"는 빼고 <b>실데이터인 sync 활동 바차트</b>를 주인공으로.
+      막대는 최근 회차(06.09)를 진하게 강조, 실패 회차는 빗금, 호버 시 살짝 떠오름.
+    </p>
+
+    <!-- 14 · 와이드 차트 -->
+    <div class="section-label" style="margin-top:10px"><span class="num">14</span><h2 style="font-size:1rem">와이드 차트 벤토</h2></div>
+    <p class="section-desc">동기화 히어로 + 페이지 강조 타일 + 가로로 넓은 활동 바차트 + 하단 숫자 타일.</p>
+    <div class="frame" style="margin-bottom:28px">
+      <div class="bento14">
+        <div class="bn hero i-hero">
+          <div class="k">마지막 동기화</div>
+          <div class="big">06. 09. 오후 02:14</div>
+          <div class="rel"><span class="led"></span>3시간 전</div>
+        </div>
+        <div class="bn accent i-page"><div class="k">페이지</div><div class="v">1,284</div></div>
+        <div class="bn bn-chart i-chart">
+          <div class="head"><span class="k">최근 동기화 · 업데이트 페이지</span><span class="cap">최근 7회 · 최대 41p</span></div>
+          <div class="bn-bars">
+            <div class="c"><div class="bw"><div class="bar" style="height:29%"></div></div><span class="l">05.20</span></div>
+            <div class="c"><div class="bw"><div class="bar" style="height:68%"></div></div><span class="l">05.24</span></div>
+            <div class="c"><div class="bw"><div class="bar" style="height:46%"></div></div><span class="l">05.28</span></div>
+            <div class="c"><div class="bw"><div class="bar" style="height:83%"></div></div><span class="l">06.01</span></div>
+            <div class="c fail"><div class="bw"><div class="bar" style="height:8%"></div></div><span class="l">06.04</span></div>
+            <div class="c"><div class="bw"><div class="bar" style="height:100%"></div></div><span class="l">06.07</span></div>
+            <div class="c last"><div class="bw"><div class="bar" style="height:76%"></div></div><span class="l">06.09</span></div>
+          </div>
+        </div>
+        <div class="bn"><div class="k">스페이스</div><div class="v">3</div></div>
+        <div class="bn"><div class="k">첨부파일</div><div class="v">462</div></div>
+        <div class="bn"><div class="k">VectorDB</div><div class="v">2.4<small>GB</small></div></div>
+        <div class="bn"><div class="k">청크</div><div class="v">8,741</div></div>
+      </div>
+    </div>
+
+    <!-- 15 · 좌측 세로 차트 -->
+    <div class="section-label"><span class="num">15</span><h2 style="font-size:1rem">좌측 세로 차트 벤토</h2></div>
+    <p class="section-desc">왼쪽에 큰 활동 차트를 세로로 세우고, 오른쪽은 동기화 히어로 + 숫자 격자. 비대칭 2단 구성.</p>
+    <div class="frame" style="margin-bottom:28px">
+      <div class="bento15">
+        <div class="bn bn-chart i-chart">
+          <div class="head"><span class="k">최근 동기화 · 업데이트 페이지</span></div>
+          <div class="bn-bars" style="min-height:200px">
+            <div class="c"><div class="bw"><div class="bar" style="height:29%"></div></div><span class="l">05.20</span></div>
+            <div class="c"><div class="bw"><div class="bar" style="height:68%"></div></div><span class="l">05.24</span></div>
+            <div class="c"><div class="bw"><div class="bar" style="height:46%"></div></div><span class="l">05.28</span></div>
+            <div class="c"><div class="bw"><div class="bar" style="height:83%"></div></div><span class="l">06.01</span></div>
+            <div class="c fail"><div class="bw"><div class="bar" style="height:8%"></div></div><span class="l">06.04</span></div>
+            <div class="c"><div class="bw"><div class="bar" style="height:100%"></div></div><span class="l">06.07</span></div>
+            <div class="c last"><div class="bw"><div class="bar" style="height:76%"></div></div><span class="l">06.09</span></div>
+          </div>
+        </div>
+        <div class="bn hero i-hero">
+          <div class="k">마지막 동기화</div>
+          <div class="big">06. 09. 오후 02:14</div>
+          <div class="rel"><span class="led"></span>3시간 전</div>
+        </div>
+        <div class="bn accent i-page"><div class="k">페이지</div><div class="v">1,284</div></div>
+        <div class="bn i-chunk"><div class="k">청크</div><div class="v">8,741</div></div>
+        <div class="bn i-att"><div class="k">첨부파일</div><div class="v">462</div></div>
+        <div class="bn i-vdb"><div class="k">VectorDB</div><div class="v">2.4<small>GB</small></div></div>
+        <div class="bn i-space"><div class="k">스페이스</div><div class="v">3</div></div>
+      </div>
+    </div>
+
+    <!-- 16 · 프리미엄 (다크 히어로 + 두 차트) -->
+    <div class="section-label"><span class="num">16</span><h2 style="font-size:1rem">프리미엄 — 다크 히어로 + 두 차트</h2></div>
+    <p class="section-desc">다크 동기화 히어로 + 활동 바차트 + 하단 소요시간 추이선까지. sync로 가능한 실데이터 차트를 모두 활용한 가장 풍부한 안.</p>
+    <div class="frame">
+      <div class="bento16">
+        <div class="bn dark i-sync">
+          <div class="k">마지막 동기화</div>
+          <div class="big">06. 09. 오후 02:14</div>
+          <div class="rel"><span class="led"></span>3시간 전 · 평균 소요 64초</div>
+        </div>
+        <div class="bn bn-chart i-bars">
+          <div class="head"><span class="k">최근 동기화 · 업데이트 페이지</span><span class="cap">최대 41p</span></div>
+          <div class="bn-bars" style="min-height:96px">
+            <div class="c"><div class="bw"><div class="bar" style="height:29%"></div></div><span class="l">20</span></div>
+            <div class="c"><div class="bw"><div class="bar" style="height:68%"></div></div><span class="l">24</span></div>
+            <div class="c"><div class="bw"><div class="bar" style="height:46%"></div></div><span class="l">28</span></div>
+            <div class="c"><div class="bw"><div class="bar" style="height:83%"></div></div><span class="l">01</span></div>
+            <div class="c fail"><div class="bw"><div class="bar" style="height:8%"></div></div><span class="l">04</span></div>
+            <div class="c"><div class="bw"><div class="bar" style="height:100%"></div></div><span class="l">07</span></div>
+            <div class="c last"><div class="bw"><div class="bar" style="height:76%"></div></div><span class="l">09</span></div>
+          </div>
+        </div>
+        <div class="bn i-space"><div class="k">스페이스</div><div class="v">3</div></div>
+        <div class="bn accent i-page"><div class="k">페이지</div><div class="v">1,284</div></div>
+        <div class="bn i-att"><div class="k">첨부파일</div><div class="v">462</div></div>
+        <div class="bn i-chunk"><div class="k">청크</div><div class="v">8,741</div></div>
+        <div class="bn i-vdb"><div class="k">VectorDB</div><div class="v">2.4<small>GB</small></div></div>
+        <div class="bn bn-dur i-dur">
+          <div class="head"><span class="k">동기화 소요시간 추이 (초)</span><span class="dur-hint">hover로 상세</span></div>
+          <div class="dur-tip">평균 <b>64초</b> · 성공 <span class="ok">6/7</span></div>
+          <svg viewBox="0 0 300 56" preserveAspectRatio="none">
+            <defs><linearGradient id="dg2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(244,129,34,0.2)" /><stop offset="1" stop-color="rgba(244,129,34,0)" /></linearGradient></defs>
+            <path fill="url(#dg2)" d="M0,30 L50,21 L100,26 L150,13 L200,28 L250,8 L300,18 L300,56 L0,56 Z" />
+            <path class="dl draw" d="M0,30 L50,21 L100,26 L150,13 L200,28 L250,8 L300,18" />
+            <circle class="dot" cx="0" cy="30" r="3"><title>05.20 · 45초 · 성공</title></circle>
+            <circle class="dot" cx="50" cy="21" r="3"><title>05.24 · 62초 · 성공</title></circle>
+            <circle class="dot" cx="100" cy="26" r="3"><title>05.28 · 51초 · 성공</title></circle>
+            <circle class="dot" cx="150" cy="13" r="3"><title>06.01 · 78초 · 성공</title></circle>
+            <circle class="dot fail" cx="200" cy="28" r="3"><title>06.04 · 실패</title></circle>
+            <circle class="dot" cx="250" cy="8" r="3"><title>06.07 · 91초 · 성공</title></circle>
+            <circle class="dot" cx="300" cy="18" r="3.5"><title>06.09 · 67초 · 성공</title></circle>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- 17 · 16 정리형 -->
+    <div class="section-label" style="margin-top:32px"><span class="num">17</span><h2 style="font-size:1rem">16 정리형 — 공간 효율 ↑ <span style="font-size:0.7rem;color:var(--success);font-family:var(--mono)">추천</span></h2></div>
+    <p class="section-desc">스페이스/페이지/첨부파일을 한 타일에 3분할로 합치고, VectorDB·청크를 나란히 붙인 뒤 소요시간 추이를 그 옆에. 공간 낭비 없이 촘촘하게.</p>
+    <div class="frame">
+      <div class="bento17">
+        <div class="bn synccard i-sync">
+          <div class="txt">
+            <div class="k">마지막 동기화</div>
+            <div class="big">06. 09. 오후 02:14</div>
+            <div class="rel"><span class="led"></span>3시간 전</div>
+          </div>
+          <img src="../frontend/assets/lina-character/lina-desk.png" alt="" aria-hidden="true" />
+        </div>
+        <div class="bn bn-chart i-bars">
+          <div class="head"><span class="k">최근 동기화 · 업데이트 페이지</span><span class="cap">최대 41p</span></div>
+          <div class="bn-bars" style="min-height:96px">
+            <div class="c"><div class="bw"><div class="bar" style="height:29%"></div></div><span class="l">05.20</span></div>
+            <div class="c"><div class="bw"><div class="bar" style="height:68%"></div></div><span class="l">05.24</span></div>
+            <div class="c"><div class="bw"><div class="bar" style="height:46%"></div></div><span class="l">05.28</span></div>
+            <div class="c"><div class="bw"><div class="bar" style="height:83%"></div></div><span class="l">06.01</span></div>
+            <div class="c fail"><div class="bw"><div class="bar" style="height:8%"></div></div><span class="l">06.04</span></div>
+            <div class="c"><div class="bw"><div class="bar" style="height:100%"></div></div><span class="l">06.07</span></div>
+            <div class="c last"><div class="bw"><div class="bar" style="height:76%"></div></div><span class="l">06.09</span></div>
+          </div>
+        </div>
+        <div class="bn i-cont">
+          <div class="combo2">
+            <div class="c2"><div class="k">스페이스</div><div class="v">3</div></div>
+            <div class="c2"><div class="k">페이지</div><div class="v">1,284</div></div>
+            <div class="c2"><div class="k">첨부파일</div><div class="v">462</div></div>
+          </div>
+        </div>
+        <div class="bn i-vdb"><div class="k">VectorDB</div><div class="v">2.4<small>GB</small></div></div>
+        <div class="bn i-chunk"><div class="k">청크</div><div class="v">8,741</div></div>
+        <div class="bn bn-dur i-dur">
+          <div class="head"><span class="k">동기화 소요시간 추이 (초)</span><span class="dur-hint">hover로 상세</span></div>
+          <div class="dur-tip">평균 <b>64초</b> · 성공 <span class="ok">6/7</span></div>
+          <svg viewBox="0 0 300 56" preserveAspectRatio="none">
+            <defs><linearGradient id="dg3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(244,129,34,0.2)" /><stop offset="1" stop-color="rgba(244,129,34,0)" /></linearGradient></defs>
+            <path fill="url(#dg3)" d="M0,30 L50,21 L100,26 L150,13 L200,28 L250,8 L300,18 L300,56 L0,56 Z" />
+            <path class="dl draw" d="M0,30 L50,21 L100,26 L150,13 L200,28 L250,8 L300,18" />
+            <circle class="dot" cx="0" cy="30" r="3"><title>05.20 · 45초 · 성공</title></circle>
+            <circle class="dot" cx="50" cy="21" r="3"><title>05.24 · 62초 · 성공</title></circle>
+            <circle class="dot" cx="100" cy="26" r="3"><title>05.28 · 51초 · 성공</title></circle>
+            <circle class="dot" cx="150" cy="13" r="3"><title>06.01 · 78초 · 성공</title></circle>
+            <circle class="dot fail" cx="200" cy="28" r="3"><title>06.04 · 실패</title></circle>
+            <circle class="dot" cx="250" cy="8" r="3"><title>06.07 · 91초 · 성공</title></circle>
+            <circle class="dot" cx="300" cy="18" r="3.5"><title>06.09 · 67초 · 성공</title></circle>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 상업 레퍼런스 그룹 ═══════════ -->
+  <section class="section">
+    <div class="section-label"><span class="num">★★</span><h2>상업 레퍼런스 — 완전 다른 방향</h2></div>
+    <p class="section-desc">실제 SaaS·핀테크·관측 대시보드의 디자인 언어를 가져온 4가지. 서로 확실히 다른 패러다임.</p>
+
+    <!-- 18 · 핀테크 잔고 카드 -->
+    <div class="section-label" style="margin-top:10px"><span class="num">18</span><h2 style="font-size:1rem">핀테크 잔고 카드</h2></div>
+    <p class="section-desc">Toss·Mercury 같은 계좌 카드. 핵심 숫자(총 페이지)를 "잔고"처럼 크게, 나머지는 하단 보조 행으로. 한 숫자에 시선이 꽂힘.</p>
+    <div class="frame" style="margin-bottom:28px">
+      <div class="fin">
+        <div class="fin-kick"><span class="led"></span>마지막 동기화 · 2026. 06. 09. 오후 02:14 · 3시간 전</div>
+        <div class="fin-hero">
+          <span class="fin-num">1,284</span>
+          <span class="fin-lab">총 페이지</span>
+          <span class="fin-chip" style="margin-left:auto">↑ 12% · 142p</span>
+        </div>
+        <div class="fin-bars">
+          <i style="height:29%"></i><i style="height:68%"></i><i style="height:46%"></i><i style="height:83%"></i><i class="fail" style="height:8%"></i><i style="height:100%"></i><i class="last" style="height:76%"></i>
+        </div>
+        <div class="fin-foot">
+          <div><div class="k">스페이스</div><div class="v">3</div></div>
+          <div><div class="k">첨부파일</div><div class="v">462</div></div>
+          <div><div class="k">청크</div><div class="v">8,741</div></div>
+          <div><div class="k">VectorDB</div><div class="v">2.4<small>GB</small></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 19 · iOS 그룹 인셋 리스트 -->
+    <div class="section-label"><span class="num">19</span><h2 style="font-size:1rem">iOS 그룹 인셋 리스트</h2></div>
+    <p class="section-desc">Apple 설정 화면 스타일. 카드 대신 섹션으로 묶은 리스트. 차트 없이 타이포·정렬만으로 정리. 가장 "사람 손" 느낌.</p>
+    <div class="frame" style="margin-bottom:28px">
+      <div class="ios">
+        <div class="ios-cap"><span class="t">데이터 현황</span><span class="s">마지막 동기화 · 06.09 오후 02:14</span></div>
+        <div class="ios-cols">
+          <div>
+            <div class="ios-gh">콘텐츠 수집</div>
+            <div class="ios-group">
+              <div class="ios-row"><span class="k">스페이스</span><span class="v">3</span></div>
+              <div class="ios-row"><span class="k">페이지</span><span class="v">1,284</span></div>
+              <div class="ios-row"><span class="k">첨부파일</span><span class="v">462</span></div>
+            </div>
+          </div>
+          <div>
+            <div class="ios-gh">인덱스</div>
+            <div class="ios-group">
+              <div class="ios-row"><span class="k">청크</span><span class="v">8,741</span></div>
+              <div class="ios-row"><span class="k">VectorDB</span><span class="v">2.4<small>GB</small></span></div>
+            </div>
+            <div class="ios-gh mt">동기화</div>
+            <div class="ios-group">
+              <div class="ios-row"><span class="k">평균 소요시간</span><span class="v">64<small>초</small></span></div>
+              <div class="ios-row"><span class="k">최근 성공률</span><span class="v">6<small>/7</small></span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 20 · Datadog 모니터링 -->
+    <div class="section-label"><span class="num">20</span><h2 style="font-size:1rem">Datadog 모니터링</h2></div>
+    <p class="section-desc">관측 대시보드 스타일. 헤어라인 격자 + 모노 숫자 + 상태 점. 밀도 높고 기술적인 ops 느낌. sync 차트는 실데이터.</p>
+    <div class="frame" style="margin-bottom:28px">
+      <div class="dd-head"><span class="st"></span>데이터 파이프라인 · 정상 · 마지막 동기화 06.09 14:00</div>
+      <div class="dd">
+        <div class="dd-tile"><div class="dd-k"><span class="st"></span>SPACES</div><div class="dd-v">3</div></div>
+        <div class="dd-tile"><div class="dd-k"><span class="st"></span>PAGES</div><div class="dd-v">1,284</div></div>
+        <div class="dd-tile"><div class="dd-k"><span class="st"></span>ATTACHMENTS</div><div class="dd-v">462</div></div>
+        <div class="dd-tile"><div class="dd-k"><span class="st"></span>CHUNKS</div><div class="dd-v">8,741</div></div>
+        <div class="dd-tile"><div class="dd-k"><span class="st"></span>VECTOR DB</div><div class="dd-v">2.4<small>GB</small></div></div>
+        <div class="dd-tile">
+          <div class="dd-k">UPDATED / SYNC</div>
+          <div class="dd-mbars">
+            <i style="height:29%"></i><i style="height:68%"></i><i style="height:46%"></i><i style="height:83%"></i><i class="fail" style="height:10%"></i><i style="height:100%"></i><i class="last" style="height:76%"></i>
+          </div>
+        </div>
+        <div class="dd-tile">
+          <div class="dd-k">SYNC DURATION</div>
+          <svg class="dd-spark" viewBox="0 0 100 24" preserveAspectRatio="none"><path class="draw" d="M0,16 L16,12 L33,15 L50,7 L66,17 L83,4 L100,10" /></svg>
+        </div>
+        <div class="dd-tile"><div class="dd-k"><span class="st"></span>SUCCESS RATE</div><div class="dd-v">86<small>%</small></div></div>
+      </div>
+    </div>
+
+    <!-- 21 · Vercel 차트 중심 -->
+    <div class="section-label"><span class="num">21</span><h2 style="font-size:1rem">Vercel 차트 중심</h2></div>
+    <p class="section-desc">Vercel·Linear 프로젝트 개요. 숫자는 얇은 상단 스트립으로 작게, 동기화 활동 차트가 화면 주인공. 위계를 뒤집은 미니멀.</p>
+    <div class="frame">
+      <div class="vc-strip">
+        <div class="vc-stat"><div class="k">스페이스</div><div class="v">3</div></div>
+        <div class="vc-stat"><div class="k">페이지</div><div class="v">1,284</div></div>
+        <div class="vc-stat"><div class="k">첨부파일</div><div class="v">462</div></div>
+        <div class="vc-stat"><div class="k">청크</div><div class="v">8,741</div></div>
+        <div class="vc-stat"><div class="k">VectorDB</div><div class="v">2.4<small>GB</small></div></div>
+        <div class="vc-sync"><span class="led"></span>마지막 동기화 06.09 14:00</div>
+      </div>
+      <div class="vc-chart">
+        <div class="head"><span class="t">동기화 활동 · 업데이트 페이지</span><span class="cap">최근 7회 · 최대 41p · 평균 소요 64초</span></div>
+        <div class="vc-bars">
+          <div class="grid"></div>
+          <div class="c"><div class="bw"><div class="bar" style="height:29%"></div></div><span class="l">05.20</span></div>
+          <div class="c"><div class="bw"><div class="bar" style="height:68%"></div></div><span class="l">05.24</span></div>
+          <div class="c"><div class="bw"><div class="bar" style="height:46%"></div></div><span class="l">05.28</span></div>
+          <div class="c"><div class="bw"><div class="bar" style="height:83%"></div></div><span class="l">06.01</span></div>
+          <div class="c fail"><div class="bw"><div class="bar" style="height:8%"></div></div><span class="l">06.04</span></div>
+          <div class="c"><div class="bw"><div class="bar" style="height:100%"></div></div><span class="l">06.07</span></div>
+          <div class="c last"><div class="bw"><div class="bar" style="height:76%"></div></div><span class="l">06.09</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 더 많은 레퍼런스 그룹 ═══════════ -->
+  <section class="section">
+    <div class="section-label"><span class="num">★★★</span><h2>더 많은 레퍼런스</h2></div>
+    <p class="section-desc">21번 튠 버전 + 월보드·미니멀 애널리틱스·Stripe KPI.</p>
+
+    <!-- 22 · 21-튠 -->
+    <div class="section-label" style="margin-top:10px"><span class="num">22</span><h2 style="font-size:1rem">21-튠 — 차트 주인공 + 인벤토리 격상 <span style="font-size:0.7rem;color:var(--success);font-family:var(--mono)">추천</span></h2></div>
+    <p class="section-desc">21의 약점(숫자가 너무 작음)을 보완. 인벤토리를 읽히는 미니 카드로 올리고(페이지 강조), 차트는 그대로 주인공.</p>
+    <div class="frame" style="margin-bottom:28px">
+      <div class="t22-kick"><span class="led"></span>마지막 동기화 · 2026. 06. 09. 오후 02:14 · 3시간 전</div>
+      <div class="t22-stats">
+        <div class="t22-stat"><div class="k">스페이스</div><div class="v">3</div></div>
+        <div class="t22-stat accent"><div class="k">페이지</div><div class="v">1,284</div></div>
+        <div class="t22-stat"><div class="k">첨부파일</div><div class="v">462</div></div>
+        <div class="t22-stat"><div class="k">청크</div><div class="v">8,741</div></div>
+        <div class="t22-stat"><div class="k">VectorDB</div><div class="v">2.4<small>GB</small></div></div>
+      </div>
+      <div class="vc-chart">
+        <div class="head"><span class="t">동기화 활동 · 업데이트 페이지</span><span class="cap">최근 7회 · 최대 41p · 평균 소요 64초</span></div>
+        <div class="vc-bars">
+          <div class="grid"></div>
+          <div class="c"><div class="bw"><div class="bar" style="height:29%"></div></div><span class="l">05.20</span></div>
+          <div class="c"><div class="bw"><div class="bar" style="height:68%"></div></div><span class="l">05.24</span></div>
+          <div class="c"><div class="bw"><div class="bar" style="height:46%"></div></div><span class="l">05.28</span></div>
+          <div class="c"><div class="bw"><div class="bar" style="height:83%"></div></div><span class="l">06.01</span></div>
+          <div class="c fail"><div class="bw"><div class="bar" style="height:8%"></div></div><span class="l">06.04</span></div>
+          <div class="c"><div class="bw"><div class="bar" style="height:100%"></div></div><span class="l">06.07</span></div>
+          <div class="c last"><div class="bw"><div class="bar" style="height:76%"></div></div><span class="l">06.09</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 23 · Geckoboard 월보드 -->
+    <div class="section-label"><span class="num">23</span><h2 style="font-size:1rem">Geckoboard 월보드</h2></div>
+    <p class="section-desc">사무실 벽 모니터에 띄우는 대형 대시보드. 멀리서도 읽히는 초대형 숫자 3개 + 하단 보조. 다크 고대비.</p>
+    <div class="frame" style="margin-bottom:28px">
+      <div class="gk">
+        <div class="gk-top"><span class="led"></span>LINA · 데이터 현황 · 마지막 동기화 06.09 14:00</div>
+        <div class="gk-grid">
+          <div class="gk-cell"><div class="gk-k">페이지</div><div class="gk-v">1,284</div><div class="gk-delta">↑ 142 · 지난 동기화 대비</div></div>
+          <div class="gk-cell"><div class="gk-k">청크</div><div class="gk-v">8,741</div><div class="gk-delta">↑ 9%</div></div>
+          <div class="gk-cell"><div class="gk-k">스페이스</div><div class="gk-v">3</div><div class="gk-delta" style="color:rgba(255,255,255,0.4)">변동 없음</div></div>
+        </div>
+        <div class="gk-foot">
+          <div><div class="k">첨부파일</div><div class="v">462</div></div>
+          <div><div class="k">VectorDB</div><div class="v">2.4 GB</div></div>
+          <div><div class="k">평균 소요시간</div><div class="v">64초</div></div>
+          <div><div class="k">최근 성공률</div><div class="v">6/7</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 24 · Plausible 미니멀 애널리틱스 -->
+    <div class="section-label"><span class="num">24</span><h2 style="font-size:1rem">Plausible 미니멀 애널리틱스</h2></div>
+    <p class="section-desc">프라이버시 애널리틱스 감성. 지표 탭 + 큰 숫자 + 에어리한 바차트. 군더더기 없이 한 지표에 집중, 탭으로 전환.</p>
+    <div class="frame" style="margin-bottom:28px">
+      <div class="pl">
+        <div class="pl-tabs">
+          <span class="pl-tab on">페이지</span>
+          <span class="pl-tab">청크</span>
+          <span class="pl-tab">첨부파일</span>
+          <span class="pl-tab">스페이스</span>
+        </div>
+        <div class="pl-hero">
+          <span class="pl-num">1,284</span>
+          <span class="pl-lab">총 페이지</span>
+          <span class="pl-chip">↑ 12%</span>
+        </div>
+        <div class="pl-bars">
+          <div class="c"><div class="bw"><div class="bar" style="height:29%"></div></div><span class="l">05.20</span></div>
+          <div class="c"><div class="bw"><div class="bar" style="height:68%"></div></div><span class="l">05.24</span></div>
+          <div class="c"><div class="bw"><div class="bar" style="height:46%"></div></div><span class="l">05.28</span></div>
+          <div class="c"><div class="bw"><div class="bar" style="height:83%"></div></div><span class="l">06.01</span></div>
+          <div class="c fail"><div class="bw"><div class="bar" style="height:8%"></div></div><span class="l">06.04</span></div>
+          <div class="c"><div class="bw"><div class="bar" style="height:100%"></div></div><span class="l">06.07</span></div>
+          <div class="c last"><div class="bw"><div class="bar" style="height:76%"></div></div><span class="l">06.09</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 25 · Stripe KPI 행 -->
+    <div class="section-label"><span class="num">25</span><h2 style="font-size:1rem">Stripe KPI 행</h2></div>
+    <p class="section-desc">Stripe 홈 대시보드. 값 + 지난 동기화 대비 델타 + 미니 스파크라인을 한 줄 KPI로. 비즈니스 대시보드 정석.</p>
+    <div class="frame">
+      <div class="sk">
+        <div class="sk-cell">
+          <div class="sk-k">페이지</div>
+          <div class="sk-v">1,284 <span class="sk-delta">↑ 142</span></div>
+          <svg class="sk-spark" viewBox="0 0 100 22" preserveAspectRatio="none"><path class="draw" d="M0,17 L20,14 L40,15 L60,9 L80,6 L100,3" /></svg>
+        </div>
+        <div class="sk-cell">
+          <div class="sk-k">청크</div>
+          <div class="sk-v">8,741 <span class="sk-delta">↑ 9%</span></div>
+          <svg class="sk-spark" viewBox="0 0 100 22" preserveAspectRatio="none"><path class="draw" d="M0,16 L20,17 L40,12 L60,13 L80,7 L100,4" /></svg>
+        </div>
+        <div class="sk-cell">
+          <div class="sk-k">첨부파일</div>
+          <div class="sk-v">462 <span class="sk-delta">↑ 4%</span></div>
+          <svg class="sk-spark" viewBox="0 0 100 22" preserveAspectRatio="none"><path class="draw" d="M0,15 L20,14 L40,14 L60,11 L80,11 L100,8" /></svg>
+        </div>
+        <div class="sk-cell">
+          <div class="sk-k">VectorDB</div>
+          <div class="sk-v">2.4<small>GB</small> <span class="sk-delta">↑ 8%</span></div>
+          <svg class="sk-spark" viewBox="0 0 100 22" preserveAspectRatio="none"><path class="draw" d="M0,17 L20,15 L40,12 L60,10 L80,6 L100,3" /></svg>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 26 · 22 정제 ═══════════ -->
+  <section class="section">
+    <div class="section-label"><span class="num">26</span><h2>22 정제 — 박스 걷어낸 한 패널 <span style="font-size:0.7rem;color:var(--success);font-family:var(--mono)">비-AI</span></h2></div>
+    <p class="section-desc">22가 박스로 잘게 쪼개져 AI틱했던 걸 정리. 카드-인-카드 없이 <b>하나의 패널</b> 안에서 페이지를 큰 리드 숫자로, 나머지는 테두리 없이 하프라인으로만 구분. 차트도 박스 없이 같은 면에 얹음.</p>
+    <div class="frame">
+      <div class="op">
+        <div class="op-sync"><span class="led"></span>마지막 동기화 · 2026. 06. 09. 오후 02:14 · 3시간 전</div>
+        <div class="op-top">
+          <div class="op-lead">
+            <div class="op-lead-k">페이지</div>
+            <div class="op-lead-v">1,284 <span class="op-chip">↑ 12%</span></div>
+          </div>
+          <div class="op-mini">
+            <div><div class="k">스페이스</div><div class="v">3</div></div>
+            <div><div class="k">첨부파일</div><div class="v">462</div></div>
+            <div><div class="k">청크</div><div class="v">8,741</div></div>
+            <div><div class="k">VectorDB</div><div class="v">2.4<small>GB</small></div></div>
+          </div>
+        </div>
+        <hr class="op-rule" />
+        <div class="op-chart">
+          <div class="head"><span class="t">동기화 활동 · 업데이트 페이지</span><span class="cap">최근 7회 · 최대 41p · 평균 소요 64초</span></div>
+          <div class="op-bars">
+            <div class="c"><div class="bw"><div class="bar" style="height:29%"></div></div></div>
+            <div class="c"><div class="bw"><div class="bar" style="height:68%"></div></div></div>
+            <div class="c"><div class="bw"><div class="bar" style="height:46%"></div></div></div>
+            <div class="c"><div class="bw"><div class="bar" style="height:83%"></div></div></div>
+            <div class="c fail"><div class="bw"><div class="bar" style="height:8%"></div></div></div>
+            <div class="c"><div class="bw"><div class="bar" style="height:100%"></div></div></div>
+            <div class="c last"><div class="bw"><div class="bar" style="height:76%"></div></div></div>
+          </div>
+          <div class="op-xlabels">
+            <span>05.20</span><span>05.24</span><span>05.28</span><span>06.01</span><span>06.04</span><span>06.07</span><span class="last">06.09</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-label"><span class="num">27</span><h2>Horizon Report</h2></div>
+    <p class="section-desc">카드 조각 대신 한 장의 리포트 안에서 숫자 위계와 얇은 룰만으로 정리한 버전. 페이지를 리드로 세우고, 나머지는 인라인 정보대로 눕혀서 더 제품스럽고 덜 생성형 느낌으로 보이게 만든다.</p>
+    <div class="frame" style="margin-bottom:28px">
+      <div class="pr27">
+        <div class="pr27-sync"><span class="led"></span>마지막 동기화 · 2026. 06. 09. 오후 02:14 · 3시간 전</div>
+        <div class="pr27-main">
+          <div class="pr27-hero">
+            <div class="pr27-k">페이지</div>
+            <div class="pr27-v">1,284</div>
+            <p class="pr27-copy">업무 문서 본문과 권한 반영 페이지가 안정적으로 누적되고 있습니다. 주 지표는 키우고, 보조 지표는 한 줄 리듬으로만 정리해 화면이 조각나 보이지 않게 설계했습니다.</p>
+            <div class="pr27-inline">
+              <div><div class="k">스페이스</div><div class="v">3</div></div>
+              <div><div class="k">첨부파일</div><div class="v">462</div></div>
+              <div><div class="k">청크</div><div class="v">8,741</div></div>
+              <div><div class="k">VectorDB</div><div class="v">2.4<small>GB</small></div></div>
+            </div>
+          </div>
+          <div class="pr27-board">
+            <div class="head"><span class="t">동기화 활동 · 업데이트 페이지</span><span class="cap">최근 7회 · 최대 41p · 평균 소요 64초</span></div>
+            <div class="pr27-bars">
+              <div class="c"><div class="bw"><div class="bar" style="height:29%"></div></div></div>
+              <div class="c"><div class="bw"><div class="bar" style="height:68%"></div></div></div>
+              <div class="c"><div class="bw"><div class="bar" style="height:46%"></div></div></div>
+              <div class="c"><div class="bw"><div class="bar" style="height:83%"></div></div></div>
+              <div class="c fail"><div class="bw"><div class="bar" style="height:8%"></div></div></div>
+              <div class="c"><div class="bw"><div class="bar" style="height:100%"></div></div></div>
+              <div class="c last"><div class="bw"><div class="bar" style="height:76%"></div></div></div>
+            </div>
+            <div class="pr27-xlabels">
+              <span>05.20</span><span>05.24</span><span>05.28</span><span>06.01</span><span>06.04</span><span>06.07</span><span class="last">06.09</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-label"><span class="num">28</span><h2>Editorial Canvas</h2></div>
+    <p class="section-desc">상업 SaaS 랜딩의 데이터 섹션처럼 카피와 숫자를 같이 세우는 방식. 위계가 자연스럽고, 박스를 나눠 붙인 느낌보다 하나의 운영 캔버스처럼 보이도록 구성했습니다.</p>
+    <div class="frame" style="margin-bottom:28px">
+      <div class="pr28">
+        <div class="pr28-sync"><span class="led"></span>마지막 동기화 · 2026. 06. 09. 오후 02:14 · 3시간 전</div>
+        <div class="pr28-top">
+          <div class="pr28-title">
+            <span class="eyebrow">data overview</span>
+            <h3>문서 풀은 넓게, 화면 리듬은 가볍게.</h3>
+            <p>주 지표를 한 번에 인식하게 하고, 나머지 수치는 분리된 카드가 아니라 같은 면 안에서 연속적으로 읽히게 정리한 버전입니다. 상단 카피가 들어가도 제품 느낌이 유지됩니다.</p>
+          </div>
+          <div class="pr28-big">
+            <div class="k">페이지</div>
+            <div class="v">1,284</div>
+            <span class="delta">↑ 12% from last sync</span>
+          </div>
+        </div>
+        <div class="pr28-strip">
+          <div><div class="k">스페이스</div><div class="v">3</div></div>
+          <div><div class="k">첨부파일</div><div class="v">462</div></div>
+          <div><div class="k">청크</div><div class="v">8,741</div></div>
+          <div><div class="k">VectorDB</div><div class="v">2.4<small>GB</small></div></div>
+        </div>
+        <div class="pr28-chart">
+          <div class="head"><span class="t">최근 동기화 추이</span><span class="cap">last 7 runs · update pages</span></div>
+          <div class="pr28-bars">
+            <div class="c"><div class="bw"><div class="bar" style="height:29%"></div></div></div>
+            <div class="c"><div class="bw"><div class="bar" style="height:68%"></div></div></div>
+            <div class="c"><div class="bw"><div class="bar" style="height:46%"></div></div></div>
+            <div class="c"><div class="bw"><div class="bar" style="height:83%"></div></div></div>
+            <div class="c fail"><div class="bw"><div class="bar" style="height:8%"></div></div></div>
+            <div class="c"><div class="bw"><div class="bar" style="height:100%"></div></div></div>
+            <div class="c last"><div class="bw"><div class="bar" style="height:76%"></div></div></div>
+          </div>
+          <div class="pr28-xlabels">
+            <span>05.20</span><span>05.24</span><span>05.28</span><span>06.01</span><span>06.04</span><span>06.07</span><span class="last">06.09</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-label"><span class="num">29</span><h2>Ledger Panorama</h2></div>
+    <p class="section-desc">보고서형 레이아웃을 넓은 파노라마로 재해석한 안입니다. 좌측은 변화 흐름, 우측은 핵심 숫자와 설명을 세워서 대시보드라기보다 잘 다듬어진 제품 섹션처럼 읽히게 합니다.</p>
+    <div class="frame">
+      <div class="pr29">
+        <div class="pr29-sync"><span class="led"></span>마지막 동기화 · 2026. 06. 09. 오후 02:14 · 3시간 전</div>
+        <div class="pr29-main pv-grid pv-grid-2">
+          <div class="pr29-chart">
+            <div class="head"><span class="t">동기화 활동 · 업데이트 페이지</span><span class="cap">최근 7회 · 실패 1회 포함</span></div>
+            <div class="pr29-bars">
+              <div class="c"><div class="bw"><div class="bar" style="height:29%"></div></div></div>
+              <div class="c"><div class="bw"><div class="bar" style="height:68%"></div></div></div>
+              <div class="c"><div class="bw"><div class="bar" style="height:46%"></div></div></div>
+              <div class="c"><div class="bw"><div class="bar" style="height:83%"></div></div></div>
+              <div class="c fail"><div class="bw"><div class="bar" style="height:8%"></div></div></div>
+              <div class="c"><div class="bw"><div class="bar" style="height:100%"></div></div></div>
+              <div class="c last"><div class="bw"><div class="bar" style="height:76%"></div></div></div>
+            </div>
+            <div class="pr29-xlabels">
+              <span>05.20</span><span>05.24</span><span>05.28</span><span>06.01</span><span>06.04</span><span>06.07</span><span class="last">06.09</span>
+            </div>
+          </div>
+          <div class="pr29-side">
+            <div class="hero">
+              <div class="k">페이지</div>
+              <div class="v">1,284</div>
+              <p>문서 증가를 가장 먼저 읽히게 두고, 보조 지표는 리포트식 줄 간격으로 정리한 버전입니다. 전체가 하나의 패널처럼 보이면서도 정보는 충분히 남깁니다.</p>
+            </div>
+            <div class="list">
+              <div class="row"><span class="k">스페이스</span><span class="v">3</span></div>
+              <div class="row"><span class="k">첨부파일</span><span class="v">462</span></div>
+              <div class="row"><span class="k">청크</span><span class="v">8,741</span></div>
+              <div class="row"><span class="k">VectorDB</span><span class="v">2.4<small>GB</small></span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 디자인 탐색 (27~29) ═══════════ -->
+  <section class="section">
+    <div class="section-label"><span class="num">✦</span><h2>디자인 탐색 — 박스 탈피 3종</h2></div>
+    <p class="section-desc">22의 "박스 격자"를 완전히 벗어나 각기 다른 미학으로. 세리프 에디토리얼 · 스위스 미니멀 · 오가닉 소프트. (스크롤하면 부드럽게 등장)</p>
+
+    <!-- 27 · 에디토리얼 매거진 -->
+    <div class="section-label" style="margin-top:10px"><span class="num">27</span><h2 style="font-size:1rem">에디토리얼 매거진</h2></div>
+    <p class="section-desc">인쇄물 스프레드처럼. Fraunces 세리프 대형 숫자 + 이탤릭 캡션, 보조 지표는 본문처럼 흐르게. 비대칭·여백.</p>
+    <div class="frame" style="margin-bottom:28px">
+      <div class="ed2 riv">
+        <div class="ed2-kick">DATA OVERVIEW · 마지막 동기화 06.09 14:00</div>
+        <div class="ed2-grid">
+          <div>
+            <div class="ed2-num">1,284<span class="pct">↑12%</span></div>
+            <div class="ed2-sub">총 페이지가 색인되어 있습니다.</div>
+            <div class="ed2-caption">
+              현재 <b>3</b>개 스페이스에서 수집 중이며, 첨부파일 <b>462</b><span class="dot">·</span>청크 <b>8,741</b><span class="dot">·</span>벡터DB <b>2.4GB</b> 규모로 인덱싱되어 있습니다.
+            </div>
+          </div>
+          <div class="ed2-fig">
+            <svg viewBox="0 0 200 90" preserveAspectRatio="none">
+              <defs><linearGradient id="ed2grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(244,129,34,0.18)" /><stop offset="1" stop-color="rgba(244,129,34,0)" /></linearGradient></defs>
+              <path class="ed2-area" d="M0,62 L33,40 L66,52 L100,28 L133,72 L166,12 L200,34 L200,90 L0,90 Z" />
+              <path class="ed2-stroke" d="M0,62 L33,40 L66,52 L100,28 L133,72 L166,12 L200,34" />
+            </svg>
+            <div class="ed2-figcap"><b>fig.1</b> — 최근 7회 동기화 업데이트 페이지</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 28 · 스위스 미니멀 럭셔리 -->
+    <div class="section-label"><span class="num">28</span><h2 style="font-size:1rem">스위스 미니멀 럭셔리</h2></div>
+    <p class="section-desc">극단적 여백과 가는 라인. 트래킹 넓은 소문자 라벨 + light weight 숫자. 오렌지는 단 한 곳에만.</p>
+    <div class="frame" style="margin-bottom:28px">
+      <div class="lux riv riv-stagger">
+        <div class="lux-head">
+          <span class="ttl">데이터 현황</span>
+          <span class="sync">LAST SYNC · 06.09 14:00 · 3H AGO</span>
+        </div>
+        <div class="lux-row">
+          <div class="lux-stat lead"><div class="k">Pages</div><div class="v">1,284<span class="pct">↑12%</span></div></div>
+          <div class="lux-stat"><div class="k">Spaces</div><div class="v">3</div></div>
+          <div class="lux-stat"><div class="k">Attachments</div><div class="v">462</div></div>
+          <div class="lux-stat"><div class="k">Chunks</div><div class="v">8,741</div></div>
+          <div class="lux-stat"><div class="k">Vector DB</div><div class="v">2.4<small>GB</small></div></div>
+        </div>
+        <div class="lux-chart">
+          <div class="lux-chart-head"><span class="k">Sync Activity</span><span class="cap">최근 7회 · 평균 64초</span></div>
+          <svg viewBox="0 0 300 60" preserveAspectRatio="none">
+            <path class="lux-stroke" d="M0,42 L50,24 L100,33 L150,14 L200,55 L250,4 L300,20" />
+          </svg>
+          <div class="lux-xlabels"><span>05.20</span><span>05.24</span><span>05.28</span><span>06.01</span><span>06.04</span><span>06.07</span><span class="last">06.09</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 29 · 오가닉 소프트 -->
+    <div class="section-label"><span class="num">29</span><h2 style="font-size:1rem">오가닉 소프트</h2></div>
+    <p class="section-desc">따뜻한 그라데이션 메시 + 부드러운 곡선 차트. 테두리·구분선 없이 그림자와 여백으로만. 친근하고 프리미엄한 톤.</p>
+    <div class="frame">
+      <div class="soft2 riv">
+        <div class="soft2-sync"><span class="led"></span>마지막 동기화 · 2026. 06. 09. 오후 02:14 · 3시간 전</div>
+        <div class="soft2-top">
+          <span class="soft2-num">1,284</span>
+          <span class="soft2-lab">총 페이지</span>
+          <span class="soft2-chip" style="margin-left:auto">↑ 12%</span>
+        </div>
+        <div class="soft2-stats">
+          <div class="soft2-stat"><div class="k">스페이스</div><div class="v">3</div></div>
+          <div class="soft2-stat"><div class="k">첨부파일</div><div class="v">462</div></div>
+          <div class="soft2-stat"><div class="k">청크</div><div class="v">8,741</div></div>
+          <div class="soft2-stat"><div class="k">VectorDB</div><div class="v">2.4<small>GB</small></div></div>
+        </div>
+        <div class="soft2-curve">
+          <svg viewBox="0 0 300 80" preserveAspectRatio="none">
+            <defs><linearGradient id="soft2grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(244,129,34,0.26)" /><stop offset="1" stop-color="rgba(244,129,34,0)" /></linearGradient></defs>
+            <path class="soft2-area" d="M0,57 C20,57 30,31 50,31 C70,31 80,45 100,45 C120,45 130,21 150,21 C170,21 180,76 200,76 C220,76 230,10 250,10 C270,10 280,26 300,26 L300,80 L0,80 Z" />
+            <path class="soft2-stroke" d="M0,57 C20,57 30,31 50,31 C70,31 80,45 100,45 C120,45 130,21 150,21 C170,21 180,76 200,76 C220,76 230,10 250,10 C270,10 280,26 300,26" />
+            <circle class="endhalo" cx="300" cy="26" r="7" />
+            <circle class="endpt" cx="300" cy="26" r="3.5" />
+          </svg>
+          <div class="soft2-cap"><span>05.20</span><span>05.24</span><span>05.28</span><span>06.01</span><span>06.04</span><span>06.07</span><span class="last">06.09</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <p class="footnote">docs/data-overview-preview.html · LINA Admin · 데이터 현황 디자인 시안 (정적)</p>
+
+  <script>
+    // 스크롤 진입 시 부드럽게 등장
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+    }, { threshold: 0.2 });
+    document.querySelectorAll('.riv').forEach((el) => io.observe(el));
+  </script>
+
+</div>
+</body>
+</html>
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LINA Core · Data Infrastructure</title>
+  
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      /* AI의 흔적을 완전히 지운 하이엔드 테크 화이트 감성 */
+      --canvas-bg: #fafafa;
+      --surface-white: #ffffff;
+      
+      /* 0.5px 마이크로 라인 느낌을 주는 미세 고밀도 보더 */
+      --border-mono: rgba(15, 23, 42, 0.08);
+      --border-dashed: rgba(15, 23, 42, 0.04);
+      
+      /* 시그니처 오렌지: 면적이 아닌 단 1px의 시선 집중용으로만 절제 사용 */
+      --lina-orange: #f48122;
+      --neutral-black: #09090b;
+      --neutral-gray: #52525b;
+      --neutral-muted: #a1a1aa;
+      
+      --font-global: 'Pretendard', -apple-system, sans-serif;
+      --font-data: 'JetBrains Mono', monospace;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--canvas-bg);
+      color: var(--neutral-black);
+      font-family: var(--font-global);
+      letter-spacing: -0.03em;
+      -webkit-font-smoothing: antialiased;
+      padding: 64px 32px;
+    }
+
+    .dashboard-layout {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 40px;
+    }
+
+    /* Minimalist Technical Header */
+    .dashboard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--border-mono);
+    }
+
+    .meta-title-group .eyebrow {
+      font-family: var(--font-data);
+      font-size: 0.68rem;
+      font-weight: 500;
+      letter-spacing: 0.15em;
+      color: var(--lina-orange);
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .main-title {
+      font-size: 1.4rem;
+      font-weight: 600;
+      letter-spacing: -0.04em;
+    }
+
+    /* ════════════════════════════════════════════════
+       SEAMLESS GRID ARCHITECTURE (선과 여백의 미학)
+       ════════════════════════════════════════════════ */
+    .canvas-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      background-color: var(--surface-white);
+      border: 1px solid var(--border-mono);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    @media (max-width: 1024px) {
+      .canvas-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 640px) {
+      .canvas-grid { grid-template-columns: 1fr; }
+    }
+
+    /* Grid Block Styles */
+    .grid-block {
+      padding: 32px;
+      border-right: 1px solid var(--border-mono);
+      border-bottom: 1px solid var(--border-mono);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 160px;
+    }
+
+    /* 가로를 다 쓰는 타임라인 차트용 와이드 블록 */
+    .grid-block.span-full {
+      grid-column: span 4;
+      border-right: none;
+      min-height: auto;
+      padding: 40px 32px;
+    }
+
+    @media (max-width: 1024px) {
+      .grid-block.span-full { grid-column: span 2; }
+    }
+    @media (max-width: 640px) {
+      .grid-block.span-full { grid-column: span 1; }
+    }
+
+    .grid-block:nth-child(4) {
+      border-right: none;
+    }
+
+    .grid-block.span-full {
+      border-bottom: none;
+    }
+
+    /* Typography Hierarchy */
+    .block-label {
+      font-family: var(--font-data);
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      color: var(--neutral-gray);
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .indicator-dot {
+      width: 4px;
+      height: 4px;
+      background-color: var(--lina-orange);
+      border-radius: 50%;
+    }
+
+    .block-value-group {
+      margin-top: 24px;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+    }
+
+    .block-number {
+      font-family: var(--font-data);
+      font-size: 2.4rem;
+      font-weight: 400; /* 의도적으로 가볍게 설계하여 템플릿 티를 벗겨냄 */
+      letter-spacing: -0.05em;
+      line-height: 1;
+      color: var(--neutral-black);
+    }
+
+    .block-meta {
+      font-size: 0.72rem;
+      color: var(--neutral-muted);
+      font-family: var(--font-data);
+    }
+
+    .block-meta b {
+      font-weight: 500;
+      color: var(--neutral-gray);
+    }
+
+    /* ════════════════════════════════════════════════
+       ULTRA-SHARP INFRASTRUCTURE CHART (GET /api/admin/sync)
+       ════════════════════════════════════════════════ */
+    .chart-header-group {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 32px;
+    }
+
+    .chart-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--neutral-black);
+    }
+
+    .vector-chart-area {
+      width: 100%;
+      height: 90px;
+      position: relative;
+    }
+
+    .svg-pipeline {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+
+    .hairline-grid {
+      stroke: var(--border-dashed);
+      stroke-width: 1;
+    }
+
+    .data-trace-line {
+      fill: none;
+      stroke: var(--neutral-black); /* 오렌지 범벅을 피해 메인은 블랙 스트로크 처리 */
+      stroke-width: 1.2;
+    }
+
+    .node-pointer {
+      fill: var(--surface-white);
+      stroke: var(--neutral-black);
+      stroke-width: 1.5;
+    }
+
+    .node-pointer.failed {
+      stroke: #dc2626;
+      fill: #dc2626;
+    }
+
+    .node-pointer.latest {
+      stroke: var(--lina-orange);
+      fill: var(--surface-white);
+      r: 3.5;
+    }
+
+    /* Timeline X-Axis Align */
+    .timeline-x-axis {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 16px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border-dashed);
+      font-family: var(--font-data);
+      font-size: 0.65rem;
+      color: var(--neutral-muted);
+    }
+
+    .timeline-x-axis .axis-item.active {
+      color: var(--lina-orange);
+      font-weight: 600;
+    }
+
+    .timeline-x-axis .axis-item.err {
+      color: #dc2626;
+    }
+  </style>
+</head>
+<body>
+
+<div class="dashboard-layout">
+
+  <header class="dashboard-header">
+    <div class="meta-title-group">
+      <div class="eyebrow">Lina Admin / Ingestion Matrix</div>
+      <h2 class="main-title">운영 데이터 스코프</h2>
+    </div>
+  </header>
+
+  <main class="canvas-grid">
+    
+    <div class="grid-block" style="background-color: #fafafa;">
+      <span class="block-label"><span class="indicator-dot"></span>Last Sync Completed</span>
+      <div class="block-value-group">
+        <div class="block-number" style="font-size: 1.6rem; letter-spacing: -0.02em; font-weight: 500;">
+          06.09 <span style="font-size: 1rem; color: var(--neutral-gray); font-weight: 400;">14:14 PM</span>
+        </div>
+      </div>
+      <span class="block-meta">파이프라인 상태: <b>3시간 전 활성화</b></span>
+    </div>
+
+    <div class="grid-block">
+      <span class="block-label">Total Spaces</span>
+      <div class="block-value-group">
+        <span class="block-number">6</span>
+        <span class="block-meta">Zones</span>
+      </div>
+      <span class="block-meta">크롤링 범위: <b>전체 스페이스 일괄</b></span>
+    </div>
+
+    <div class="grid-block">
+      <span class="block-label">Indexed Pages</span>
+      <div class="block-value-group">
+        <span class="block-number">2,847</span>
+      </div>
+      <span class="block-meta" style="color: var(--lina-orange);">이전 동기화 대비 <b>+142p</b></span>
+    </div>
+
+    <div class="grid-block">
+      <span class="block-label">Vector DB Cluster</span>
+      <div class="block-value-group">
+        <span class="block-number">1.2<span style="font-size: 1rem; color: var(--neutral-muted); font-weight:300; margin-left:4px;">GB</span></span>
+      </div>
+      <span class="block-meta">총 분할 청크: <b>18,432 Chunks</b></span>
+    </div>
+
+    <div class="grid-block span-full">
+      <div class="chart-header-group">
+        <h4 class="chart-title">동기화 파이프라인 소요 시간 추이 (Run Duration History)</h4>
+        <div class="block-meta">평균 레이턴시: <b style="color: var(--neutral-black);">64초</b></div>
+      </div>
+
+      <div class="vector-chart-area">
+        <svg width="100%" height="100%" viewBox="0 0 1000 90" preserveAspectRatio="none">
+          <line x1="0" y1="20" x2="1000" y2="20" class="hairline-grid" stroke-dasharray="2 4" />
+          <line x1="0" y1="55" x2="1000" y2="55" class="hairline-grid" stroke-dasharray="2 4" />
+          
+          <path d="M 0 60 L 166 35 L 332 50 L 498 15 L 664 75 L 830 10 L 1000 28" class="data-trace-line" />
+          
+          <circle cx="0" cy="60" r="2.5" class="node-pointer" />
+          <circle cx="166" cy="35" r="2.5" class="node-pointer" />
+          <circle cx="332" cy="50" r="2.5" class="node-pointer" />
+          <circle cx="498" cy="15" r="2.5" class="node-pointer" />
+          
+          <circle cx="664" cy="75" r="3" class="node-pointer failed" />
+          
+          <circle cx="830" cy="10" r="2.5" class="node-pointer" />
+          <circle cx="1000" cy="28" r="2.5" class="node-pointer latest" />
+        </svg>
+      </div>
+
+      <div class="timeline-x-axis">
+        <div class="axis-item">05.20 <span style="font-weight:300;">(45s)</span></div>
+        <div class="axis-item">05.24 <span style="font-weight:300;">(62s)</span></div>
+        <div class="axis-item">05.28 <span style="font-weight:300;">(51s)</span></div>
+        <div class="axis-item">06.01 <span style="font-weight:300;">(78s)</span></div>
+        <div class="axis-item err">06.04 (FAILED)</div>
+        <div class="axis-item">06.07 <span style="font-weight:300;">(91s)</span></div>
+        <div class="axis-item active">06.09 (67s)</div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+</body>
+</html>
+

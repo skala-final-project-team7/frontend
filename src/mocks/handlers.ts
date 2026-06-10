@@ -20,6 +20,11 @@
 import { HttpResponse, http } from 'msw';
 
 import {
+  mockAdminDataOverview,
+  mockAdminIngestStart,
+  mockAdminIngestStatusSequence,
+  mockAdminKeyActivation,
+  mockAdminSyncHistory,
   mockConfluencePreviewPages,
   mockConversationSearchResponse,
   mockConversations,
@@ -39,6 +44,15 @@ import type {
 
 // TODO(MOCK): 3초 mock SSE 지연은 token streaming 확인용이므로 backend 연결 전 제거하거나 단축한다.
 const MOCK_SSE_DEMO_DELAY_MS = import.meta.env.MODE === 'test' ? 0 : 375;
+const ADMIN_INGEST_STEP_INTERVAL_MS = 3000;
+
+type MockAdminIngestJob = {
+  jobId: string;
+  startedAtMs: number;
+  startedAtIso: string;
+};
+
+const mockAdminIngestJobs = new Map<string, MockAdminIngestJob>();
 
 export const mockHandlers = [
   // TODO(MOCK): GET /api/users/me
@@ -49,6 +63,96 @@ export const mockHandlers = [
       message: '사용자 정보 조회 성공',
       data: mockCurrentUser,
     });
+  }),
+
+  // TODO(MOCK): GET /api/admin/data
+  http.get('*/api/admin/data', () => {
+    return HttpResponse.json<ApiSuccessResponse<typeof mockAdminDataOverview>>({
+      isSuccess: true,
+      code: 200,
+      message: '데이터 현황 조회 성공',
+      data: mockAdminDataOverview,
+    });
+  }),
+
+  // TODO(MOCK): GET /api/admin/sync
+  http.get('*/api/admin/sync', () => {
+    return HttpResponse.json<ApiSuccessResponse<typeof mockAdminSyncHistory>>({
+      isSuccess: true,
+      code: 200,
+      message: '동기화 이력 조회 성공',
+      data: mockAdminSyncHistory,
+    });
+  }),
+
+  // TODO(MOCK): POST /api/admin/key/activate
+  http.post('*/api/admin/key/activate', () => {
+    return HttpResponse.json<ApiSuccessResponse<typeof mockAdminKeyActivation>>({
+      isSuccess: true,
+      code: 200,
+      message: 'Admin Key 활성화 성공',
+      data: mockAdminKeyActivation,
+    });
+  }),
+
+  // TODO(MOCK): POST /api/admin/ingest
+  http.post('*/api/admin/ingest', () => {
+    const startedAtMs = Date.now();
+    const startedAtIso = new Date(startedAtMs).toISOString();
+    const jobId = `job-mock-${startedAtMs}`;
+
+    mockAdminIngestJobs.set(jobId, {
+      jobId,
+      startedAtMs,
+      startedAtIso,
+    });
+
+    return HttpResponse.json<ApiSuccessResponse<typeof mockAdminIngestStart>>({
+      isSuccess: true,
+      code: 200,
+      message: '데이터 수집 작업 시작',
+      data: {
+        ...mockAdminIngestStart,
+        jobId,
+        startedAt: startedAtIso,
+      },
+    });
+  }),
+
+  // TODO(MOCK): GET /api/admin/ingest/status/{jobId}
+  http.get('*/api/admin/ingest/status/:jobId', ({ params }) => {
+    const jobId = String(params.jobId);
+    const job = mockAdminIngestJobs.get(jobId);
+
+    if (!job) {
+      return HttpResponse.json(
+        {
+          isSuccess: false,
+          code: 404,
+          errorCode: 'RESOURCE_NOT_FOUND',
+          message: '수집 작업을 찾을 수 없습니다',
+        } satisfies ApiErrorResponse,
+        { status: 404 },
+      );
+    }
+
+    const elapsedMs = Math.max(0, Date.now() - job.startedAtMs);
+    const sequenceIndex = Math.min(
+      mockAdminIngestStatusSequence.length - 1,
+      Math.floor(elapsedMs / ADMIN_INGEST_STEP_INTERVAL_MS),
+    );
+    const sequence = mockAdminIngestStatusSequence[sequenceIndex];
+
+    return HttpResponse.json({
+      isSuccess: true,
+      code: 200,
+      message: '수집 상태 조회 성공',
+      data: {
+        ...sequence,
+        jobId,
+        startedAt: job.startedAtIso,
+      },
+    } satisfies ApiSuccessResponse<typeof sequence>);
   }),
 
   // TODO(MOCK): GET /api/conversations
