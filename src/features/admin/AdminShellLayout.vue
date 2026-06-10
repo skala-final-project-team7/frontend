@@ -7,6 +7,7 @@
 작성일 : 2026-06-10
 변경사항 내역 (날짜, 변경목적, 변경내용 순)
   - 2026-06-10, feature14-refactor.2, AdminEntryPage에서 shell UI 분리
+  - 2026-06-10, feature15 보강, 대시보드 nav 라벨을 사용자 현황으로 변경
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -37,7 +38,7 @@ const emit = defineEmits<{
 
 const navigationItems: NavigationItem[] = [
   { key: 'operations', label: '문서 데이터 관리', icon: Database },
-  { key: 'dashboard', label: '대시보드', icon: LayoutDashboard },
+  { key: 'dashboard', label: '사용자 현황', icon: LayoutDashboard },
   { key: 'feedback', label: '피드백', icon: MessageSquareQuote },
   { key: 'sync', label: '동기화 이력', icon: RefreshCw },
 ];
@@ -46,7 +47,9 @@ const navigationItems: NavigationItem[] = [
 <template>
   <div data-testid="admin-page" class="flex h-screen overflow-hidden">
     <!-- ── 사이드바 ── -->
-    <aside class="flex h-screen w-[220px] shrink-0 flex-col border-r border-bg-300/60 bg-primary-white">
+    <aside
+      class="flex h-screen w-[220px] shrink-0 flex-col border-r border-bg-300/60 bg-primary-white"
+    >
       <!-- 로고 -->
       <div class="border-b border-bg-300/60 px-7 py-6">
         <h1 class="text-[1.35rem] font-bold tracking-[-0.06em] text-overlay-dark-80">LINA</h1>

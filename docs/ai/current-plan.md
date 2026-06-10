@@ -243,12 +243,12 @@
 
 # feature15: Admin 대시보드 구현 (SCR-810)
 
-[ ] `frontend/docs/frames/[SCR-810] 관리자 추이 확인 대시보드.pdf` 기준으로 대시보드 화면을 구현
-[ ] `/admin/dashboard` route를 추가하고 Admin shell nav에서 이동 가능하게 구성
-[ ] `GET /api/admin/stats`의 일간 질의 수, 평균 응답 시간, 전체 대화 수, 시간대별 접속 추이를 표시
-[ ] `GET /api/admin/users`의 전체/일일 활성 사용자 수와 사용자별 스페이스/페이지/첨부 수, 대화 수, 마지막 접속 정보를 표시
-[ ] 기간 탭(오늘/7일/30일)은 `docs/api-spec.md`의 공통 query parameter 확정 상태를 확인한 뒤 연결하고, 미확정이면 UI 상태만 mock으로 격리
-[ ] 사용자 목록 pagination과 empty/error 상태 테스트 작성
+[x] `frontend/docs/frames/[SCR-810] 관리자 추이 확인 대시보드.pdf` 기준으로 대시보드 화면을 구현
+[x] `/admin/dashboard` route를 추가하고 Admin shell nav에서 이동 가능하게 구성
+[x] `GET /api/admin/stats`의 일간 질의 수, 평균 응답 시간, 전체 대화 수, 시간대별 접속 추이를 표시
+[x] `GET /api/admin/users`의 전체/일일 활성 사용자 수와 사용자별 스페이스/페이지/첨부 수, 대화 수, 마지막 접속 정보를 표시
+[x] 기간 탭(오늘/7일/30일)은 `docs/api-spec.md`의 공통 query parameter 확정 상태를 확인한 뒤 연결하고, 미확정이면 UI 상태만 mock으로 격리
+[x] 사용자 목록 pagination과 empty/error 상태 테스트 작성
 
 # feature16: Admin 피드백 확인 구현 (SCR-820)
 

@@ -21,7 +21,9 @@ import type {
   AdminIngestStatusResponse,
   AdminKeyActivationResponse,
   AdminIngestMode,
+  AdminStats,
   AdminSyncHistoryResponse,
+  AdminUsersResponse,
   StartAdminIngestRequest,
   StartAdminIngestResponse,
   ChatQuestionRequest,
@@ -96,6 +98,27 @@ export function startAdminIngestJob(
     method: 'POST',
     body: request,
   });
+}
+
+/**
+ * 관리자 대시보드의 서비스 통계(일간 질의 수, 평균 응답 시간, 시간대별 접속 추이 등)를 조회한다.
+ *
+ * @returns 일간 질의 수, 평균 응답 시간, 전체 대화 수, 시간대별 접속 추이
+ */
+export function getAdminStats(): Promise<AdminStats> {
+  return apiRequest<AdminStats>('/api/admin/stats');
+}
+
+/**
+ * 관리자 대시보드의 사용자 현황(전체/일일 활성 사용자, 사용자별 활동 요약)을 조회한다.
+ *
+ * @param params page, size pagination query
+ * @returns 전체/일일 활성 사용자 수, 사용자 목록
+ */
+export function getAdminUsers(
+  params: { page?: number; size?: number } = {},
+): Promise<AdminUsersResponse> {
+  return apiRequest<AdminUsersResponse>('/api/admin/users', { query: params });
 }
 
 /**

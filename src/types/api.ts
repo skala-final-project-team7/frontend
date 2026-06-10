@@ -15,6 +15,7 @@
  *   - 2026-05-26, API 계약 정합성 수정, Source 수정일 필드를 sourceUpdatedAt으로 일치
  *   - 2026-05-26, API 계약 정합성 수정, Common Response 실패 payload의 errorCode 반영
  *   - 2026-06-02, API v2.3.0 정합화, Message role lowercase 및 messageCount 제거 반영
+ *   - 2026-06-10, feature15 구현, AdminStats·AdminUserItem·AdminUsersResponse 타입 추가
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -148,6 +149,34 @@ export type AdminSyncHistoryResponse = {
 
 export type AdminKeyActivationResponse = {
   activatedUntil: string;
+};
+
+export type HourlyAccessTrendItem = {
+  hour: number;
+  count: number;
+};
+
+export type AdminStats = {
+  dailyQueryCount: number;
+  avgResponseTime: number;
+  totalConversations: number;
+  hourlyAccessTrend: HourlyAccessTrendItem[];
+};
+
+export type AdminUserItem = {
+  userId: string;
+  name: string;
+  accessibleSpaceCount: number;
+  accessiblePageCount: number;
+  accessibleAttachmentCount: number;
+  conversationCount: number;
+  lastAccessAt: string;
+};
+
+export type AdminUsersResponse = {
+  totalUsers: number;
+  dailyActiveUsers: number;
+  users: AdminUserItem[];
 };
 
 export type AdminIngestMode = 'full' | 'delta';

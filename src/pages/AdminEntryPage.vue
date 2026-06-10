@@ -8,6 +8,7 @@
   - 2026-06-05, feature12 구현, /admin placeholder route 추가
   - 2026-06-09, feature14 구현, Admin shell 및 데이터 수집 메인 보드 추가
   - 2026-06-10, feature14-refactor.2, AdminShellLayout·AdminOperationsSection으로 분리
+  - 2026-06-10, feature15 구현, 대시보드(SCR-810) 탭을 AdminDashboardSection으로 교체
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -21,18 +22,10 @@ import { ArrowLeft, ShieldAlert } from '@lucide/vue';
 
 import { getAdminDataOverview, getAdminSyncHistory, getCurrentUser } from '@/api';
 import { useTabPagination } from '@/composables/useTabPagination';
-import type {
-  AdminDataOverview,
-  AdminSyncHistoryResponse,
-  CurrentUser,
-} from '@/types/api';
-import {
-  BaseButton,
-  BaseSpinner,
-  ErrorRetryState,
-  mascotWrongImageUrl,
-} from '@/shared';
+import type { AdminDataOverview, AdminSyncHistoryResponse, CurrentUser } from '@/types/api';
+import { BaseButton, BaseSpinner, ErrorRetryState, mascotWrongImageUrl } from '@/shared';
 import AdminShellLayout from '@/features/admin/AdminShellLayout.vue';
+import AdminDashboardSection from '@/features/admin/AdminDashboardSection.vue';
 import AdminOperationsSection from '@/features/admin/AdminOperationsSection.vue';
 
 const router = useRouter();
@@ -167,17 +160,14 @@ function goToLogin() {
         @refresh-requested="refreshAdminBoardData"
       />
 
-      <!-- 준비 중 섹션 (대시보드 / 피드백 / 동기화 이력) -->
+      <!-- 대시보드 (SCR-810) -->
+      <AdminDashboardSection v-else-if="activeSection === 'dashboard'" />
+
+      <!-- 준비 중 섹션 (피드백 / 동기화 이력) -->
       <section v-else class="flex h-full min-h-[60vh] items-center justify-center">
         <div class="text-center">
           <p class="text-[0.9rem] font-medium text-overlay-dark-80">
-            {{
-              activeSection === 'dashboard'
-                ? '대시보드'
-                : activeSection === 'feedback'
-                  ? '피드백'
-                  : '동기화 이력'
-            }}
+            {{ activeSection === 'feedback' ? '피드백' : '동기화 이력' }}
           </p>
           <p class="mt-2 text-[0.82rem] text-overlay-dark-40">이 기능은 곧 제공될 예정입니다.</p>
         </div>

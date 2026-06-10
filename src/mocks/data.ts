@@ -9,6 +9,7 @@
  *   - 2026-05-21, feature9 구현, conversation pinned 상태 mock data 추가
  *   - 2026-05-26, API 계약 정합성 수정, source 수정일 mock 필드를 sourceUpdatedAt으로 변경
  *   - 2026-05-26, API 계약 정합성 수정, response timestamp mock을 KST 표기로 통일
+ *   - 2026-06-10, feature15 구현, mockAdminStats·mockAdminUsersData 추가
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -19,6 +20,8 @@ import type {
   AdminDataOverview,
   AdminIngestStatusResponse,
   AdminKeyActivationResponse,
+  AdminStats,
+  AdminUsersResponse,
   StartAdminIngestResponse,
   AdminSyncHistoryResponse,
   ConfluencePagePreview,
@@ -137,6 +140,51 @@ export const mockAdminIngestStatusSequence: AdminIngestStatusResponse[] = [
     startedAt: '2026-06-09T12:00:00+09:00',
   },
 ];
+
+export const mockAdminStats: AdminStats = {
+  dailyQueryCount: 1284,
+  avgResponseTime: 2.3,
+  totalConversations: 8741,
+  hourlyAccessTrend: [
+    { hour: 0, count: 3 },
+    { hour: 1, count: 2 },
+    { hour: 2, count: 5 },
+    { hour: 3, count: 1 },
+    { hour: 4, count: 0 },
+    { hour: 5, count: 2 },
+    { hour: 6, count: 8 },
+    { hour: 7, count: 20 },
+    { hour: 8, count: 35 },
+    { hour: 9, count: 60 },
+    { hour: 10, count: 85 },
+    { hour: 11, count: 110 },
+    { hour: 12, count: 95 },
+    { hour: 13, count: 100 },
+    { hour: 14, count: 75 },
+  ],
+};
+
+// totalUsers와 실제 목록 길이가 일치해야 pagination mock이 빈 페이지를 만들지 않는다.
+const MOCK_ADMIN_USER_COUNT = 58;
+const MOCK_ADMIN_USER_BASE_ACCESS_MS = new Date('2026-06-01T10:16:00+09:00').getTime();
+
+function toKstIsoString(epochMs: number): string {
+  return `${new Date(epochMs + 9 * 3600_000).toISOString().slice(0, 19)}+09:00`;
+}
+
+export const mockAdminUsersData: AdminUsersResponse = {
+  totalUsers: MOCK_ADMIN_USER_COUNT,
+  dailyActiveUsers: 23,
+  users: Array.from({ length: MOCK_ADMIN_USER_COUNT }, (_, index) => ({
+    userId: `user-dashboard-${String(index + 1).padStart(3, '0')}`,
+    name: `사용자 ${index + 1}`,
+    accessibleSpaceCount: (index % 5) + 1,
+    accessiblePageCount: 37 + ((index * 13) % 130),
+    accessibleAttachmentCount: 14 + ((index * 7) % 40),
+    conversationCount: 11 + ((index * 17) % 110),
+    lastAccessAt: toKstIsoString(MOCK_ADMIN_USER_BASE_ACCESS_MS - index * 5 * 3600_000),
+  })),
+};
 
 export const mockSources: Source[] = [
   {

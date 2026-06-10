@@ -415,9 +415,7 @@ function getStatusClasses(s: AdminDisplayStatus): string {
           </div>
         </div>
 
-        <div
-          class="min-w-0 border-t border-bg-200 pt-5 lg:border-l lg:border-t-0 lg:pl-7 lg:pt-0"
-        >
+        <div class="min-w-0 border-t border-bg-200 pt-5 lg:border-l lg:border-t-0 lg:pl-7 lg:pt-0">
           <div class="relative px-1">
             <div class="relative h-20">
               <div
@@ -526,9 +524,7 @@ function getStatusClasses(s: AdminDisplayStatus): string {
           class="col-span-2 flex items-center justify-between gap-2.5 rounded-2xl border border-bg-300/60 bg-primary-white py-4 pl-5 pr-2 shadow-[0_2px_8px_rgba(15,23,42,0.03)]"
         >
           <div class="min-w-0">
-            <p
-              class="text-[0.7rem] font-semibold uppercase tracking-[0.1em] text-overlay-dark-40"
-            >
+            <p class="text-[0.7rem] font-semibold uppercase tracking-[0.1em] text-overlay-dark-40">
               마지막 동기화
             </p>
             <p
@@ -785,9 +781,7 @@ function getStatusClasses(s: AdminDisplayStatus): string {
                 <p
                   class="font-semibold"
                   :class="
-                    displayedDurationPoint?.isFailed
-                      ? 'text-status-error'
-                      : 'text-overlay-dark-80'
+                    displayedDurationPoint?.isFailed ? 'text-status-error' : 'text-overlay-dark-80'
                   "
                 >
                   {{ displayedDurationPoint?.dateLabel }}

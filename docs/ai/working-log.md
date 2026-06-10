@@ -3146,3 +3146,81 @@
 ### Results
 
 - 전체 테스트: passed, 14 files / 119 tests passed
+
+## 2026-06-10 - feature15: Admin 대시보드 구현 (SCR-810)
+
+### Scope
+
+- `frontend/docs/frames/[SCR-810] 관리자 추이 확인 대시보드.pdf` 기준 대시보드 탭 컨텐츠 구현
+- `/admin/dashboard` route 추가, Admin shell nav의 대시보드 탭에서 `AdminDashboardSection` 표시
+- `GET /api/admin/stats` 연결: 일간 질의 수, 평균 응답시간, 전체 대화 수 KPI 카드 + 시간대별 접속 추이 SVG 라인 차트
+- `GET /api/admin/users` 연결: 전체/일일 활성 사용자 KPI 카드 + 사용자별 스페이스/페이지/첨부 수, 대화 수, 마지막 접속 테이블
+- 사용자 테이블 pagination: `adminTabPagination` inject(탭별 독립 상태) 기반, page/size 0-based 전송(`currentPage - 1`)
+- 기간 탭(오늘/7일/30일): `docs/api-spec.md`의 공통 query parameter가 제안 상태(미확정)이므로 API 재호출 없이 UI 상태만 관리하도록 격리
+- Loading(BaseSpinner) / Error(ErrorRetryState + 재시도) / Empty(EmptyState) 상태 처리
+- 스펙에 없는 필드(email 등)는 렌더링하지 않음 — API 응답 범위만 표시
+- `AdminStats`, `AdminUserItem`, `AdminUsersResponse`, `HourlyAccessTrendItem` 타입 정의 및 `getAdminStats()`/`getAdminUsers()` API 함수 추가
+- `GET /api/admin/stats`, `GET /api/admin/users` MSW mock handler 및 seed 데이터 추가 (`TODO(MOCK)` 마커 포함)
+
+### Changed Files
+
+- `src/__tests__/feature15.admin-dashboard.test.ts`: 테스트 10개 신규 작성 (route 연결, stats/users 호출, KPI 카드 값, 기간 탭 UI 상태, 차트 렌더, 테이블 행, empty/error/retry, pagination)
+- `src/types/api.ts`: AdminStats·AdminUserItem·AdminUsersResponse·HourlyAccessTrendItem 타입 추가
+- `src/api/index.ts`: getAdminStats, getAdminUsers 함수 추가
+- `src/mocks/data.ts`: mockAdminStats, mockAdminUsersData 추가
+- `src/mocks/handlers.ts`: /api/admin/stats, /api/admin/users handler 추가 (users는 page/size slice)
+- `src/features/admin/AdminDashboardSection.vue`: 신규 생성
+- `src/pages/AdminEntryPage.vue`: 대시보드 탭 placeholder를 AdminDashboardSection으로 교체
+- `src/router/index.ts`: /admin/dashboard route 추가
+- `docs/ai/current-plan.md`: feature15 전 항목 체크 처리
+
+### Commands
+
+- `npx vitest run` (TDD: 작성 직후 10개 실패 확인 → 구현 후 통과)
+- `./scripts/lint.sh`
+- `./scripts/format.sh`
+- `npm run typecheck`
+
+### Results
+
+- feature15 테스트 10개 통과, 전체 16 files / 137 tests passed
+- lint 경고 0, format 변경 없음
+- typecheck: feature15 범위 에러 없음 (feature12 테스트의 기존 `DOMWrapper.exists` 타입 에러는 pre-existing 이슈로 미수정)
+- 기간 탭 query parameter(`period`/`from`/`to`)는 스펙 확정 후 연결 필요 — 후속 작업으로 남김
+
+## 2026-06-10 - follow-up: 대시보드 Playwright 시각 검토 및 토큰 정합성 수정
+
+### Scope
+
+- Playwright(headless chromium)로 `/admin/dashboard` 실화면을 SCR-810 PDF와 대조 검토 후 개선
+- 차트 Y축 눈금·점선 그리드라인 추가: 최대값을 자릿수 기반 올림으로 보정해 깔끔한 5개 눈금 생성
+- 차트 viewBox 640×160 → 1100×280: 실제 렌더 폭(~1100px)과 1:1 스케일로 맞춰 라벨·점 과대 확대 문제 해결
+- KPI 카드 4개에 아이콘 추가(MessageSquare/Clock/Users/BarChart3), 반복 마크업을 `kpiCards` computed로 통합
+- 디자인 토큰 정합성 버그 수정: SVG fill의 미존재 변수 `var(--color-overlay-dark-40)` → `var(--color-dark-40)`, Tailwind config에 없는 `text-overlay-dark-60/30` 클래스(no-op) → 정의된 `text-overlay-dark-80/40`으로 교체
+- mock 정합성 수정: `totalUsers: 58`인데 mock 사용자 3명뿐이라 2페이지부터 빈 상태가 뜨던 모순 → 58명을 index 기반 결정적 공식 + KST timestamp로 생성
+- 빈 상태 조건을 `users.length === 0` → `totalUsers === 0`으로 수정하고, 페이지에 행이 없는 경우는 별도 안내문으로 분리
+- 페이지네이션의 "(전체 N명)" 중복 문구 제거(테이블 헤더와 겹침), 직접 만든 스피너를 공용 BaseSpinner로 교체
+- API 정합성 점검: stats/users 응답 필드 스펙 일치, page 0-based 전송, 스펙에 없는 email 미렌더 확인
+- 사용자 피드백 반영: 페이지 제목 "대시보드" → "사용자 현황"(nav 중복 제거), 테이블 제목 "사용자 현황" → "사용자별 활동", 사이드바 nav 라벨 "대시보드" → "사용자 현황"
+- 2페이지 이동·이전/다음 버튼 활성화를 Playwright 스크린샷으로 검증, 브라우저 콘솔 에러 0 확인
+
+### Changed Files
+
+- `src/features/admin/AdminDashboardSection.vue`: 차트 재설계(Y축/viewBox), kpiCards 통합, 토큰 수정, 빈 상태 조건 분리, 제목 변경
+- `src/features/admin/AdminShellLayout.vue`: nav 라벨 대시보드 → 사용자 현황
+- `src/mocks/data.ts`: mockAdminUsersData 58명 결정적 생성으로 교체
+- `src/__tests__/feature15.admin-dashboard.test.ts`: pagination 표시 변경·nav 라벨 변경에 맞춰 단언 갱신
+- `src/__tests__/feature14.admin-operations-board.test.ts`: nav 라벨 단언 갱신
+
+### Commands
+
+- `VITE_USE_MOCK=true npm run dev` + Playwright 스크린샷 (before/after, 2페이지 동작)
+- `npx vitest run`
+- `./scripts/lint.sh`
+- `./scripts/format.sh`
+- `npm run typecheck`
+
+### Results
+
+- 전체 테스트: passed, 16 files / 137 tests passed
+- lint 경고 0, typecheck feature15 범위 에러 없음, 브라우저 콘솔 에러 0
