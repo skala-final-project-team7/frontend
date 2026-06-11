@@ -97,10 +97,9 @@ const navigationItems: NavigationItem[] = [
               {{ currentUser?.name }}
             </p>
             <p
-              data-testid="admin-profile-email"
               class="truncate text-[0.7rem] text-overlay-dark-40"
             >
-              {{ currentUser?.email }}
+              Admin Mode
             </p>
           </div>
         </div>

@@ -245,7 +245,7 @@ const sortedUsers = computed(() => {
 // ── 대화 수 인라인 바 ───────────────────────────────────────────────
 // 기준: 막대 만점(100%) = 현재 페이지 평균 대화 수의 2배(outlier 임계값).
 // 바가 꽉 차는 지점과 튀는 값 강조(진한 주황)가 일치하도록 시각·의미를 맞춘다.
-// 평균 위치는 바 중앙(50%) 마커로 표시한다.
+// 평균 위치는 4칸 세그먼트의 2칸 경계로 읽힌다.
 const CONV_OUTLIER_MULTIPLIER = 2;
 
 const pageAvgConversations = computed(() => {
@@ -266,8 +266,30 @@ function isConvOutlier(count: number): boolean {
   );
 }
 
-function convBarTooltip(count: number): string {
-  return `${formatNumber(count)}건 · 페이지 평균 ${formatNumber(Math.round(pageAvgConversations.value))}건`;
+// 비교 툴팁은 기준 초과(outlier) 행에만 노출한다 — 모든 행에 같은 설명을 반복하지 않는다.
+function convOutlierTooltip(count: number): string {
+  const average = pageAvgConversations.value;
+  const multiple = (count / average).toFixed(1);
+  return `페이지 평균 ${formatNumber(Math.round(average))}건의 ${multiple}배 — 다른 사용자보다 대화가 많습니다`;
+}
+
+// outlier 행은 인라인 바뿐 아니라 행 전체 hover로 툴팁이 뜨도록 행 단위 mouseenter로 처리한다.
+const hoveredOutlierTooltip = ref<{ label: string; x: number; y: number } | null>(null);
+
+function onUserRowMouseEnter(user: AdminUserItem, event: MouseEvent) {
+  if (!isConvOutlier(user.conversationCount)) return;
+  const row = event.currentTarget as HTMLElement;
+  const anchor = row.querySelector('[data-conv-anchor]') ?? row;
+  const rect = anchor.getBoundingClientRect();
+  hoveredOutlierTooltip.value = {
+    label: convOutlierTooltip(user.conversationCount),
+    x: rect.left + rect.width / 2,
+    y: rect.top - 10,
+  };
+}
+
+function onUserRowMouseLeave() {
+  hoveredOutlierTooltip.value = null;
 }
 
 // ── 마지막 접속 최근성 dot (파생값: lastAccessAt 경과시간) ───────────
@@ -394,21 +416,20 @@ function formatDateTime(value: string): string {
   </section>
 
   <!-- 사용자 현황 컨텐츠 -->
-  <section v-else data-testid="admin-dashboard-section" class="p-8">
+  <section v-else data-testid="admin-dashboard-section" class="px-8 pb-4 pt-7">
     <!-- 헤더 -->
     <div>
       <h2 class="text-[1.25rem] font-semibold text-overlay-dark-80">사용자 현황</h2>
     </div>
 
-    <div class="mt-6 grid grid-cols-[1fr_264px] items-start gap-5">
+    <div
+      data-testid="admin-dashboard-layout"
+      class="mt-5 grid grid-cols-[1fr_264px] items-start gap-5"
+    >
       <!-- ── 메인: 사용자별 활동 테이블 ── -->
       <div class="rounded-xl border border-bg-300/60 bg-primary-white">
         <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-5 py-4">
           <h3 class="text-[0.95rem] font-bold text-overlay-dark-80">사용자별 활동</h3>
-          <span class="text-[0.74rem] text-overlay-dark-40">
-            전체 {{ usersData ? formatNumber(usersData.totalUsers) : 0 }}명 · 일일 활성
-            {{ usersData ? formatNumber(usersData.dailyActiveUsers) : 0 }}명
-          </span>
           <span class="ml-auto flex items-center gap-3 text-[0.68rem] text-overlay-dark-40">
             <span class="flex items-center gap-1">
               <i class="size-1.5 rounded-full bg-status-success" />7일 이내
@@ -480,6 +501,8 @@ function formatDateTime(value: string): string {
               :key="user.userId"
               :data-testid="`admin-user-row-${user.userId}`"
               class="border-b border-bg-300/30 hover:bg-bg-100"
+              @mouseenter="onUserRowMouseEnter(user, $event)"
+              @mouseleave="onUserRowMouseLeave"
             >
               <td class="px-5 py-3 font-medium text-overlay-dark-80">{{ user.name }}</td>
               <td class="px-5 py-3 text-overlay-dark-80">
@@ -487,11 +510,7 @@ function formatDateTime(value: string): string {
                 {{ user.accessibleAttachmentCount }}
               </td>
               <td class="px-5 py-3">
-                <BaseTooltip
-                  :label="convBarTooltip(user.conversationCount)"
-                  placement="top"
-                  class="w-full max-w-[150px]"
-                >
+                <span data-conv-anchor class="inline-flex w-full max-w-[150px]">
                   <span class="inline-flex w-full items-center gap-2">
                     <span class="relative h-1.5 flex-1 overflow-hidden rounded-full bg-bg-200">
                       <span
@@ -503,13 +522,16 @@ function formatDateTime(value: string): string {
                         :style="{ width: `${convBarWidthPercent(user.conversationCount)}%` }"
                       />
                       <!-- 4칸 세그먼트 흰 구분선 (1칸 = 만점의 25%, 2칸 = 페이지 평균) -->
-                      <span class="conv-bar-segments absolute inset-0" aria-hidden="true" />
+                      <span
+                        class="conv-bar-segments pointer-events-none absolute inset-0"
+                        aria-hidden="true"
+                      />
                     </span>
                     <span class="min-w-[30px] text-right text-overlay-dark-80">
                       {{ formatNumber(user.conversationCount) }}
                     </span>
                   </span>
-                </BaseTooltip>
+                </span>
               </td>
               <td class="px-5 py-3 text-overlay-dark-40">
                 <span class="inline-flex items-center gap-2">
@@ -534,10 +556,13 @@ function formatDateTime(value: string): string {
         <div
           v-if="usersData && usersData.totalUsers > 0"
           data-testid="admin-users-pagination"
-          class="flex items-center justify-between border-t border-bg-300/30 px-5 py-3 text-[0.78rem]"
+          class="flex items-center justify-end border-t border-bg-300/30 px-5 py-3 text-[0.78rem]"
         >
-          <span class="text-overlay-dark-40">{{ currentPage }} / {{ totalPages }} 페이지</span>
-          <div class="flex gap-1">
+          <div
+            data-testid="admin-users-pagination-controls"
+            class="flex items-center gap-3 text-overlay-dark-40"
+          >
+            <span>{{ currentPage }} / {{ totalPages }} 페이지</span>
             <button
               data-testid="admin-users-pagination-prev"
               type="button"
@@ -583,12 +608,23 @@ function formatDateTime(value: string): string {
           <div class="mt-3 flex items-center gap-4">
             <svg width="72" height="72" viewBox="0 0 72 72" aria-hidden="true">
               <defs>
-                <!-- 브랜드 3단계 그라데이션: primary-light → primary → BaseGradientButton 끝색(#FF4A19).
-                     링 시작점(12시)이 밝은 톤에서 시작해 진행 방향으로 짙어지도록 위→아래 수직 방향 사용 -->
+                <!-- Calm Apricot: 밝은 살구색에서 시작해 브랜드 primary로 자연스럽게 진해진다. -->
                 <linearGradient id="admin-donut-gradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stop-color="var(--color-primary-light)" />
-                  <stop offset="55%" stop-color="var(--color-primary)" />
-                  <stop offset="100%" stop-color="#ff4a19" />
+                  <stop
+                    data-testid="admin-donut-gradient-stop-0"
+                    offset="0%"
+                    stop-color="#ffe4c2"
+                  />
+                  <stop
+                    data-testid="admin-donut-gradient-stop-1"
+                    offset="55%"
+                    stop-color="#ffb55b"
+                  />
+                  <stop
+                    data-testid="admin-donut-gradient-stop-2"
+                    offset="100%"
+                    stop-color="#f48122"
+                  />
                 </linearGradient>
               </defs>
               <circle
@@ -623,7 +659,7 @@ function formatDateTime(value: string): string {
           </div>
         </div>
 
-        <!-- 오늘 접속 추이 스파크라인 (클릭 시 확대 모달) -->
+        <!-- 시간대별 접속 추이 스파크라인 (클릭 시 확대 모달) -->
         <button
           ref="trendExpandButton"
           data-testid="admin-trend-expand"
@@ -633,7 +669,9 @@ function formatDateTime(value: string): string {
           @click="openTrendModal"
         >
           <span class="flex items-center justify-between">
-            <span class="text-[0.74rem] font-semibold text-overlay-dark-40">오늘 접속 추이</span>
+            <span class="text-[0.74rem] font-semibold text-overlay-dark-40"
+              >시간대별 접속 추이</span
+            >
             <BaseTooltip label="크게 보기" placement="top">
               <Maximize2 aria-hidden="true" class="size-3.5 text-overlay-dark-20" />
             </BaseTooltip>
@@ -859,6 +897,19 @@ function formatDateTime(value: string): string {
         </div>
       </section>
     </div>
+
+    <!-- outlier 행 hover 비교 툴팁 (BaseTooltip과 동일한 시각 스타일, 행 단위 트리거) -->
+    <Teleport to="body">
+      <span
+        v-if="hoveredOutlierTooltip"
+        data-testid="admin-outlier-row-tooltip"
+        role="tooltip"
+        class="pointer-events-none fixed z-[9999] -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-button bg-overlay-dark-80 px-2.5 py-1.5 font-lina text-small text-primary-white shadow-floating"
+        :style="{ left: `${hoveredOutlierTooltip.x}px`, top: `${hoveredOutlierTooltip.y}px` }"
+      >
+        {{ hoveredOutlierTooltip.label }}
+      </span>
+    </Teleport>
   </section>
 </template>
 

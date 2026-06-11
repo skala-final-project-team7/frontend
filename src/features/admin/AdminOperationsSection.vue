@@ -380,7 +380,10 @@ function getStatusClasses(s: AdminDisplayStatus): string {
 <template>
   <section class="px-8 py-8">
     <header class="mb-7">
-      <h2 class="text-[1.55rem] font-bold tracking-[-0.04em] text-overlay-dark-80">
+      <h2
+        data-testid="admin-operations-heading"
+        class="text-[1.25rem] font-semibold text-overlay-dark-80"
+      >
         문서 데이터 관리
       </h2>
     </header>

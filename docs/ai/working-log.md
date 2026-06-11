@@ -3399,3 +3399,24 @@
 ### Results
 
 - 전체 테스트: passed, 16 files / 142 tests passed, lint 경고 0
+
+## 2026-06-11 - follow-up: 대화 수 툴팁을 outlier 행 전용 비교 메시지로 변경
+
+### Scope
+
+- 모든 행에 반복되던 대화 수 툴팁("N건 · 페이지 평균 M건")을 제거 — 숫자가 바로 옆에 보여 정보 가치가 낮은 노이즈였음
+- 기준 초과(페이지 평균 2배 이상) 행에만 비교 툴팁 노출: "페이지 평균 N건의 X.X배 — 다른 사용자보다 대화가 많습니다" (사용자 제안 채택). 후속 요청으로 트리거를 인라인 바 hover에서 행 전체 hover로 확장 — tr은 span 래퍼로 감쌀 수 없어 BaseTooltip 대신 행 mouseenter + Teleport 툴팁(동일 시각 스타일)으로 구현, 위치는 대화 수 셀 기준 앵커
+- 세그먼트 오버레이가 hover 포인터를 가로채지 않도록 pointer-events-none 추가
+- mock conversationCount가 균등 분포라 어떤 페이지에도 outlier가 생기지 않던 문제 수정 — 페이지(12명)당 1명에 +120 가산해 강조 UI를 데모에서 확인 가능하게 함
+- 외부 수정(레이아웃 보정)으로 stale해진 pagination 테스트의 '전체 58명' 단언을 도넛 카드 '23 / 58명' 기준으로 갱신
+
+### Changed Files
+
+- `src/features/admin/AdminDashboardSection.vue`: convOutlierTooltip 도입, outlier 조건부 BaseTooltip 래핑, pointer-events-none
+- `src/mocks/data.ts`: conversationCount outlier 가산
+- `src/__tests__/feature15.admin-dashboard.test.ts`: outlier 전용 툴팁 테스트 추가, stale 단언 갱신
+
+### Results
+
+- 전체 테스트: passed, 16 files / 145 tests passed, lint 경고 0
+- Playwright 확인: outlier 행(233건) 진한 주황 풀바 + "페이지 평균 69건의 3.4배" 툴팁, 일반 행 툴팁 0건

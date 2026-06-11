@@ -135,6 +135,9 @@ describe('feature14 Admin operations board', () => {
     expect(wrapper.text()).toContain('사용자 현황');
     expect(wrapper.text()).toContain('피드백');
     expect(wrapper.text()).toContain('동기화 이력');
+    expect(wrapper.get('[data-testid="admin-operations-heading"]').classes()).toEqual(
+      expect.arrayContaining(['text-[1.25rem]', 'font-semibold', 'text-overlay-dark-80']),
+    );
     expect(wrapper.get('[data-testid="admin-profile-name"]').text()).toBe('관 관리자');
     expect(wrapper.get('[data-testid="admin-profile-email"]').text()).toBe('admin@company.com');
     expect(wrapper.get('[data-testid="admin-data-card-totalSpaces"]').text()).toContain('6');

@@ -192,7 +192,8 @@ export const mockAdminUsersData: AdminUsersResponse = {
     accessibleSpaceCount: (index % 5) + 1,
     accessiblePageCount: 37 + ((index * 13) % 130),
     accessibleAttachmentCount: 14 + ((index * 7) % 40),
-    conversationCount: 11 + ((index * 17) % 110),
+    // 페이지(12명)마다 한 명은 페이지 평균 2배를 넘는 outlier가 되도록 가산해 강조 UI를 확인할 수 있게 한다.
+    conversationCount: 11 + ((index * 17) % 110) + (index % 12 === 6 ? 120 : 0),
     lastAccessAt: toKstIsoString(
       Date.now() -
         (MOCK_ADMIN_USER_ACCESS_HOURS_AGO[index % MOCK_ADMIN_USER_ACCESS_HOURS_AGO.length] +

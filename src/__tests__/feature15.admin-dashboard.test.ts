@@ -148,6 +148,35 @@ describe('feature15 Admin dashboard (SCR-810)', () => {
     );
   });
 
+  it('uses the Calm Apricot gradient for the daily active ring', async () => {
+    mockAdminBoardBase();
+    mockedGetAdminStats.mockResolvedValue(mockStats);
+    mockedGetAdminUsers.mockResolvedValue(mockUsers);
+
+    const wrapper = await mountAndNavigateToDashboard();
+
+    const stops = wrapper.findAll('[data-testid^="admin-donut-gradient-stop-"]');
+    expect(stops.map((stop) => stop.attributes('stop-color'))).toEqual([
+      '#ffe4c2',
+      '#ffb55b',
+      '#f48122',
+    ]);
+  });
+
+  it('keeps table density while reducing only the dashboard outer bottom spacing', async () => {
+    mockAdminBoardBase();
+    mockedGetAdminStats.mockResolvedValue(mockStats);
+    mockedGetAdminUsers.mockResolvedValue(mockUsers);
+
+    const wrapper = await mountAndNavigateToDashboard();
+
+    expect(wrapper.get('[data-testid="admin-dashboard-section"]').classes()).toEqual(
+      expect.arrayContaining(['px-8', 'pt-7', 'pb-4']),
+    );
+    expect(wrapper.get('[data-testid="admin-dashboard-layout"]').classes()).toContain('mt-5');
+    expect(wrapper.get('[data-testid="admin-users-table"]').classes()).toContain('text-[0.82rem]');
+  });
+
   it('opens the trend modal with period tabs and a 0~24시 axis when the rail chart is clicked', async () => {
     mockAdminBoardBase();
     mockedGetAdminStats.mockResolvedValue(mockStats);
@@ -228,6 +257,20 @@ describe('feature15 Admin dashboard (SCR-810)', () => {
     expect(
       wrapper.get('[data-testid="admin-user-conv-bar-u-low"]').attributes('style'),
     ).not.toContain('width: 100%');
+
+    // 비교 툴팁은 기준 초과(outlier) 행 전체 hover로 노출한다 (Teleport → document.body)
+    await wrapper.get('[data-testid="admin-user-row-u-high"]').trigger('mouseenter');
+    const outlierTooltip = document.body.querySelector('[data-testid="admin-outlier-row-tooltip"]');
+    expect(outlierTooltip).not.toBeNull();
+    expect(outlierTooltip!.textContent).toContain('2.3배');
+    expect(outlierTooltip!.textContent).toContain('다른 사용자보다');
+
+    await wrapper.get('[data-testid="admin-user-row-u-high"]').trigger('mouseleave');
+    expect(document.body.querySelector('[data-testid="admin-outlier-row-tooltip"]')).toBeNull();
+
+    // 일반 행 hover 시에는 툴팁이 뜨지 않는다
+    await wrapper.get('[data-testid="admin-user-row-u-low"]').trigger('mouseenter');
+    expect(document.body.querySelector('[data-testid="admin-outlier-row-tooltip"]')).toBeNull();
   });
 
   it('shows recency dots in the 마지막 접속 column based on elapsed time, with a legend', async () => {
@@ -356,7 +399,7 @@ describe('feature15 Admin dashboard (SCR-810)', () => {
     expect(wrapper.find('[data-testid="admin-dashboard-section"]').exists()).toBe(true);
   });
 
-  it('shows pagination page info and total user count in the table header', async () => {
+  it('shows pagination page info and total user count in the rail donut card', async () => {
     mockAdminBoardBase();
     mockedGetAdminStats.mockResolvedValue(mockStats);
     mockedGetAdminUsers.mockResolvedValue(mockUsers);
@@ -367,7 +410,11 @@ describe('feature15 Admin dashboard (SCR-810)', () => {
     expect(pagination.exists()).toBe(true);
     // totalUsers 58, size 12 → 5 페이지
     expect(pagination.text()).toContain('1 / 5 페이지');
-    expect(wrapper.text()).toContain('전체 58명');
+    expect(wrapper.get('[data-testid="admin-users-pagination-controls"]').text()).toContain(
+      '1 / 5 페이지',
+    );
+    // 전체/일일 활성 사용자 수는 우측 레일 도넛 카드에서 확인한다
+    expect(wrapper.get('[data-testid="admin-stats-card-users"]').text()).toContain('23 / 58명');
   });
 
   it('sorts user rows by 대화 수 ascending then descending on header clicks', async () => {
