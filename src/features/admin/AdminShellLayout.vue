@@ -96,11 +96,7 @@ const navigationItems: NavigationItem[] = [
             >
               {{ currentUser?.name }}
             </p>
-            <p
-              class="truncate text-[0.7rem] text-overlay-dark-40"
-            >
-              Admin Mode
-            </p>
+            <p class="truncate text-[0.7rem] text-overlay-dark-40">Admin Mode</p>
           </div>
         </div>
       </div>

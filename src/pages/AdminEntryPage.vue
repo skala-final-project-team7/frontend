@@ -9,6 +9,7 @@
   - 2026-06-09, feature14 구현, Admin shell 및 데이터 수집 메인 보드 추가
   - 2026-06-10, feature14-refactor.2, AdminShellLayout·AdminOperationsSection으로 분리
   - 2026-06-10, feature15 구현, 대시보드(SCR-810) 탭을 AdminDashboardSection으로 교체
+  - 2026-06-11, feature16 구현, 피드백(SCR-820) 탭을 AdminFeedbackSection으로 교체
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -26,6 +27,7 @@ import type { AdminDataOverview, AdminSyncHistoryResponse, CurrentUser } from '@
 import { BaseButton, BaseSpinner, ErrorRetryState, mascotWrongImageUrl } from '@/shared';
 import AdminShellLayout from '@/features/admin/AdminShellLayout.vue';
 import AdminDashboardSection from '@/features/admin/AdminDashboardSection.vue';
+import AdminFeedbackSection from '@/features/admin/AdminFeedbackSection.vue';
 import AdminOperationsSection from '@/features/admin/AdminOperationsSection.vue';
 
 const router = useRouter();
@@ -163,12 +165,13 @@ function goToLogin() {
       <!-- 대시보드 (SCR-810) -->
       <AdminDashboardSection v-else-if="activeSection === 'dashboard'" />
 
-      <!-- 준비 중 섹션 (피드백 / 동기화 이력) -->
+      <!-- 피드백 (SCR-820) -->
+      <AdminFeedbackSection v-else-if="activeSection === 'feedback'" />
+
+      <!-- 준비 중 섹션 (동기화 이력) -->
       <section v-else class="flex h-full min-h-[60vh] items-center justify-center">
         <div class="text-center">
-          <p class="text-[0.9rem] font-medium text-overlay-dark-80">
-            {{ activeSection === 'feedback' ? '피드백' : '동기화 이력' }}
-          </p>
+          <p class="text-[0.9rem] font-medium text-overlay-dark-80">동기화 이력</p>
           <p class="mt-2 text-[0.82rem] text-overlay-dark-40">이 기능은 곧 제공될 예정입니다.</p>
         </div>
       </section>

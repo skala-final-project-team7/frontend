@@ -252,12 +252,12 @@
 
 # feature16: Admin 피드백 확인 구현 (SCR-820)
 
-[ ] `frontend/docs/frames/[SCR-820] 관리자 피드백 확인.pdf` 기준으로 피드백 화면을 구현
-[ ] `/admin/feedback` route를 추가하고 Admin shell nav에서 이동 가능하게 구성
-[ ] `GET /api/admin/feedback`의 `likeCount`, `dislikeCount`, `positiveRatio`, `trend`, `negativeFeedbacks`를 표시
-[ ] 부정 피드백 원문에는 질문, 답변, comment, createdAt을 표시하되 민감 정보가 노출되지 않도록 API 응답 범위만 렌더링
-[ ] 기간 탭(7일/14일/30일)은 query parameter 확정 상태를 확인한 뒤 연결하고, 미확정이면 mock으로 격리
-[ ] 피드백 목록 pagination, empty/error 상태 테스트 작성
+[x] `frontend/docs/frames/[SCR-820] 관리자 피드백 확인.pdf` 기준으로 피드백 화면을 구현
+[x] `/admin/feedback` route를 추가하고 Admin shell nav에서 이동 가능하게 구성
+[x] `GET /api/admin/feedback`의 `likeCount`, `dislikeCount`, `positiveRatio`, `trend`, `negativeFeedbacks`를 표시
+[x] 부정 피드백 원문에는 질문, 답변, comment, createdAt을 표시하되 민감 정보가 노출되지 않도록 API 응답 범위만 렌더링
+[x] 기간 탭(7일/14일/30일)은 query parameter 확정 상태를 확인한 뒤 연결하고, 미확정이면 mock으로 격리
+[x] 피드백 목록 pagination, empty/error 상태 테스트 작성
 
 # feature17: Admin 동기화 이력 구현 (SCR-830)
 

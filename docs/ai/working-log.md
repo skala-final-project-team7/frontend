@@ -3420,3 +3420,60 @@
 
 - 전체 테스트: passed, 16 files / 145 tests passed, lint 경고 0
 - Playwright 확인: outlier 행(233건) 진한 주황 풀바 + "페이지 평균 69건의 3.4배" 툴팁, 일반 행 툴팁 0건
+
+## 2026-06-11 - feature16: Admin 피드백 확인 구현 (SCR-820)
+
+### Scope
+
+- `[SCR-820] 관리자 피드백 확인.pdf` 기준 피드백 탭 화면 구현: 긍정/부정 비율 도넛 카드, 일자별 피드백 추이 바 차트, 부정 피드백 원문 카드 목록
+- `/admin/feedback` route 추가 (AdminEntryPage 연결), Admin shell nav '피드백' 탭의 준비 중 placeholder를 `AdminFeedbackSection`으로 교체
+- `GET /api/admin/feedback` 계약(`docs/api-spec.md` §4-2) 기준 `AdminFeedbackResponse` 타입, `getAdminFeedback` API 함수, MSW mock handler/data 추가
+- 부정 피드백 카드에는 질문/답변/comment/createdAt만 렌더링 (feedbackId/messageId 등 내부 식별자 비노출 — 회귀 테스트 포함)
+- 기간 탭(7일/14일/30일): `from`/`to` query parameter가 api-spec에서 아직 **제안** 상태이므로 feature15와 동일하게 UI 상태만 관리하고 API 재호출 없이 mock 격리. 기본 선택은 API 기본값(최근 7일)에 맞춰 7일
+- 부정 피드백 원문 pagination: `adminTabPagination` inject(feedback 키) 사용, page size 5, 총 페이지 기준은 `dislikeCount`. 페이지 전환 시 전체 로딩 스피너 없이 데이터만 교체 (dashboard와 동일 패턴)
+
+### Test Cases
+
+- `/admin/feedback` route → AdminEntryPage 연결
+- 피드백 탭 활성화 시 `getAdminFeedback` 1회 호출
+- 긍정/부정 비율 카드에 likeCount/dislikeCount/positiveRatio(87%/13%) 표시
+- 피드백 추이 차트가 trend 날짜 수만큼 바 렌더링 + 날짜 라벨
+- 기간 탭 전환 시 aria-selected만 변경, API 재호출 없음
+- 부정 피드백 카드의 질문/답변/comment/createdAt 표시 + 총 건수(dislikeCount) 표시
+- 카드에 feedbackId/messageId 미노출
+- 부정 피드백 0건 empty state
+- API 실패 error state + 재시도 동작
+- pagination 페이지 정보(1 / 10 페이지), 다음 페이지 `{ page: 1, size: 5 }` 재호출, 첫 페이지 prev 비활성
+
+### Changed Files
+
+- `src/types/api.ts`: `AdminFeedbackTrendItem`·`AdminNegativeFeedbackItem`·`AdminFeedbackResponse` 타입 추가
+- `src/api/index.ts`: `getAdminFeedback(params)` 추가
+- `src/mocks/data.ts`: `mockAdminFeedbackData` 추가 (부정 원문 47건 생성, dislikeCount와 일치)
+- `src/mocks/handlers.ts`: `GET /api/admin/feedback` mock handler 추가 (`TODO(MOCK)` 마커, page/size 슬라이싱)
+- `src/router/index.ts`: `/admin/feedback` route 추가
+- `src/pages/AdminEntryPage.vue`: feedback 섹션을 `AdminFeedbackSection`으로 연결, placeholder는 동기화 이력만 유지
+- `src/features/admin/AdminFeedbackSection.vue`: 신규 (SCR-820 탭 컨텐츠)
+- `src/__tests__/feature16.admin-feedback.test.ts`: 신규 (11 tests)
+- `src/__tests__/feature14.admin-operations-board.test.ts`: stale 단언 1건 수정 — `admin-profile-email`은 커밋 74bb923 UI 변경(이메일 → Admin Mode 라벨)에서 렌더링이 제거됐는데 테스트가 갱신되지 않아 HEAD부터 실패하던 것을 현재 UI 기준으로 갱신 (feature16 변경과 무관한 기존 실패)
+- `src/features/admin/AdminShellLayout.vue`: 코드 변경 없음 — `./scripts/format.sh`(prettier) 정리만 반영
+- `docs/ai/current-plan.md`: feature16 항목 체크 처리
+
+### Commands
+
+- `npx vitest run src/__tests__/feature16.admin-feedback.test.ts` (red 확인: 11 failed → 구현 후 11 passed)
+- `./scripts/verify.sh` (format → lint → test)
+- `npm run typecheck`
+
+### Results
+
+- 전체 테스트: passed, 17 files / 156 tests
+- lint 경고 0 (`--max-warnings 0`), format 적용 완료
+- typecheck: feature16 범위 에러 0. 기존 에러 12건은 미수정 파일(`feature12`·`feature15` 테스트의 `wrapper.get().exists()` 패턴, TS2339)로 feature16 이전부터 존재 — 해당 feature 담당 범위라 이번 세션에서 수정하지 않음
+
+### Notes / Remaining Issues
+
+- 기간 탭은 `period`/`from`/`to` query parameter가 BFF에서 확정되면 실제 조회 연결 필요 (현재 UI 상태만)
+- 디자인 PDF의 donut(312/47건)과 부정 원문 "총 12건" 표기가 상호 불일치하여, mock은 spec 관계식(`negativeFeedbacks` 총량 = `dislikeCount`)에 맞춰 47건으로 생성
+- 피드백 추이 바는 일자별 `likeCount + dislikeCount` 합산 높이로 렌더링하고 분해값은 바 tooltip(`<title>`)으로 제공
+- 기존 typecheck 에러 12건(feature12/15 테스트)은 후속 정리 필요

@@ -11,6 +11,7 @@
  *   - 2026-05-22, feature9 SSE 보강, status 이벤트 mock 추가
  *   - 2026-05-22, RAG status 계약 반영, 확정 phase 순서와 meta 이벤트 mock 추가
  *   - 2026-05-26, API 계약 정합성 수정, KST timestamp 및 errorCode 실패 응답 반영
+ *   - 2026-06-11, feature16 구현, 관리자 피드백 현황 mock handler 추가
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -21,6 +22,7 @@ import { HttpResponse, http } from 'msw';
 
 import {
   mockAdminDataOverview,
+  mockAdminFeedbackData,
   mockAdminIngestStart,
   mockAdminIngestStatusSequence,
   mockAdminKeyActivation,
@@ -92,6 +94,30 @@ export const mockHandlers = [
       data: {
         ...mockAdminUsersData,
         users: pagedUsers,
+      },
+    });
+  }),
+
+  // TODO(MOCK): GET /api/admin/feedback
+  http.get('*/api/admin/feedback', ({ request }) => {
+    const url = new URL(request.url);
+    const page = Number(url.searchParams.get('page') ?? 0);
+    const size = Number(url.searchParams.get('size') ?? 20);
+    const startIndex = page * size;
+    const pagedFeedbacks = mockAdminFeedbackData.negativeFeedbacks.slice(
+      startIndex,
+      startIndex + size,
+    );
+
+    return HttpResponse.json<ApiSuccessResponse<typeof mockAdminFeedbackData>>({
+      isSuccess: true,
+      code: 200,
+      message: '피드백 현황 조회 성공',
+      data: {
+        ...mockAdminFeedbackData,
+        negativeFeedbacks: pagedFeedbacks,
+        page,
+        size,
       },
     });
   }),

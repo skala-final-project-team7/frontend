@@ -139,7 +139,8 @@ describe('feature14 Admin operations board', () => {
       expect.arrayContaining(['text-[1.25rem]', 'font-semibold', 'text-overlay-dark-80']),
     );
     expect(wrapper.get('[data-testid="admin-profile-name"]').text()).toBe('관 관리자');
-    expect(wrapper.get('[data-testid="admin-profile-email"]').text()).toBe('admin@company.com');
+    // 프로필 영역은 이메일 대신 Admin Mode 라벨을 표시한다 (74bb923 UI 변경 반영)
+    expect(wrapper.text()).toContain('Admin Mode');
     expect(wrapper.get('[data-testid="admin-data-card-totalSpaces"]').text()).toContain('6');
     expect(wrapper.get('[data-testid="admin-data-card-totalPages"]').text()).toContain('2,847');
     expect(wrapper.get('[data-testid="admin-data-card-totalAttachments"]').text()).toContain('934');

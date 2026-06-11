@@ -10,6 +10,7 @@
  *   - 2026-05-26, API 계약 정합성 수정, source 수정일 mock 필드를 sourceUpdatedAt으로 변경
  *   - 2026-05-26, API 계약 정합성 수정, response timestamp mock을 KST 표기로 통일
  *   - 2026-06-10, feature15 구현, mockAdminStats·mockAdminUsersData 추가
+ *   - 2026-06-11, feature16 구현, mockAdminFeedbackData 추가
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -18,6 +19,7 @@
  */
 import type {
   AdminDataOverview,
+  AdminFeedbackResponse,
   AdminIngestStatusResponse,
   AdminKeyActivationResponse,
   AdminStats,
@@ -201,6 +203,41 @@ export const mockAdminUsersData: AdminUsersResponse = {
           3_600_000,
     ),
   })),
+};
+
+// 부정 피드백 원문 총 건수는 dislikeCount와 일치해야 pagination mock이 빈 페이지를 만들지 않는다.
+const MOCK_ADMIN_NEGATIVE_FEEDBACK_COUNT = 47;
+const MOCK_ADMIN_FEEDBACK_COMMENTS = [
+  '답변이 너무 길어요',
+  '관련 없는 내용이 포함됐어요',
+  '정확하지 않아요',
+  '출처가 질문과 관련 없었어요',
+];
+
+export const mockAdminFeedbackData: AdminFeedbackResponse = {
+  totalCount: 359,
+  likeCount: 312,
+  dislikeCount: MOCK_ADMIN_NEGATIVE_FEEDBACK_COUNT,
+  positiveRatio: 0.87,
+  trend: [
+    { date: '2026-06-03', likeCount: 38, dislikeCount: 7 },
+    { date: '2026-06-04', likeCount: 52, dislikeCount: 11 },
+    { date: '2026-06-05', likeCount: 27, dislikeCount: 4 },
+    { date: '2026-06-06', likeCount: 19, dislikeCount: 2 },
+    { date: '2026-06-07', likeCount: 33, dislikeCount: 6 },
+    { date: '2026-06-08', likeCount: 57, dislikeCount: 9 },
+    { date: '2026-06-09', likeCount: 44, dislikeCount: 8 },
+  ],
+  negativeFeedbacks: Array.from({ length: MOCK_ADMIN_NEGATIVE_FEEDBACK_COUNT }, (_, index) => ({
+    feedbackId: `fb-mock-${String(index + 1).padStart(3, '0')}`,
+    messageId: `msg-mock-${String(index + 1).padStart(3, '0')}`,
+    comment: MOCK_ADMIN_FEEDBACK_COMMENTS[index % MOCK_ADMIN_FEEDBACK_COMMENTS.length],
+    question: `예시 질문 ${index + 1}: 이 문서의 작성 방법은 어떻게 되나요?`,
+    answer: `답변 ${index + 1}: 해당 문서는 Confluence의 CPC 스페이스에서 관리됩니다.`,
+    createdAt: toKstIsoString(Date.now() - (index + 1) * 7 * 3_600_000),
+  })),
+  page: 0,
+  size: 20,
 };
 
 export const mockSources: Source[] = [
