@@ -211,7 +211,6 @@ export const useAdminIngestStore = defineStore('adminIngest', {
       this.lastError = '';
 
       try {
-        await this.ensureAdminKeyActive();
         const response = await startAdminIngestJob({ mode });
 
         this.jobId = response.jobId;
