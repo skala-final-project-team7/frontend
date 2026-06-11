@@ -1,0 +1,586 @@
+<!doctype html>
+<!--
+  LINA Admin — 사용자 현황 탭 리디자인 시안 (4종)
+  - 목적: KPI 카드 4개 나열 레이아웃의 대안 탐색
+  - 제약: GET /api/admin/stats, GET /api/admin/users 의 현재 응답 필드만 사용
+          (파생값은 클라이언트 계산으로 명시)
+  - 토큰: frontend/docs/design-reference.css 기준
+-->
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>LINA — 사용자 현황 탭 시안</title>
+<link rel="stylesheet" as="style" crossorigin
+  href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
+<style>
+  :root {
+    --primary: #f48122;
+    --primary-light: #fcdaac;
+    --primary-white: #fefefe;
+    --success: #2eb97f;
+    --warning: #ffd64f;
+    --error: #ff4800;
+    --bg-100: #fcfcfc;
+    --bg-200: #f5f5f5;
+    --bg-300: #e6e6e6;
+    --bg-400: #cccccc;
+    --dark-80: rgba(0, 0, 0, 0.8);
+    --dark-40: rgba(0, 0, 0, 0.4);
+    --dark-20: rgba(0, 0, 0, 0.2);
+    --dark-10: rgba(0, 0, 0, 0.1);
+    --dark-04: rgba(0, 0, 0, 0.04);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Pretendard Variable', Pretendard, -apple-system, sans-serif;
+    background: #f0efed;
+    color: var(--dark-80);
+    -webkit-font-smoothing: antialiased;
+  }
+  .num { font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+
+  /* ── 문서 셸 ─────────────────────────────── */
+  .doc-header {
+    max-width: 1240px; margin: 0 auto; padding: 56px 32px 8px;
+  }
+  .doc-header h1 { font-size: 1.7rem; font-weight: 800; letter-spacing: -0.04em; }
+  .doc-header h1 em { font-style: normal; color: var(--primary); }
+  .doc-header p { margin-top: 10px; font-size: 0.88rem; color: var(--dark-40); line-height: 1.65; }
+  .api-note {
+    max-width: 1240px; margin: 20px auto 0; padding: 0 32px;
+  }
+  .api-note .box {
+    border: 1px solid var(--bg-300); background: var(--primary-white);
+    border-radius: 12px; padding: 14px 18px; font-size: 0.76rem; color: var(--dark-40);
+    line-height: 1.9;
+  }
+  code {
+    font-family: 'SF Mono', ui-monospace, monospace; font-size: 0.92em;
+    background: var(--bg-200); border: 1px solid var(--bg-300);
+    border-radius: 4px; padding: 0 5px; color: var(--dark-80);
+  }
+  .concept-nav {
+    position: sticky; top: 0; z-index: 50;
+    backdrop-filter: blur(12px); background: rgba(252, 252, 252, 0.82);
+    border-bottom: 1px solid var(--bg-300);
+  }
+  .concept-nav .inner {
+    max-width: 1240px; margin: 0 auto; padding: 12px 32px;
+    display: flex; gap: 6px; align-items: center;
+  }
+  .concept-nav a {
+    text-decoration: none; color: var(--dark-40); font-size: 0.8rem; font-weight: 600;
+    padding: 6px 12px; border-radius: 8px; transition: all 0.15s;
+  }
+  .concept-nav a:hover { color: var(--dark-80); background: var(--dark-04); }
+  .concept-nav .brand { margin-right: auto; font-weight: 800; font-size: 0.9rem; letter-spacing: -0.03em; }
+  .concept-nav .brand small { color: var(--dark-40); font-weight: 500; margin-left: 8px; }
+
+  /* ── 시안 섹션 공통 ───────────────────────── */
+  .concept { max-width: 1240px; margin: 64px auto; padding: 0 32px; }
+  .concept-label {
+    display: flex; align-items: baseline; gap: 14px; margin-bottom: 6px;
+  }
+  .concept-label .tag {
+    font-size: 0.72rem; font-weight: 800; color: var(--primary-white);
+    background: var(--dark-80); padding: 4px 10px; border-radius: 6px; letter-spacing: 0.06em;
+  }
+  .concept-label h2 { font-size: 1.25rem; font-weight: 800; letter-spacing: -0.03em; }
+  .concept-desc { font-size: 0.84rem; color: var(--dark-40); line-height: 1.7; max-width: 760px; }
+  .concept-review {
+    margin-top: 10px; display: flex; gap: 18px; flex-wrap: wrap;
+    font-size: 0.76rem; color: var(--dark-40);
+  }
+  .concept-review b { color: var(--dark-80); font-weight: 700; }
+  .frame {
+    margin-top: 20px; border: 1px solid var(--bg-300); border-radius: 16px;
+    background: var(--bg-100); overflow: hidden;
+    box-shadow: 0 24px 48px -32px rgba(0, 0, 0, 0.18);
+  }
+  .frame-body { padding: 32px; }
+  .src {
+    font-family: 'SF Mono', ui-monospace, monospace;
+    font-size: 0.6rem; color: var(--dark-20); letter-spacing: 0;
+  }
+
+  /* 공통 테이블 */
+  table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  thead th {
+    text-align: left; font-weight: 500; color: var(--dark-40);
+    padding: 11px 18px; border-bottom: 1px solid var(--bg-300);
+    font-size: 0.76rem; white-space: nowrap;
+  }
+  tbody td { padding: 12px 18px; border-bottom: 1px solid rgba(230, 230, 230, 0.5); }
+  tbody tr:hover { background: var(--bg-200); }
+  tbody tr:last-child td { border-bottom: none; }
+  .t-name { font-weight: 600; }
+  .t-dim { color: var(--dark-40); }
+
+  /* ════════ 시안 A — 통합 패널 ════════ */
+  .a-panel {
+    border: 1px solid var(--bg-300); border-radius: 14px; background: var(--primary-white);
+    overflow: hidden;
+  }
+  .a-strip {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    border-bottom: 1px solid var(--bg-300);
+  }
+  .a-stat {
+    padding: 20px 24px; position: relative;
+  }
+  .a-stat + .a-stat::before {
+    content: ''; position: absolute; left: 0; top: 18px; bottom: 18px;
+    width: 1px; background: var(--bg-300);
+  }
+  .a-stat .k { font-size: 0.74rem; color: var(--dark-40); }
+  .a-stat .v { margin-top: 6px; font-size: 1.55rem; font-weight: 800; letter-spacing: -0.04em; }
+  .a-stat .s { margin-top: 3px; font-size: 0.7rem; color: var(--dark-40); }
+  .a-chart-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 24px 4px;
+  }
+  .a-chart-head h3 { font-size: 0.9rem; font-weight: 700; }
+  .a-chart-wrap { padding: 8px 24px 20px; }
+  .a-table-card {
+    margin-top: 20px; border: 1px solid var(--bg-300); border-radius: 14px;
+    background: var(--primary-white); overflow: hidden;
+  }
+  .a-table-head {
+    display: flex; align-items: center; justify-content: space-between; padding: 16px 18px;
+  }
+  .a-table-head h3 { font-size: 0.9rem; font-weight: 700; }
+
+  /* segmented control (공통) */
+  .seg {
+    display: inline-flex; gap: 2px; padding: 2px;
+    border: 1px solid var(--bg-300); background: var(--bg-100); border-radius: 9px;
+  }
+  .seg button {
+    font: inherit; font-size: 0.76rem; border: 0; background: transparent;
+    padding: 5px 12px; border-radius: 7px; color: var(--dark-40); cursor: pointer;
+  }
+  .seg button.on {
+    background: var(--primary-white); color: var(--dark-80); font-weight: 700;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+
+  /* ════════ 시안 B — 테이블 퍼스트 ════════ */
+  .b-grid { display: grid; grid-template-columns: 1fr 264px; gap: 20px; align-items: start; }
+  .b-main {
+    border: 1px solid var(--bg-300); border-radius: 14px; background: var(--primary-white);
+    overflow: hidden;
+  }
+  .b-main-head {
+    display: flex; align-items: baseline; gap: 10px; padding: 18px;
+    border-bottom: 1px solid var(--bg-300);
+  }
+  .b-main-head h3 { font-size: 0.95rem; font-weight: 800; letter-spacing: -0.02em; }
+  .b-main-head .sub { font-size: 0.74rem; color: var(--dark-40); }
+  .convbar {
+    display: inline-flex; align-items: center; gap: 8px; min-width: 130px;
+  }
+  .convbar .bar {
+    flex: 1; height: 4px; background: var(--bg-200); border-radius: 2px; overflow: hidden;
+  }
+  .convbar .bar i {
+    display: block; height: 100%; background: var(--primary); border-radius: 2px;
+  }
+  .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 7px; }
+  .dot.g { background: var(--success); }
+  .dot.y { background: var(--warning); }
+  .dot.x { background: var(--bg-400); }
+  .b-rail { display: flex; flex-direction: column; gap: 14px; }
+  .b-card {
+    border: 1px solid var(--bg-300); border-radius: 14px; background: var(--primary-white);
+    padding: 18px;
+  }
+  .b-card .k { font-size: 0.72rem; color: var(--dark-40); font-weight: 600; }
+  .b-donut-row { display: flex; align-items: center; gap: 14px; margin-top: 12px; }
+  .b-donut-meta .v { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.04em; }
+  .b-donut-meta .s { font-size: 0.7rem; color: var(--dark-40); margin-top: 2px; }
+  .b-kv { display: flex; justify-content: space-between; align-items: baseline; padding: 8px 0; }
+  .b-kv + .b-kv { border-top: 1px dashed var(--bg-300); }
+  .b-kv .k2 { font-size: 0.76rem; color: var(--dark-40); }
+  .b-kv .v2 { font-size: 0.95rem; font-weight: 800; letter-spacing: -0.02em; }
+
+  /* ════════ 시안 C — 히어로 지표 ════════ */
+  .c-hero {
+    border: 1px solid var(--bg-300); border-radius: 16px;
+    background:
+      radial-gradient(1100px 360px at 8% -40%, rgba(244, 129, 34, 0.10), transparent 60%),
+      var(--primary-white);
+    display: grid; grid-template-columns: 320px 1fr; overflow: hidden;
+  }
+  .c-left {
+    padding: 30px; border-right: 1px solid var(--bg-300);
+    display: flex; flex-direction: column; justify-content: center; gap: 18px;
+  }
+  .c-ring-wrap { position: relative; width: 168px; height: 168px; margin: 0 auto; }
+  .c-ring-center {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+  }
+  .c-ring-center .pct { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.05em; }
+  .c-ring-center .lbl { font-size: 0.68rem; color: var(--dark-40); margin-top: 2px; }
+  .c-left .detail { text-align: center; font-size: 0.78rem; color: var(--dark-40); line-height: 1.7; }
+  .c-left .detail b { color: var(--dark-80); }
+  .c-right { padding: 26px 28px; }
+  .c-right-head { display: flex; align-items: center; justify-content: space-between; }
+  .c-right-head h3 { font-size: 0.92rem; font-weight: 700; }
+  .c-inline-stats {
+    display: flex; gap: 26px; margin-top: 4px; padding-top: 14px;
+  }
+  .c-inline-stats .item .v { font-size: 1.06rem; font-weight: 800; letter-spacing: -0.03em; }
+  .c-inline-stats .item .k { font-size: 0.68rem; color: var(--dark-40); margin-top: 1px; }
+  .c-table { margin-top: 22px; }
+  .c-table h3 { font-size: 0.9rem; font-weight: 700; padding: 0 4px 10px; }
+  .c-table .flat { border-top: 2px solid var(--dark-80); }
+  .c-table thead th { background: transparent; }
+
+  /* ════════ 시안 D — 콤팩트 벤토 ════════ */
+  .d-bento {
+    display: grid; grid-template-columns: 1fr 1fr 1fr 248px; grid-auto-rows: auto; gap: 14px;
+  }
+  .d-cell {
+    border: 1px solid var(--bg-300); border-radius: 14px; background: var(--primary-white);
+    padding: 18px 20px;
+  }
+  .d-chart { grid-column: 1 / 4; grid-row: 1 / 3; display: flex; flex-direction: column; }
+  .d-chart .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .d-chart h3 { font-size: 0.9rem; font-weight: 700; }
+  .d-mini { grid-column: 4; display: flex; flex-direction: column; justify-content: center; }
+  .d-mini .k { font-size: 0.72rem; color: var(--dark-40); display: flex; justify-content: space-between; align-items: center; }
+  .d-mini .v { font-size: 1.7rem; font-weight: 800; letter-spacing: -0.045em; margin-top: 4px; }
+  .d-mini .delta { font-size: 0.68rem; color: var(--dark-40); margin-top: 2px; }
+  .d-mini .accent { color: var(--primary); }
+  .d-table { grid-column: 1 / 5; }
+  .d-table-head { display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; }
+  .d-table-head h3 { font-size: 0.9rem; font-weight: 700; }
+  .d-table-head .meta { font-size: 0.74rem; color: var(--dark-40); }
+
+  /* 페이지네이션 공통 */
+  .pager {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 18px; border-top: 1px solid var(--bg-300);
+    font-size: 0.76rem; color: var(--dark-40);
+  }
+  .pager .btns button {
+    font: inherit; border: 1px solid var(--bg-300); background: var(--primary-white);
+    border-radius: 7px; width: 28px; height: 28px; cursor: pointer; color: var(--dark-80);
+  }
+  .pager .btns button:disabled { color: var(--dark-20); cursor: default; }
+
+  footer { max-width: 1240px; margin: 40px auto 80px; padding: 0 32px; font-size: 0.74rem; color: var(--dark-40); line-height: 1.9; }
+</style>
+</head>
+<body>
+
+<nav class="concept-nav">
+  <div class="inner">
+    <span class="brand">LINA <small>사용자 현황 탭 시안</small></span>
+    <a href="#concept-a">A 통합 패널</a>
+    <a href="#concept-b">B 테이블 퍼스트</a>
+    <a href="#concept-c">C 히어로 지표</a>
+    <a href="#concept-d">D 콤팩트 벤토</a>
+  </div>
+</nav>
+
+<header class="doc-header">
+  <h1>사용자 현황 탭 — 디자인 시안 <em>4종</em></h1>
+  <p>
+    "상단 KPI 카드 4개가 꼭 필요한가?"라는 질문에서 출발한 대안 탐색입니다.
+    모든 시안은 현재 API 스펙의 응답 필드만으로 구현 가능하며, 각 수치 옆에 데이터 출처를 표기했습니다.
+  </p>
+</header>
+
+<div class="api-note">
+  <div class="box">
+    사용 가능한 데이터 — <code>GET /api/admin/stats</code>: dailyQueryCount · avgResponseTime · totalConversations · hourlyAccessTrend[ ]
+    &nbsp;/&nbsp; <code>GET /api/admin/users</code>: totalUsers · dailyActiveUsers · users[ ] (스페이스·페이지·첨부 수, 대화 수, 마지막 접속)<br />
+    파생값(클라이언트 계산): 활성률 = dailyActiveUsers ÷ totalUsers, 피크 시간대 = hourlyAccessTrend 최댓값, 오늘 총 접속 = trend 합계, 최근성 dot = lastAccessAt 경과시간
+  </div>
+</div>
+
+<!-- ═══════════════════════ 시안 A ═══════════════════════ -->
+<section id="concept-a" class="concept">
+  <div class="concept-label"><span class="tag">시안 A</span><h2>통합 패널 — 카드를 차트에 흡수</h2></div>
+  <p class="concept-desc">
+    KPI 카드를 제거하고, 차트 카드 상단에 얇은 <b>스탯 스트립</b>으로 통합합니다.
+    지표와 추이가 한 패널 안에서 같은 맥락으로 읽히고, 세로 공간이 크게 절약돼 테이블이 첫 화면에 더 많이 보입니다.
+  </p>
+  <div class="concept-review">
+    <span><b>장점</b> 시선 이동 1회로 지표+추이 파악, 현재 구조에서 변경 비용 최소</span>
+    <span><b>트레이드오프</b> 개별 지표의 시각적 무게는 줄어듦</span>
+  </div>
+
+  <div class="frame"><div class="frame-body">
+    <div class="a-panel">
+      <div class="a-strip">
+        <div class="a-stat">
+          <div class="k">일간 질의 수 <span class="src">stats.dailyQueryCount</span></div>
+          <div class="v num">1,284</div><div class="s">오늘 기준</div>
+        </div>
+        <div class="a-stat">
+          <div class="k">평균 응답시간 <span class="src">stats.avgResponseTime</span></div>
+          <div class="v num">3.4초</div><div class="s">최근 24시간</div>
+        </div>
+        <div class="a-stat">
+          <div class="k">전체 / 일일 활성 <span class="src">users.totalUsers·dailyActiveUsers</span></div>
+          <div class="v num">58 <span style="font-size:0.95rem;color:var(--dark-40);font-weight:600">/ 23명</span></div>
+          <div class="s">활성률 39.7% (파생)</div>
+        </div>
+        <div class="a-stat">
+          <div class="k">전체 대화 수 <span class="src">stats.totalConversations</span></div>
+          <div class="v num">8,741</div><div class="s">누적</div>
+        </div>
+      </div>
+      <div class="a-chart-head">
+        <h3>시간대별 접속 추이 <span class="src">stats.hourlyAccessTrend</span></h3>
+        <div class="seg"><button class="on">오늘</button><button>7일</button><button>30일</button></div>
+      </div>
+      <div class="a-chart-wrap"><svg class="js-line" data-h="190" width="100%"></svg></div>
+    </div>
+
+    <div class="a-table-card">
+      <div class="a-table-head"><h3>사용자별 활동 <span class="src">users.users[]</span></h3><span class="t-dim" style="font-size:0.78rem">전체 58명</span></div>
+      <table class="js-table-basic"></table>
+      <div class="pager"><span>1 / 3 페이지</span><span class="btns"><button disabled>&lt;</button> <button>&gt;</button></span></div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ═══════════════════════ 시안 B ═══════════════════════ -->
+<section id="concept-b" class="concept">
+  <div class="concept-label"><span class="tag">시안 B</span><h2>테이블 퍼스트 — 사이드 레일</h2></div>
+  <p class="concept-desc">
+    관리자가 이 탭에서 가장 오래 보는 것은 <b>사용자 목록</b>이라는 가정의 레이아웃입니다.
+    테이블이 주인공이 되고, 지표·미니 차트는 우측 레일로 보조 역할만 합니다.
+    대화 수는 인라인 바, 마지막 접속은 경과시간 기반 최근성 dot(파생값)으로 행 자체의 정보 밀도를 높였습니다.
+  </p>
+  <div class="concept-review">
+    <span><b>장점</b> 목록 탐색·정렬·페이지네이션 작업 효율 최고, 행에서 활동량 즉시 비교</span>
+    <span><b>트레이드오프</b> 추이 차트가 작아져 시간대 패턴 분석에는 불리</span>
+  </div>
+
+  <div class="frame"><div class="frame-body">
+    <div class="b-grid">
+      <div class="b-main">
+        <div class="b-main-head">
+          <h3>사용자별 활동</h3><span class="sub">전체 58명 · 일일 활성 23명</span>
+        </div>
+        <table class="js-table-rich"></table>
+        <div class="pager"><span>1 / 3 페이지</span><span class="btns"><button disabled>&lt;</button> <button>&gt;</button></span></div>
+      </div>
+      <aside class="b-rail">
+        <div class="b-card">
+          <div class="k">일일 활성률 <span class="src">파생: dailyActiveUsers ÷ totalUsers</span></div>
+          <div class="b-donut-row">
+            <svg width="72" height="72" viewBox="0 0 72 72">
+              <circle cx="36" cy="36" r="30" fill="none" stroke="var(--bg-200)" stroke-width="9"/>
+              <circle cx="36" cy="36" r="30" fill="none" stroke="var(--primary)" stroke-width="9"
+                stroke-linecap="round" stroke-dasharray="74.8 113.6" transform="rotate(-90 36 36)"/>
+            </svg>
+            <div class="b-donut-meta"><div class="v num">39.7%</div><div class="s">23 / 58명</div></div>
+          </div>
+        </div>
+        <div class="b-card">
+          <div class="k">오늘 접속 추이 <span class="src">stats.hourlyAccessTrend</span></div>
+          <svg class="js-spark" data-h="56" width="100%" style="margin-top:10px"></svg>
+          <div class="b-kv" style="margin-top:8px"><span class="k2">피크 시간대 (파생)</span><span class="v2 num">11시 · 110건</span></div>
+        </div>
+        <div class="b-card">
+          <div class="b-kv"><span class="k2">일간 질의 수</span><span class="v2 num">1,284</span></div>
+          <div class="b-kv"><span class="k2">평균 응답시간</span><span class="v2 num">3.4초</span></div>
+          <div class="b-kv"><span class="k2">전체 대화 수</span><span class="v2 num">8,741</span></div>
+        </div>
+      </aside>
+    </div>
+  </div></div>
+</section>
+
+<!-- ═══════════════════════ 시안 C ═══════════════════════ -->
+<section id="concept-c" class="concept">
+  <div class="concept-label"><span class="tag">시안 C</span><h2>히어로 지표 — 활성률 중심</h2></div>
+  <p class="concept-desc">
+    "사용자 현황"이라는 탭 이름에 맞춰 <b>일일 활성률</b>(파생값) 하나를 히어로로 승격합니다.
+    좌측 링이 서비스 건강도를 한눈에 전달하고, 나머지 수치는 차트 아래 인라인으로 강등됩니다.
+    경영 보고·데모 화면처럼 "한 장으로 말하는" 인상이 필요할 때 적합합니다.
+  </p>
+  <div class="concept-review">
+    <span><b>장점</b> 기억에 남는 단일 메시지, 데모/보고 상황에서 강함</span>
+    <span><b>트레이드오프</b> 활성률 외 지표 탐색은 한 단계 더 들어가야 함</span>
+  </div>
+
+  <div class="frame"><div class="frame-body">
+    <div class="c-hero">
+      <div class="c-left">
+        <div class="c-ring-wrap">
+          <svg width="168" height="168" viewBox="0 0 168 168">
+            <circle cx="84" cy="84" r="70" fill="none" stroke="var(--bg-200)" stroke-width="14"/>
+            <circle cx="84" cy="84" r="70" fill="none" stroke="url(#cgrad)" stroke-width="14"
+              stroke-linecap="round" stroke-dasharray="174.6 265.2" transform="rotate(-90 84 84)"/>
+            <defs><linearGradient id="cgrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#fcdaac"/><stop offset="100%" stop-color="#f48122"/>
+            </linearGradient></defs>
+          </svg>
+          <div class="c-ring-center">
+            <span class="pct num">39.7%</span><span class="lbl">일일 활성률 (파생)</span>
+          </div>
+        </div>
+        <p class="detail">
+          전체 <b class="num">58명</b> 중 오늘 <b class="num">23명</b> 접속<br />
+          <span class="src">users.totalUsers · users.dailyActiveUsers</span>
+        </p>
+      </div>
+      <div class="c-right">
+        <div class="c-right-head">
+          <h3>시간대별 접속 추이 <span class="src">stats.hourlyAccessTrend</span></h3>
+          <div class="seg"><button class="on">오늘</button><button>7일</button><button>30일</button></div>
+        </div>
+        <svg class="js-line" data-h="168" width="100%"></svg>
+        <div class="c-inline-stats">
+          <div class="item"><div class="v num">1,284</div><div class="k">일간 질의 수</div></div>
+          <div class="item"><div class="v num">3.4초</div><div class="k">평균 응답시간</div></div>
+          <div class="item"><div class="v num">8,741</div><div class="k">전체 대화 수</div></div>
+          <div class="item"><div class="v num">11시</div><div class="k">피크 시간대 (파생)</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="c-table">
+      <h3>사용자별 활동</h3>
+      <div class="flat"><table class="js-table-basic"></table></div>
+      <div class="pager" style="border-top:1px solid var(--bg-300)"><span>1 / 3 페이지</span><span class="btns"><button disabled>&lt;</button> <button>&gt;</button></span></div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ═══════════════════════ 시안 D ═══════════════════════ -->
+<section id="concept-d" class="concept">
+  <div class="concept-label"><span class="tag">시안 D</span><h2>콤팩트 벤토 — 카드 무게 축소</h2></div>
+  <p class="concept-desc">
+    현재 구조와 가장 가까운 보수적 개선안입니다. 카드를 없애는 대신 <b>차트를 메인 셀</b>로 키우고,
+    KPI는 우측의 좁은 세로 스택으로 강등해 "숫자 우선 타이포"만 남깁니다.
+    카드 4개가 가로로 동급 나열될 때 생기는 단조로움을 비대칭 그리드로 해소합니다.
+  </p>
+  <div class="concept-review">
+    <span><b>장점</b> 기존 컴포넌트 재배치 수준의 변경 비용, 차트 가독성 최대</span>
+    <span><b>트레이드오프</b> 화면 폭이 좁아지면 우측 스택이 길어짐 (반응형 분기 필요)</span>
+  </div>
+
+  <div class="frame"><div class="frame-body">
+    <div class="d-bento">
+      <div class="d-cell d-chart">
+        <div class="head">
+          <h3>시간대별 접속 추이 <span class="src">stats.hourlyAccessTrend</span></h3>
+          <div class="seg"><button class="on">오늘</button><button>7일</button><button>30일</button></div>
+        </div>
+        <svg class="js-line" data-h="206" width="100%"></svg>
+      </div>
+      <div class="d-cell d-mini">
+        <div class="k">일간 질의 수 <span class="src">stats</span></div>
+        <div class="v num">1,284</div><div class="delta">오늘 기준</div>
+      </div>
+      <div class="d-cell d-mini">
+        <div class="k">활성 사용자 <span class="src">users</span></div>
+        <div class="v num"><span class="accent">23</span> / 58</div><div class="delta">활성률 39.7% (파생)</div>
+      </div>
+      <div class="d-cell d-table">
+        <div class="d-table-head">
+          <h3>사용자별 활동</h3>
+          <span class="meta num">평균 응답 3.4초 · 누적 대화 8,741 · 전체 58명</span>
+        </div>
+        <table class="js-table-basic"></table>
+        <div class="pager" style="margin:0 -20px -18px; border-top:1px solid var(--bg-300)"><span>1 / 3 페이지</span><span class="btns"><button disabled>&lt;</button> <button>&gt;</button></span></div>
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<footer>
+  공통 메모 — ① 기간 탭(오늘/7일/30일)은 모든 시안에서 segmented control로 유지하되 query parameter 확정 전까지 UI 상태만 사용.
+  ② 정렬·페이지네이션은 기존 구현 그대로 이식 가능. ③ "활성률 / 피크 시간대 / 최근성 dot"은 전부 기존 응답의 파생값이라 API 변경 불필요.
+  ④ 추천: 운영 도구 일상 사용 기준 <b>B</b>, 변경 비용 최소 기준 <b>A</b>.
+</footer>
+
+<script>
+  // ── 공통 데이터 (mock과 동일) ──────────────────────────
+  const TREND = [3,2,5,1,0,2,8,20,35,60,85,110,95,100,75,82,90,68,42,25,18,12,7,4];
+  const USERS = [
+    { name: '사용자 1', access: '1 / 37 / 14',  conv: 11,  last: '06. 01. 오전 10:16', rec: 'g' },
+    { name: '사용자 2', access: '2 / 50 / 21',  conv: 28,  last: '06. 01. 오전 05:16', rec: 'g' },
+    { name: '사용자 3', access: '3 / 63 / 28',  conv: 45,  last: '06. 01. 오전 12:16', rec: 'g' },
+    { name: '사용자 4', access: '4 / 76 / 35',  conv: 62,  last: '05. 31. 오후 07:16', rec: 'y' },
+    { name: '사용자 5', access: '5 / 89 / 42',  conv: 79,  last: '05. 31. 오후 02:16', rec: 'y' },
+    { name: '사용자 6', access: '1 / 102 / 49', conv: 96,  last: '05. 31. 오전 09:16', rec: 'y' },
+    { name: '사용자 7', access: '2 / 115 / 16', conv: 113, last: '05. 31. 오전 04:16', rec: 'y' },
+    { name: '사용자 8', access: '3 / 128 / 23', conv: 20,  last: '05. 30. 오후 11:16', rec: 'x' },
+  ];
+  const MAX_CONV = Math.max(...USERS.map((u) => u.conv));
+
+  // ── 라인 차트 렌더 (Y축 눈금 + 그라데이션 영역) ──────────
+  function renderLine(svg) {
+    const W = 1000, H = Number(svg.dataset.h);
+    const padL = 40, padR = 14, padT = 12, padB = 26;
+    const innerW = W - padL - padR, innerH = H - padT - padB;
+    const max = Math.max(...TREND), step = Math.ceil(max / 4 / 10) * 10, yMax = step * 4;
+    const x = (i) => padL + (i / (TREND.length - 1)) * innerW;
+    const y = (v) => padT + innerH - (v / yMax) * innerH;
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+    let s = `<defs><linearGradient id="ag${H}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="rgba(244,129,34,0.16)"/><stop offset="100%" stop-color="rgba(244,129,34,0)"/>
+    </linearGradient></defs>`;
+    for (let t = 0; t <= 4; t++) {
+      const v = step * t, ty = y(v);
+      s += `<line x1="${padL}" y1="${ty}" x2="${W - padR}" y2="${ty}" stroke="#e6e6e6" stroke-width="1" ${t ? 'stroke-dasharray="3 4"' : ''}/>`;
+      s += `<text x="${padL - 8}" y="${ty + 4}" text-anchor="end" font-size="11" fill="rgba(0,0,0,0.4)">${v}</text>`;
+    }
+    const pts = TREND.map((v, i) => `${x(i)},${y(v)}`).join(' ');
+    s += `<polygon points="${padL},${y(0)} ${pts} ${W - padR},${y(0)}" fill="url(#ag${H})"/>`;
+    s += `<polyline points="${pts}" fill="none" stroke="#f48122" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    TREND.forEach((v, i) => { if (i % 3 === 0 || i === TREND.length - 1) {
+      s += `<circle cx="${x(i)}" cy="${y(v)}" r="3" fill="#f48122"/>`;
+      s += `<text x="${x(i)}" y="${H - 6}" text-anchor="middle" font-size="11" fill="rgba(0,0,0,0.4)">${i}시</text>`;
+    }});
+    svg.innerHTML = s;
+  }
+
+  // ── 스파크라인 ───────────────────────────────────────
+  function renderSpark(svg) {
+    const W = 220, H = Number(svg.dataset.h);
+    const max = Math.max(...TREND);
+    const x = (i) => 2 + (i / (TREND.length - 1)) * (W - 4);
+    const y = (v) => 2 + (H - 8) - (v / max) * (H - 8);
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    const pts = TREND.map((v, i) => `${x(i)},${y(v)}`).join(' ');
+    const peak = TREND.indexOf(max);
+    svg.innerHTML =
+      `<polyline points="${pts}" fill="none" stroke="#f48122" stroke-width="1.5"/>` +
+      `<circle cx="${x(peak)}" cy="${y(max)}" r="3" fill="#f48122"/>`;
+  }
+
+  // ── 테이블 ───────────────────────────────────────────
+  const HEAD = `<thead><tr><th>이름 ↕</th><th>스페이스 / 페이지 / 첨부 ↕</th><th>대화 수 ↕</th><th>마지막 접속 ↕</th></tr></thead>`;
+  function basicRows() {
+    return USERS.map((u) =>
+      `<tr><td class="t-name">${u.name}</td><td>${u.access}</td><td class="num">${u.conv}</td><td class="t-dim">${u.last}</td></tr>`,
+    ).join('');
+  }
+  function richRows() {
+    return USERS.map((u) =>
+      `<tr><td class="t-name"><span class="dot ${u.rec}"></span>${u.name}</td><td>${u.access}</td>` +
+      `<td><span class="convbar"><span class="bar"><i style="width:${Math.round((u.conv / MAX_CONV) * 100)}%"></i></span><span class="num" style="min-width:26px;text-align:right">${u.conv}</span></span></td>` +
+      `<td class="t-dim">${u.last}</td></tr>`,
+    ).join('');
+  }
+
+  document.querySelectorAll('.js-line').forEach(renderLine);
+  document.querySelectorAll('.js-spark').forEach(renderSpark);
+  document.querySelectorAll('.js-table-basic').forEach((t) => { t.innerHTML = HEAD + `<tbody>${basicRows()}</tbody>`; });
+  document.querySelectorAll('.js-table-rich').forEach((t) => { t.innerHTML = HEAD + `<tbody>${richRows()}</tbody>`; });
+</script>
+</body>
+</html>

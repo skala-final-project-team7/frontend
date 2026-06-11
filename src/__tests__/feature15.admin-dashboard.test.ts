@@ -148,16 +148,20 @@ describe('feature15 Admin dashboard (SCR-810)', () => {
     );
   });
 
-  it('renders period tabs and changes active state on click (UI state only, no re-fetch)', async () => {
+  it('opens the trend modal with period tabs and a 0~24시 axis when the rail chart is clicked', async () => {
     mockAdminBoardBase();
     mockedGetAdminStats.mockResolvedValue(mockStats);
     mockedGetAdminUsers.mockResolvedValue(mockUsers);
 
     const wrapper = await mountAndNavigateToDashboard();
 
-    expect(wrapper.find('[data-testid="admin-trend-period-tab-today"]').exists()).toBe(true);
-    expect(wrapper.find('[data-testid="admin-trend-period-tab-7d"]').exists()).toBe(true);
-    expect(wrapper.find('[data-testid="admin-trend-period-tab-30d"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="admin-trend-modal"]').exists()).toBe(false);
+
+    await wrapper.get('[data-testid="admin-trend-expand"]').trigger('click');
+
+    const modal = wrapper.get('[data-testid="admin-trend-modal"]');
+    expect(modal.text()).toContain('시간대별 접속 추이');
+    expect(modal.text()).toContain('24시');
 
     expect(
       wrapper.find('[data-testid="admin-trend-period-tab-today"]').attributes('aria-selected'),
@@ -175,6 +179,97 @@ describe('feature15 Admin dashboard (SCR-810)', () => {
     expect(mockedGetAdminStats).toHaveBeenCalledTimes(1);
   });
 
+  it('closes the trend modal with the close button and ESC', async () => {
+    mockAdminBoardBase();
+    mockedGetAdminStats.mockResolvedValue(mockStats);
+    mockedGetAdminUsers.mockResolvedValue(mockUsers);
+
+    const wrapper = await mountAndNavigateToDashboard();
+
+    await wrapper.get('[data-testid="admin-trend-expand"]').trigger('click');
+    await wrapper.get('[data-testid="admin-trend-modal-close"]').trigger('click');
+    expect(wrapper.find('[data-testid="admin-trend-modal"]').exists()).toBe(false);
+
+    await wrapper.get('[data-testid="admin-trend-expand"]').trigger('click');
+    await wrapper.get('[data-testid="admin-trend-modal"]').trigger('keydown.esc');
+    expect(wrapper.find('[data-testid="admin-trend-modal"]').exists()).toBe(false);
+  });
+
+  it('highlights conversation bars that are at least twice the page average', async () => {
+    mockAdminBoardBase();
+    mockedGetAdminStats.mockResolvedValue(mockStats);
+    // 평균 43.3건, 2배 = 86.7건 → 100건만 outlier
+    mockedGetAdminUsers.mockResolvedValue({
+      totalUsers: 3,
+      dailyActiveUsers: 3,
+      users: [
+        { ...mockUsers.users[0], userId: 'u-low', conversationCount: 10 },
+        { ...mockUsers.users[1], userId: 'u-mid', conversationCount: 20 },
+        { ...mockUsers.users[1], userId: 'u-high', conversationCount: 100 },
+      ],
+    });
+
+    const wrapper = await mountAndNavigateToDashboard();
+
+    expect(wrapper.get('[data-testid="admin-user-conv-bar-u-high"]').classes()).toContain(
+      'bg-primary',
+    );
+    expect(wrapper.get('[data-testid="admin-user-conv-bar-u-low"]').classes()).toContain(
+      'bg-primary-light',
+    );
+    expect(wrapper.get('[data-testid="admin-user-conv-bar-u-mid"]').classes()).toContain(
+      'bg-primary-light',
+    );
+
+    // 막대 만점(100%) = 페이지 평균의 2배 — outlier만 꽉 찬 바가 된다
+    expect(wrapper.get('[data-testid="admin-user-conv-bar-u-high"]').attributes('style')).toContain(
+      'width: 100%',
+    );
+    expect(
+      wrapper.get('[data-testid="admin-user-conv-bar-u-low"]').attributes('style'),
+    ).not.toContain('width: 100%');
+  });
+
+  it('shows recency dots in the 마지막 접속 column based on elapsed time, with a legend', async () => {
+    mockAdminBoardBase();
+    mockedGetAdminStats.mockResolvedValue(mockStats);
+    mockedGetAdminUsers.mockResolvedValue({
+      totalUsers: 3,
+      dailyActiveUsers: 2,
+      users: [
+        {
+          ...mockUsers.users[0],
+          userId: 'u-fresh',
+          lastAccessAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+        },
+        {
+          ...mockUsers.users[1],
+          userId: 'u-month',
+          lastAccessAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
+        },
+        {
+          ...mockUsers.users[1],
+          userId: 'u-stale',
+          lastAccessAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
+        },
+      ],
+    });
+
+    const wrapper = await mountAndNavigateToDashboard();
+
+    expect(wrapper.get('[data-testid="admin-user-recency-u-fresh"]').classes()).toContain(
+      'bg-status-success',
+    );
+    expect(wrapper.get('[data-testid="admin-user-recency-u-month"]').classes()).toContain(
+      'bg-status-warning',
+    );
+    expect(wrapper.get('[data-testid="admin-user-recency-u-stale"]').classes()).toContain(
+      'bg-bg-400',
+    );
+    expect(wrapper.text()).toContain('7일 이내');
+    expect(wrapper.text()).toContain('30일 이내');
+  });
+
   it('renders the access trend chart container', async () => {
     mockAdminBoardBase();
     mockedGetAdminStats.mockResolvedValue(mockStats);
@@ -183,6 +278,24 @@ describe('feature15 Admin dashboard (SCR-810)', () => {
     const wrapper = await mountAndNavigateToDashboard();
 
     expect(wrapper.find('[data-testid="admin-access-trend-chart"]').exists()).toBe(true);
+  });
+
+  it('renders a gradient area under the access trend sparkline and modal chart', async () => {
+    mockAdminBoardBase();
+    mockedGetAdminStats.mockResolvedValue(mockStats);
+    mockedGetAdminUsers.mockResolvedValue(mockUsers);
+
+    const wrapper = await mountAndNavigateToDashboard();
+
+    const sparklineArea = wrapper.get('[data-testid="admin-access-trend-sparkline-area"]');
+    expect(sparklineArea.attributes('fill')).toBe('url(#admin-access-trend-sparkline-gradient)');
+    expect(wrapper.get('#admin-access-trend-sparkline-gradient').exists()).toBe(true);
+
+    await wrapper.get('[data-testid="admin-trend-expand"]').trigger('click');
+
+    const modalArea = wrapper.get('[data-testid="admin-access-trend-modal-area"]');
+    expect(modalArea.attributes('fill')).toBe('url(#admin-access-trend-modal-gradient)');
+    expect(wrapper.get('#admin-access-trend-modal-gradient').exists()).toBe(true);
   });
 
   it('renders user table rows with name, space/page/attachment, conversationCount', async () => {
@@ -205,6 +318,9 @@ describe('feature15 Admin dashboard (SCR-810)', () => {
     expect(user2Row.text()).toContain('사용자 2');
     expect(user2Row.text()).toContain('1 / 136 / 45');
     expect(user2Row.text()).toContain('52');
+
+    // 마지막 접속에는 연도를 포함해 표시한다
+    expect(user1Row.text()).toContain('2026');
   });
 
   it('shows empty state when users list is empty', async () => {
@@ -249,9 +365,64 @@ describe('feature15 Admin dashboard (SCR-810)', () => {
 
     const pagination = wrapper.find('[data-testid="admin-users-pagination"]');
     expect(pagination.exists()).toBe(true);
-    // totalUsers 58, size 20 → 3 페이지
-    expect(pagination.text()).toContain('1 / 3 페이지');
+    // totalUsers 58, size 12 → 5 페이지
+    expect(pagination.text()).toContain('1 / 5 페이지');
     expect(wrapper.text()).toContain('전체 58명');
+  });
+
+  it('sorts user rows by 대화 수 ascending then descending on header clicks', async () => {
+    mockAdminBoardBase();
+    mockedGetAdminStats.mockResolvedValue(mockStats);
+    // 의도적으로 대화 수 비정렬 순서로 응답 (52 → 42)
+    mockedGetAdminUsers.mockResolvedValue({
+      totalUsers: 2,
+      dailyActiveUsers: 2,
+      users: [mockUsers.users[1], mockUsers.users[0]],
+    });
+
+    const wrapper = await mountAndNavigateToDashboard();
+
+    function rowTestIds() {
+      return wrapper
+        .findAll('[data-testid^="admin-user-row-"]')
+        .map((row) => row.attributes('data-testid'));
+    }
+
+    // 정렬 전: API 응답 순서 유지
+    expect(rowTestIds()).toEqual(['admin-user-row-user-002', 'admin-user-row-user-001']);
+
+    // 1번째 클릭: 오름차순 (42 → 52)
+    await wrapper.get('[data-testid="admin-users-sort-conversationCount"]').trigger('click');
+    expect(rowTestIds()).toEqual(['admin-user-row-user-001', 'admin-user-row-user-002']);
+
+    // 2번째 클릭: 내림차순 (52 → 42)
+    await wrapper.get('[data-testid="admin-users-sort-conversationCount"]').trigger('click');
+    expect(rowTestIds()).toEqual(['admin-user-row-user-002', 'admin-user-row-user-001']);
+  });
+
+  it('sorts user rows by 이름 and exposes aria-sort on the active header', async () => {
+    mockAdminBoardBase();
+    mockedGetAdminStats.mockResolvedValue(mockStats);
+    mockedGetAdminUsers.mockResolvedValue({
+      totalUsers: 2,
+      dailyActiveUsers: 2,
+      users: [mockUsers.users[1], mockUsers.users[0]],
+    });
+
+    const wrapper = await mountAndNavigateToDashboard();
+
+    const nameHeader = wrapper.get('[data-testid="admin-users-sort-name"]');
+
+    await nameHeader.trigger('click');
+    expect(
+      wrapper
+        .findAll('[data-testid^="admin-user-row-"]')
+        .map((row) => row.attributes('data-testid')),
+    ).toEqual(['admin-user-row-user-001', 'admin-user-row-user-002']);
+    expect(wrapper.get('th[aria-sort]').attributes('aria-sort')).toBe('ascending');
+
+    await nameHeader.trigger('click');
+    expect(wrapper.get('th[aria-sort]').attributes('aria-sort')).toBe('descending');
   });
 
   it('calls getAdminUsers with next page params when pagination advances', async () => {
@@ -261,12 +432,12 @@ describe('feature15 Admin dashboard (SCR-810)', () => {
 
     const wrapper = await mountAndNavigateToDashboard();
 
-    expect(mockedGetAdminUsers).toHaveBeenCalledWith({ page: 0, size: 20 });
+    expect(mockedGetAdminUsers).toHaveBeenCalledWith({ page: 0, size: 12 });
 
     mockedGetAdminUsers.mockResolvedValue({ totalUsers: 58, dailyActiveUsers: 23, users: [] });
     await wrapper.find('[data-testid="admin-users-pagination-next"]').trigger('click');
     await flushPromises();
 
-    expect(mockedGetAdminUsers).toHaveBeenCalledWith({ page: 1, size: 20 });
+    expect(mockedGetAdminUsers).toHaveBeenCalledWith({ page: 1, size: 12 });
   });
 });
