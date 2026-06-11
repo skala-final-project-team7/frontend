@@ -3146,3 +3146,277 @@
 ### Results
 
 - 전체 테스트: passed, 14 files / 119 tests passed
+
+## 2026-06-10 - feature15: Admin 대시보드 구현 (SCR-810)
+
+### Scope
+
+- `frontend/docs/frames/[SCR-810] 관리자 추이 확인 대시보드.pdf` 기준 대시보드 탭 컨텐츠 구현
+- `/admin/dashboard` route 추가, Admin shell nav의 대시보드 탭에서 `AdminDashboardSection` 표시
+- `GET /api/admin/stats` 연결: 일간 질의 수, 평균 응답시간, 전체 대화 수 KPI 카드 + 시간대별 접속 추이 SVG 라인 차트
+- `GET /api/admin/users` 연결: 전체/일일 활성 사용자 KPI 카드 + 사용자별 스페이스/페이지/첨부 수, 대화 수, 마지막 접속 테이블
+- 사용자 테이블 pagination: `adminTabPagination` inject(탭별 독립 상태) 기반, page/size 0-based 전송(`currentPage - 1`)
+- 기간 탭(오늘/7일/30일): `docs/api-spec.md`의 공통 query parameter가 제안 상태(미확정)이므로 API 재호출 없이 UI 상태만 관리하도록 격리
+- Loading(BaseSpinner) / Error(ErrorRetryState + 재시도) / Empty(EmptyState) 상태 처리
+- 스펙에 없는 필드(email 등)는 렌더링하지 않음 — API 응답 범위만 표시
+- `AdminStats`, `AdminUserItem`, `AdminUsersResponse`, `HourlyAccessTrendItem` 타입 정의 및 `getAdminStats()`/`getAdminUsers()` API 함수 추가
+- `GET /api/admin/stats`, `GET /api/admin/users` MSW mock handler 및 seed 데이터 추가 (`TODO(MOCK)` 마커 포함)
+
+### Changed Files
+
+- `src/__tests__/feature15.admin-dashboard.test.ts`: 테스트 10개 신규 작성 (route 연결, stats/users 호출, KPI 카드 값, 기간 탭 UI 상태, 차트 렌더, 테이블 행, empty/error/retry, pagination)
+- `src/types/api.ts`: AdminStats·AdminUserItem·AdminUsersResponse·HourlyAccessTrendItem 타입 추가
+- `src/api/index.ts`: getAdminStats, getAdminUsers 함수 추가
+- `src/mocks/data.ts`: mockAdminStats, mockAdminUsersData 추가
+- `src/mocks/handlers.ts`: /api/admin/stats, /api/admin/users handler 추가 (users는 page/size slice)
+- `src/features/admin/AdminDashboardSection.vue`: 신규 생성
+- `src/pages/AdminEntryPage.vue`: 대시보드 탭 placeholder를 AdminDashboardSection으로 교체
+- `src/router/index.ts`: /admin/dashboard route 추가
+- `docs/ai/current-plan.md`: feature15 전 항목 체크 처리
+
+### Commands
+
+- `npx vitest run` (TDD: 작성 직후 10개 실패 확인 → 구현 후 통과)
+- `./scripts/lint.sh`
+- `./scripts/format.sh`
+- `npm run typecheck`
+
+### Results
+
+- feature15 테스트 10개 통과, 전체 16 files / 137 tests passed
+- lint 경고 0, format 변경 없음
+- typecheck: feature15 범위 에러 없음 (feature12 테스트의 기존 `DOMWrapper.exists` 타입 에러는 pre-existing 이슈로 미수정)
+- 기간 탭 query parameter(`period`/`from`/`to`)는 스펙 확정 후 연결 필요 — 후속 작업으로 남김
+
+## 2026-06-10 - follow-up: 대시보드 Playwright 시각 검토 및 토큰 정합성 수정
+
+### Scope
+
+- Playwright(headless chromium)로 `/admin/dashboard` 실화면을 SCR-810 PDF와 대조 검토 후 개선
+- 차트 Y축 눈금·점선 그리드라인 추가: 최대값을 자릿수 기반 올림으로 보정해 깔끔한 5개 눈금 생성
+- 차트 viewBox 640×160 → 1100×280: 실제 렌더 폭(~1100px)과 1:1 스케일로 맞춰 라벨·점 과대 확대 문제 해결
+- KPI 카드 4개에 아이콘 추가(MessageSquare/Clock/Users/BarChart3), 반복 마크업을 `kpiCards` computed로 통합
+- 디자인 토큰 정합성 버그 수정: SVG fill의 미존재 변수 `var(--color-overlay-dark-40)` → `var(--color-dark-40)`, Tailwind config에 없는 `text-overlay-dark-60/30` 클래스(no-op) → 정의된 `text-overlay-dark-80/40`으로 교체
+- mock 정합성 수정: `totalUsers: 58`인데 mock 사용자 3명뿐이라 2페이지부터 빈 상태가 뜨던 모순 → 58명을 index 기반 결정적 공식 + KST timestamp로 생성
+- 빈 상태 조건을 `users.length === 0` → `totalUsers === 0`으로 수정하고, 페이지에 행이 없는 경우는 별도 안내문으로 분리
+- 페이지네이션의 "(전체 N명)" 중복 문구 제거(테이블 헤더와 겹침), 직접 만든 스피너를 공용 BaseSpinner로 교체
+- API 정합성 점검: stats/users 응답 필드 스펙 일치, page 0-based 전송, 스펙에 없는 email 미렌더 확인
+- 사용자 피드백 반영: 페이지 제목 "대시보드" → "사용자 현황"(nav 중복 제거), 테이블 제목 "사용자 현황" → "사용자별 활동", 사이드바 nav 라벨 "대시보드" → "사용자 현황"
+- 2페이지 이동·이전/다음 버튼 활성화를 Playwright 스크린샷으로 검증, 브라우저 콘솔 에러 0 확인
+
+### Changed Files
+
+- `src/features/admin/AdminDashboardSection.vue`: 차트 재설계(Y축/viewBox), kpiCards 통합, 토큰 수정, 빈 상태 조건 분리, 제목 변경
+- `src/features/admin/AdminShellLayout.vue`: nav 라벨 대시보드 → 사용자 현황
+- `src/mocks/data.ts`: mockAdminUsersData 58명 결정적 생성으로 교체
+- `src/__tests__/feature15.admin-dashboard.test.ts`: pagination 표시 변경·nav 라벨 변경에 맞춰 단언 갱신
+- `src/__tests__/feature14.admin-operations-board.test.ts`: nav 라벨 단언 갱신
+
+### Commands
+
+- `VITE_USE_MOCK=true npm run dev` + Playwright 스크린샷 (before/after, 2페이지 동작)
+- `npx vitest run`
+- `./scripts/lint.sh`
+- `./scripts/format.sh`
+- `npm run typecheck`
+
+### Results
+
+- 전체 테스트: passed, 16 files / 137 tests passed
+- lint 경고 0, typecheck feature15 범위 에러 없음, 브라우저 콘솔 에러 0
+
+## 2026-06-11 - follow-up: 사용자별 활동 테이블 컬럼 정렬 추가
+
+### Scope
+
+- 사용자 현황 탭의 사용자별 활동 테이블 4개 컬럼(이름/스페이스·페이지·첨부/대화 수/마지막 접속)에 오름차순·내림차순 토글 정렬 추가
+- `GET /api/admin/users` 스펙에 sort query parameter가 없어 API 파라미터를 임의로 만들지 않고 현재 페이지 데이터를 클라이언트에서 정렬
+- 헤더 클릭 1회 = 오름차순, 2회 = 내림차순, 다른 컬럼 클릭 시 해당 컬럼 오름차순으로 전환
+- 정렬 기준: 이름 = `localeCompare(ko)`, 스페이스/페이지/첨부 = 튜플 비교(스페이스 → 페이지 → 첨부), 대화 수 = 숫자, 마지막 접속 = timestamp
+- 활성 컬럼에 `aria-sort`(ascending/descending) 노출, 아이콘은 활성 시 ArrowUp/ArrowDown(주황), 비활성 시 ChevronsUpDown(회색)
+- TDD: 정렬 테스트 2개 작성 → 실패 확인 → 구현 → 통과
+
+### Changed Files
+
+- `src/features/admin/AdminDashboardSection.vue`: 정렬 상태(sortKey/sortDirection)·comparator·sortedUsers computed 추가, 테이블 헤더를 정렬 버튼으로 교체
+- `src/__tests__/feature15.admin-dashboard.test.ts`: 대화 수 오름/내림차순 토글, 이름 정렬 + aria-sort 테스트 추가
+
+### Commands
+
+- `npx vitest run`
+- `./scripts/lint.sh`
+- `./scripts/format.sh`
+- `npm run typecheck`
+- `VITE_USE_MOCK=true npm run dev` + Playwright 스크린샷 (대화 수 내림차순 동작 확인)
+
+### Results
+
+- 전체 테스트: passed, 16 files / 139 tests passed
+- lint 경고 0, typecheck feature15 범위 에러 없음, 브라우저 콘솔 에러 0
+
+## 2026-06-11 - follow-up: 접속 추이 24시간 확장, 기간 탭 segmented control, mock 응답시간 수정
+
+### Scope
+
+- 시간대별 접속 추이 mock 데이터를 0~14시(SCR-810 PDF 샘플 범위 그대로)에서 0~23시 전체로 확장 — 오전 피크(11시) 이후 오후 보조 피크(16시)를 거쳐 심야로 감소하는 곡선
+- 기간 탭(오늘/7일/30일)을 segmented control 스타일로 변경: 테두리+연회색 배경 컨테이너 안에 버튼 배치, 활성 버튼은 흰 배경+그림자+semibold로 강조 (사용자 제공 레퍼런스 이미지 기준)
+- mock 평균 응답시간 2.3초 → 3.4초로 수정 (사용자 요청)
+
+### Changed Files
+
+- `src/mocks/data.ts`: hourlyAccessTrend 15~23시 추가, avgResponseTime 3.4로 변경
+- `src/features/admin/AdminDashboardSection.vue`: 기간 탭 segmented control 스타일 적용
+
+### Commands
+
+- `npx vitest run`
+- `./scripts/lint.sh`
+- `./scripts/format.sh`
+- `VITE_USE_MOCK=true npm run dev` + Playwright 스크린샷
+
+### Results
+
+- 전체 테스트: passed, 16 files / 139 tests passed
+- lint 경고 0, 브라우저 콘솔 에러 0
+- X축 라벨은 기존 최대 8개 제한 로직에 따라 0/3/6/9/12/15/18/21/23시로 자동 조정됨
+
+## 2026-06-11 - design: 사용자 현황 탭 리디자인 시안 4종 작성
+
+### Scope
+
+- "상단 KPI 카드 4개가 필요한가?"라는 사용자 질문에서 출발한 디자인 대안 탐색 — 코드 변경 없이 standalone HTML 시안만 작성
+- 모든 시안은 `GET /api/admin/stats`, `GET /api/admin/users` 현재 응답 필드만으로 구현 가능하도록 제약, 각 수치 요소에 데이터 출처(API 필드/파생값) 표기
+- 시안 A 통합 패널: KPI 카드 제거, 차트 카드 상단 스탯 스트립으로 통합 (변경 비용 최소)
+- 시안 B 테이블 퍼스트: 사용자 테이블 메인 + 우측 레일(활성률 도넛/스파크라인/핵심 수치), 행에 대화 수 인라인 바·최근성 dot 추가
+- 시안 C 히어로 지표: 일일 활성률(파생값) 링을 히어로로 승격, 보고/데모용
+- 시안 D 콤팩트 벤토: 차트 메인 셀 + 우측 KPI 세로 스택, 기존 구조와 가장 가까운 보수안
+- Playwright로 4개 시안 렌더링 검증
+
+### Changed Files
+
+- `docs/design/user-status-concepts.html`: 신규 생성 (LINA 디자인 토큰 기반, 자체 포함 HTML)
+
+### Results
+
+- 추천: 운영 도구 일상 사용 기준 B, 변경 비용 최소 기준 A — 사용자 선택 대기
+
+## 2026-06-11 - feature15 리디자인: 사용자 현황 탭 테이블 퍼스트 레이아웃(시안 B) 적용
+
+### Scope
+
+- `docs/design/user-status-concepts.html` 시안 B 채택에 따라 `AdminDashboardSection.vue` 레이아웃 재구성
+- KPI 카드 4개 그리드 + 대형 차트 → 사용자별 활동 테이블(메인) + 우측 264px 레일(일일 활성률 도넛 / 오늘 접속 추이 스파크라인 / 핵심 지표 3개)
+- 최근성 dot: "접속 중" presence로 오독될 우려(사용자 피드백)에 따라 이름 옆이 아닌 마지막 접속 시각 앞에 배치하고 헤더에 범례(24시간 이내=초록 / 7일 이내=노랑 / 그 이상=회색) 명시 — lastAccessAt 경과시간 파생값
+- 대화 수 인라인 바 기준 확정: 막대 길이 = 현재 페이지 내 최대 대화 수 대비 비율, 페이지 평균 2배 이상이면 튀는 값으로 진한 주황(primary), 평상시 연한 주황(primary-light) — title 툴팁에 페이지 평균 병기
+- 스파크라인 카드 클릭 시 중앙 모달로 대형 차트 표시: 기간 탭(오늘/7일/30일, UI 상태만)·X 버튼·ESC·백드롭 클릭 닫기, 열림 시 닫기 버튼 포커스, FeedbackModal 패턴 준수
+- 차트 X축을 데이터 범위 기반에서 0~24시 고정 도메인(3시간 간격 눈금)으로 변경
+- 기존 testid(admin-stats-card-\*, admin-access-trend-chart, 테이블/정렬/페이지네이션) 유지로 기존 테스트 영향 최소화
+- TDD: 모달 열기/닫기, 0~24시 축, 인라인 바 outlier 강조, 최근성 dot 테스트 4개 작성 → 실패 확인 → 구현 → 통과
+
+### Changed Files
+
+- `src/features/admin/AdminDashboardSection.vue`: 시안 B 레이아웃으로 재작성 (도넛/스파크라인/모달/인라인 바/최근성 dot)
+- `src/__tests__/feature15.admin-dashboard.test.ts`: 기간 탭 테스트를 모달 컨텍스트로 교체, 신규 테스트 4개 추가 (총 15개)
+
+### Commands
+
+- `npx vitest run`
+- `./scripts/lint.sh`
+- `./scripts/format.sh`
+- `npm run typecheck`
+- `VITE_USE_MOCK=true npm run dev` + Playwright 스크린샷 (레이아웃·모달)
+
+### Results
+
+- 전체 테스트: passed, 16 files / 142 tests passed
+- lint 경고 0, typecheck feature15 범위 에러 없음, 브라우저 콘솔 에러 0
+
+## 2026-06-11 - follow-up: 사용자 현황 탭 4건 보정 (최근성 기준·인라인 바 기준·모달 인터랙션·지표 순서)
+
+### Scope
+
+- 최근성 dot 기준을 24시간/7일에서 7일 이내(초록)/30일 이내(노랑)/그 이상(회색)으로 변경, 범례 갱신
+- 마지막 접속 시각에 연도 표시 추가 (`2026. 06. 01. 오전 10:16` 형식)
+- 인라인 바 기준 변경: 만점(100%) = 페이지 최대 → 페이지 평균의 2배(outlier 임계값) — "바가 꽉 참 = 평균 2배 도달"로 시각과 의미 일치, 페이지 최댓값 사용자가 항상 만점으로 보이던 문제 해결. 바 중앙(50%)에 평균 위치 마커 추가
+- 동작하지 않던 native title 툴팁을 BaseTooltip으로 교체 (`N건 · 페이지 평균 M건 · 만점=평균 2배`)
+- 스파크라인 카드 확대 아이콘에 BaseTooltip("크게 보기") 추가
+- 확대 모달 pop-in 애니메이션: 클릭 시 스파크라인 카드 중심 좌표를 CSS 변수로 전달해 카드 위치에서 화면 중앙으로 확대되는 keyframe 적용 (Transition 컴포넌트 대신 mount-시 animation이라 jsdom 테스트 영향 없음)
+- 스파크라인 피크 dot에 흰 테두리 + 바깥으로 퍼지는 pulse halo 애니메이션 추가
+- 레일 지표 순서 변경: 일간 질의 수 → 전체 대화 수 → 평균 응답시간 (사용량 지표 인접 배치, 성격이 다른 지연 지표는 마지막)
+
+### Changed Files
+
+- `src/features/admin/AdminDashboardSection.vue`: 위 항목 전체, scoped style(keyframes) 추가
+- `src/__tests__/feature15.admin-dashboard.test.ts`: 최근성 기준·범례 단언 변경, 연도 표시·바 만점 기준 단언 추가
+
+### Commands
+
+- `npx vitest run`
+- `./scripts/lint.sh`
+- `./scripts/format.sh`
+- `npm run typecheck`
+- `VITE_USE_MOCK=true npm run dev` + Playwright (툴팁 hover·모달 애니메이션 프레임 캡처)
+
+### Results
+
+- 전체 테스트: passed, 16 files / 142 tests passed
+- lint 경고 0, typecheck feature15 범위 에러 없음, 브라우저 콘솔 에러 0
+
+## 2026-06-11 - follow-up: mock 최근성 분포 개선 및 인라인 바 세그먼트 스타일
+
+### Scope
+
+- mock 사용자 `lastAccessAt`을 고정 기준일 - 5시간×index에서 현재 시각 기준 경과시간 6패턴(2h/50h/200h/400h/800h/1500h + index 오프셋) 순환으로 변경 — 최근성 dot(7일 이내/30일 이내/그 이상)이 한 페이지 안에서 초록·노랑·회색 골고루 보이도록
+- 대화 수 인라인 바의 평균 위치 마커(세로 작대기) 제거, 대신 레퍼런스 이미지처럼 세그먼트 흰 구분선 오버레이(repeating-linear-gradient) 적용. 최초 10칸은 너무 촘촘하다는 피드백으로 4칸으로 조정 — 1칸 = 만점의 25%, 2칸 = 페이지 평균이라 평균 위치도 칸으로 읽힘
+
+### Changed Files
+
+- `src/mocks/data.ts`: lastAccessAt 생성 로직을 Date.now() 기준 순환 패턴으로 변경
+- `src/features/admin/AdminDashboardSection.vue`: 평균 마커 제거, conv-bar-segments 오버레이 + scoped CSS 추가
+
+### Commands
+
+- `npx vitest run`
+- `./scripts/lint.sh`
+- `./scripts/format.sh`
+- `VITE_USE_MOCK=true npm run dev` + Playwright 스크린샷
+
+### Results
+
+- 전체 테스트: passed, 16 files / 142 tests passed
+- lint 경고 0, 브라우저 콘솔 에러 0
+
+## 2026-06-11 - follow-up: 일일 활성률 도넛 그라데이션 적용
+
+### Scope
+
+- 일일 활성률 도넛의 채움 색을 단색 primary에서 `BaseGradientButton`과 동일한 브랜드 그라데이션(#F79140 → #FF4A19)으로 변경 — SVG linearGradient def + stroke url 참조. 시작점(12시)이 붉게 보인다는 피드백으로 그라데이션을 위(주황)→아래(빨강) 수직 방향으로 조정 (선형 그라데이션 특성상 75% 초과 호에서는 끝부분이 다시 옅어지는 한계 있음 — 필요 시 conic-gradient+마스크로 후속 개선)
+
+### Changed Files
+
+- `src/features/admin/AdminDashboardSection.vue`: 도넛 SVG에 linearGradient 추가
+
+### Results
+
+- 전체 테스트: passed, 16 files / 142 tests passed, lint 경고 0
+
+## 2026-06-11 - follow-up: 대화 수 툴팁을 outlier 행 전용 비교 메시지로 변경
+
+### Scope
+
+- 모든 행에 반복되던 대화 수 툴팁("N건 · 페이지 평균 M건")을 제거 — 숫자가 바로 옆에 보여 정보 가치가 낮은 노이즈였음
+- 기준 초과(페이지 평균 2배 이상) 행에만 비교 툴팁 노출: "페이지 평균 N건의 X.X배 — 다른 사용자보다 대화가 많습니다" (사용자 제안 채택). 후속 요청으로 트리거를 인라인 바 hover에서 행 전체 hover로 확장 — tr은 span 래퍼로 감쌀 수 없어 BaseTooltip 대신 행 mouseenter + Teleport 툴팁(동일 시각 스타일)으로 구현, 위치는 대화 수 셀 기준 앵커
+- 세그먼트 오버레이가 hover 포인터를 가로채지 않도록 pointer-events-none 추가
+- mock conversationCount가 균등 분포라 어떤 페이지에도 outlier가 생기지 않던 문제 수정 — 페이지(12명)당 1명에 +120 가산해 강조 UI를 데모에서 확인 가능하게 함
+- 외부 수정(레이아웃 보정)으로 stale해진 pagination 테스트의 '전체 58명' 단언을 도넛 카드 '23 / 58명' 기준으로 갱신
+
+### Changed Files
+
+- `src/features/admin/AdminDashboardSection.vue`: convOutlierTooltip 도입, outlier 조건부 BaseTooltip 래핑, pointer-events-none
+- `src/mocks/data.ts`: conversationCount outlier 가산
+- `src/__tests__/feature15.admin-dashboard.test.ts`: outlier 전용 툴팁 테스트 추가, stale 단언 갱신
+
+### Results
+
+- 전체 테스트: passed, 16 files / 145 tests passed, lint 경고 0
+- Playwright 확인: outlier 행(233건) 진한 주황 풀바 + "페이지 평균 69건의 3.4배" 툴팁, 일반 행 툴팁 0건

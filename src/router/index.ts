@@ -9,6 +9,7 @@
  *   - 2026-05-21, feature9 보강, 대화 상세 route /chat/:conversationId 추가
  *   - 2026-06-05, feature12 구현, Login/Auth mock 라우트 추가
  *   - 2026-06-05, feature12 보강, 루트 경로를 Login route로 redirect
+ *   - 2026-06-10, feature15 구현, /admin/dashboard route 추가
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -53,6 +54,11 @@ const router = createRouter({
     {
       path: '/admin/operations',
       name: 'admin-operations',
+      component: AdminEntryPage,
+    },
+    {
+      path: '/admin/dashboard',
+      name: 'admin-dashboard',
       component: AdminEntryPage,
     },
   ],

@@ -132,9 +132,12 @@ describe('feature14 Admin operations board', () => {
       '데이터 불러오기 버튼을 누르면 관리자 모드 활성화 후 전체 수집을 시작합니다.',
     );
     expect(wrapper.text()).toContain('문서 데이터 관리');
-    expect(wrapper.text()).toContain('대시보드');
+    expect(wrapper.text()).toContain('사용자 현황');
     expect(wrapper.text()).toContain('피드백');
     expect(wrapper.text()).toContain('동기화 이력');
+    expect(wrapper.get('[data-testid="admin-operations-heading"]').classes()).toEqual(
+      expect.arrayContaining(['text-[1.25rem]', 'font-semibold', 'text-overlay-dark-80']),
+    );
     expect(wrapper.get('[data-testid="admin-profile-name"]').text()).toBe('관 관리자');
     expect(wrapper.get('[data-testid="admin-profile-email"]').text()).toBe('admin@company.com');
     expect(wrapper.get('[data-testid="admin-data-card-totalSpaces"]').text()).toContain('6');

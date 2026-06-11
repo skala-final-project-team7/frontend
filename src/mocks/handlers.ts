@@ -24,7 +24,9 @@ import {
   mockAdminIngestStart,
   mockAdminIngestStatusSequence,
   mockAdminKeyActivation,
+  mockAdminStats,
   mockAdminSyncHistory,
+  mockAdminUsersData,
   mockConfluencePreviewPages,
   mockConversationSearchResponse,
   mockConversations,
@@ -62,6 +64,35 @@ export const mockHandlers = [
       code: 200,
       message: '사용자 정보 조회 성공',
       data: mockCurrentUser,
+    });
+  }),
+
+  // TODO(MOCK): GET /api/admin/stats
+  http.get('*/api/admin/stats', () => {
+    return HttpResponse.json<ApiSuccessResponse<typeof mockAdminStats>>({
+      isSuccess: true,
+      code: 200,
+      message: '서비스 통계 조회 성공',
+      data: mockAdminStats,
+    });
+  }),
+
+  // TODO(MOCK): GET /api/admin/users
+  http.get('*/api/admin/users', ({ request }) => {
+    const url = new URL(request.url);
+    const page = Number(url.searchParams.get('page') ?? 0);
+    const size = Number(url.searchParams.get('size') ?? 20);
+    const startIndex = page * size;
+    const pagedUsers = mockAdminUsersData.users.slice(startIndex, startIndex + size);
+
+    return HttpResponse.json<ApiSuccessResponse<typeof mockAdminUsersData>>({
+      isSuccess: true,
+      code: 200,
+      message: '사용자 현황 조회 성공',
+      data: {
+        ...mockAdminUsersData,
+        users: pagedUsers,
+      },
     });
   }),
 

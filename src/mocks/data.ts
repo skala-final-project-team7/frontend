@@ -9,6 +9,7 @@
  *   - 2026-05-21, feature9 구현, conversation pinned 상태 mock data 추가
  *   - 2026-05-26, API 계약 정합성 수정, source 수정일 mock 필드를 sourceUpdatedAt으로 변경
  *   - 2026-05-26, API 계약 정합성 수정, response timestamp mock을 KST 표기로 통일
+ *   - 2026-06-10, feature15 구현, mockAdminStats·mockAdminUsersData 추가
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -19,6 +20,8 @@ import type {
   AdminDataOverview,
   AdminIngestStatusResponse,
   AdminKeyActivationResponse,
+  AdminStats,
+  AdminUsersResponse,
   StartAdminIngestResponse,
   AdminSyncHistoryResponse,
   ConfluencePagePreview,
@@ -137,6 +140,68 @@ export const mockAdminIngestStatusSequence: AdminIngestStatusResponse[] = [
     startedAt: '2026-06-09T12:00:00+09:00',
   },
 ];
+
+export const mockAdminStats: AdminStats = {
+  dailyQueryCount: 1284,
+  avgResponseTime: 3.4,
+  totalConversations: 8741,
+  hourlyAccessTrend: [
+    { hour: 0, count: 3 },
+    { hour: 1, count: 2 },
+    { hour: 2, count: 5 },
+    { hour: 3, count: 1 },
+    { hour: 4, count: 0 },
+    { hour: 5, count: 2 },
+    { hour: 6, count: 8 },
+    { hour: 7, count: 20 },
+    { hour: 8, count: 35 },
+    { hour: 9, count: 60 },
+    { hour: 10, count: 85 },
+    { hour: 11, count: 110 },
+    { hour: 12, count: 95 },
+    { hour: 13, count: 100 },
+    { hour: 14, count: 75 },
+    { hour: 15, count: 82 },
+    { hour: 16, count: 90 },
+    { hour: 17, count: 68 },
+    { hour: 18, count: 42 },
+    { hour: 19, count: 25 },
+    { hour: 20, count: 18 },
+    { hour: 21, count: 12 },
+    { hour: 22, count: 7 },
+    { hour: 23, count: 4 },
+  ],
+};
+
+// totalUsers와 실제 목록 길이가 일치해야 pagination mock이 빈 페이지를 만들지 않는다.
+const MOCK_ADMIN_USER_COUNT = 58;
+// 최근성 dot(7일 이내/30일 이내/그 이상)이 한 페이지 안에서 골고루 보이도록
+// 현재 시각 기준 경과시간을 6개 패턴(초록 2 / 노랑 2 / 회색 2)으로 순환시킨다.
+const MOCK_ADMIN_USER_ACCESS_HOURS_AGO = [2, 50, 200, 400, 800, 1500];
+
+function toKstIsoString(epochMs: number): string {
+  return `${new Date(epochMs + 9 * 3600_000).toISOString().slice(0, 19)}+09:00`;
+}
+
+export const mockAdminUsersData: AdminUsersResponse = {
+  totalUsers: MOCK_ADMIN_USER_COUNT,
+  dailyActiveUsers: 23,
+  users: Array.from({ length: MOCK_ADMIN_USER_COUNT }, (_, index) => ({
+    userId: `user-dashboard-${String(index + 1).padStart(3, '0')}`,
+    name: `사용자 ${index + 1}`,
+    accessibleSpaceCount: (index % 5) + 1,
+    accessiblePageCount: 37 + ((index * 13) % 130),
+    accessibleAttachmentCount: 14 + ((index * 7) % 40),
+    // 페이지(12명)마다 한 명은 페이지 평균 2배를 넘는 outlier가 되도록 가산해 강조 UI를 확인할 수 있게 한다.
+    conversationCount: 11 + ((index * 17) % 110) + (index % 12 === 6 ? 120 : 0),
+    lastAccessAt: toKstIsoString(
+      Date.now() -
+        (MOCK_ADMIN_USER_ACCESS_HOURS_AGO[index % MOCK_ADMIN_USER_ACCESS_HOURS_AGO.length] +
+          index) *
+          3_600_000,
+    ),
+  })),
+};
 
 export const mockSources: Source[] = [
   {

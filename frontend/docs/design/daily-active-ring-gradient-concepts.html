@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Daily Active Ring Gradient Concepts</title>
+    <style>
+      :root {
+        --primary: #f48122;
+        --primary-light: #fcdaac;
+        --primary-white: #fefefe;
+        --bg-100: #fcfcfc;
+        --bg-200: #f5f5f5;
+        --bg-300: #e6e6e6;
+        --ink-80: rgba(0, 0, 0, 0.8);
+        --ink-40: rgba(0, 0, 0, 0.4);
+        --ink-20: rgba(0, 0, 0, 0.2);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg-100);
+        color: var(--ink-80);
+      }
+
+      main {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 40px 32px 64px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 650;
+      }
+
+      .sub {
+        margin: 8px 0 28px;
+        color: var(--ink-40);
+        font-size: 13px;
+        line-height: 1.6;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 18px;
+      }
+
+      .card {
+        min-height: 228px;
+        padding: 20px;
+        border: 1px solid rgba(230, 230, 230, 0.8);
+        border-radius: 16px;
+        background: var(--primary-white);
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+      }
+
+      .card.recommended {
+        border-color: rgba(244, 129, 34, 0.38);
+        box-shadow: 0 10px 28px rgba(244, 129, 34, 0.1);
+      }
+
+      .label-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .label {
+        font-size: 12px;
+        font-weight: 650;
+        color: var(--ink-40);
+      }
+
+      .pill {
+        border-radius: 999px;
+        background: rgba(244, 129, 34, 0.1);
+        color: var(--primary);
+        padding: 4px 8px;
+        font-size: 10px;
+        font-weight: 700;
+      }
+
+      .ring-row {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        margin-top: 18px;
+      }
+
+      .value {
+        margin: 0;
+        font-size: 30px;
+        line-height: 1;
+        font-weight: 800;
+        letter-spacing: -0.04em;
+      }
+
+      .caption {
+        margin: 6px 0 0;
+        color: var(--ink-40);
+        font-size: 12px;
+      }
+
+      .note {
+        margin: 18px 0 0;
+        color: var(--ink-40);
+        font-size: 12px;
+        line-height: 1.55;
+      }
+
+      svg {
+        overflow: visible;
+      }
+
+      .track {
+        fill: none;
+        stroke: var(--bg-200);
+        stroke-width: 9;
+      }
+
+      .progress {
+        fill: none;
+        stroke-width: 9;
+        stroke-linecap: round;
+        stroke-dasharray: 74.7 113.7;
+        transform: rotate(-90deg);
+        transform-origin: 36px 36px;
+      }
+
+      @media (max-width: 980px) {
+        .grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>일일 활성률 링 그라데이션 시안</h1>
+      <p class="sub">
+        현재 Admin 사용자 현황 카드 구조와 배경을 유지한 상태에서 링 색감만 비교하기 위한 정적
+        시안입니다. 기존 주황 계열을 크게 벗어나지 않는 조합 위주로 구성했습니다.
+      </p>
+
+      <section class="grid" aria-label="링 그라데이션 시안 목록">
+        <article class="card recommended">
+          <div class="label-row">
+            <span class="label">Option A · Soft Fade</span>
+            <span class="pill">추천</span>
+          </div>
+          <div class="ring-row">
+            <svg width="72" height="72" viewBox="0 0 72 72" aria-hidden="true">
+              <defs>
+                <linearGradient id="ring-a" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#f48122" stop-opacity="0.26" />
+                  <stop offset="58%" stop-color="#f48122" stop-opacity="0.82" />
+                  <stop offset="100%" stop-color="#f48122" stop-opacity="1" />
+                </linearGradient>
+              </defs>
+              <circle class="track" cx="36" cy="36" r="30" />
+              <circle class="progress" cx="36" cy="36" r="30" stroke="url(#ring-a)" />
+            </svg>
+            <div>
+              <p class="value">39.7%</p>
+              <p class="caption">23 / 58명</p>
+            </div>
+          </div>
+          <p class="note">
+            연한 투명 주황에서 시작해 같은 primary로 진해집니다. UI 톤을 덜 흔들면서도 진행감이
+            가장 자연스럽습니다.
+          </p>
+        </article>
+
+        <article class="card">
+          <div class="label-row">
+            <span class="label">Option B · Warm Brand</span>
+          </div>
+          <div class="ring-row">
+            <svg width="72" height="72" viewBox="0 0 72 72" aria-hidden="true">
+              <defs>
+                <linearGradient id="ring-b" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#fcdaac" />
+                  <stop offset="62%" stop-color="#f48122" />
+                  <stop offset="100%" stop-color="#ff7a1a" />
+                </linearGradient>
+              </defs>
+              <circle class="track" cx="36" cy="36" r="30" />
+              <circle class="progress" cx="36" cy="36" r="30" stroke="url(#ring-b)" />
+            </svg>
+            <div>
+              <p class="value">39.7%</p>
+              <p class="caption">23 / 58명</p>
+            </div>
+          </div>
+          <p class="note">
+            기존 primary-light to primary 방향을 유지하되 끝색만 살짝 따뜻하게 올립니다. 가장
+            브랜드다운 인상입니다.
+          </p>
+        </article>
+
+        <article class="card">
+          <div class="label-row">
+            <span class="label">Option C · Calm Apricot</span>
+          </div>
+          <div class="ring-row">
+            <svg width="72" height="72" viewBox="0 0 72 72" aria-hidden="true">
+              <defs>
+                <linearGradient id="ring-c" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#ffe4c2" />
+                  <stop offset="55%" stop-color="#ffb55b" />
+                  <stop offset="100%" stop-color="#f48122" />
+                </linearGradient>
+              </defs>
+              <circle class="track" cx="36" cy="36" r="30" />
+              <circle class="progress" cx="36" cy="36" r="30" stroke="url(#ring-c)" />
+            </svg>
+            <div>
+              <p class="value">39.7%</p>
+              <p class="caption">23 / 58명</p>
+            </div>
+          </div>
+          <p class="note">
+            밝은 살구색 비중을 늘려 더 부드럽게 보입니다. 카드 안의 숫자와 경쟁하지 않는
+            쪽입니다.
+          </p>
+        </article>
+
+        <article class="card">
+          <div class="label-row">
+            <span class="label">Option D · Metric Accent</span>
+          </div>
+          <div class="ring-row">
+            <svg width="72" height="72" viewBox="0 0 72 72" aria-hidden="true">
+              <defs>
+                <linearGradient id="ring-d" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#fcdaac" stop-opacity="0.72" />
+                  <stop offset="48%" stop-color="#f48122" />
+                  <stop offset="100%" stop-color="#ff4a19" />
+                </linearGradient>
+              </defs>
+              <circle class="track" cx="36" cy="36" r="30" />
+              <circle class="progress" cx="36" cy="36" r="30" stroke="url(#ring-d)" />
+            </svg>
+            <div>
+              <p class="value">39.7%</p>
+              <p class="caption">23 / 58명</p>
+            </div>
+          </div>
+          <p class="note">
+            현재 대비 가장 선명합니다. 단, 작은 카드에서는 시선이 링으로 먼저 갈 수 있어 강조가
+            필요할 때만 적합합니다.
+          </p>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>
