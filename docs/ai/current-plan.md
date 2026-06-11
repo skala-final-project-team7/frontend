@@ -258,6 +258,23 @@
 [x] 부정 피드백 원문에는 질문, 답변, comment, createdAt을 표시하되 민감 정보가 노출되지 않도록 API 응답 범위만 렌더링
 [x] 기간 탭(7일/14일/30일)은 query parameter 확정 상태를 확인한 뒤 연결하고, 미확정이면 mock으로 격리
 [x] 피드백 목록 pagination, empty/error 상태 테스트 작성
+[x] 피드백 추이 차트를 사용자 현황 추이와 톤이 맞도록 축 글자·점선·높이 조정
+[x] `trend[].likeCount` / `trend[].dislikeCount`를 각각 스택 바에 반영해 api-spec 필드 의미가 화면에 드러나도록 보정
+[x] 피드백 화면 구조 개선을 위한 상업용 HTML 시안 작성
+[x] 피드백 추이 스택 바 연결부를 자연스럽게 보정하고 축 글자·점선을 추가 톤다운
+[x] 피드백 원문은 api-spec의 `negativeFeedbacks` 기준에 맞춰 부정 피드백 원문만 표시
+[x] 부정 피드백 원문 카드에서 comment를 상단 말풍선으로 강조하고 질문/답변을 하단에 배치
+[x] 피드백 차트 긍정/부정 색상을 그래프 토큰으로 정리하고 원문 comment 말풍선을 SVG 배경으로 개선
+[x] 피드백 차트 색상을 `graph-sky`/`graph-indigo`로 재시도하고 comment 말풍선을 캡슐형 SVG 메시지 박스로 개선
+[x] comment 말풍선을 `bg-200` 기반 반투명 클라우드 버블 톤으로 조정
+[x] 피드백 긍정/부정 색상을 의미가 분명한 `status-success`/`status-error`로 조정하고 comment 텍스트 위치를 하향 보정
+[x] 피드백 의미색 채도를 opacity로 낮추고 mock 질문/답변을 실제 길이에 가깝게 보정
+[x] 긍정/부정 비율 도넛을 중립 track + 긍정/부정 arc로 분리해 피드백 추이 색상과 일치시킴
+[x] 피드백 추이 바 hover 시 문서 데이터 관리와 동일한 스타일의 긍정/부정 건수 툴팁 표시
+[x] 부정 피드백 원문 질문/답변을 채팅형 UI로 변경하고 답변 좌측에 `mascot-face.png` 아바타 표시
+[x] 피드백 원문 comment는 연한 주황 버블, 사용자 질문은 회색 cloud 버블로 색상 역할 조정
+[x] 피드백 원문 comment 버블은 기존 가로형 SVG 형태를 유지하고 주황 그라데이션/inner shadow 색감만 적용
+[x] 피드백 원문 comment SVG를 단일 path로 정리해 우측 seam을 줄이고 원문 텍스트를 오른쪽으로 이동
 
 # feature17: Admin 동기화 이력 구현 (SCR-830)
 

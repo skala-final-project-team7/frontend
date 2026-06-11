@@ -14,10 +14,11 @@
 -->
 <script setup lang="ts">
 import { computed, inject, onMounted, ref, watch } from 'vue';
-import { MessageSquare, ThumbsDown, ThumbsUp } from '@lucide/vue';
+import { ThumbsDown, ThumbsUp } from '@lucide/vue';
 
 import { getAdminFeedback } from '@/api';
 import { BaseSpinner, EmptyState, ErrorRetryState } from '@/shared';
+import { mascotFaceImageUrl } from '@/shared/assets';
 import type { AdminFeedbackResponse } from '@/types/api';
 import type { Ref } from 'vue';
 
@@ -60,14 +61,26 @@ const donutDashArray = computed(() => {
   return `${filled.toFixed(1)} ${(DONUT_CIRCUMFERENCE - filled).toFixed(1)}`;
 });
 
+const negativeDonutDashArray = computed(() => {
+  const filled = (negativePercent.value / 100) * DONUT_CIRCUMFERENCE;
+  return `${filled.toFixed(1)} ${(DONUT_CIRCUMFERENCE - filled).toFixed(1)}`;
+});
+
+const negativeDonutDashOffset = computed(() => {
+  const positiveLength = (positivePercent.value / 100) * DONUT_CIRCUMFERENCE;
+  return `-${positiveLength.toFixed(1)}`;
+});
+
 // ── 피드백 추이 바 차트 ─────────────────────────────────────────────
 const CHART_W = 560;
-const CHART_H = 190;
-const CHART_PAD_TOP = 10;
-const CHART_PAD_BOTTOM = 26;
-const CHART_PAD_LEFT = 34;
-const CHART_PAD_RIGHT = 8;
-const CHART_Y_TICK_COUNT = 4;
+const CHART_H = 126;
+const CHART_PAD_TOP = 8;
+const CHART_PAD_BOTTOM = 18;
+const CHART_PAD_LEFT = 28;
+const CHART_PAD_RIGHT = 6;
+const CHART_Y_TICK_COUNT = 3;
+
+const hoveredTrendBarDate = ref<string | null>(null);
 
 const trendChart = computed(() => {
   const trend = feedback.value?.trend;
@@ -84,21 +97,35 @@ const trendChart = computed(() => {
   const yMax = tickStep * CHART_Y_TICK_COUNT;
 
   const slotW = innerW / trend.length;
-  const barW = Math.min(28, slotW * 0.45);
+  const barW = Math.min(18, slotW * 0.32);
 
   const bars = trend.map((d, index) => {
-    const total = d.likeCount + d.dislikeCount;
-    const barH = (total / yMax) * innerH;
+    const likeH = (d.likeCount / yMax) * innerH;
+    const dislikeH = (d.dislikeCount / yMax) * innerH;
+    const totalH = likeH + dislikeH;
+    const bottomY = CHART_PAD_TOP + innerH;
+    const likeY = bottomY - likeH;
+    const dislikeY = likeY - dislikeH;
+
     return {
       date: d.date,
       // '2026-06-03' → '06-03' 라벨
       label: d.date.slice(5),
       x: CHART_PAD_LEFT + slotW * index + (slotW - barW) / 2,
-      y: CHART_PAD_TOP + innerH - barH,
       width: barW,
-      height: barH,
+      likeY,
+      likeHeight: likeH,
+      dislikeY,
+      dislikeHeight: dislikeH,
+      totalY: bottomY - totalH,
+      totalHeight: totalH,
       centerX: CHART_PAD_LEFT + slotW * index + slotW / 2,
+      tooltipLeftPercent: ((CHART_PAD_LEFT + slotW * index + slotW / 2) / CHART_W) * 100,
+      tooltipTopPercent: (Math.max(CHART_PAD_TOP, bottomY - totalH) / CHART_H) * 100,
+      clipId: `admin-feedback-trend-clip-${index}`,
       tooltip: `${d.date} 긍정 ${d.likeCount}건 · 부정 ${d.dislikeCount}건`,
+      likeCount: d.likeCount,
+      dislikeCount: d.dislikeCount,
     };
   });
 
@@ -111,9 +138,10 @@ const trendChart = computed(() => {
 });
 
 // ── 부정 피드백 원문 pagination ─────────────────────────────────────
-// negativeFeedbacks는 DISLIKE 원문 목록이므로 총 페이지 기준은 dislikeCount다.
+// api-spec 기준 원문 목록은 negativeFeedbacks만 제공되므로 총 페이지 기준은 dislikeCount다.
 const totalPages = computed(() => {
   if (!feedback.value) return 0;
+
   return Math.ceil(feedback.value.dislikeCount / pageSize.value);
 });
 
@@ -215,13 +243,13 @@ function formatDateTime(value: string): string {
         <h3 class="text-[0.95rem] font-bold text-overlay-dark-80">긍정 / 부정 비율</h3>
         <div class="flex flex-1 items-center justify-center py-4">
           <svg width="132" height="132" viewBox="0 0 72 72" aria-hidden="true">
-            <!-- 부정(잔여 호) = primary 주황, 긍정 호 = success 초록 -->
+            <!-- 중립 track 위에 긍정/부정 arc를 피드백 추이와 동일 색상으로 분리해 그린다. -->
             <circle
               cx="36"
               cy="36"
               r="30"
               fill="none"
-              stroke="var(--color-primary)"
+              stroke="var(--color-bg-200)"
               stroke-width="9"
             />
             <circle
@@ -230,20 +258,33 @@ function formatDateTime(value: string): string {
               r="30"
               fill="none"
               stroke="var(--color-success)"
+              stroke-opacity="0.72"
               stroke-width="9"
               :stroke-dasharray="donutDashArray"
+              transform="rotate(-90 36 36)"
+            />
+            <circle
+              cx="36"
+              cy="36"
+              r="30"
+              fill="none"
+              stroke="var(--color-error)"
+              stroke-opacity="0.62"
+              stroke-width="9"
+              :stroke-dasharray="negativeDonutDashArray"
+              :stroke-dashoffset="negativeDonutDashOffset"
               transform="rotate(-90 36 36)"
             />
           </svg>
         </div>
         <div class="flex items-center justify-center gap-5 text-[0.82rem]">
           <span class="flex items-center gap-1.5 text-overlay-dark-80">
-            <ThumbsUp aria-hidden="true" class="size-3.5 text-status-success" />
+            <ThumbsUp aria-hidden="true" class="size-3.5 text-status-success opacity-75" />
             <b>{{ formatNumber(feedback.likeCount) }}</b>
             <span class="text-overlay-dark-40">({{ positivePercent }}%)</span>
           </span>
           <span class="flex items-center gap-1.5 text-overlay-dark-80">
-            <ThumbsDown aria-hidden="true" class="size-3.5 text-primary" />
+            <ThumbsDown aria-hidden="true" class="size-3.5 text-status-error opacity-65" />
             <b>{{ formatNumber(feedback.dislikeCount) }}</b>
             <span class="text-overlay-dark-40">({{ negativePercent }}%)</span>
           </span>
@@ -280,11 +321,25 @@ function formatDateTime(value: string): string {
           </div>
         </div>
 
-        <div data-testid="admin-feedback-trend-chart" class="mt-4">
+        <div class="mt-3 flex items-center gap-4 text-[0.7rem] text-overlay-dark-40">
+          <span class="inline-flex items-center gap-1.5">
+            <span
+              aria-hidden="true"
+              class="size-2 rounded-full bg-status-success opacity-75"
+            ></span>
+            긍정
+          </span>
+          <span class="inline-flex items-center gap-1.5">
+            <span aria-hidden="true" class="size-2 rounded-full bg-status-error opacity-65"></span>
+            부정
+          </span>
+        </div>
+
+        <div data-testid="admin-feedback-trend-chart" class="relative mt-2">
           <svg
             v-if="trendChart"
             :viewBox="`0 0 ${CHART_W} ${CHART_H}`"
-            class="w-full"
+            class="pointer-events-none w-full overflow-visible"
             role="img"
             aria-label="일자별 피드백 추이 차트"
           >
@@ -296,14 +351,14 @@ function formatDateTime(value: string): string {
                 :x2="CHART_W - CHART_PAD_RIGHT"
                 :y2="tick.y"
                 stroke="var(--color-bg-300)"
-                :stroke-dasharray="tick.value === 0 ? 'none' : '3 4'"
-                stroke-width="1"
+                :stroke-dasharray="tick.value === 0 ? 'none' : '2 7'"
+                stroke-width="0.65"
               />
               <text
-                :x="CHART_PAD_LEFT - 8"
-                :y="tick.y + 4"
+                :x="CHART_PAD_LEFT - 7"
+                :y="tick.y + 2.5"
                 text-anchor="end"
-                font-size="11"
+                font-size="8"
                 fill="var(--color-dark-40)"
               >
                 {{ formatNumber(tick.value) }}
@@ -312,28 +367,86 @@ function formatDateTime(value: string): string {
 
             <!-- 일자별 피드백 바 -->
             <g v-for="bar in trendChart.bars" :key="bar.date">
-              <rect
-                :data-testid="`admin-feedback-trend-bar-${bar.date}`"
-                :x="bar.x"
-                :y="bar.y"
-                :width="bar.width"
-                :height="bar.height"
-                rx="3"
-                fill="var(--color-primary)"
-              >
-                <title>{{ bar.tooltip }}</title>
-              </rect>
+              <defs>
+                <clipPath :id="bar.clipId">
+                  <rect
+                    :x="bar.x"
+                    :y="bar.totalY"
+                    :width="bar.width"
+                    :height="bar.totalHeight"
+                    rx="4"
+                  />
+                </clipPath>
+              </defs>
+              <g :clip-path="`url(#${bar.clipId})`">
+                <rect
+                  :x="bar.x"
+                  :y="bar.totalY"
+                  :width="bar.width"
+                  :height="bar.totalHeight"
+                  fill="var(--color-bg-200)"
+                />
+                <rect
+                  :data-testid="`admin-feedback-trend-like-bar-${bar.date}`"
+                  :x="bar.x"
+                  :y="bar.likeY"
+                  :width="bar.width"
+                  :height="bar.likeHeight"
+                  fill="var(--color-success)"
+                  fill-opacity="0.72"
+                />
+                <rect
+                  :data-testid="`admin-feedback-trend-dislike-bar-${bar.date}`"
+                  :x="bar.x"
+                  :y="bar.dislikeY"
+                  :width="bar.width"
+                  :height="bar.dislikeHeight"
+                  fill="var(--color-error)"
+                  fill-opacity="0.62"
+                />
+              </g>
               <text
                 :x="bar.centerX"
-                :y="CHART_H - 8"
+                :y="CHART_H - 5"
                 text-anchor="middle"
-                font-size="11"
+                font-size="8"
                 fill="var(--color-dark-40)"
               >
                 {{ bar.label }}
               </text>
             </g>
           </svg>
+          <template v-if="trendChart">
+            <div
+              v-for="bar in trendChart.bars"
+              :key="`${bar.date}-hit-area`"
+              class="absolute top-0 z-10 h-full -translate-x-1/2"
+              :style="{
+                left: `${bar.tooltipLeftPercent}%`,
+                width: `${Math.max(18, bar.width + 10)}px`,
+              }"
+              @mouseenter="hoveredTrendBarDate = bar.date"
+              @mouseleave="hoveredTrendBarDate = null"
+            >
+              <div
+                v-if="hoveredTrendBarDate === bar.date"
+                data-testid="admin-feedback-trend-tooltip"
+                class="pointer-events-none absolute z-20 -translate-x-1/2 whitespace-nowrap rounded-lg border border-bg-300/60 bg-primary-white px-2.5 py-1.5 text-[0.66rem] shadow-[0_6px_16px_-8px_rgba(15,23,42,0.25)]"
+                :style="{
+                  left: '50%',
+                  top: `${Math.max(4, bar.tooltipTopPercent - 30)}%`,
+                }"
+              >
+                <p class="font-semibold text-overlay-dark-80">{{ bar.label }}</p>
+                <p class="mt-0.5 text-overlay-dark-40">
+                  긍정
+                  <b class="text-status-success">{{ formatNumber(bar.likeCount) }}건</b>
+                  · 부정
+                  <b class="text-status-error">{{ formatNumber(bar.dislikeCount) }}건</b>
+                </p>
+              </div>
+            </div>
+          </template>
           <p v-else class="py-8 text-center text-[0.82rem] text-overlay-dark-40">
             표시할 추이 데이터가 없습니다.
           </p>
@@ -370,18 +483,102 @@ function formatDateTime(value: string): string {
           :data-testid="`admin-feedback-card-${item.feedbackId}`"
           class="rounded-xl border border-bg-300/60 bg-primary-white px-5 py-4"
         >
-          <p class="text-[0.72rem] font-semibold text-graph-blue">질문</p>
-          <p class="mt-1 text-[0.85rem] text-overlay-dark-80">{{ item.question }}</p>
-          <p class="mt-3 text-[0.72rem] font-semibold text-overlay-dark-40">답변</p>
-          <p class="mt-1 text-[0.85rem] text-overlay-dark-80">{{ item.answer }}</p>
-          <div class="mt-3 flex items-center justify-between gap-4">
-            <span class="flex items-center gap-1.5 text-[0.78rem] font-medium text-primary">
-              <MessageSquare aria-hidden="true" class="size-3.5 shrink-0" />
-              {{ item.comment }}
-            </span>
-            <span class="shrink-0 text-[0.74rem] text-overlay-dark-40">
+          <div class="flex items-start justify-between gap-3">
+            <div
+              :data-testid="`admin-feedback-comment-${item.feedbackId}`"
+              class="relative min-h-[60px] w-full max-w-[min(100%,39rem)] pb-3 pl-12 pr-9 pt-5 text-[0.82rem] font-medium leading-relaxed text-overlay-dark-80"
+            >
+              <svg
+                class="absolute inset-0 size-full"
+                viewBox="0 0 341 60"
+                preserveAspectRatio="none"
+                aria-hidden="true"
+              >
+                <defs>
+                  <linearGradient
+                    :id="`admin-feedback-comment-gradient-${item.feedbackId}`"
+                    x1="20"
+                    y1="0"
+                    x2="300"
+                    y2="60"
+                    gradientUnits="userSpaceOnUse"
+                  >
+                    <stop stop-color="#FFA636" stop-opacity="0.1" />
+                    <stop offset="0.55" stop-color="#FFA636" stop-opacity="0.45" />
+                    <stop offset="1" stop-color="#FFA636" stop-opacity="0.62" />
+                  </linearGradient>
+                  <filter
+                    :id="`admin-feedback-comment-inner-${item.feedbackId}`"
+                    x="-8"
+                    y="-8"
+                    width="357"
+                    height="76"
+                    filterUnits="userSpaceOnUse"
+                    color-interpolation-filters="sRGB"
+                  >
+                    <feFlood flood-opacity="0" result="BackgroundImageFix" />
+                    <feBlend
+                      mode="normal"
+                      in="SourceGraphic"
+                      in2="BackgroundImageFix"
+                      result="shape"
+                    />
+                    <feColorMatrix
+                      in="SourceAlpha"
+                      type="matrix"
+                      values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
+                      result="hardAlpha"
+                    />
+                    <feOffset dy="4" />
+                    <feGaussianBlur stdDeviation="20" />
+                    <feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1" />
+                    <feColorMatrix
+                      type="matrix"
+                      values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.35 0"
+                    />
+                    <feBlend
+                      mode="normal"
+                      in2="shape"
+                      result="effect1_innerShadow_feedback_comment"
+                    />
+                  </filter>
+                </defs>
+                <path
+                  d="M29.32 0.4H320.19C331.05 0.4 339.85 9.2 339.85 20.06V39.76C339.85 50.61 331.05 59.41 320.19 59.41H78C72.27 59.41 61.44 59.41 55.5 59.41C49.79 59.41 48.96 59.41 43 59.41H29.32C24.56 59.41 20.19 57.72 16.79 54.91C13.4 57.17 7.96 59.32 1.39 58.12C3.2 57.34 10.18 52.69 9.92 43.38C9.75 42.2 9.66 40.99 9.66 39.76V20.06C9.66 9.2 18.46 0.4 29.32 0.4Z"
+                  :fill="`url(#admin-feedback-comment-gradient-${item.feedbackId})`"
+                  fill-opacity="0.62"
+                  :filter="`url(#admin-feedback-comment-inner-${item.feedbackId})`"
+                />
+              </svg>
+              <p class="relative z-10 break-words pr-1">{{ item.comment }}</p>
+            </div>
+            <span class="mt-1 shrink-0 text-[0.74rem] text-overlay-dark-40">
               {{ formatDateTime(item.createdAt) }}
             </span>
+          </div>
+          <div class="mt-4 space-y-3 border-t border-bg-200 pt-4">
+            <div class="flex justify-end">
+              <p
+                :data-testid="`admin-feedback-question-${item.feedbackId}`"
+                class="max-w-[78%] rounded-2xl rounded-tr-md border border-bg-300/60 bg-bg-200 px-4 py-3 text-[0.85rem] leading-6 text-overlay-dark-80"
+              >
+                {{ item.question }}
+              </p>
+            </div>
+            <div class="flex items-start gap-2.5">
+              <img
+                :src="mascotFaceImageUrl"
+                alt=""
+                aria-hidden="true"
+                class="mt-0.5 size-8 shrink-0 rounded-full border border-bg-300/60 bg-primary-white object-cover"
+              />
+              <p
+                :data-testid="`admin-feedback-answer-${item.feedbackId}`"
+                class="max-w-[82%] rounded-2xl rounded-tl-md border border-bg-300/60 bg-bg-100 px-4 py-3 text-[0.85rem] leading-6 text-overlay-dark-80"
+              >
+                {{ item.answer }}
+              </p>
+            </div>
           </div>
         </li>
       </ul>
