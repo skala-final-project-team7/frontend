@@ -10,6 +10,7 @@ import {
   getAdminIngestStatus,
   getAdminSyncHistory,
   getCurrentUser,
+  logout,
   startAdminIngestJob,
 } from '@/api';
 
@@ -20,6 +21,7 @@ vi.mock('@/api', () => ({
   getAdminIngestStatus: vi.fn(),
   getAdminSyncHistory: vi.fn(),
   startAdminIngestJob: vi.fn(),
+  logout: vi.fn(),
 }));
 
 const mockedActivateAdminKey = vi.mocked(activateAdminKey);
@@ -28,6 +30,7 @@ const mockedGetAdminDataOverview = vi.mocked(getAdminDataOverview);
 const mockedGetAdminIngestStatus = vi.mocked(getAdminIngestStatus);
 const mockedGetAdminSyncHistory = vi.mocked(getAdminSyncHistory);
 const mockedStartAdminIngestJob = vi.mocked(startAdminIngestJob);
+const mockedLogout = vi.mocked(logout);
 
 function createDeferredPromise<T>() {
   let resolvePromise: (value: T) => void;
@@ -49,6 +52,7 @@ describe('feature14 Admin operations board', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useRealTimers();
+    mockedLogout.mockResolvedValue(null);
   });
 
   function mockAdminBoardBase() {
@@ -128,9 +132,7 @@ describe('feature14 Admin operations board', () => {
     expect(wrapper.text()).toContain(
       '검색에 사용할 사용자 문서를 수집하고 최신 상태로 유지합니다.',
     );
-    expect(wrapper.text()).toContain(
-      '데이터 불러오기 버튼을 누르면 관리자 권한 확인 후 전체 수집을 시작합니다.',
-    );
+    expect(wrapper.find('[data-testid="admin-ingest-action-hint"]').exists()).toBe(false);
     expect(wrapper.text()).toContain('문서 데이터 관리');
     expect(wrapper.text()).toContain('사용자 현황');
     expect(wrapper.text()).toContain('피드백');
@@ -180,6 +182,29 @@ describe('feature14 Admin operations board', () => {
     expect(mockedStartAdminIngestJob).toHaveBeenCalledWith({ mode: 'full' });
   });
 
+  it('opens the profile menu and logs out to the home route', async () => {
+    mockAdminBoardBase();
+    mockedLogout.mockResolvedValue(null);
+
+    const wrapper = mount(AdminEntryPage, {
+      global: {
+        plugins: [createPinia(), router],
+      },
+    });
+
+    await flushPromises();
+
+    await wrapper.get('[data-testid="admin-profile-menu-trigger"]').trigger('click');
+
+    expect(wrapper.get('[data-testid="admin-profile-menu"]').text()).toContain('로그아웃');
+
+    await wrapper.get('[data-testid="admin-profile-logout"]').trigger('click');
+    await flushPromises();
+
+    expect(mockedLogout).toHaveBeenCalledTimes(1);
+    expect(router.currentRoute.value.path).toBe('/');
+  });
+
   it('shows action hints while ingest is in progress then on completion', async () => {
     mockAdminBoardBase();
     const ingestDeferred = createDeferredPromise<{
@@ -203,8 +228,8 @@ describe('feature14 Admin operations board', () => {
     await wrapper.get('[data-testid="admin-start-ingest-button"]').trigger('click');
     await flushPromises();
 
-    expect(wrapper.get('[data-testid="admin-ingest-action-hint"]').text()).toContain(
-      '데이터 수집을 시작하고 있습니다.',
+    expect(wrapper.get('[data-testid="admin-start-ingest-button"]').attributes('disabled')).toBe(
+      '',
     );
 
     ingestDeferred.resolve({
@@ -214,9 +239,7 @@ describe('feature14 Admin operations board', () => {
     });
     await flushPromises();
 
-    expect(wrapper.get('[data-testid="admin-ingest-action-hint"]').text()).toContain(
-      '데이터 불러오기를 시작했습니다.',
-    );
+    expect(wrapper.get('[data-testid="admin-ingest-status-pill"]').text()).toContain('수집 준비');
   });
 
   it('changes the ingest CTA to 다시 시도 when the latest ingest job failed', async () => {

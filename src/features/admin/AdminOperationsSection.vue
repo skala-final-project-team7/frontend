@@ -16,7 +16,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
-import { AlertTriangle, HardDriveDownload, Info } from '@lucide/vue';
+import { AlertTriangle, HardDriveDownload, Info, RefreshCw } from '@lucide/vue';
 
 import { useToast } from '@/composables/useToast';
 import { useAdminIngestStore } from '@/stores';
@@ -28,6 +28,8 @@ import type {
 } from '@/types/api';
 import {
   BaseButton,
+  BaseIconButton,
+  BaseTooltip,
   EmptyState,
   linaFlagImageUrl,
   linaRunningImageUrl,
@@ -44,10 +46,6 @@ const emit = defineEmits<{
   'view-all-sync': [];
   'refresh-requested': [];
 }>();
-
-const DEFAULT_ADMIN_ACTION_HINT =
-  '데이터 불러오기 버튼을 누르면 관리자 권한 확인 후 전체 수집을 시작합니다.';
-const adminActionHint = ref(DEFAULT_ADMIN_ACTION_HINT);
 
 const { showToast } = useToast();
 const adminIngestStore = useAdminIngestStore();
@@ -238,10 +236,6 @@ const pipelineDescription = computed(() => {
       return '검색에 사용할 사용자 문서를 수집하고 최신 상태로 유지합니다.';
   }
 });
-const pipelineActionHint = computed(() => {
-  if (isStartingIngest.value) return '데이터 수집을 시작하고 있습니다.';
-  return adminActionHint.value;
-});
 const pipelineCharacterImageUrl = computed(() => {
   if (status.value === 'COMPLETED') return linaFlagImageUrl;
   return status.value ? linaRunningImageUrl : linaWaitingImageUrl;
@@ -289,35 +283,26 @@ watch(status, (nextStatus, previousStatus) => {
   if (!nextStatus || nextStatus === previousStatus) return;
 
   if (nextStatus === 'COMPLETED') {
-    adminActionHint.value = '데이터 수집이 완료되었습니다.';
     showToast('데이터 불러오기가 완료되었습니다.', { variant: 'success' });
     emit('refresh-requested');
     return;
   }
 
   if (nextStatus === 'FAILED') {
-    adminActionHint.value = '데이터 수집이 실패했습니다. 다시 시도해 주세요.';
     showToast('데이터 불러오기가 실패했습니다. 다시 시도해 주세요.', { variant: 'error' });
     emit('refresh-requested');
   }
 });
 
-watch(lastError, (nextError) => {
-  if (!nextError) return;
-  adminActionHint.value = nextError;
-});
-
 async function handleStartIngest() {
   try {
     await adminIngestStore.startIngest('full');
-    adminActionHint.value = '데이터 불러오기를 시작했습니다.';
     showToast('데이터 불러오기를 시작했습니다.', { variant: 'success' });
   } catch (error) {
     const message =
       error instanceof Error
         ? error.message
         : '데이터 불러오기 작업을 시작하는 중 오류가 발생했습니다.';
-    adminActionHint.value = message;
     showToast(message, { variant: 'error' });
   }
 }
@@ -508,13 +493,6 @@ function getStatusClasses(s: AdminDisplayStatus): string {
                 </p>
               </div>
             </div>
-
-            <div
-              data-testid="admin-ingest-action-hint"
-              class="mt-4 rounded-2xl bg-primary/[0.06] px-4 py-3 text-[0.76rem] leading-6 text-overlay-dark-60"
-            >
-              {{ pipelineActionHint }}
-            </div>
           </div>
         </div>
       </div>
@@ -522,6 +500,20 @@ function getStatusClasses(s: AdminDisplayStatus): string {
 
     <!-- 데이터 현황 -->
     <section v-if="adminDataOverview" class="mb-6">
+      <div class="mb-3 flex items-center justify-between gap-4">
+        <h3 class="text-[0.95rem] font-semibold text-overlay-dark-80">데이터 현황</h3>
+        <BaseTooltip label="데이터 현황 다시 불러오기" placement="left">
+          <BaseIconButton
+            v-bind="{ ariaLabel: '데이터 현황 다시 불러오기' }"
+            variant="secondary"
+            class="size-8 rounded-lg"
+            @click="emit('refresh-requested')"
+          >
+            <RefreshCw aria-hidden="true" class="size-3.5" />
+          </BaseIconButton>
+        </BaseTooltip>
+      </div>
+
       <div class="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <!-- 마지막 동기화 -->
         <article

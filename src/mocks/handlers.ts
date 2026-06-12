@@ -12,6 +12,7 @@
  *   - 2026-05-22, RAG status 계약 반영, 확정 phase 순서와 meta 이벤트 mock 추가
  *   - 2026-05-26, API 계약 정합성 수정, KST timestamp 및 errorCode 실패 응답 반영
  *   - 2026-06-11, feature16 구현, 관리자 피드백 현황 mock handler 추가
+ *   - 2026-06-12, Admin 프로필 로그아웃 mock handler 추가
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -59,6 +60,16 @@ type MockAdminIngestJob = {
 const mockAdminIngestJobs = new Map<string, MockAdminIngestJob>();
 
 export const mockHandlers = [
+  // TODO(MOCK): POST /api/auth/logout
+  http.post('*/api/auth/logout', () => {
+    return HttpResponse.json<ApiSuccessResponse<null>>({
+      isSuccess: true,
+      code: 200,
+      message: '로그아웃 성공',
+      data: null,
+    });
+  }),
+
   // TODO(MOCK): GET /api/users/me
   http.get('*/api/users/me', () => {
     return HttpResponse.json<ApiSuccessResponse<CurrentUser>>({

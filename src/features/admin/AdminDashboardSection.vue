@@ -22,10 +22,10 @@
 -->
 <script setup lang="ts">
 import { computed, inject, nextTick, onMounted, ref, watch } from 'vue';
-import { ArrowDown, ArrowUp, ChevronsUpDown, Maximize2, X } from '@lucide/vue';
+import { ArrowDown, ArrowUp, ChevronsUpDown, Maximize2, RefreshCw, X } from '@lucide/vue';
 
 import { getAdminStats, getAdminUsers } from '@/api';
-import { BaseSpinner, BaseTooltip, EmptyState, ErrorRetryState } from '@/shared';
+import { BaseIconButton, BaseSpinner, BaseTooltip, EmptyState, ErrorRetryState } from '@/shared';
 import type { AdminStats, AdminUserItem, AdminUsersResponse } from '@/types/api';
 import type { Ref } from 'vue';
 
@@ -418,8 +418,19 @@ function formatDateTime(value: string): string {
   <!-- 사용자 현황 컨텐츠 -->
   <section v-else data-testid="admin-dashboard-section" class="px-8 pb-4 pt-7">
     <!-- 헤더 -->
-    <div>
+    <div class="flex items-start justify-between gap-4">
       <h2 class="text-[1.25rem] font-semibold text-overlay-dark-80">사용자 현황</h2>
+      <BaseTooltip label="사용자 현황 다시 불러오기" placement="left">
+        <BaseIconButton
+          v-bind="{ ariaLabel: '사용자 현황 다시 불러오기' }"
+          variant="secondary"
+          class="size-8 rounded-lg"
+          :disabled="isLoading"
+          @click="loadAll"
+        >
+          <RefreshCw aria-hidden="true" class="size-3.5" />
+        </BaseIconButton>
+      </BaseTooltip>
     </div>
 
     <div

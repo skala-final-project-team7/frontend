@@ -59,6 +59,17 @@ export function getCurrentUser(): Promise<CurrentUser> {
 }
 
 /**
+ * 현재 세션을 로그아웃 처리한다.
+ *
+ * @returns 로그아웃 성공 시 null
+ */
+export function logout(): Promise<null> {
+  return apiRequest<null>('/api/auth/logout', {
+    method: 'POST',
+  });
+}
+
+/**
  * 관리자 데이터 수집 보드의 데이터 현황 요약을 조회한다.
  *
  * @returns 스페이스/페이지/첨부/벡터DB/청크/최종 동기화 시각 요약

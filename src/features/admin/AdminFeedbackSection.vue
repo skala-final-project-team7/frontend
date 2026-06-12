@@ -19,10 +19,10 @@
 -->
 <script setup lang="ts">
 import { computed, inject, onMounted, ref, watch } from 'vue';
-import { ThumbsDown, ThumbsUp } from '@lucide/vue';
+import { RefreshCw, ThumbsDown, ThumbsUp } from '@lucide/vue';
 
 import { getAdminFeedback } from '@/api';
-import { BaseSpinner, EmptyState, ErrorRetryState } from '@/shared';
+import { BaseIconButton, BaseSpinner, BaseTooltip, EmptyState, ErrorRetryState } from '@/shared';
 import { mascotFaceImageUrl } from '@/shared/assets';
 import type { AdminFeedbackResponse } from '@/types/api';
 import type { Ref } from 'vue';
@@ -228,8 +228,19 @@ function formatDateTime(value: string): string {
   <!-- 피드백 컨텐츠 -->
   <section v-else-if="feedback" data-testid="admin-feedback-section" class="px-8 pb-4 pt-7">
     <!-- 헤더 -->
-    <div>
+    <div class="flex items-start justify-between gap-4">
       <h2 class="text-[1.25rem] font-semibold text-overlay-dark-80">피드백</h2>
+      <BaseTooltip label="피드백 다시 불러오기" placement="left">
+        <BaseIconButton
+          v-bind="{ ariaLabel: '피드백 다시 불러오기' }"
+          variant="secondary"
+          class="size-8 rounded-lg"
+          :disabled="isLoading"
+          @click="loadFeedback"
+        >
+          <RefreshCw aria-hidden="true" class="size-3.5" />
+        </BaseIconButton>
+      </BaseTooltip>
     </div>
 
     <div class="mt-5 grid grid-cols-[300px_1fr] items-stretch gap-5">
