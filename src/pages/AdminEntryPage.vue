@@ -10,6 +10,7 @@
   - 2026-06-10, feature14-refactor.2, AdminShellLayout·AdminOperationsSection으로 분리
   - 2026-06-10, feature15 구현, 대시보드(SCR-810) 탭을 AdminDashboardSection으로 교체
   - 2026-06-11, feature16 구현, 피드백(SCR-820) 탭을 AdminFeedbackSection으로 교체
+  - 2026-06-12, feature17 구현, 동기화 이력(SCR-830) 섹션 추가 및 하위 탭 연결
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -17,8 +18,8 @@
 --------------------------------------------------
 -->
 <script setup lang="ts">
-import { computed, onMounted, provide, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { computed, onMounted, provide, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { ArrowLeft, ShieldAlert } from '@lucide/vue';
 
 import { getAdminDataOverview, getAdminSyncHistory, getCurrentUser } from '@/api';
@@ -29,7 +30,9 @@ import AdminShellLayout from '@/features/admin/AdminShellLayout.vue';
 import AdminDashboardSection from '@/features/admin/AdminDashboardSection.vue';
 import AdminFeedbackSection from '@/features/admin/AdminFeedbackSection.vue';
 import AdminOperationsSection from '@/features/admin/AdminOperationsSection.vue';
+import AdminSyncHistorySection from '@/features/admin/AdminSyncHistorySection.vue';
 
+const route = useRoute();
 const router = useRouter();
 const isLoading = ref(true);
 const errorMessage = ref('');
@@ -50,6 +53,14 @@ const isAccessDenied = computed(() => currentUser.value?.role !== 'ADMIN');
 onMounted(() => {
   void loadAdminBoard();
 });
+
+watch(
+  () => route.path,
+  (path) => {
+    activeSection.value = getSectionFromPath(path);
+  },
+  { immediate: true },
+);
 
 async function loadAdminBoard() {
   isLoading.value = true;
@@ -86,6 +97,28 @@ async function refreshAdminBoardData() {
 
 function goToLogin() {
   void router.push('/login');
+}
+
+function handleSectionChange(section: SectionKey) {
+  activeSection.value = section;
+  const targetPath = getPathFromSection(section);
+  if (route.path !== targetPath) {
+    void router.push(targetPath);
+  }
+}
+
+function getSectionFromPath(path: string): SectionKey {
+  if (path === '/admin/dashboard') return 'dashboard';
+  if (path === '/admin/feedback') return 'feedback';
+  if (path === '/admin/sync') return 'sync';
+  return 'operations';
+}
+
+function getPathFromSection(section: SectionKey): string {
+  if (section === 'dashboard') return '/admin/dashboard';
+  if (section === 'feedback') return '/admin/feedback';
+  if (section === 'sync') return '/admin/sync';
+  return '/admin/operations';
 }
 </script>
 
@@ -151,14 +184,14 @@ function goToLogin() {
       v-else
       :active-section="activeSection"
       :current-user="currentUser"
-      @section-change="activeSection = $event"
+      @section-change="handleSectionChange"
     >
       <!-- 운영 (SCR-800) -->
       <AdminOperationsSection
         v-if="activeSection === 'operations'"
         :admin-data-overview="adminDataOverview"
         :admin-sync-history="adminSyncHistory"
-        @view-all-sync="activeSection = 'sync'"
+        @view-all-sync="handleSectionChange('sync')"
         @refresh-requested="refreshAdminBoardData"
       />
 
@@ -168,13 +201,8 @@ function goToLogin() {
       <!-- 피드백 (SCR-820) -->
       <AdminFeedbackSection v-else-if="activeSection === 'feedback'" />
 
-      <!-- 준비 중 섹션 (동기화 이력) -->
-      <section v-else class="flex h-full min-h-[60vh] items-center justify-center">
-        <div class="text-center">
-          <p class="text-[0.9rem] font-medium text-overlay-dark-80">동기화 이력</p>
-          <p class="mt-2 text-[0.82rem] text-overlay-dark-40">이 기능은 곧 제공될 예정입니다.</p>
-        </div>
-      </section>
+      <!-- 동기화 이력 (SCR-830) -->
+      <AdminSyncHistorySection v-else :initial-sync-history="adminSyncHistory" />
     </AdminShellLayout>
   </main>
 </template>

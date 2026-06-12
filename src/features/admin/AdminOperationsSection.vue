@@ -6,6 +6,7 @@
 작성일 : 2026-06-10
 변경사항 내역 (날짜, 변경목적, 변경내용 순)
   - 2026-06-10, feature14-refactor.2, AdminEntryPage에서 운영 탭 컨텐츠 분리
+  - 2026-06-12, feature17 구현, 문서 데이터 관리 하위 탭 breadcrumb 헤더 추가
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -382,9 +383,11 @@ function getStatusClasses(s: AdminDisplayStatus): string {
     <header class="mb-7">
       <h2
         data-testid="admin-operations-heading"
-        class="text-[1.25rem] font-semibold text-overlay-dark-80"
+        class="flex items-center gap-2 text-[1.25rem] font-semibold text-overlay-dark-80"
       >
-        문서 데이터 관리
+        <span>문서 데이터 관리</span>
+        <span aria-hidden="true" class="text-[1rem] font-medium text-overlay-dark-30">&gt;</span>
+        <span data-testid="admin-operations-subheading" class="text-primary">운영 대시보드</span>
       </h2>
     </header>
 
@@ -519,7 +522,7 @@ function getStatusClasses(s: AdminDisplayStatus): string {
 
     <!-- 데이터 현황 -->
     <section v-if="adminDataOverview" class="mb-6">
-      <h3 class="mb-3 text-[0.95rem] font-semibold text-overlay-dark-80">데이터 현황</h3>
+
 
       <div class="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <!-- 마지막 동기화 -->
