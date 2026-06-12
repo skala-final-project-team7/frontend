@@ -9,6 +9,7 @@
  *   - 2026-05-18, feature5 구현, conversations/messages/chat API 함수 골격 추가
  *   - 2026-05-18, feature6 보강, Confluence 페이지 미리보기 API 함수 추가
  *   - 2026-05-22, feature9 보강, SSE chat API에 AbortSignal 전달 경로 추가
+ *   - 2026-06-11, feature16 구현, 관리자 피드백 현황 조회 API 함수 추가
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -18,6 +19,7 @@
 import { apiRequest, streamChatRequest } from './client';
 import type {
   AdminDataOverview,
+  AdminFeedbackResponse,
   AdminIngestStatusResponse,
   AdminKeyActivationResponse,
   AdminIngestMode,
@@ -119,6 +121,18 @@ export function getAdminUsers(
   params: { page?: number; size?: number } = {},
 ): Promise<AdminUsersResponse> {
   return apiRequest<AdminUsersResponse>('/api/admin/users', { query: params });
+}
+
+/**
+ * 관리자 피드백 현황(긍정/부정 비율, 추이, 부정 피드백 원문)을 조회한다.
+ *
+ * @param params 부정 피드백 원문 목록의 page, size pagination query
+ * @returns 피드백 집계, 일자별 추이, 부정 피드백 원문 목록
+ */
+export function getAdminFeedback(
+  params: { page?: number; size?: number } = {},
+): Promise<AdminFeedbackResponse> {
+  return apiRequest<AdminFeedbackResponse>('/api/admin/feedback', { query: params });
 }
 
 /**

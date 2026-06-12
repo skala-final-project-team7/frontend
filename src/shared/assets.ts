@@ -28,6 +28,7 @@ import linaSearchImageUrl from '../../frontend/assets/lina-character/lina-search
 import linaUserImageUrl from '../../frontend/assets/lina-character/lina-user.png';
 import linaVerifyImageUrl from '../../frontend/assets/lina-character/lina-verify.png';
 import linaWaitingImageUrl from '../../frontend/assets/lina-character/lina-waiting.png';
+import mascotFaceImageUrl from '../../frontend/assets/lina-character/mascot-face.png';
 import mascotRealizeImageUrl from '../../frontend/assets/lina-character/mascot-realize-nobg.png';
 import mascotSearchImageUrl from '../../frontend/assets/lina-character/mascot-search-nobg.png';
 import mascotWrongImageUrl from '../../frontend/assets/lina-character/mascot-wrong.png';
@@ -51,6 +52,7 @@ export {
   linaVerifyImageUrl,
   linaWaitingImageUrl,
   logoLinaCuteImageUrl,
+  mascotFaceImageUrl,
   mascotImageUrl,
   mascotRealizeImageUrl,
   mascotSearchImageUrl,

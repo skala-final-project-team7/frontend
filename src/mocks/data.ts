@@ -10,6 +10,7 @@
  *   - 2026-05-26, API 계약 정합성 수정, source 수정일 mock 필드를 sourceUpdatedAt으로 변경
  *   - 2026-05-26, API 계약 정합성 수정, response timestamp mock을 KST 표기로 통일
  *   - 2026-06-10, feature15 구현, mockAdminStats·mockAdminUsersData 추가
+ *   - 2026-06-11, feature16 구현, mockAdminFeedbackData 추가
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -18,6 +19,7 @@
  */
 import type {
   AdminDataOverview,
+  AdminFeedbackResponse,
   AdminIngestStatusResponse,
   AdminKeyActivationResponse,
   AdminStats,
@@ -201,6 +203,55 @@ export const mockAdminUsersData: AdminUsersResponse = {
           3_600_000,
     ),
   })),
+};
+
+// 부정 피드백 원문 총 건수는 dislikeCount와 일치해야 pagination mock이 빈 페이지를 만들지 않는다.
+const MOCK_ADMIN_NEGATIVE_FEEDBACK_COUNT = 47;
+const MOCK_ADMIN_FEEDBACK_COMMENTS = [
+  '답변이 너무 길어요',
+  '관련 없는 내용이 포함됐어요',
+  '정확하지 않아요',
+  '출처가 질문과 관련 없었어요',
+];
+const MOCK_ADMIN_FEEDBACK_QUESTIONS = [
+  'Confluence에서 특정 스페이스의 하위 페이지까지 재수집했는데 검색 결과에는 이전 버전 문서가 계속 노출됩니다. 증분 수집이 반영됐는지 확인하려면 어떤 로그와 상태값을 봐야 하나요?',
+  'Admin Key를 활성화한 뒤에도 제한된 페이지가 검색 결과에 포함되지 않는 경우, OAuth 토큰 문제인지 Confluence 권한 설정 문제인지 구분하는 절차가 궁금합니다.',
+  '사용자가 같은 질문을 했을 때 어떤 경우에는 최신 운영 가이드가 나오고 어떤 경우에는 오래된 장애 대응 문서가 먼저 나옵니다. 출처 우선순위는 어떻게 결정되나요?',
+  '첨부 파일이 많은 페이지를 수집한 뒤 답변에 파일 내용이 일부만 반영되는 것 같습니다. 첨부 파일 본문 추출 실패 여부를 관리 화면에서 확인할 수 있나요?',
+  '사내 VPN 접속 정책 문서를 검색했는데 답변이 사용자 권한 범위를 넘어선 다른 팀 문서를 참고한 것처럼 보입니다. ACL 필터링이 적용됐는지 확인하고 싶습니다.',
+];
+const MOCK_ADMIN_FEEDBACK_ANSWERS = [
+  '관리자 화면의 동기화 이력에서 해당 ingest job의 상태와 완료 시각을 먼저 확인한 뒤, 동일 jobId로 생성된 completion event와 벡터 저장소 반영 시각을 함께 비교해야 합니다. 증분 수집은 변경된 페이지와 삭제된 페이지를 기준으로 반영되므로, 페이지 updatedAt이 이전 수집 시각보다 이후인지도 확인하는 것이 좋습니다.',
+  '먼저 Admin Key 활성화 만료 시각을 확인하고, 이후 Confluence API 호출에서 제한 페이지가 200으로 조회되는지 확인해야 합니다. Admin Key는 활성화되어 있지만 특정 페이지가 누락된다면 스페이스 권한, 페이지 제한, 그룹 매핑이 모두 현재 사용자 계정 기준으로 일치하는지 점검해야 합니다.',
+  '검색 결과 우선순위는 질문과 문서 chunk 간의 유사도, 권한 필터링 결과, 문서 최신성 메타데이터를 함께 사용해 결정됩니다. 최신 문서가 항상 우선되는 것은 아니며, 오래된 문서가 질문과 더 강하게 매칭되면 상단에 노출될 수 있습니다.',
+  '첨부 파일 본문 추출 여부는 수집 로그의 attachment 처리 단계에서 확인할 수 있습니다. 파일 형식이 지원되지 않거나 OCR 대상 문서가 너무 큰 경우 일부 내용만 색인될 수 있으며, 이 경우 해당 attachmentId와 실패 사유가 동기화 이력의 상세 로그에 남아야 합니다.',
+  'ACL 필터링은 질의 요청에 포함된 userId와 groupId를 기준으로 벡터 검색 전 단계에서 적용됩니다. 권한 밖 문서가 출처로 보인다면 먼저 해당 사용자의 Confluence groupId 동기화 상태와 페이지 제한 메타데이터가 최신으로 적재됐는지 확인해야 합니다.',
+];
+
+export const mockAdminFeedbackData: AdminFeedbackResponse = {
+  totalCount: 359,
+  likeCount: 312,
+  dislikeCount: MOCK_ADMIN_NEGATIVE_FEEDBACK_COUNT,
+  positiveRatio: 0.87,
+  trend: [
+    { date: '2026-06-03', likeCount: 38, dislikeCount: 7 },
+    { date: '2026-06-04', likeCount: 52, dislikeCount: 11 },
+    { date: '2026-06-05', likeCount: 27, dislikeCount: 4 },
+    { date: '2026-06-06', likeCount: 19, dislikeCount: 2 },
+    { date: '2026-06-07', likeCount: 33, dislikeCount: 6 },
+    { date: '2026-06-08', likeCount: 57, dislikeCount: 9 },
+    { date: '2026-06-09', likeCount: 44, dislikeCount: 8 },
+  ],
+  negativeFeedbacks: Array.from({ length: MOCK_ADMIN_NEGATIVE_FEEDBACK_COUNT }, (_, index) => ({
+    feedbackId: `fb-mock-${String(index + 1).padStart(3, '0')}`,
+    messageId: `msg-mock-${String(index + 1).padStart(3, '0')}`,
+    comment: MOCK_ADMIN_FEEDBACK_COMMENTS[index % MOCK_ADMIN_FEEDBACK_COMMENTS.length],
+    question: MOCK_ADMIN_FEEDBACK_QUESTIONS[index % MOCK_ADMIN_FEEDBACK_QUESTIONS.length],
+    answer: MOCK_ADMIN_FEEDBACK_ANSWERS[index % MOCK_ADMIN_FEEDBACK_ANSWERS.length],
+    createdAt: toKstIsoString(Date.now() - (index + 1) * 7 * 3_600_000),
+  })),
+  page: 0,
+  size: 20,
 };
 
 export const mockSources: Source[] = [

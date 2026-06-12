@@ -252,12 +252,14 @@
 
 # feature16: Admin 피드백 확인 구현 (SCR-820)
 
-[ ] `frontend/docs/frames/[SCR-820] 관리자 피드백 확인.pdf` 기준으로 피드백 화면을 구현
-[ ] `/admin/feedback` route를 추가하고 Admin shell nav에서 이동 가능하게 구성
-[ ] `GET /api/admin/feedback`의 `likeCount`, `dislikeCount`, `positiveRatio`, `trend`, `negativeFeedbacks`를 표시
-[ ] 부정 피드백 원문에는 질문, 답변, comment, createdAt을 표시하되 민감 정보가 노출되지 않도록 API 응답 범위만 렌더링
-[ ] 기간 탭(7일/14일/30일)은 query parameter 확정 상태를 확인한 뒤 연결하고, 미확정이면 mock으로 격리
-[ ] 피드백 목록 pagination, empty/error 상태 테스트 작성
+[x] `frontend/docs/frames/[SCR-820] 관리자 피드백 확인.pdf` 기준으로 피드백 화면을 구현
+[x] `/admin/feedback` route를 추가하고 Admin shell nav에서 이동 가능하게 구성
+[x] `GET /api/admin/feedback`의 `likeCount`, `dislikeCount`, `positiveRatio`, `trend`, `negativeFeedbacks`를 표시
+[x] 부정 피드백 원문에는 질문, 답변, comment, createdAt을 표시하되 민감 정보가 노출되지 않도록 API 응답 범위만 렌더링
+[x] 기간 탭(7일/14일/30일)은 query parameter 확정 상태를 확인한 뒤 연결하고, 미확정이면 mock으로 격리
+[x] 피드백 목록 pagination, empty/error 상태 테스트 작성
+[x] 피드백 추이 차트를 사용자 현황 추이와 톤이 맞도록 축 글자·점선·높이 조정
+[x] `trend[].likeCount` / `trend[].dislikeCount`를 각각 스택 바에 반영해 api-spec 필드 의미가 화면에 드러나도록 보정
 
 # feature17: Admin 동기화 이력 구현 (SCR-830)
 
@@ -269,11 +271,13 @@
 [ ] 실패 상태를 완료 상태와 시각적으로 구분하되 임의 status 값을 만들지 않고 API enum을 따른다
 [ ] pagination, loading, empty, error 상태 테스트 작성
 
-# feature18: Chat 후속 기능 - 인라인 수정 backend 연결
+# feature18: Settings 모달 구현 (SCR-700~720)
 
-[ ] feature11 완료 후 message version/답변 재생성 API 계약을 확정하고 `docs/api-spec.md` 및 FE 타입을 갱신
-[ ] 사용자 메시지 inline edit와 version navigation을 backend version 응답 기준으로 활성화
-[ ] 수정 version 전환 핵심 플로우 테스트 작성
+[ ] Settings 중앙 모달 shell 구현
+[ ] 일반 / 계정 / 데이터 탭 구현
+[ ] ESC / 백드롭 / X 닫기와 포커스 트랩 구현
+[ ] 일반 설정의 히스토리 관리 UI 구현
+[ ] 계정 관리와 데이터 관리 UI 구현
 
 # feature19: 출처 패널 그래프 뷰 후속 구현
 
@@ -287,13 +291,11 @@
 [ ] 그래프 loading/error/empty 상태와 접근성 대체 표시를 구현
 [ ] 그래프 렌더링 및 node 선택/줌/팬 동작을 관련 테스트로 검증
 
-# feature20: Settings 모달 구현 (SCR-700~720)
+# feature20: Chat 후속 기능 - 인라인 수정 backend 연결
 
-[ ] Settings 중앙 모달 shell 구현
-[ ] 일반 / 계정 / 데이터 탭 구현
-[ ] ESC / 백드롭 / X 닫기와 포커스 트랩 구현
-[ ] 일반 설정의 히스토리 관리 UI 구현
-[ ] 계정 관리와 데이터 관리 UI 구현
+[ ] feature11 완료 후 message version/답변 재생성 API 계약을 확정하고 `docs/api-spec.md` 및 FE 타입을 갱신
+[ ] 사용자 메시지 inline edit와 version navigation을 backend version 응답 기준으로 활성화
+[ ] 수정 version 전환 핵심 플로우 테스트 작성
 
 # feature21: 테스트 및 검증 기반 확장
 

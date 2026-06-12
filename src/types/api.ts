@@ -16,6 +16,7 @@
  *   - 2026-05-26, API 계약 정합성 수정, Common Response 실패 payload의 errorCode 반영
  *   - 2026-06-02, API v2.3.0 정합화, Message role lowercase 및 messageCount 제거 반영
  *   - 2026-06-10, feature15 구현, AdminStats·AdminUserItem·AdminUsersResponse 타입 추가
+ *   - 2026-06-11, feature16 구현, AdminFeedbackResponse 계열 타입 추가
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -177,6 +178,32 @@ export type AdminUsersResponse = {
   totalUsers: number;
   dailyActiveUsers: number;
   users: AdminUserItem[];
+};
+
+export type AdminFeedbackTrendItem = {
+  date: string;
+  likeCount: number;
+  dislikeCount: number;
+};
+
+export type AdminNegativeFeedbackItem = {
+  feedbackId: string;
+  messageId: string;
+  comment: string;
+  question: string;
+  answer: string;
+  createdAt: string;
+};
+
+export type AdminFeedbackResponse = {
+  totalCount: number;
+  likeCount: number;
+  dislikeCount: number;
+  positiveRatio: number;
+  trend: AdminFeedbackTrendItem[];
+  negativeFeedbacks: AdminNegativeFeedbackItem[];
+  page: number;
+  size: number;
 };
 
 export type AdminIngestMode = 'full' | 'delta';

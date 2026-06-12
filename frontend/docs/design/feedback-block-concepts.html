@@ -1,0 +1,435 @@
+<!doctype html>
+<!--
+--------------------------------------------------
+작성자 : 신유진
+작성목적 : SCR-820 피드백 탭 상단 블럭(긍정/부정 비율 + 피드백 추이) 디자인 컨셉 프로토타입.
+          실제 구현 전 디자인 방향 비교용 정적 문서이며 앱 번들에 포함되지 않는다.
+작성일 : 2026-06-12
+변경사항 내역 (날짜, 변경목적, 변경내용 순)
+  - 2026-06-12, feature16 디자인 개선 검토, 컨셉 A/B/C 프로토타입 최초 작성
+--------------------------------------------------
+-->
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LINA · 피드백 블럭 디자인 컨셉</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
+<style>
+  :root {
+    /* LINA 디자인 토큰 (src/styles/main.css 동일 값) */
+    --primary: #f48122;
+    --primary-light: #fcdaac;
+    --white: #fefefe;
+    --success: #2eb97f;
+    --error: #ff4800;
+    --graph-blue: #85a6ff;
+    --bg-100: #fcfcfc;
+    --bg-200: #f5f5f5;
+    --bg-300: #e6e6e6;
+    --dark-80: rgba(0, 0, 0, 0.8);
+    --dark-40: rgba(0, 0, 0, 0.4);
+    --dark-20: rgba(0, 0, 0, 0.2);
+    /* 컨셉용 보조 색 */
+    --slate: #8d99ae;
+    --slate-deep: #5b6678;
+    --warm-deep: #3e3630;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background:
+      radial-gradient(1200px 500px at 80% -10%, rgba(244, 129, 34, 0.06), transparent 60%),
+      var(--bg-100);
+    color: var(--dark-80);
+    font-family: 'Pretendard Variable', Pretendard, sans-serif;
+    font-feature-settings: 'tnum' on;
+    padding: 56px 24px 96px;
+  }
+  .page { max-width: 980px; margin: 0 auto; }
+  .page-header { margin-bottom: 44px; }
+  .page-header .eyebrow {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    color: var(--primary);
+    border: 1px solid rgba(244, 129, 34, 0.35);
+    border-radius: 999px;
+    padding: 4px 12px;
+    margin-bottom: 14px;
+    background: rgba(244, 129, 34, 0.06);
+  }
+  .page-header h1 { font-size: 26px; font-weight: 700; margin: 0 0 8px; letter-spacing: -0.02em; }
+  .page-header p { font-size: 13.5px; color: var(--dark-40); margin: 0; line-height: 1.7; }
+
+  .concept { margin-bottom: 64px; }
+  .concept-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 6px; }
+  .concept-head .badge {
+    font-size: 12px; font-weight: 800; color: var(--white);
+    background: var(--dark-80); border-radius: 7px; padding: 4px 9px;
+  }
+  .concept-head h2 { font-size: 18px; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
+  .concept > .desc { font-size: 13px; color: var(--dark-40); margin: 0 0 16px; line-height: 1.7; }
+
+  /* 실제 화면과 동일한 300px + 1fr 그리드 */
+  .block { display: grid; grid-template-columns: 300px 1fr; gap: 20px; align-items: stretch; }
+  .card {
+    background: var(--white);
+    border: 1px solid rgba(230, 230, 230, 0.6);
+    border-radius: 14px;
+    padding: 20px;
+    display: flex; flex-direction: column;
+  }
+  .card h3 { font-size: 13.5px; font-weight: 700; margin: 0; }
+  .card .sub { font-size: 11px; color: var(--dark-40); margin-top: 3px; }
+
+  .period-tabs {
+    display: inline-flex; gap: 2px; padding: 2px;
+    border: 1px solid rgba(230, 230, 230, 0.6); border-radius: 9px; background: var(--bg-100);
+  }
+  .period-tabs button {
+    font: inherit; font-size: 11.5px; border: 0; background: transparent;
+    color: var(--dark-40); border-radius: 7px; padding: 4px 12px; cursor: pointer;
+  }
+  .period-tabs button.on { background: var(--white); color: var(--dark-80); font-weight: 600; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+
+  .legend { display: flex; gap: 16px; font-size: 11px; color: var(--dark-40); margin-top: 10px; }
+  .legend i { display: inline-block; width: 8px; height: 8px; border-radius: 99px; margin-right: 6px; }
+
+  .notes { margin: 14px 0 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 8px; }
+  .notes li {
+    font-size: 11.5px; color: var(--slate-deep);
+    background: var(--bg-200); border-radius: 999px; padding: 5px 12px;
+  }
+
+  /* ── 컨셉 A: 게이지 + 라인 ── */
+  .a-gauge-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 12px 0 4px; }
+  .a-gauge { position: relative; width: 148px; height: 148px; }
+  .a-gauge svg { display: block; }
+  .a-gauge .center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .a-gauge .center b { font-size: 30px; font-weight: 800; letter-spacing: -0.03em; }
+  .a-gauge .center b small { font-size: 15px; font-weight: 700; color: var(--primary); }
+  .a-gauge .center span { font-size: 10.5px; color: var(--dark-40); margin-top: 1px; }
+  .a-stats { display: flex; gap: 8px; margin-top: 16px; width: 100%; }
+  .a-stats .stat {
+    flex: 1; border-radius: 10px; padding: 9px 12px; font-size: 11px; color: var(--dark-40);
+    background: var(--bg-100); border: 1px solid rgba(230, 230, 230, 0.6);
+  }
+  .a-stats .stat b { display: block; font-size: 15px; font-weight: 700; color: var(--dark-80); margin-top: 2px; }
+  .a-stats .stat.pos { border-color: rgba(244, 129, 34, 0.3); background: rgba(244, 129, 34, 0.05); }
+  .a-stats .stat.pos b { color: var(--primary); }
+
+  /* ── 컨셉 B: 스플릿 바 + 라운드 그룹 바 ── */
+  .b-big { display: flex; align-items: baseline; gap: 8px; margin-top: 18px; }
+  .b-big b { font-size: 38px; font-weight: 800; letter-spacing: -0.03em; line-height: 1; }
+  .b-big span { font-size: 12px; color: var(--dark-40); }
+  .b-split { margin-top: 18px; }
+  .b-split .bar { display: flex; height: 14px; border-radius: 999px; overflow: hidden; gap: 3px; }
+  .b-split .bar i { border-radius: 999px; }
+  .b-split .bar .p { background: linear-gradient(90deg, #f7a254, var(--primary)); }
+  .b-split .bar .n { background: var(--slate); opacity: 0.55; }
+  .b-split .row { display: flex; justify-content: space-between; font-size: 11px; color: var(--dark-40); margin-top: 9px; }
+  .b-split .row b { color: var(--dark-80); font-weight: 700; }
+  .b-foot { margin-top: auto; padding-top: 16px; font-size: 11px; color: var(--dark-40); border-top: 1px dashed var(--bg-300); }
+
+  /* ── 공통 차트 영역 ── */
+  .chart-area { position: relative; margin-top: 10px; }
+  .chart-area svg { width: 100%; display: block; overflow: visible; }
+  .head-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="page-header">
+    <span class="eyebrow">SCR-820 · FEEDBACK BLOCK CONCEPTS</span>
+    <h1>긍정/부정 비율 + 피드백 추이 디자인 컨셉</h1>
+    <p>
+      레퍼런스(시간대별 접속 추이)의 따뜻한 오렌지 무드를 기준으로 3가지 방향을 제안합니다.
+      성공/에러용 시맨틱 컬러(초록·빨강) 대신 <b>브랜드 오렌지 = 긍정, 차분한 슬레이트 = 부정</b>으로
+      "관리 지표" 톤을 통일하는 것이 공통 원칙입니다.
+    </p>
+  </header>
+
+  <!-- ════════════════ 컨셉 A ════════════════ -->
+  <section class="concept">
+    <div class="concept-head"><span class="badge">A</span><h2>Warm Glow — 게이지 도넛 + 그라데이션 라인</h2></div>
+    <p class="desc">
+      레퍼런스 이미지와 가장 가까운 방향. 추이는 스택 바 대신 <b>긍정 라인+면 그라데이션</b>으로 흐름을 보여주고,
+      부정은 가는 점선 라인으로 보조 표기합니다. 비율 카드는 얇은 링 게이지 중앙에 큰 % 숫자를 둡니다.
+    </p>
+    <div class="block">
+      <div class="card">
+        <h3>긍정 / 부정 비율</h3>
+        <p class="sub">최근 7일 누적 기준</p>
+        <div class="a-gauge-wrap">
+          <div class="a-gauge">
+            <svg width="148" height="148" viewBox="0 0 80 80">
+              <circle cx="40" cy="40" r="33" fill="none" stroke="var(--bg-200)" stroke-width="7" />
+              <circle id="a-arc" cx="40" cy="40" r="33" fill="none" stroke="url(#a-arc-grad)"
+                stroke-width="7" stroke-linecap="round" transform="rotate(-90 40 40)" />
+              <defs>
+                <linearGradient id="a-arc-grad" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stop-color="#fcb96f" /><stop offset="1" stop-color="#f48122" />
+                </linearGradient>
+              </defs>
+            </svg>
+            <div class="center"><b id="a-pct"></b><span>긍정 비율</span></div>
+          </div>
+          <div class="a-stats">
+            <div class="stat pos">긍정<b id="a-like"></b></div>
+            <div class="stat">부정<b id="a-dislike"></b></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="head-row">
+          <div><h3>피드백 추이</h3><p class="sub">일자별 긍정·부정 피드백 수</p></div>
+          <div class="period-tabs"><button class="on">7일</button><button>14일</button><button>30일</button></div>
+        </div>
+        <div class="legend">
+          <span><i style="background: var(--primary)"></i>긍정</span>
+          <span><i style="background: var(--slate)"></i>부정</span>
+        </div>
+        <div class="chart-area" id="chart-a"></div>
+      </div>
+    </div>
+    <ul class="notes">
+      <li>긍정 = --color-primary, 부정 = slate(#8d99ae 신규 보조 토큰)</li>
+      <li>면 그라데이션: primary 18% → 0%</li>
+      <li>점선 그리드 1.5/5 · 라벨 6.5px (이번 수정과 동일)</li>
+    </ul>
+  </section>
+
+  <!-- ════════════════ 컨셉 B ════════════════ -->
+  <section class="concept">
+    <div class="concept-head"><span class="badge">B</span><h2>Soft Duotone — 스플릿 바 + 라운드 그룹 바</h2></div>
+    <p class="desc">
+      도넛을 과감히 제거하고 <b>큰 숫자 + 가로 스플릿 바</b>로 비율을 즉시 읽히게 합니다.
+      추이는 스택을 풀어 긍정·부정을 <b>나란한 라운드 바</b>로 비교 — 부정 급증일이 한눈에 보입니다.
+    </p>
+    <div class="block">
+      <div class="card">
+        <h3>긍정 / 부정 비율</h3>
+        <p class="sub">최근 7일 누적 기준</p>
+        <div class="b-big"><b id="b-pct"></b><span>긍정 응답</span></div>
+        <div class="b-split">
+          <div class="bar"><i class="p" id="b-bar-p"></i><i class="n" id="b-bar-n"></i></div>
+          <div class="row"><span>긍정 <b id="b-like"></b></span><span>부정 <b id="b-dislike"></b></span></div>
+        </div>
+        <p class="b-foot" id="b-foot"></p>
+      </div>
+      <div class="card">
+        <div class="head-row">
+          <div><h3>피드백 추이</h3><p class="sub">일자별 긍정·부정 피드백 수</p></div>
+          <div class="period-tabs"><button class="on">7일</button><button>14일</button><button>30일</button></div>
+        </div>
+        <div class="legend">
+          <span><i style="background: linear-gradient(90deg, #f7a254, var(--primary))"></i>긍정</span>
+          <span><i style="background: var(--slate); opacity: 0.55"></i>부정</span>
+        </div>
+        <div class="chart-area" id="chart-b"></div>
+      </div>
+    </div>
+    <ul class="notes">
+      <li>도넛 제거 → 큰 % 숫자가 카드의 주인공</li>
+      <li>그룹 바: 상단만 라운드(rx=바 너비/2)</li>
+      <li>전주 대비 변화 문구로 빈 하단 공간 활용</li>
+    </ul>
+  </section>
+
+  <!-- ════════════════ 컨셉 C ════════════════ -->
+  <section class="concept">
+    <div class="concept-head"><span class="badge">C</span><h2>Diverging — 반원 게이지 + 미러 바</h2></div>
+    <p class="desc">
+      긍정은 기준선 위(오렌지), 부정은 기준선 아래(딥 웜그레이)로 <b>대칭 분기</b>시켜
+      "부정이 늘어난 날"이 시각적으로 가장 강하게 드러나는 관리자 친화 구성입니다. 비율은 반원 게이지로 압축합니다.
+    </p>
+    <div class="block">
+      <div class="card">
+        <h3>긍정 / 부정 비율</h3>
+        <p class="sub">최근 7일 누적 기준</p>
+        <div class="a-gauge-wrap">
+          <div style="position: relative; width: 190px; height: 110px">
+            <svg width="190" height="110" viewBox="0 0 100 58">
+              <path d="M 8 52 A 42 42 0 0 1 92 52" fill="none" stroke="var(--bg-200)" stroke-width="8" stroke-linecap="round" />
+              <path id="c-arc" d="M 8 52 A 42 42 0 0 1 92 52" fill="none" stroke="url(#c-arc-grad)" stroke-width="8" stroke-linecap="round" />
+              <defs>
+                <linearGradient id="c-arc-grad" x1="0" y1="1" x2="1" y2="0">
+                  <stop offset="0" stop-color="#fcdaac" /><stop offset="1" stop-color="#f48122" />
+                </linearGradient>
+              </defs>
+            </svg>
+            <div style="position: absolute; left: 0; right: 0; bottom: 0; text-align: center">
+              <b id="c-pct" style="font-size: 28px; font-weight: 800; letter-spacing: -0.03em"></b>
+              <div style="font-size: 10.5px; color: var(--dark-40)">긍정 비율</div>
+            </div>
+          </div>
+          <div class="a-stats">
+            <div class="stat pos">긍정<b id="c-like"></b></div>
+            <div class="stat">부정<b id="c-dislike"></b></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="head-row">
+          <div><h3>피드백 추이</h3><p class="sub">기준선 위 긍정 · 아래 부정</p></div>
+          <div class="period-tabs"><button class="on">7일</button><button>14일</button><button>30일</button></div>
+        </div>
+        <div class="legend">
+          <span><i style="background: var(--primary)"></i>긍정 (위)</span>
+          <span><i style="background: var(--warm-deep); opacity: 0.75"></i>부정 (아래)</span>
+        </div>
+        <div class="chart-area" id="chart-c"></div>
+      </div>
+    </div>
+    <ul class="notes">
+      <li>부정 = 딥 웜그레이(#3e3630)로 경고색 없이 무게감 표현</li>
+      <li>0 기준선만 실선, 나머지 그리드는 잔점선</li>
+      <li>부정 영역 높이를 1.4배 스케일해 가독성 보정 가능</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+  // 공통 샘플 데이터 (최근 7일)
+  const DATA = [
+    { label: '06-06', like: 32, dislike: 6 },
+    { label: '06-07', like: 41, dislike: 9 },
+    { label: '06-08', like: 38, dislike: 7 },
+    { label: '06-09', like: 52, dislike: 14 },
+    { label: '06-10', like: 61, dislike: 8 },
+    { label: '06-11', like: 47, dislike: 11 },
+    { label: '06-12', like: 55, dislike: 5 },
+  ];
+  const totalLike = DATA.reduce((s, d) => s + d.like, 0);
+  const totalDislike = DATA.reduce((s, d) => s + d.dislike, 0);
+  const pct = Math.round((totalLike / (totalLike + totalDislike)) * 100);
+  const fmt = (n) => n.toLocaleString('ko-KR');
+
+  const W = 560, H = 150, PT = 10, PB = 20, PL = 30, PR = 8;
+  const innerW = W - PL - PR, innerH = H - PT - PB;
+
+  function niceMax(rawMax, ticks) {
+    const rawStep = Math.ceil(rawMax / ticks);
+    const mag = 10 ** Math.floor(Math.log10(rawStep));
+    return Math.ceil(rawStep / mag) * mag * ticks;
+  }
+  function grid(yMax, ticks, baselineY) {
+    let s = '';
+    for (let i = 0; i <= ticks; i++) {
+      const v = (yMax / ticks) * i;
+      const y = baselineY - (v / yMax) * (baselineY - PT);
+      s += `<line x1="${PL}" y1="${y}" x2="${W - PR}" y2="${y}" stroke="var(--bg-300)"
+        stroke-width="0.55" ${v === 0 ? '' : 'stroke-dasharray="1.5 5"'} />
+        <text x="${PL - 7}" y="${y + 2}" text-anchor="end" font-size="6.5" fill="var(--dark-40)">${fmt(v)}</text>`;
+    }
+    return s;
+  }
+  function xLabels(yBottom) {
+    return DATA.map((d, i) => {
+      const cx = PL + (innerW / DATA.length) * (i + 0.5);
+      return `<text x="${cx}" y="${yBottom + 12}" text-anchor="middle" font-size="6.5" fill="var(--dark-40)">${d.label}</text>`;
+    }).join('');
+  }
+
+  // ── 컨셉 A: 라인 + 면 그라데이션 ──
+  (function () {
+    const yMax = niceMax(Math.max(...DATA.map((d) => d.like)), 3);
+    const yBottom = PT + innerH;
+    const pt = (v, i) => [PL + (innerW / DATA.length) * (i + 0.5), yBottom - (v / yMax) * innerH];
+    const likePts = DATA.map((d, i) => pt(d.like, i));
+    const disPts = DATA.map((d, i) => pt(d.dislike, i));
+    const line = (pts) => pts.map((p, i) => `${i ? 'L' : 'M'}${p[0]},${p[1]}`).join(' ');
+    document.getElementById('chart-a').innerHTML = `
+      <svg viewBox="0 0 ${W} ${H}">
+        <defs>
+          <linearGradient id="a-area" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="var(--primary)" stop-opacity="0.18" />
+            <stop offset="1" stop-color="var(--primary)" stop-opacity="0" />
+          </linearGradient>
+        </defs>
+        ${grid(yMax, 3, yBottom)}
+        <path d="${line(likePts)} L${likePts.at(-1)[0]},${yBottom} L${likePts[0][0]},${yBottom} Z" fill="url(#a-area)" />
+        <path d="${line(likePts)}" fill="none" stroke="var(--primary)" stroke-width="1.8" stroke-linejoin="round" />
+        ${likePts.map((p) => `<circle cx="${p[0]}" cy="${p[1]}" r="2.4" fill="var(--white)" stroke="var(--primary)" stroke-width="1.4" />`).join('')}
+        <path d="${line(disPts)}" fill="none" stroke="var(--slate)" stroke-width="1.2" stroke-dasharray="3 4" />
+        ${disPts.map((p) => `<circle cx="${p[0]}" cy="${p[1]}" r="1.7" fill="var(--slate)" />`).join('')}
+        ${xLabels(yBottom)}
+      </svg>`;
+    const C = 2 * Math.PI * 33;
+    const arc = document.getElementById('a-arc');
+    arc.setAttribute('stroke-dasharray', `${(pct / 100) * C} ${C}`);
+    document.getElementById('a-pct').innerHTML = `${pct}<small>%</small>`;
+    document.getElementById('a-like').textContent = `${fmt(totalLike)}건`;
+    document.getElementById('a-dislike').textContent = `${fmt(totalDislike)}건`;
+  })();
+
+  // ── 컨셉 B: 라운드 그룹 바 ──
+  (function () {
+    const yMax = niceMax(Math.max(...DATA.map((d) => d.like)), 3);
+    const yBottom = PT + innerH;
+    const slot = innerW / DATA.length, bw = 9, gap = 4;
+    const bar = (x, v, fill, extra = '') => {
+      const h = Math.max((v / yMax) * innerH, bw / 2);
+      const y = yBottom - h;
+      return `<path d="M${x},${yBottom} V${y + bw / 2} A${bw / 2} ${bw / 2} 0 0 1 ${x + bw},${y + bw / 2} V${yBottom} Z" fill="${fill}" ${extra} />`;
+    };
+    document.getElementById('chart-b').innerHTML = `
+      <svg viewBox="0 0 ${W} ${H}">
+        <defs>
+          <linearGradient id="b-bar-grad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#f7a254" /><stop offset="1" stop-color="var(--primary)" />
+          </linearGradient>
+        </defs>
+        ${grid(yMax, 3, yBottom)}
+        ${DATA.map((d, i) => {
+          const cx = PL + slot * (i + 0.5);
+          return bar(cx - bw - gap / 2, d.like, 'url(#b-bar-grad)') + bar(cx + gap / 2, d.dislike, 'var(--slate)', 'opacity="0.55"');
+        }).join('')}
+        ${xLabels(yBottom)}
+      </svg>`;
+    document.getElementById('b-pct').textContent = `${pct}%`;
+    document.getElementById('b-bar-p').style.width = `${pct}%`;
+    document.getElementById('b-bar-n').style.width = `${100 - pct}%`;
+    document.getElementById('b-like').textContent = `${fmt(totalLike)}건 (${pct}%)`;
+    document.getElementById('b-dislike').textContent = `${fmt(totalDislike)}건 (${100 - pct}%)`;
+    document.getElementById('b-foot').textContent = '지난주 대비 긍정 비율 +3.2%p — 부정 급증일은 추이 차트에서 확인하세요.';
+  })();
+
+  // ── 컨셉 C: 미러(분기) 바 ──
+  (function () {
+    const upMax = niceMax(Math.max(...DATA.map((d) => d.like)), 2);
+    const dnMax = niceMax(Math.max(...DATA.map((d) => d.dislike)), 1);
+    const upH = innerH * 0.66, dnH = innerH * 0.34;
+    const zeroY = PT + upH;
+    const slot = innerW / DATA.length, bw = 13;
+    let gridStr = '';
+    for (let i = 0; i <= 2; i++) {
+      const v = (upMax / 2) * i, y = zeroY - (v / upMax) * upH;
+      gridStr += `<line x1="${PL}" y1="${y}" x2="${W - PR}" y2="${y}" stroke="var(--bg-300)" stroke-width="0.55" ${v === 0 ? '' : 'stroke-dasharray="1.5 5"'} />
+        <text x="${PL - 7}" y="${y + 2}" text-anchor="end" font-size="6.5" fill="var(--dark-40)">${fmt(v)}</text>`;
+    }
+    const dy = zeroY + dnH;
+    gridStr += `<line x1="${PL}" y1="${dy}" x2="${W - PR}" y2="${dy}" stroke="var(--bg-300)" stroke-width="0.55" stroke-dasharray="1.5 5" />
+      <text x="${PL - 7}" y="${dy + 2}" text-anchor="end" font-size="6.5" fill="var(--dark-40)">-${fmt(dnMax)}</text>`;
+    document.getElementById('chart-c').innerHTML = `
+      <svg viewBox="0 0 ${W} ${H}">
+        ${gridStr}
+        ${DATA.map((d, i) => {
+          const x = PL + slot * (i + 0.5) - bw / 2;
+          const uh = (d.like / upMax) * upH, dh = (d.dislike / dnMax) * dnH;
+          return `<rect x="${x}" y="${zeroY - uh}" width="${bw}" height="${uh}" rx="3" fill="var(--primary)" fill-opacity="0.9" />
+            <rect x="${x}" y="${zeroY + 1.5}" width="${bw}" height="${dh}" rx="3" fill="var(--warm-deep)" fill-opacity="0.75" />`;
+        }).join('')}
+        ${xLabels(zeroY + dnH)}
+      </svg>`;
+    const arcLen = document.getElementById('c-arc').getTotalLength();
+    document.getElementById('c-arc').setAttribute('stroke-dasharray', `${(pct / 100) * arcLen} ${arcLen}`);
+    document.getElementById('c-pct').textContent = `${pct}%`;
+    document.getElementById('c-like').textContent = `${fmt(totalLike)}건`;
+    document.getElementById('c-dislike').textContent = `${fmt(totalDislike)}건`;
+  })();
+</script>
+</body>
+</html>

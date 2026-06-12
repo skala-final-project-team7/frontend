@@ -3452,3 +3452,333 @@
 - `./scripts/lint.sh`: passed
 - `./scripts/test.sh`: passed, 16 files / 145 tests passed
 - `./scripts/verify.sh`: passed, 16 files / 145 tests passed
+
+## 2026-06-11 - feature16: Admin 피드백 확인 구현 (SCR-820)
+
+### Scope
+
+- `[SCR-820] 관리자 피드백 확인.pdf` 기준 피드백 탭 화면 구현: 긍정/부정 비율 도넛 카드, 일자별 피드백 추이 바 차트, 부정 피드백 원문 카드 목록
+- `/admin/feedback` route 추가 (AdminEntryPage 연결), Admin shell nav '피드백' 탭의 준비 중 placeholder를 `AdminFeedbackSection`으로 교체
+- `GET /api/admin/feedback` 계약(`docs/api-spec.md` §4-2) 기준 `AdminFeedbackResponse` 타입, `getAdminFeedback` API 함수, MSW mock handler/data 추가
+- 부정 피드백 카드에는 질문/답변/comment/createdAt만 렌더링 (feedbackId/messageId 등 내부 식별자 비노출 — 회귀 테스트 포함)
+- 기간 탭(7일/14일/30일): `from`/`to` query parameter가 api-spec에서 아직 **제안** 상태이므로 feature15와 동일하게 UI 상태만 관리하고 API 재호출 없이 mock 격리. 기본 선택은 API 기본값(최근 7일)에 맞춰 7일
+- 부정 피드백 원문 pagination: `adminTabPagination` inject(feedback 키) 사용, page size 5, 총 페이지 기준은 `dislikeCount`. 페이지 전환 시 전체 로딩 스피너 없이 데이터만 교체 (dashboard와 동일 패턴)
+
+### Test Cases
+
+- `/admin/feedback` route → AdminEntryPage 연결
+- 피드백 탭 활성화 시 `getAdminFeedback` 1회 호출
+- 긍정/부정 비율 카드에 likeCount/dislikeCount/positiveRatio(87%/13%) 표시
+- 피드백 추이 차트가 trend 날짜 수만큼 바 렌더링 + 날짜 라벨
+- 기간 탭 전환 시 aria-selected만 변경, API 재호출 없음
+- 부정 피드백 카드의 질문/답변/comment/createdAt 표시 + 총 건수(dislikeCount) 표시
+- 카드에 feedbackId/messageId 미노출
+- 부정 피드백 0건 empty state
+- API 실패 error state + 재시도 동작
+- pagination 페이지 정보(1 / 10 페이지), 다음 페이지 `{ page: 1, size: 5 }` 재호출, 첫 페이지 prev 비활성
+
+### Changed Files
+
+- `src/types/api.ts`: `AdminFeedbackTrendItem`·`AdminNegativeFeedbackItem`·`AdminFeedbackResponse` 타입 추가
+- `src/api/index.ts`: `getAdminFeedback(params)` 추가
+- `src/mocks/data.ts`: `mockAdminFeedbackData` 추가 (부정 원문 47건 생성, dislikeCount와 일치)
+- `src/mocks/handlers.ts`: `GET /api/admin/feedback` mock handler 추가 (`TODO(MOCK)` 마커, page/size 슬라이싱)
+- `src/router/index.ts`: `/admin/feedback` route 추가
+- `src/pages/AdminEntryPage.vue`: feedback 섹션을 `AdminFeedbackSection`으로 연결, placeholder는 동기화 이력만 유지
+- `src/features/admin/AdminFeedbackSection.vue`: 신규 (SCR-820 탭 컨텐츠)
+- `src/__tests__/feature16.admin-feedback.test.ts`: 신규 (11 tests)
+- `src/__tests__/feature14.admin-operations-board.test.ts`: stale 단언 1건 수정 — `admin-profile-email`은 커밋 74bb923 UI 변경(이메일 → Admin Mode 라벨)에서 렌더링이 제거됐는데 테스트가 갱신되지 않아 HEAD부터 실패하던 것을 현재 UI 기준으로 갱신 (feature16 변경과 무관한 기존 실패)
+- `src/features/admin/AdminShellLayout.vue`: 코드 변경 없음 — `./scripts/format.sh`(prettier) 정리만 반영
+- `docs/ai/current-plan.md`: feature16 항목 체크 처리
+
+### Commands
+
+- `npx vitest run src/__tests__/feature16.admin-feedback.test.ts` (red 확인: 11 failed → 구현 후 11 passed)
+- `./scripts/verify.sh` (format → lint → test)
+- `npm run typecheck`
+
+### Results
+
+- 전체 테스트: passed, 17 files / 156 tests
+- lint 경고 0 (`--max-warnings 0`), format 적용 완료
+- typecheck: feature16 범위 에러 0. 기존 에러 12건은 미수정 파일(`feature12`·`feature15` 테스트의 `wrapper.get().exists()` 패턴, TS2339)로 feature16 이전부터 존재 — 해당 feature 담당 범위라 이번 세션에서 수정하지 않음
+
+### Notes / Remaining Issues
+
+- 기간 탭은 `period`/`from`/`to` query parameter가 BFF에서 확정되면 실제 조회 연결 필요 (현재 UI 상태만)
+- 디자인 PDF의 donut(312/47건)과 부정 원문 "총 12건" 표기가 상호 불일치하여, mock은 spec 관계식(`negativeFeedbacks` 총량 = `dislikeCount`)에 맞춰 47건으로 생성
+- 피드백 추이 바는 일자별 `likeCount + dislikeCount` 합산 높이로 렌더링하고 분해값은 바 tooltip(`<title>`)으로 제공
+- 기존 typecheck 에러 12건(feature12/15 테스트)은 후속 정리 필요
+
+## 2026-06-11 - feature16 follow-up: 피드백 추이 차트 톤다운 및 화면 구조 시안
+
+### Scope
+
+- 피드백 추이 차트가 화면에서 과하게 크게 보이던 문제를 사용자 현황 탭의 시간대별 접속 추이 톤에 맞춰 보정
+- 차트 높이 축소, Y축/X축 font-size 9px로 축소, 점선 간격을 `2 6`으로 변경, grid stroke를 0.75로 낮춤
+- `GET /api/admin/feedback`의 `trend[].likeCount` / `trend[].dislikeCount`를 합산 단일 바로 숨기지 않고, 긍정/부정 스택 바와 범례로 표시
+- `docs/api-spec.md`의 응답 구조(`totalCount`, `likeCount`, `dislikeCount`, `positiveRatio`, `trend`, `negativeFeedbacks`, `page`, `size`) 기준으로 mock/API 타입/화면 매핑 유지 확인
+- 피드백 페이지를 상업적으로 더 보기 좋게 바꿀 수 있는 HTML 시안 3종 작성
+
+### Changed Files
+
+- `src/features/admin/AdminFeedbackSection.vue`: 피드백 추이 차트 compact 스타일 및 긍정/부정 스택 바 반영
+- `src/__tests__/feature16.admin-feedback.test.ts`: trend의 like/dislike 스택 바 렌더링 단언 갱신
+- `docs/design/feedback-page-concepts.html`: 신규 HTML 시안 3종(A Executive Summary, B Operations First, C Insight Board)
+- `docs/ai/current-plan.md`: feature16 후속 보정 체크 추가
+- `docs/ai/working-log.md`: 작업 기록 추가
+
+### Commands
+
+- `npx vitest run src/__tests__/feature16.admin-feedback.test.ts`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- `npx vitest run src/__tests__/feature16.admin-feedback.test.ts`: passed, 1 file / 11 tests passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed, 17 files / 156 tests passed
+- `./scripts/verify.sh`: passed, 17 files / 156 tests passed
+
+## 2026-06-11 - feature16 follow-up: 말풍선 SVG 및 피드백 색상 토큰 정리
+
+### Scope
+
+- 부정 피드백 원문 comment 영역의 lucide message icon 제거
+- SVG 말풍선 배경 안에 실제 comment 원문이 보이도록 구조 변경
+- 긍정/부정 차트 색상을 `success`/`primary`에서 `graph-blue`/`graph-purple` 토큰으로 변경
+- 도넛, 범례, 추이 스택 바 색상을 동일 토큰 기준으로 통일
+
+### Changed Files
+
+- `src/features/admin/AdminFeedbackSection.vue`: SVG 말풍선 배경, comment 텍스트 배치, 긍정/부정 그래프 색상 토큰 변경
+- `src/__tests__/feature16.admin-feedback.test.ts`: SVG 말풍선 존재 및 그래프 색상 토큰 단언 추가
+- `docs/ai/current-plan.md`: feature16 후속 보정 체크 추가
+- `docs/ai/working-log.md`: 작업 기록 추가
+
+### Commands
+
+- `npx vitest run src/__tests__/feature16.admin-feedback.test.ts`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- `npx vitest run src/__tests__/feature16.admin-feedback.test.ts`: passed, 1 file / 11 tests passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed, 17 files / 156 tests passed
+- `./scripts/verify.sh`: passed, 17 files / 156 tests passed
+
+## 2026-06-11 - feature16 follow-up: 피드백 추이 연결부 및 원문 필터 보정
+
+### Scope
+
+- 피드백 추이의 긍정/부정 스택 바 연결부가 어색하게 보이던 문제 수정
+- 전체 바 외곽을 `clipPath`로 둥글게 자르고 내부 긍정/부정 구간은 직선 연결되도록 변경
+- 추이 차트 축 글자 크기 8px, grid 점선 `2 7`, stroke 0.65로 추가 톤다운
+- `부정 피드백 원문` 섹션명을 `피드백 원문`으로 변경
+- 원문 목록에 긍정/부정 segmented filter 추가, 기본값은 부정
+- `docs/api-spec.md`는 현재 `negativeFeedbacks`만 제공하므로, 긍정 선택 시 API 미제공 빈 상태를 표시하고 추가 API 호출은 하지 않음
+
+### Changed Files
+
+- `src/features/admin/AdminFeedbackSection.vue`: 차트 clipPath, 축/점선 스타일, 원문 필터 UI 추가
+- `src/__tests__/feature16.admin-feedback.test.ts`: 차트 축 스타일 및 원문 필터 동작 테스트 추가
+- `docs/ai/current-plan.md`: feature16 후속 보정 체크 추가
+- `docs/ai/working-log.md`: 작업 기록 추가
+
+### Commands
+
+- `npx vitest run src/__tests__/feature16.admin-feedback.test.ts`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- `npx vitest run src/__tests__/feature16.admin-feedback.test.ts`: passed, 1 file / 12 tests passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed, 17 files / 157 tests passed
+- `./scripts/verify.sh`: passed, 17 files / 157 tests passed
+
+## 2026-06-11 - feature16 follow-up: 원문 목록을 부정 피드백 전용으로 복원
+
+### Scope
+
+- 사용자 확인에 따라 피드백 원문 긍정/부정 필터 UI 제거
+- `docs/api-spec.md`의 현재 계약이 `negativeFeedbacks`만 제공하므로 원문 목록은 부정 피드백 전용으로 유지
+- 피드백 추이 차트의 clipPath 연결부 및 축/점선 톤다운은 유지
+
+### Changed Files
+
+- `src/features/admin/AdminFeedbackSection.vue`: 원문 필터 상태/UI 제거, `negativeFeedbacks` 전용 렌더링 복원
+- `src/__tests__/feature16.admin-feedback.test.ts`: 필터 테스트 제거, 부정 원문 전용 단언 복원
+- `docs/ai/current-plan.md`: feature16 원문 표시 기준 갱신
+- `docs/ai/working-log.md`: 작업 기록 추가
+
+### Commands
+
+- `npx vitest run src/__tests__/feature16.admin-feedback.test.ts`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- `npx vitest run src/__tests__/feature16.admin-feedback.test.ts`: passed, 1 file / 11 tests passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed, 17 files / 156 tests passed
+- `./scripts/verify.sh`: passed, 17 files / 156 tests passed
+
+## 2026-06-11 - feature16 follow-up: 부정 피드백 원문 카드 구조 보정
+
+### Scope
+
+- 부정 피드백 원문 카드에서 comment를 카드 최상단 말풍선 형태로 강조
+- 말풍선 아래에 질문/답변이 이어지도록 정보 배치 순서 변경
+- api-spec 기준 원문 목록은 계속 `negativeFeedbacks`만 사용
+
+### Changed Files
+
+- `src/features/admin/AdminFeedbackSection.vue`: comment 말풍선 상단 배치, 질문/답변 하단 배치
+- `src/__tests__/feature16.admin-feedback.test.ts`: comment 말풍선 존재 및 질문 본문보다 먼저 렌더링되는지 단언 추가
+- `docs/ai/current-plan.md`: feature16 원문 카드 구조 보정 체크 추가
+- `docs/ai/working-log.md`: 작업 기록 추가
+
+### Commands
+
+- `npx vitest run src/__tests__/feature16.admin-feedback.test.ts`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- `npx vitest run src/__tests__/feature16.admin-feedback.test.ts`: passed, 1 file / 11 tests passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed, 17 files / 156 tests passed
+- `./scripts/verify.sh`: passed, 17 files / 156 tests passed
+
+## 2026-06-11 - feature16 follow-up: 클라우드 버블 및 의미색 보정
+
+### Scope
+
+- 피드백 긍정/부정 색상을 의미가 더 분명한 `status-success`/`status-error` 조합으로 변경
+- comment 메시지 박스를 `bg-200` 기반 반투명 클라우드 버블 톤으로 조정
+- comment 텍스트가 말풍선 y축 중앙에 더 가깝게 보이도록 상단 padding을 늘리고 하단 padding을 줄임
+- SVG 안에 path 텍스트를 넣지 않고 실제 API comment 원문을 DOM 텍스트로 렌더링
+- api-spec 기준 원문 목록은 계속 `negativeFeedbacks`만 사용
+
+### Changed Files
+
+- `src/features/admin/AdminFeedbackSection.vue`: 피드백 차트 의미색 토큰 변경, comment SVG 클라우드 버블 및 텍스트 위치 보정
+- `src/__tests__/feature16.admin-feedback.test.ts`: 새 의미색 토큰 및 SVG 클라우드 버블 fill/opacity 단언 갱신
+- `docs/ai/current-plan.md`: feature16 후속 보정 체크 추가
+- `docs/ai/working-log.md`: EOF 기준 작업 기록 추가
+
+### Commands
+
+- `npx vitest run src/__tests__/feature16.admin-feedback.test.ts`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- `npx vitest run src/__tests__/feature16.admin-feedback.test.ts`: passed, 1 file / 11 tests passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed, 17 files / 156 tests passed
+- `./scripts/verify.sh`: passed, 17 files / 156 tests passed
+
+## 2026-06-11 - feature16 follow-up: 피드백 색상·mock·추이 툴팁·채팅형 원문 보정
+
+### Scope
+
+- 긍정/부정 의미색은 유지하되 `fill-opacity`/아이콘 opacity로 채도를 낮춰 덜 쨍하게 조정
+- 긍정/부정 비율 도넛을 중립 track + 긍정/부정 arc로 분리해 피드백 추이 색상과 일치시킴
+- 피드백 추이 바 hover 시 문서 데이터 관리 바차트와 동일한 흰 배경/테두리/그림자 스타일의 툴팁 표시
+- 툴팁에는 해당 날짜의 긍정/부정 피드백 건수를 표시
+- mock 부정 피드백 질문/답변에서 `예시 질문 N:`/`답변 N:` 접두어 제거 및 실제형 장문 데이터로 변경
+- 부정 피드백 원문 질문/답변 영역을 채팅형 UI로 변경
+- 질문은 우측 메시지 버블, 답변은 좌측 `mascot-face.png` 원형 아바타 + 답변 버블로 표시
+- 피드백 원문 comment 버블은 연한 주황(`primary-light`)으로, 사용자 질문 버블은 회색 cloud(`bg-200`)로 조정
+- 피드백 원문 comment 버블은 기존 가로형 SVG 형태를 유지하고 주황 그라데이션/inner shadow 색감만 적용
+- comment SVG를 단일 path로 정리해 우측 조각 경계가 보이는 문제를 줄이고 원문 텍스트 padding-left를 늘림
+- api-spec 기준 원문 목록은 계속 `negativeFeedbacks`만 사용
+
+### Changed Files
+
+- `src/features/admin/AdminFeedbackSection.vue`: 피드백 차트 opacity 조정, 도넛 arc 분리, 추이 hover tooltip 추가, 채팅형 질문/답변 카드 구조 및 comment 그라데이션 버블 shape/색상 변경
+- `src/mocks/data.ts`: 부정 피드백 mock 질문/답변을 실제형 장문 데이터로 변경
+- `src/shared/assets.ts`: `mascotFaceImageUrl` export 추가
+- `src/__tests__/feature16.admin-feedback.test.ts`: 장문 fixture, 도넛/추이 색상 opacity, 추이 hover tooltip, 채팅형 질문/답변 구조 및 comment 단일 path 그라데이션 버블 단언 갱신
+- `docs/ai/current-plan.md`: feature16 후속 보정 체크 추가
+- `docs/ai/working-log.md`: EOF 기준 작업 기록 추가
+
+### Commands
+
+- `npx vitest run src/__tests__/feature16.admin-feedback.test.ts`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- `npx vitest run src/__tests__/feature16.admin-feedback.test.ts`: passed, 1 file / 12 tests passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed, 17 files / 157 tests passed
+- `./scripts/verify.sh`: passed, 17 files / 157 tests passed
+
+## 2026-06-12 - feature16 follow-up: 피드백 상단 블럭 리디자인 (반원 게이지 + 라운드 그룹 바)
+
+### Scope
+
+- 차트 축 라벨 글자 크기를 8 → 6.5로 줄이고 그리드 점선을 `2 7` → `1.5 5`, 두께 0.65 → 0.55로 잘게 조정
+- 디자인 컨셉 비교용 프로토타입(`docs/ai/feedback-block-concepts.html`) 작성 — A(라인+게이지)/B(그룹 바)/C(미러 바) 3안 제안
+- 긍정/부정 비율 카드를 도넛에서 컨셉 C 기반 반원 게이지(브랜드 오렌지 그라데이션 arc + 중앙 % 숫자)로 전환
+- 피드백 추이를 스택 바에서 컨셉 B 기반 긍정/부정 라운드 그룹 바로 전환 — 긍정은 오렌지 그라데이션, 부정은 슬레이트(#8d99ae)
+- 의미색(success/error) 조합을 버리고 브랜드 오렌지=긍정 / 슬레이트=부정으로 색상 체계 통일 (범례·툴팁 포함)
+- 비율 칩을 텍스트 라벨 대신 엄지 아이콘(20px) + 건수 표기로 변경, sr-only로 긍정/부정 라벨 유지
+- 칩 줄바꿈 문제 수정 후 공간 배분 개선 — 게이지 190×110 → 230×133 확대, 중앙 % 글자 2rem로 확대
+- 칩의 (87%)/(13%) 표기는 게이지 중앙 %와 중복이라 제거하고 건수 글자를 0.9rem로 복원
+- 추이 바 폭 상한 9 → 13, 간격 상한 4 → 5로 올려 넓은 화면에서 바가 점처럼 보이는 문제 보정
+- 바 폭/간격은 슬롯 너비 기준 자동 보정이라 30일치 데이터에서도 그룹이 슬롯 안에 들어감
+- 값이 0인 날은 바를 그리지 않아 둥근 캡이 작은 바처럼 보이는 문제 방지
+
+### Changed Files
+
+- `src/features/admin/AdminFeedbackSection.vue`: 반원 게이지 전환, 라운드 그룹 바 전환, 오렌지/슬레이트 색상 통일, 비율 칩 아이콘화 및 공간 배분 개선
+- `src/__tests__/feature16.admin-feedback.test.ts`: 게이지 arc/그라데이션, 그룹 바 fill, 축 라벨 글자 크기, 칩 퍼센트 중복 제거 단언 갱신
+- `docs/ai/feedback-block-concepts.html`: 디자인 컨셉 3안 비교 프로토타입 신규 작성
+- `docs/ai/working-log.md`: EOF 기준 작업 기록 추가
+
+### Commands
+
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed, 17 files / 157 tests passed
+- `./scripts/verify.sh`: passed, 17 files / 157 tests passed
