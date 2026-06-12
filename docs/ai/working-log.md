@@ -3996,3 +3996,23 @@
 - `./scripts/test.sh`: passed, 19 files / 178 tests passed
 - format/lint/verify: passed
 - 브라우저 검증: 760px viewport에서 docScrollHeight 760 == innerHeight 760(스크롤 없음), 버튼 클릭 → 도움말 모달 정상 오픈, `/chat/conv-mock-001`에서 floating wrapper 0개 확인
+
+## 2026-06-12 - feature18 follow-up 정정: 새 대화 화면 상단 정렬 복원
+
+### Scope
+
+- 직전 스크롤 제거에서 scroll-region을 `flex h-[calc(100vh-76px)] flex-col`로 바꾼 결과, ChatEmptyState(`flex-1`)가 화면 전체 높이로 늘어나 `justify-center`로 환영 문구·카드가 중앙으로 내려가고 `absolute top-12`인 ASK LINA와의 간격이 비정상적으로 벌어지는 회귀 발생
+- 빈 화면 scroll-region을 `h-[calc(100vh-76px)] overflow-y-hidden`(block)으로 변경해 flex 스트레치를 제거 — 원래의 상단 정렬 레이아웃을 복원하면서 스크롤 없음 유지
+- 환영 문구 간격은 검토(mt-36, mt-[100px]) 후 사용자 결정으로 기존 `mt-20` 유지. 참고: `mt-25`는 Tailwind 기본 스케일과 프로젝트 spacing 설정에 없는 값이라 클래스가 생성되지 않아 마진 0으로 렌더링됨
+- ChatEmptyState 주석의 잘못된 변경 이력(mt-36) 한 줄 제거 — 코드 변경 없음
+
+### Changed Files
+
+- `src/pages/ChatPage.vue`: 빈 화면 scroll-region 클래스 `flex ... flex-col` → `overflow-y-hidden` (직전 커밋에 포함)
+- `src/__tests__/feature8.chat-main.test.ts`: 빈 화면 scroll-region이 flex가 아니고 overflow-y-hidden인지 회귀 검증 (직전 커밋에 포함)
+- `src/features/chat/ChatEmptyState.vue`: 코드와 불일치하는 주석 이력 제거
+
+### Results
+
+- `./scripts/test.sh`: passed, 19 files / 178 tests passed / lint·format passed
+- Playwright 검증: 1600×900·1280×760 모두 스크롤 0px, ASK LINA 상단 정렬 복원, 대화 라우트에서 floating 버튼 미표시 유지
