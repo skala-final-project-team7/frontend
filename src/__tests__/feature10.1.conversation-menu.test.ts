@@ -163,13 +163,19 @@ async function openPinnedConversationMenu(wrapper: ReturnType<typeof mount>) {
   return pinnedItem;
 }
 
+function countDeleteConversationRequests(conversationId: string) {
+  return capturedRequests.filter(
+    (request) =>
+      request.url.endsWith(`/api/conversations/${conversationId}`) && request.method === 'DELETE',
+  ).length;
+}
+
 describe('feature10.1 conversation kebab menu', () => {
   beforeEach(async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     setActivePinia(createPinia());
     installFeature101FetchMock();
     vi.spyOn(window, 'prompt').mockReturnValue('문서 동기화 장애 대응');
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     await router.push('/chat/conv-mock-001');
   });
 
@@ -316,7 +322,19 @@ describe('feature10.1 conversation kebab menu', () => {
     await wrapper.get('[data-testid="conversation-menu-delete"]').trigger('click');
     await flushAsyncUpdates();
 
-    expect(window.confirm).toHaveBeenCalledWith('이 대화를 삭제할까요?');
+    expect(
+      document.querySelector('[data-testid="conversation-delete-dialog"]')?.textContent,
+    ).toContain('채팅을 삭제하시겠습니까?');
+    expect(
+      document.querySelector('[data-testid="conversation-delete-dialog"]')?.textContent,
+    ).toContain('문서 동기화 장애 대응이(가) 삭제됩니다.');
+    expect(countDeleteConversationRequests('conv-mock-001')).toBe(0);
+
+    document
+      .querySelector<HTMLButtonElement>('[data-testid="conversation-delete-confirm"]')
+      ?.click();
+    await flushAsyncUpdates();
+
     expect(
       capturedRequests.some(
         (request) =>
@@ -324,5 +342,23 @@ describe('feature10.1 conversation kebab menu', () => {
       ),
     ).toBe(true);
     expect(router.currentRoute.value.fullPath).toBe('/chat');
+  });
+
+  it('closes the delete confirmation modal without deleting when cancel is clicked', async () => {
+    const wrapper = await mountExpandedChatPage();
+
+    await wrapper.get('[data-testid="conversation-menu-button"]').trigger('click');
+    await wrapper.get('[data-testid="conversation-menu-delete"]').trigger('click');
+    await flushAsyncUpdates();
+
+    expect(document.querySelector('[data-testid="conversation-delete-dialog"]')).not.toBeNull();
+
+    document
+      .querySelector<HTMLButtonElement>('[data-testid="conversation-delete-cancel"]')
+      ?.click();
+    await flushAsyncUpdates();
+
+    expect(document.querySelector('[data-testid="conversation-delete-dialog"]')).toBeNull();
+    expect(countDeleteConversationRequests('conv-mock-001')).toBe(0);
   });
 });

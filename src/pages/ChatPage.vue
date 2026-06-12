@@ -46,6 +46,7 @@ import ChatConversationView from '@/features/chat/ChatConversationView.vue';
 import ChatEmptyState from '@/features/chat/ChatEmptyState.vue';
 import ChatHeader from '@/features/chat/ChatHeader.vue';
 import ChatSidebar from '@/features/chat/ChatSidebar.vue';
+import ConversationDeleteConfirmModal from '@/features/chat/ConversationDeleteConfirmModal.vue';
 import ConversationSearchModal from '@/features/chat/ConversationSearchModal.vue';
 import FeedbackModal from '@/features/chat/FeedbackModal.vue';
 import MessageInput from '@/features/chat/MessageInput.vue';
@@ -95,6 +96,8 @@ const isFeedbackSubmitting = ref(false);
 const isSearchModalOpen = ref(false);
 const isSettingsModalOpen = ref(false);
 const isHelpModalOpen = ref(false);
+const pendingDeleteConversation = ref<Conversation | null>(null);
+const isDeleteConversationSubmitting = ref(false);
 
 const routeConversationId = computed(() => {
   const conversationId = route.params.conversationId;
@@ -279,10 +282,26 @@ async function renameConversation(conversation: Conversation) {
 }
 
 async function removeConversation(conversation: Conversation) {
-  if (!window.confirm('이 대화를 삭제할까요?')) {
-    closeConversationMenu();
+  pendingDeleteConversation.value = conversation;
+  closeConversationMenu();
+}
+
+function closeDeleteConversationModal() {
+  if (isDeleteConversationSubmitting.value) {
     return;
   }
+
+  pendingDeleteConversation.value = null;
+}
+
+async function confirmRemoveConversation() {
+  const conversation = pendingDeleteConversation.value;
+
+  if (!conversation || isDeleteConversationSubmitting.value) {
+    return;
+  }
+
+  isDeleteConversationSubmitting.value = true;
 
   try {
     await deleteConversation(conversation.conversationId);
@@ -298,6 +317,8 @@ async function removeConversation(conversation: Conversation) {
       variant: 'error',
     });
   } finally {
+    isDeleteConversationSubmitting.value = false;
+    pendingDeleteConversation.value = null;
     closeConversationMenu();
   }
 }
@@ -602,6 +623,13 @@ watch(
         @close="closeSettingsModal"
       />
       <SettingsHelpModal :is-open="isHelpModalOpen" @close="closeHelpModal" />
+      <ConversationDeleteConfirmModal
+        :conversation-title="pendingDeleteConversation?.title ?? ''"
+        :is-open="pendingDeleteConversation !== null"
+        :is-submitting="isDeleteConversationSubmitting"
+        @cancel="closeDeleteConversationModal"
+        @confirm="confirmRemoveConversation"
+      />
     </div>
   </main>
 </template>
