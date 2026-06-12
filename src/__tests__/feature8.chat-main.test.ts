@@ -131,8 +131,13 @@ describe('feature8 SCR-400 Chat main screen', () => {
       expect(sidebarAction.find('svg').classes()).toContain('size-4');
     }
     expect(wrapper.get('[data-testid="floating-help-wrapper"]').classes()).toEqual(
-      expect.arrayContaining(['absolute', 'bottom-6', 'right-6']),
+      expect.arrayContaining(['fixed', 'bottom-10', 'right-6', 'z-30']),
     );
+    expect(wrapper.get('[data-testid="chat-scroll-region"]').classes()).toEqual(
+      expect.arrayContaining(['h-[calc(100vh-76px)]', 'overflow-y-hidden']),
+    );
+    expect(wrapper.get('[data-testid="chat-scroll-region"]').classes()).not.toContain('pb-[220px]');
+    expect(wrapper.get('[data-testid="chat-scroll-region"]').classes()).not.toContain('flex');
     expect(wrapper.get('[data-testid="floating-help-button"]').attributes('aria-label')).toBe(
       '도움말 열기',
     );

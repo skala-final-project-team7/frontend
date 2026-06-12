@@ -7,6 +7,7 @@
   - 2026-06-12, feature18 구현, Settings 모달 shell과 계정 탭 추가
   - 2026-06-12, feature18 구현, 도움말 nav 항목 추가
   - 2026-06-12, feature18 구현, 도움말 클릭 시 SettingsHelpModal 오버레이 모달 표시로 변경
+  - 2026-06-12, feature18 보정, 타이포 한 단계 축소 및 로그아웃 버튼 진한 색 적용
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -181,7 +182,7 @@ onBeforeUnmount(() => {
           <h2
             id="settings-title"
             data-testid="settings-title"
-            class="font-lina text-[22px] font-bold text-black"
+            class="font-lina text-[18px] font-bold text-black"
           >
             Settings
           </h2>
@@ -203,18 +204,18 @@ onBeforeUnmount(() => {
             <div
               data-testid="settings-account-nav-item"
               aria-current="true"
-              class="inline-flex h-10 items-center gap-3 rounded-xl bg-overlay-dark-4 px-5 text-left font-lina text-[16px] text-black"
+              class="inline-flex h-10 items-center gap-3 rounded-xl bg-overlay-dark-4 px-5 text-left font-lina text-[14px] text-black"
             >
-              <UserRound aria-hidden="true" class="size-5" />
+              <UserRound aria-hidden="true" class="size-[18px]" />
               계정 관리
             </div>
             <button
               data-testid="settings-help-nav-item"
               type="button"
-              class="inline-flex h-10 items-center gap-3 rounded-xl px-5 text-left font-lina text-[16px] text-black transition hover:bg-bg-200 focus-visible:outline-none focus-visible:shadow-focus"
+              class="inline-flex h-10 items-center gap-3 rounded-xl px-5 text-left font-lina text-[14px] text-black transition hover:bg-bg-200 focus-visible:outline-none focus-visible:shadow-focus"
               @click="isHelpOpen = true"
             >
-              <CircleHelp aria-hidden="true" class="size-5" />
+              <CircleHelp aria-hidden="true" class="size-[18px]" />
               도움말
             </button>
           </nav>
@@ -225,7 +226,7 @@ onBeforeUnmount(() => {
             aria-label="계정 관리"
             class="min-h-0 overflow-y-auto pr-1"
           >
-            <h3 class="mb-6 font-lina text-[16px] font-normal text-black">연결된 계정</h3>
+            <h3 class="mb-6 font-lina text-[14px] font-normal text-black">연결된 계정</h3>
 
             <div
               data-testid="settings-account-card"
@@ -239,15 +240,15 @@ onBeforeUnmount(() => {
                   class="size-8 shrink-0 object-contain"
                 />
                 <div class="min-w-0">
-                  <p class="truncate font-lina text-[16px] text-black">Client_id</p>
-                  <p class="mt-1 font-lina text-[13px] text-overlay-dark-40">
+                  <p class="truncate font-lina text-[14px] text-black">Client_id</p>
+                  <p class="mt-1 font-lina text-[12px] text-overlay-dark-40">
                     {{ currentUserName }} · 인증 갱신 날짜 : {{ renewalDateLabel }}
                   </p>
                 </div>
               </div>
               <a
                 data-testid="settings-confluence-link"
-                class="inline-flex shrink-0 items-center gap-3 rounded-button px-2 py-1 font-lina text-[13px] text-overlay-dark-40 transition hover:text-overlay-dark-80 focus-visible:outline-none focus-visible:shadow-focus"
+                class="inline-flex shrink-0 items-center gap-3 rounded-button px-2 py-1 font-lina text-[12px] text-overlay-dark-40 transition hover:text-overlay-dark-80 focus-visible:outline-none focus-visible:shadow-focus"
                 href="https://www.atlassian.com/software/confluence"
                 target="_blank"
                 rel="noreferrer"
@@ -259,7 +260,7 @@ onBeforeUnmount(() => {
 
             <p
               data-testid="settings-account-renewal-note"
-              class="mt-5 inline-flex items-center gap-2 font-lina text-[13px] text-overlay-dark-40"
+              class="mt-5 inline-flex items-center gap-2 font-lina text-[12px] text-overlay-dark-40"
             >
               <Info aria-hidden="true" class="size-4" />
               90일마다 인증 갱신되어야 합니다.
@@ -269,11 +270,11 @@ onBeforeUnmount(() => {
               data-testid="settings-logout-row"
               class="mt-10 flex items-center justify-between border-t border-overlay-dark-10 pt-7"
             >
-              <p class="font-lina text-[16px] text-black">이 기기에서 로그아웃 하기</p>
+              <p class="font-lina text-[14px] text-black">이 기기에서 로그아웃 하기</p>
               <button
                 data-testid="settings-logout-button"
                 type="button"
-                class="rounded-full border border-overlay-dark-10 px-7 py-3 font-lina text-[16px] text-black transition hover:bg-bg-200 focus-visible:outline-none focus-visible:shadow-focus"
+                class="rounded-full bg-overlay-dark-80 px-6 py-2.5 font-lina text-[14px] text-primary-white transition hover:bg-black focus-visible:outline-none focus-visible:shadow-focus"
               >
                 로그아웃
               </button>

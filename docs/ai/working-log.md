@@ -3934,3 +3934,65 @@
 - `./scripts/test.sh`: passed, 19 files / 175 tests passed
 - `./scripts/verify.sh`: passed
 - `npm run typecheck`: failed — feature12/15/16 테스트 파일의 기존 `DOMWrapper.exists` 타입 오류 13건(이번 변경 파일과 무관, 담당 범위 밖이라 미수정, 별도 보정 필요)
+
+## 2026-06-12 - feature18 follow-up: Settings 타이포 축소, 로그아웃 버튼 강조, 도움말/계정 진입 연결
+
+### Scope
+
+- Settings 모달 타이포 한 단계 축소: 타이틀 22→18px, nav/본문 16→14px, 보조 텍스트 13→12px (도움말 모달 헤더 동일 적용)
+- 로그아웃 버튼을 진한 색으로 변경: 테두리형 → 다크 배경(bg-overlay-dark-80) + 흰 글자(text-primary-white)
+- Chat main 우하단의 기존 floating ? 도움말 버튼(클릭 동작 없음)을 도움말 모달(SettingsHelpModal)과 연결
+- Chat 헤더 계정 이미지: hover 툴팁을 '계정 관리로 이동'으로 변경하고 클릭 시 Settings 모달(계정 관리) 오픈
+
+### Changed Files
+
+- `src/features/settings/SettingsModal.vue`: 타이포 축소, 로그아웃 버튼 다크 스타일
+- `src/features/settings/SettingsHelpModal.vue`: 헤더 타이포 축소
+- `src/features/chat/ChatHeader.vue`: 프로필 버튼 openSettings emit 추가(additive), 툴팁/aria-label '계정 관리로 이동'으로 변경
+- `src/pages/ChatPage.vue`: floating-help-button 클릭 → SettingsHelpModal 오픈, ChatHeader open-settings → Settings 모달 오픈 배선
+- `src/__tests__/feature18.settings-modal.test.ts`: 타이포/로그아웃 버튼 스타일, 프로필 진입+툴팁, floating 도움말 버튼 진입 테스트 3건 추가
+- `src/__tests__/feature8.chat-main.test.ts`: 프로필 툴팁 라벨 기대값을 의도된 변경('계정 관리로 이동')에 맞게 갱신 2곳
+- `docs/ai/current-plan.md`: feature18 항목 체크 처리
+- `docs/ai/working-log.md`: 작업 결과 기록
+
+### Commands
+
+- `npx vitest run src/__tests__/feature18.settings-modal.test.ts`
+- `./scripts/format.sh` / `./scripts/lint.sh` / `./scripts/test.sh` / `./scripts/verify.sh`
+- `npm run typecheck`
+
+### Results
+
+- 변경 전 신규 테스트 3건 실패 확인(TDD) 후 구현
+- 도중 ChatHeader에 도움말 버튼을 추가했다가, chat main에 이미 존재하던 floating ? 버튼(BaseFloatingIconButton)이 동일 역할임을 확인하고 중복 제거 후 기존 버튼에 연결
+- `./scripts/test.sh`: passed, 19 files / 178 tests passed
+- `./scripts/format.sh` / `./scripts/lint.sh` / `./scripts/verify.sh`: passed
+- `npm run typecheck`: failed — feature12/15/16 테스트 파일의 기존 `DOMWrapper.exists` 타입 오류 13건(이번 변경과 무관, 기존 이슈)
+
+## 2026-06-12 - feature18 follow-up: floating 도움말 버튼 가시성/노출 조건 보정 및 새 대화 스크롤 제거
+
+### Scope
+
+- floating ? 도움말 버튼이 화면에 보이지 않던 문제 수정: wrapper가 `absolute`(z-index 없음)여서 `fixed z-20` 입력 영역에 가려짐 → `fixed bottom-10 right-6 z-30`으로 변경
+- 도움말 버튼을 새 대화 화면에서만 노출하고 대화 화면에서는 숨김(`v-if="!hasActiveConversation"`)
+- 새 대화 화면 스크롤 문제 정의와 해결: scroll-region의 상시 `pb-[220px]`(고정 입력창 자리 확보) 때문에 최소 문서 높이가 872px이 되어 그보다 작은 창에서 스크롤 발생 → 빈 화면에서는 `pb-[220px]` 대신 `h-[calc(100vh-76px)]`로 viewport에 맞춰 ChatEmptyState가 내부 중앙 정렬되도록 변경(대화 화면은 기존 pb 유지)
+- Playwright로 실제 브라우저 검증: 760px/900px viewport에서 스크롤 없음, 버튼 표시·클릭 시 도움말 모달 오픈, 대화 라우트에서 버튼 미표시 확인
+
+### Changed Files
+
+- `src/pages/ChatPage.vue`: floating wrapper fixed/z-30/bottom-10 + 빈 화면 전용 노출, scroll-region 상태별 클래스 분기
+- `src/__tests__/feature8.chat-main.test.ts`: wrapper 클래스(fixed/bottom-10/z-30), 빈 화면 scroll-region 클래스 회귀 테스트 갱신
+- `src/__tests__/feature9.chat-conversation.test.ts`: 대화 화면에서 floating wrapper 미표시 회귀 테스트 추가
+- `docs/ai/current-plan.md`, `docs/ai/working-log.md`: 기록
+
+### Commands
+
+- `npx vitest run` (feature8/9/18)
+- `./scripts/format.sh` / `./scripts/lint.sh` / `./scripts/test.sh` / `./scripts/verify.sh`
+- `VITE_USE_MOCK=true npm run dev` + Playwright 스크립트(/tmp/lina-verify)로 브라우저 검증
+
+### Results
+
+- `./scripts/test.sh`: passed, 19 files / 178 tests passed
+- format/lint/verify: passed
+- 브라우저 검증: 760px viewport에서 docScrollHeight 760 == innerHeight 760(스크롤 없음), 버튼 클릭 → 도움말 모달 정상 오픈, `/chat/conv-mock-001`에서 floating wrapper 0개 확인

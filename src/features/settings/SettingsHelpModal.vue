@@ -6,6 +6,7 @@
 작성일 : 2026-06-12
 변경사항 내역 (날짜, 변경목적, 변경내용 순)
   - 2026-06-12, feature18 구현, 도움말 전용 오버레이 모달과 3단 가이드 섹션 추가
+  - 2026-06-12, feature18 보정, 헤더 타이포 한 단계 축소
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -159,11 +160,11 @@ watch(
             <h2
               id="settings-help-title"
               data-testid="settings-help-title"
-              class="font-lina text-[22px] font-bold text-black"
+              class="font-lina text-[18px] font-bold text-black"
             >
               도움말
             </h2>
-            <p class="mt-1 font-lina text-[13px] text-overlay-dark-40">
+            <p class="mt-1 font-lina text-[12px] text-overlay-dark-40">
               LINA를 이렇게 사용해 보세요
             </p>
           </div>

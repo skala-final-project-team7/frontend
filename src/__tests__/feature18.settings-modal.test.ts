@@ -252,6 +252,61 @@ describe('feature18 Settings modal', () => {
     expect(document.body.querySelector('[data-testid="settings-help-dialog"]')).toBeNull();
   });
 
+  it('uses compact typography and a dark logout button', () => {
+    mountSettingsModal();
+
+    expect(getByTestId('settings-title').className).toContain('text-[18px]');
+
+    const logoutButton = getByTestId('settings-logout-button');
+
+    expect(logoutButton.className).toContain('bg-overlay-dark-80');
+    expect(logoutButton.className).toContain('text-primary-white');
+  });
+
+  it('opens the settings modal from the header profile entry with a tooltip', async () => {
+    const wrapper = mount(ChatPage, {
+      global: {
+        plugins: [createPinia(), router],
+      },
+      attachTo: document.body,
+    });
+    await new Promise((resolve) => window.setTimeout(resolve, 0));
+    await new Promise((resolve) => window.setTimeout(resolve, 0));
+
+    const profileTooltip = getByTestId('profile-entry').closest('[data-testid="base-tooltip"]');
+
+    expect(profileTooltip?.getAttribute('aria-label')).toBe('계정 관리');
+    expect(wrapper.find('[data-testid="settings-dialog"]').exists()).toBe(false);
+
+    await wrapper.get('[data-testid="profile-entry"]').trigger('click');
+    await nextTick();
+
+    expect(getByTestId('settings-dialog').textContent).toContain('연결된 계정');
+  });
+
+  it('opens the help modal from the chat main floating help button', async () => {
+    const wrapper = mount(ChatPage, {
+      global: {
+        plugins: [createPinia(), router],
+      },
+      attachTo: document.body,
+    });
+    await new Promise((resolve) => window.setTimeout(resolve, 0));
+    await new Promise((resolve) => window.setTimeout(resolve, 0));
+
+    const helpWrapper = getByTestId('floating-help-wrapper');
+
+    expect(helpWrapper.className).toContain('fixed');
+    expect(helpWrapper.className).toContain('z-30');
+    expect(wrapper.find('[data-testid="settings-help-dialog"]').exists()).toBe(false);
+
+    await wrapper.get('[data-testid="floating-help-button"]').trigger('click');
+    await nextTick();
+
+    expect(getByTestId('settings-help-dialog').textContent).toContain('도움말');
+    expect(getByTestId('settings-help-card-search').textContent).toContain('고정');
+  });
+
   it('opens from the Chat sidebar settings entry', async () => {
     const wrapper = mount(ChatPage, {
       global: {

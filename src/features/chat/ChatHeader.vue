@@ -6,6 +6,7 @@
 작성일 : 2026-06-04
 변경사항 내역 (날짜, 변경목적, 변경내용 순)
   - 2026-06-04, feature10.5 구현, ChatPage header 책임 분리
+  - 2026-06-12, feature18 보정, 프로필 클릭 시 계정 관리 이동 연결
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -30,6 +31,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   closeConversationMenu: [];
+  openSettings: [];
   removeConversation: [conversation: Conversation];
   renameConversation: [conversation: Conversation];
   toggleConversationMenu: [conversationId: string];
@@ -80,6 +82,7 @@ watch(
             type="button"
             aria-label="계정 관리"
             class="inline-flex size-10 items-center justify-center rounded-full bg-bg-200 text-overlay-dark-80 transition hover:brightness-95 focus-visible:outline-none focus-visible:shadow-focus"
+            @click="emit('openSettings')"
           >
             <img
               v-if="profileImageUrl && !hasProfileImageLoadFailed"
@@ -102,6 +105,7 @@ watch(
           type="button"
           aria-label="계정 관리"
           class="inline-flex size-10 items-center justify-center rounded-full bg-bg-200 text-overlay-dark-80 transition hover:brightness-95 focus-visible:outline-none focus-visible:shadow-focus"
+          @click="emit('openSettings')"
         >
           <img
             v-if="profileImageUrl && !hasProfileImageLoadFailed"
