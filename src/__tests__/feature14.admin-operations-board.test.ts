@@ -129,7 +129,7 @@ describe('feature14 Admin operations board', () => {
       '검색에 사용할 사용자 문서를 수집하고 최신 상태로 유지합니다.',
     );
     expect(wrapper.text()).toContain(
-      '데이터 불러오기 버튼을 누르면 관리자 모드 활성화 후 전체 수집을 시작합니다.',
+      '데이터 불러오기 버튼을 누르면 관리자 권한 확인 후 전체 수집을 시작합니다.',
     );
     expect(wrapper.text()).toContain('문서 데이터 관리');
     expect(wrapper.text()).toContain('사용자 현황');
@@ -157,11 +157,8 @@ describe('feature14 Admin operations board', () => {
     );
   });
 
-  it('activates the admin key first and then starts ingest when the operator clicks 데이터 불러오기', async () => {
+  it('starts ingest directly when the operator clicks 데이터 불러오기', async () => {
     mockAdminBoardBase();
-    mockedActivateAdminKey.mockResolvedValue({
-      activatedUntil: '2026-06-09T23:59:00+09:00',
-    });
     mockedStartAdminIngestJob.mockResolvedValue({
       jobId: 'job-uuid-001',
       status: 'STARTED',
@@ -178,7 +175,7 @@ describe('feature14 Admin operations board', () => {
     await wrapper.get('[data-testid="admin-start-ingest-button"]').trigger('click');
     await flushPromises();
 
-    expect(mockedActivateAdminKey).toHaveBeenCalledTimes(1);
+    expect(mockedActivateAdminKey).not.toHaveBeenCalled();
     expect(mockedStartAdminIngestJob).toHaveBeenCalledTimes(1);
     expect(mockedStartAdminIngestJob).toHaveBeenCalledWith({ mode: 'full' });
   });
@@ -246,12 +243,8 @@ describe('feature14 Admin operations board', () => {
     expect(wrapper.get('[data-testid="admin-start-ingest-button"]').text()).toContain('다시 시도');
   });
 
-  it('skips redundant key activation when 데이터 불러오기 is clicked while the key is still active', async () => {
+  it('starts ingest without explicit key activation because /api/admin/ingest bundles it', async () => {
     mockAdminBoardBase();
-    mockedActivateAdminKey.mockResolvedValue({
-      activatedUntil: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
-    });
-    // 첫 번째 수집은 즉시 COMPLETED로 끝나야 버튼이 재활성화돼 두 번째 클릭 가능
     mockedStartAdminIngestJob.mockResolvedValue({
       jobId: 'job-uuid-002',
       status: 'COMPLETED',
@@ -265,14 +258,12 @@ describe('feature14 Admin operations board', () => {
     });
 
     await flushPromises();
-    // 첫 번째 클릭 — 키 발급 + 수집 시작
     await wrapper.get('[data-testid="admin-start-ingest-button"]').trigger('click');
     await flushPromises();
-    // 두 번째 클릭 — 키가 아직 유효하므로 activateAdminKey 추가 호출 없음
     await wrapper.get('[data-testid="admin-start-ingest-button"]').trigger('click');
     await flushPromises();
 
-    expect(mockedActivateAdminKey).toHaveBeenCalledTimes(1);
+    expect(mockedActivateAdminKey).not.toHaveBeenCalled();
     expect(mockedStartAdminIngestJob).toHaveBeenCalledTimes(2);
   });
 

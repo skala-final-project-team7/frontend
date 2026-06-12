@@ -193,8 +193,8 @@ describe('feature12 Auth / Login + Role Selection', () => {
   });
 
   it('defines /api/auth/login as an OAuth endpoint intent only after role selection', () => {
-    expect(AUTH_LOGIN_URL_BY_ROLE.user).toBe('/api/auth/login');
-    expect(AUTH_LOGIN_URL_BY_ROLE.admin).toBe('/api/auth/login?mode=admin');
+    expect(AUTH_LOGIN_URL_BY_ROLE.user).toBe('/api/auth/login?returnTo=/chat');
+    expect(AUTH_LOGIN_URL_BY_ROLE.admin).toBe('/api/auth/login?mode=admin&returnTo=/admin');
   });
 
   it('uses role selection links as browser navigation targets for the OAuth start endpoint', async () => {
@@ -211,8 +211,8 @@ describe('feature12 Auth / Login + Role Selection', () => {
     const adminRoleLink = wrapper.get('[data-testid="admin-role-button"]');
 
     expect(userRoleLink.element.tagName).toBe('A');
-    expect(userRoleLink.attributes('href')).toBe('/api/auth/login');
+    expect(userRoleLink.attributes('href')).toBe('/api/auth/login?returnTo=/chat');
     expect(adminRoleLink.element.tagName).toBe('A');
-    expect(adminRoleLink.attributes('href')).toBe('/api/auth/login?mode=admin');
+    expect(adminRoleLink.attributes('href')).toBe('/api/auth/login?mode=admin&returnTo=/admin');
   });
 });

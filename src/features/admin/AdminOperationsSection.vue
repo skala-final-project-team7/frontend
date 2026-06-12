@@ -45,7 +45,7 @@ const emit = defineEmits<{
 }>();
 
 const DEFAULT_ADMIN_ACTION_HINT =
-  '데이터 불러오기 버튼을 누르면 관리자 모드 활성화 후 전체 수집을 시작합니다.';
+  '데이터 불러오기 버튼을 누르면 관리자 권한 확인 후 전체 수집을 시작합니다.';
 const adminActionHint = ref(DEFAULT_ADMIN_ACTION_HINT);
 
 const { showToast } = useToast();

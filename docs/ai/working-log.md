@@ -3421,6 +3421,38 @@
 - 전체 테스트: passed, 16 files / 145 tests passed, lint 경고 0
 - Playwright 확인: outlier 행(233건) 진한 주황 풀바 + "페이지 평균 69건의 3.4배" 툴팁, 일반 행 툴팁 0건
 
+## 2026-06-11 - api-spec 정합성 보정: OAuth returnTo 및 admin ingest 시작 흐름
+
+### Scope
+
+- `docs/api-spec.md` 기준 점검에서 확인한 프론트 정합성 이슈 중 즉시 반영 가능한 2건만 수정
+- 로그인 역할 선택 링크에 `returnTo` 쿼리 포함: 일반 사용자 `/chat`, 관리자 `/admin`
+- admin 데이터 수집 시작 시 명시적 `POST /api/admin/key/activate` 선행 호출 제거 — 최신 명세대로 `POST /api/admin/ingest`가 key activate를 내부 처리하는 기본 동선 사용
+- 수동/테스트용 Admin Key 활성화 함수와 store 액션은 유지
+- 인증 Bearer 토큰 자동 첨부는 아직 MSW 기반 프론트 단독 개발 단계라 후속 인증 통합 시점으로 보류
+
+### Changed Files
+
+- `src/features/auth/authIntent.ts`: OAuth 시작 URL에 `returnTo` 쿼리 추가
+- `src/stores/adminIngest.ts`: `startIngest()`에서 중복 key activation 선행 호출 제거
+- `src/features/admin/AdminOperationsSection.vue`: 수집 시작 안내 문구를 `/api/admin/ingest` 단일 흐름에 맞춰 조정
+- `src/__tests__/feature12.auth-login-role-selection.test.ts`: 로그인 URL 기대값 갱신
+- `src/__tests__/feature14.admin-operations-board.test.ts`: `/api/admin/ingest` 단일 호출 흐름 기대값 갱신
+
+### Commands
+
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed, 16 files / 145 tests passed
+- `./scripts/verify.sh`: passed, 16 files / 145 tests passed
+
 ## 2026-06-11 - feature16: Admin 피드백 확인 구현 (SCR-820)
 
 ### Scope
