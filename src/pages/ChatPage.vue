@@ -16,6 +16,7 @@
   - 2026-06-01, feature10.1 구현, 대화 케밥 메뉴 표시와 기존 API 액션 연결
   - 2026-06-02, feature10.4 보강, assistant 피드백 모달과 submit API 연결
   - 2026-06-04, feature10.5 구현, ChatPage 책임을 shell 조립 중심으로 분리
+  - 2026-06-12, feature18 구현, Settings 모달 진입 상태 연결
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -44,6 +45,7 @@ import ConversationSearchModal from '@/features/chat/ConversationSearchModal.vue
 import FeedbackModal from '@/features/chat/FeedbackModal.vue';
 import MessageInput from '@/features/chat/MessageInput.vue';
 import ReferencePanel from '@/features/chat/ReferencePanel.vue';
+import SettingsModal from '@/features/settings/SettingsModal.vue';
 import { useToast } from '@/composables/useToast';
 import { BaseFloatingIconButton, BaseTooltip } from '@/shared';
 import { useChatStore } from '@/stores';
@@ -72,6 +74,7 @@ const { showToast } = useToast();
 
 const isSidebarOpen = ref(false);
 const userName = ref('00');
+const userLastLoginAt = ref('');
 const profileImageUrl = ref('');
 const conversations = ref<Conversation[]>([]);
 const editingMessageId = ref('');
@@ -84,6 +87,7 @@ const openConversationMenuId = ref('');
 const feedbackTarget = ref<FeedbackTarget | null>(null);
 const isFeedbackSubmitting = ref(false);
 const isSearchModalOpen = ref(false);
+const isSettingsModalOpen = ref(false);
 
 const routeConversationId = computed(() => {
   const conversationId = route.params.conversationId;
@@ -164,6 +168,14 @@ function openSearchModal() {
 
 function closeSearchModal() {
   isSearchModalOpen.value = false;
+}
+
+function openSettingsModal() {
+  isSettingsModalOpen.value = true;
+}
+
+function closeSettingsModal() {
+  isSettingsModalOpen.value = false;
 }
 
 async function selectSearchResult(conversationId: string) {
@@ -427,10 +439,12 @@ onMounted(async () => {
     ]);
 
     userName.value = currentUser.name;
+    userLastLoginAt.value = currentUser.lastLoginAt;
     profileImageUrl.value = currentUser.profileImageUrl;
     conversations.value = conversationList.conversations;
   } catch {
     userName.value = '00';
+    userLastLoginAt.value = '';
     profileImageUrl.value = '';
     conversations.value = [];
   }
@@ -457,6 +471,7 @@ watch(
         :conversations="conversations"
         :open-conversation-menu-id="openConversationMenuId"
         @close-conversation-menu="closeConversationMenu"
+        @open-settings="openSettingsModal"
         @open-search-modal="openSearchModal"
         @remove-conversation="removeConversation"
         @rename-conversation="renameConversation"
@@ -554,6 +569,12 @@ watch(
         v-if="isSearchModalOpen"
         @close="closeSearchModal"
         @select="selectSearchResult"
+      />
+      <SettingsModal
+        :current-user-last-login-at="userLastLoginAt"
+        :current-user-name="userName"
+        :is-open="isSettingsModalOpen"
+        @close="closeSettingsModal"
       />
     </div>
   </main>

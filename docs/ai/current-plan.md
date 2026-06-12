@@ -273,10 +273,10 @@
 
 # feature18: Settings 모달 구현 (SCR-700~720 - 우선 계정 탭 먼저 구현)
 
-[ ] Settings 중앙 모달 shell 구현
-[ ] 계정 탭 구현
-[ ] ESC / 백드롭 / X 닫기와 포커스 트랩 구현
-[ ] 계정 관리 UI 구현
+[x] Settings 중앙 모달 shell 구현
+[x] 계정 탭 구현
+[x] ESC / 백드롭 / X 닫기와 포커스 트랩 구현
+[x] 계정 관리 UI 구현
 
 # feature19: 출처 패널 그래프 뷰 후속 구현
 

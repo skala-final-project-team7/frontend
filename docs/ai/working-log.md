@@ -3824,3 +3824,73 @@
 - `./scripts/lint.sh`: passed
 - `./scripts/test.sh`: passed, 18 files / 165 tests passed
 - `./scripts/verify.sh`: passed, 18 files / 165 tests passed
+
+## 2026-06-12 - feature18: Settings 모달 구현 (SCR-700~720 - 계정 탭)
+
+### Scope
+
+- 좌하단 `설정 및 도움말` 버튼 클릭 시 중앙 Settings 모달을 표시
+- SCR-710 기준 계정 탭을 기본 활성 탭으로 렌더링
+- 계정 관리 UI에 `Client_id`, 인증 갱신 날짜, 90일 갱신 안내, Confluence 이동 링크, 로그아웃 행 표시
+- ESC, 백드롭, X 버튼 닫기와 모달 내부 포커스 트랩 구현
+- 모달 오픈 중 `document.body` 스크롤 잠금 처리
+- API/DB/인증 흐름 변경 없음
+
+### Changed Files
+
+- `src/features/settings/SettingsModal.vue`: Settings 중앙 모달 shell과 계정 탭 UI 신규 구현
+- `src/features/chat/ChatSidebar.vue`: Settings entry 클릭 이벤트 emit 연결
+- `src/pages/ChatPage.vue`: Settings 모달 open/close 상태와 current user 이름 전달 연결
+- `src/__tests__/feature18.settings-modal.test.ts`: feature18 실패 테스트 작성 후 구현 검증
+- `docs/ai/current-plan.md`: feature18 완료 항목 체크
+- `docs/ai/working-log.md`: 작업 결과 기록
+
+### Commands
+
+- `npm test -- --run src/__tests__/feature18.settings-modal.test.ts`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- 최초 `npm test -- --run src/__tests__/feature18.settings-modal.test.ts`: failed, `SettingsModal.vue` import 미존재로 실패 확인
+- 구현 후 `npm test -- --run src/__tests__/feature18.settings-modal.test.ts`: passed, 1 file / 4 tests passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed, 19 files / 170 tests passed
+- `./scripts/verify.sh`: passed, 19 files / 170 tests passed
+
+## 2026-06-12 - feature18 follow-up: 계정 관리 단일화 및 갱신일 계산 보정
+
+### Scope
+
+- Settings 모달 좌측 섹션에서 일반 설정 / 데이터 관리 항목 제거
+- 계정 관리만 단일 섹션으로 노출
+- 계정 카드의 주황색 `C` 텍스트 아이콘을 Confluence 아이콘 asset으로 교체
+- 인증 갱신 날짜를 `GET /api/users/me`의 `lastLoginAt` 기준 90일 후 날짜로 계산해 표시
+
+### Changed Files
+
+- `src/features/settings/SettingsModal.vue`: 단일 계정 관리 UI, Confluence 아이콘, `lastLoginAt + 90일` 갱신일 계산 적용
+- `src/pages/ChatPage.vue`: current user의 `lastLoginAt`을 Settings 모달로 전달
+- `src/__tests__/feature18.settings-modal.test.ts`: 일반/데이터 탭 제거, Confluence 아이콘, 계산된 갱신일 회귀 테스트 갱신
+- `docs/ai/working-log.md`: 후속 보정 결과 기록
+
+### Commands
+
+- `npm test -- --run src/__tests__/feature18.settings-modal.test.ts`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- 변경 전 `npm test -- --run src/__tests__/feature18.settings-modal.test.ts`: failed, 일반 설정 탭 잔존 및 `currentUserLastLoginAt` prop 미구현 확인
+- 구현 후 `npm test -- --run src/__tests__/feature18.settings-modal.test.ts`: passed, 1 file / 4 tests passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed, 19 files / 170 tests passed
+- `./scripts/verify.sh`: passed, 19 files / 170 tests passed
