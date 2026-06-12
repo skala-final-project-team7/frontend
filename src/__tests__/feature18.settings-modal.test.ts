@@ -112,7 +112,7 @@ describe('feature18 Settings modal', () => {
     expect(getByTestId('settings-account-renewal-note').textContent).toContain(
       '90일마다 인증 갱신되어야 합니다.',
     );
-    expect(getByTestId('settings-logout-row').textContent).toContain('Log out on this device');
+    expect(getByTestId('settings-logout-row').textContent).toContain('이 기기에서 로그아웃 하기');
   });
 
   it('closes by close button, backdrop, and ESC key', async () => {
@@ -148,6 +148,108 @@ describe('feature18 Settings modal', () => {
 
     wrapper.unmount();
     expect(document.body.style.overflow).toBe('');
+  });
+
+  it('renders the help nav item below account management and keeps the help modal closed', () => {
+    mountSettingsModal();
+
+    const navigation = document.body.querySelector('[aria-label="Settings section"]');
+    const navItems = navigation?.querySelectorAll('[data-testid$="-nav-item"]') ?? [];
+
+    expect(navItems[0]?.getAttribute('data-testid')).toBe('settings-account-nav-item');
+    expect(navItems[1]?.getAttribute('data-testid')).toBe('settings-help-nav-item');
+    expect(getByTestId('settings-help-nav-item').textContent).toContain('도움말');
+    expect(getByTestId('settings-account-panel').textContent).toContain('연결된 계정');
+    expect(document.body.querySelector('[data-testid="settings-help-dialog"]')).toBeNull();
+  });
+
+  it('opens a larger help modal above settings with three guide sections side by side', async () => {
+    mountSettingsModal();
+
+    getByTestId('settings-help-nav-item').click();
+    await nextTick();
+
+    const helpDialog = getByTestId('settings-help-dialog');
+
+    expect(helpDialog.getAttribute('role')).toBe('dialog');
+    expect(helpDialog.getAttribute('aria-modal')).toBe('true');
+    expect(getByTestId('settings-dialog').textContent).toContain('연결된 계정');
+    expect(helpDialog.textContent).toContain('도움말');
+
+    const columns = helpDialog.querySelectorAll('[data-testid^="settings-help-card-"]');
+
+    expect(columns).toHaveLength(3);
+    expect(columns[0]?.getAttribute('data-testid')).toBe('settings-help-card-ask');
+    expect(columns[1]?.getAttribute('data-testid')).toBe('settings-help-card-search');
+    expect(columns[2]?.getAttribute('data-testid')).toBe('settings-help-card-verify');
+    expect(getByTestId('settings-help-card-ask').textContent).toContain('01');
+    expect(getByTestId('settings-help-card-ask').textContent).toContain('Ask');
+    expect(getByTestId('settings-help-card-search').textContent).toContain('02');
+    expect(getByTestId('settings-help-card-search').textContent).toContain('고정');
+    expect(getByTestId('settings-help-card-verify').textContent).toContain('03');
+    expect(getByTestId('settings-help-card-verify').textContent).toContain('Verify');
+  });
+
+  it('renders character images and visual mockups in each help section', async () => {
+    mountSettingsModal();
+
+    getByTestId('settings-help-nav-item').click();
+    await nextTick();
+
+    expect(
+      getByTestId('settings-help-card-ask').querySelector('img[src*="lina-ask"]'),
+    ).not.toBeNull();
+    expect(
+      getByTestId('settings-help-card-ask').querySelector('img[src*="chat-input-box"]'),
+    ).not.toBeNull();
+    expect(
+      getByTestId('settings-help-card-search').querySelector('img[src*="lina-search"]'),
+    ).not.toBeNull();
+    expect(
+      getByTestId('settings-help-card-verify').querySelector('img[src*="lina-verify"]'),
+    ).not.toBeNull();
+    expect(getByTestId('settings-help-card-verify').querySelector('svg')).not.toBeNull();
+  });
+
+  it('closes the help modal with close button, backdrop, and ESC while settings stays open', async () => {
+    mountSettingsModal();
+
+    getByTestId('settings-help-nav-item').click();
+    await nextTick();
+    getByTestId('settings-help-close-button').click();
+    await nextTick();
+    expect(document.body.querySelector('[data-testid="settings-help-dialog"]')).toBeNull();
+    expect(getByTestId('settings-dialog').textContent).toContain('연결된 계정');
+
+    getByTestId('settings-help-nav-item').click();
+    await nextTick();
+    getByTestId('settings-help-backdrop').click();
+    await nextTick();
+    expect(document.body.querySelector('[data-testid="settings-help-dialog"]')).toBeNull();
+
+    getByTestId('settings-help-nav-item').click();
+    await nextTick();
+    getByTestId('settings-help-dialog').dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+    );
+    await nextTick();
+    expect(document.body.querySelector('[data-testid="settings-help-dialog"]')).toBeNull();
+    expect(getByTestId('settings-account-panel').textContent).toContain('연결된 계정');
+  });
+
+  it('closes the help modal together when the settings modal is closed', async () => {
+    const wrapper = mountSettingsModal();
+
+    getByTestId('settings-help-nav-item').click();
+    await nextTick();
+    expect(document.body.querySelector('[data-testid="settings-help-dialog"]')).not.toBeNull();
+
+    await wrapper.setProps({ isOpen: false });
+    await wrapper.setProps({ isOpen: true });
+    await nextTick();
+
+    expect(getByTestId('settings-account-panel').textContent).toContain('연결된 계정');
+    expect(document.body.querySelector('[data-testid="settings-help-dialog"]')).toBeNull();
   });
 
   it('opens from the Chat sidebar settings entry', async () => {

@@ -5,6 +5,8 @@
 작성일 : 2026-06-12
 변경사항 내역 (날짜, 변경목적, 변경내용 순)
   - 2026-06-12, feature18 구현, Settings 모달 shell과 계정 탭 추가
+  - 2026-06-12, feature18 구현, 도움말 nav 항목 추가
+  - 2026-06-12, feature18 구현, 도움말 클릭 시 SettingsHelpModal 오버레이 모달 표시로 변경
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -12,9 +14,10 @@
 --------------------------------------------------
 -->
 <script setup lang="ts">
-import { ChevronRight, Info, UserRound, X } from '@lucide/vue';
-import { computed, nextTick, onBeforeUnmount, watch } from 'vue';
+import { ChevronRight, CircleHelp, Info, UserRound, X } from '@lucide/vue';
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 
+import SettingsHelpModal from '@/features/settings/SettingsHelpModal.vue';
 import { confluenceIconImageUrl } from '@/shared/assets';
 
 const props = defineProps<{
@@ -29,6 +32,14 @@ const emit = defineEmits<{
 
 let previousBodyOverflow = '';
 let hasLockedBodyScroll = false;
+
+const isHelpOpen = ref(false);
+
+async function closeHelpModal() {
+  isHelpOpen.value = false;
+  await nextTick();
+  document.querySelector<HTMLElement>('[data-testid="settings-help-nav-item"]')?.focus();
+}
 
 const renewalDateLabel = computed(() => {
   const lastLoginDate = new Date(props.currentUserLastLoginAt);
@@ -130,6 +141,7 @@ watch(
       return;
     }
 
+    isHelpOpen.value = false;
     lockBodyScroll();
     await nextTick();
     document.querySelector<HTMLElement>('[data-testid="settings-close-button"]')?.focus();
@@ -190,11 +202,21 @@ onBeforeUnmount(() => {
           <nav aria-label="Settings section" class="flex flex-col gap-2">
             <div
               data-testid="settings-account-nav-item"
+              aria-current="true"
               class="inline-flex h-10 items-center gap-3 rounded-xl bg-overlay-dark-4 px-5 text-left font-lina text-[16px] text-black"
             >
               <UserRound aria-hidden="true" class="size-5" />
               계정 관리
             </div>
+            <button
+              data-testid="settings-help-nav-item"
+              type="button"
+              class="inline-flex h-10 items-center gap-3 rounded-xl px-5 text-left font-lina text-[16px] text-black transition hover:bg-bg-200 focus-visible:outline-none focus-visible:shadow-focus"
+              @click="isHelpOpen = true"
+            >
+              <CircleHelp aria-hidden="true" class="size-5" />
+              도움말
+            </button>
           </nav>
 
           <section
@@ -247,18 +269,20 @@ onBeforeUnmount(() => {
               data-testid="settings-logout-row"
               class="mt-10 flex items-center justify-between border-t border-overlay-dark-10 pt-7"
             >
-              <p class="font-lina text-[16px] text-black">Log out on this device</p>
+              <p class="font-lina text-[16px] text-black">이 기기에서 로그아웃 하기</p>
               <button
                 data-testid="settings-logout-button"
                 type="button"
                 class="rounded-full border border-overlay-dark-10 px-7 py-3 font-lina text-[16px] text-black transition hover:bg-bg-200 focus-visible:outline-none focus-visible:shadow-focus"
               >
-                Log out
+                로그아웃
               </button>
             </div>
           </section>
         </div>
       </section>
+
+      <SettingsHelpModal :is-open="isHelpOpen" @close="closeHelpModal" />
     </div>
   </Teleport>
 </template>

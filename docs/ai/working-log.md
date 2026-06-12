@@ -3894,3 +3894,43 @@
 - `./scripts/lint.sh`: passed
 - `./scripts/test.sh`: passed, 19 files / 170 tests passed
 - `./scripts/verify.sh`: passed, 19 files / 170 tests passed
+
+## 2026-06-12 - feature18 follow-up: 도움말 모달 추가 (Ask|Search|Verify 사용 가이드)
+
+### Scope
+
+- Settings 모달 좌측 nav의 계정 관리 아래에 도움말 항목 추가
+- 도움말 클릭 시 Settings 모달 위에 더 큰 도움말 오버레이 모달(z-60, max-w 1240px) 표시
+- Ask / Search / Verify 사용 가이드 3개 섹션을 01|02|03 단계 번호와 함께 가로 3단으로 동시 노출
+- 홈 화면보다 도움말 톤으로 작성: Enter/Shift+Enter, 사이드바 검색(2~50자), 대화 고정 기능, 출처 확인 방법 등 실제 사용법 안내
+- 각 섹션에 lina 캐릭터 이미지와 목업 비주얼(질문 입력 박스, 브라우저 채팅 목업, 지식 연결 그래프 SVG) 포함
+- 도움말 모달은 X/백드롭/ESC로 닫히며 Settings 모달은 유지, 자체 포커스 트랩과 닫힘 후 도움말 버튼 포커스 복귀 처리
+- Settings 모달 재오픈 시 도움말 모달 닫힘 상태로 초기화
+- 커밋되지 않은 로그아웃 한글 문구 변경('이 기기에서 로그아웃 하기')에 맞춰 기존 테스트 기대값 보정
+
+### Changed Files
+
+- `src/features/settings/SettingsModal.vue`: 도움말 nav 버튼 추가, 클릭 시 SettingsHelpModal 오픈, 재오픈 시 닫힘 초기화, 닫힘 후 포커스 복귀
+- `src/features/settings/SettingsHelpModal.vue`: 신규 — 대형 도움말 모달, 3단 가이드 섹션(단계 번호+불릿+캐릭터 이미지+목업 비주얼), ESC/백드롭/X 닫기와 포커스 트랩
+- `src/__tests__/feature18.settings-modal.test.ts`: 도움말 nav 렌더링/도움말 모달 오픈과 3단 동시 표시·고정 기능 언급/이미지·SVG 비주얼/닫기 3종과 Settings 유지/재오픈 초기화 테스트 5건 추가, 로그아웃 문구 기대값 한글로 보정
+- `docs/ai/current-plan.md`: feature18 도움말 항목 체크 처리
+- `docs/ai/working-log.md`: 작업 결과 기록
+
+### Commands
+
+- `npx vitest run src/__tests__/feature18.settings-modal.test.ts`
+- `npm test` / `npm run lint` / `npm run typecheck`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- 변경 전 `npx vitest run src/__tests__/feature18.settings-modal.test.ts`: failed, 신규 테스트 실패 확인(TDD) + 기존 로그아웃 문구 테스트가 커밋되지 않은 한글 문구 변경으로 사전 실패 상태였음을 확인
+- 구현 후 `npx vitest run src/__tests__/feature18.settings-modal.test.ts`: passed, 1 file / 9 tests passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed, 19 files / 175 tests passed
+- `./scripts/verify.sh`: passed
+- `npm run typecheck`: failed — feature12/15/16 테스트 파일의 기존 `DOMWrapper.exists` 타입 오류 13건(이번 변경 파일과 무관, 담당 범위 밖이라 미수정, 별도 보정 필요)
