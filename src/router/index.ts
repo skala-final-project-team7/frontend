@@ -11,6 +11,7 @@
  *   - 2026-06-05, feature12 보강, 루트 경로를 Login route로 redirect
  *   - 2026-06-10, feature15 구현, /admin/dashboard route 추가
  *   - 2026-06-11, feature16 구현, /admin/feedback route 추가
+ *   - 2026-06-12, feature17 구현, /admin/sync route 추가
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -65,6 +66,11 @@ const router = createRouter({
     {
       path: '/admin/feedback',
       name: 'admin-feedback',
+      component: AdminEntryPage,
+    },
+    {
+      path: '/admin/sync',
+      name: 'admin-sync',
       component: AdminEntryPage,
     },
   ],

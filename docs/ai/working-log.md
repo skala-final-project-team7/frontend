@@ -3782,3 +3782,45 @@
 - `./scripts/lint.sh`: passed
 - `./scripts/test.sh`: passed, 17 files / 157 tests passed
 - `./scripts/verify.sh`: passed, 17 files / 157 tests passed
+
+## 2026-06-12 - feature17: Admin 동기화 이력 구현 (SCR-830)
+
+### Scope
+
+- `/admin/sync` route를 추가하고 AdminEntryPage에서 route path 기준으로 Admin 섹션을 동기화
+- Admin shell nav에서 동기화 이력을 최상위 탭에서 제거하고 문서 데이터 관리 하위 탭으로 배치
+- 기존 SCR-800 문서 데이터 관리 컨텐츠에 하위 탭 명칭 `운영 대시보드` 소제목 추가
+- `GET /api/admin/sync`의 `syncHistory`를 상태, 업데이트 수, 삭제 수, 소요 시간, 완료 시각 테이블로 표시
+- API enum(`STARTED` / `IN_PROGRESS` / `COMPLETED` / `FAILED`)만 사용하고 화면 라벨과 상태별 배지만 매핑
+- 전체 동기화 이력의 loading, empty, error, retry, pagination 상태 구현
+
+### Changed Files
+
+- `src/features/admin/AdminSyncHistorySection.vue`: SCR-830 동기화 이력 섹션 신규 구현
+- `src/features/admin/AdminShellLayout.vue`: 동기화 이력을 문서 데이터 관리 하위 탭으로 이동
+- `src/features/admin/AdminOperationsSection.vue`: SCR-800 컨텐츠 하위 소제목 `운영 대시보드` 추가
+- `src/pages/AdminEntryPage.vue`: `/admin/sync` route와 active section 동기화, sync 섹션 렌더링 연결
+- `src/router/index.ts`: `/admin/sync` route 추가
+- `src/__tests__/feature17.admin-sync-history.test.ts`: feature17 실패 테스트 작성 후 구현 검증
+- `docs/ai/current-plan.md`: feature17 완료 항목 체크
+- `docs/ai/working-log.md`: 작업 결과 기록
+
+### Commands
+
+- `npm test -- src/__tests__/feature17.admin-sync-history.test.ts`
+- `npm test -- src/__tests__/feature14.admin-operations-board.test.ts src/__tests__/feature14-refactor.tab-pagination.test.ts src/__tests__/feature15.admin-dashboard.test.ts src/__tests__/feature16.admin-feedback.test.ts src/__tests__/feature17.admin-sync-history.test.ts`
+- `npm run typecheck`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- `npm test -- src/__tests__/feature17.admin-sync-history.test.ts`: passed, 1 file / 8 tests passed
+- Admin 회귀 테스트: passed, 5 files / 56 tests passed
+- `npm run typecheck`: failed on pre-existing test typing issues in feature12/15/16 tests that call `get(...).exists()`; feature17 신규 test의 동일 패턴은 `find(...).exists()`로 수정 완료
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed, 18 files / 165 tests passed
+- `./scripts/verify.sh`: passed, 18 files / 165 tests passed

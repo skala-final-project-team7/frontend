@@ -263,13 +263,13 @@
 
 # feature17: Admin 동기화 이력 구현 (SCR-830)
 
-[ ] `frontend/docs/frames/[SCR-830] 관리자 동기화 이력 확인.pdf` 기준으로 전체 동기화 이력 화면을 구현
-[ ] `/admin/sync` route를 추가하고 Admin shell nav에서 이동 가능하게 구성
-[ ] Admin shell nav 구조 재편: 동기화 이력을 최상위 탭이 아닌 문서 데이터 관리 탭의 하위 탭으로 배치 (2026-06-11 결정)
-[ ] 하위 탭 도입에 따라 기존 문서 데이터 관리 탭의 SCR-800 컨텐츠에는 별도 하위 소제목(예: 대시보드)을 부여하고, 명칭은 구현 시 확정
-[ ] `GET /api/admin/sync`의 `syncHistory`를 상태, 업데이트 수, 삭제 수, 소요 시간, 완료 시각 테이블로 표시
-[ ] 실패 상태를 완료 상태와 시각적으로 구분하되 임의 status 값을 만들지 않고 API enum을 따른다
-[ ] pagination, loading, empty, error 상태 테스트 작성
+[x] `frontend/docs/frames/[SCR-830] 관리자 동기화 이력 확인.pdf` 기준으로 전체 동기화 이력 화면을 구현
+[x] `/admin/sync` route를 추가하고 Admin shell nav에서 이동 가능하게 구성
+[x] Admin shell nav 구조 재편: 동기화 이력을 최상위 탭이 아닌 문서 데이터 관리 탭의 하위 탭으로 배치 (2026-06-11 결정)
+[x] 하위 탭 도입에 따라 기존 문서 데이터 관리 탭의 SCR-800 컨텐츠에는 별도 하위 소제목(예: 대시보드)을 부여하고, 명칭은 구현 시 확정
+[x] `GET /api/admin/sync`의 `syncHistory`를 상태, 업데이트 수, 삭제 수, 소요 시간, 완료 시각 테이블로 표시
+[x] 실패 상태를 완료 상태와 시각적으로 구분하되 임의 status 값을 만들지 않고 API enum을 따른다
+[x] pagination, loading, empty, error 상태 테스트 작성
 
 # feature18: Settings 모달 구현 (SCR-700~720)
 

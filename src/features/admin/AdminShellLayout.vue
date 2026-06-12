@@ -8,6 +8,7 @@
 변경사항 내역 (날짜, 변경목적, 변경내용 순)
   - 2026-06-10, feature14-refactor.2, AdminEntryPage에서 shell UI 분리
   - 2026-06-10, feature15 보강, 대시보드 nav 라벨을 사용자 현황으로 변경
+  - 2026-06-12, feature17 구현, 동기화 이력을 문서 데이터 관리 하위 탭으로 이동
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -15,7 +16,7 @@
 --------------------------------------------------
 -->
 <script setup lang="ts">
-import { Database, LayoutDashboard, MessageSquareQuote, RefreshCw } from '@lucide/vue';
+import { Database, LayoutDashboard, MessageSquareQuote } from '@lucide/vue';
 import { linaAdminImageUrl } from '@/shared';
 import type { CurrentUser } from '@/types/api';
 
@@ -40,7 +41,14 @@ const navigationItems: NavigationItem[] = [
   { key: 'operations', label: '문서 데이터 관리', icon: Database },
   { key: 'dashboard', label: '사용자 현황', icon: LayoutDashboard },
   { key: 'feedback', label: '피드백', icon: MessageSquareQuote },
-  { key: 'sync', label: '동기화 이력', icon: RefreshCw },
+];
+
+const documentSubNavigationItems: {
+  key: Extract<SectionKey, 'operations' | 'sync'>;
+  label: string;
+}[] = [
+  { key: 'operations', label: '운영 대시보드' },
+  { key: 'sync', label: '동기화 이력' },
 ];
 </script>
 
@@ -58,27 +66,58 @@ const navigationItems: NavigationItem[] = [
 
       <!-- 내비게이션 -->
       <nav data-testid="admin-nav" class="flex-1 space-y-0.5 px-3 py-5">
-        <button
-          v-for="item in navigationItems"
-          :key="item.key"
-          type="button"
-          class="flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-left text-[0.875rem] transition-colors"
-          :class="
-            activeSection === item.key
-              ? 'bg-primary/8 font-semibold text-primary'
-              : 'font-normal text-overlay-dark-40 hover:bg-bg-200 hover:text-overlay-dark-80'
-          "
-          :aria-current="activeSection === item.key ? 'page' : undefined"
-          @click="emit('section-change', item.key)"
-        >
-          <component
-            :is="item.icon"
-            class="size-4 shrink-0"
-            :class="activeSection === item.key ? 'text-primary' : 'text-overlay-dark-40'"
-            aria-hidden="true"
-          />
-          {{ item.label }}
-        </button>
+        <template v-for="item in navigationItems" :key="item.key">
+          <button
+            type="button"
+            class="flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-left text-[0.875rem] transition-colors"
+            :class="
+              activeSection === item.key || (item.key === 'operations' && activeSection === 'sync')
+                ? 'bg-primary/8 font-semibold text-primary'
+                : 'font-normal text-overlay-dark-40 hover:bg-bg-200 hover:text-overlay-dark-80'
+            "
+            :aria-current="
+              activeSection === item.key || (item.key === 'operations' && activeSection === 'sync')
+                ? 'page'
+                : undefined
+            "
+            @click="emit('section-change', item.key)"
+          >
+            <component
+              :is="item.icon"
+              class="size-4 shrink-0"
+              :class="
+                activeSection === item.key ||
+                (item.key === 'operations' && activeSection === 'sync')
+                  ? 'text-primary'
+                  : 'text-overlay-dark-40'
+              "
+              aria-hidden="true"
+            />
+            {{ item.label }}
+          </button>
+
+          <div
+            v-if="item.key === 'operations'"
+            class="ml-7 mt-1 space-y-1 border-l border-bg-300/70 pl-3"
+          >
+            <button
+              v-for="subItem in documentSubNavigationItems"
+              :key="subItem.key"
+              :data-testid="`admin-document-subtab-${subItem.key}`"
+              type="button"
+              class="block w-full rounded-lg px-3 py-2 text-left text-[0.78rem] transition-colors"
+              :class="
+                activeSection === subItem.key
+                  ? 'bg-bg-200 font-semibold text-overlay-dark-80'
+                  : 'text-overlay-dark-40 hover:bg-bg-200/70 hover:text-overlay-dark-80'
+              "
+              :aria-current="activeSection === subItem.key ? 'page' : undefined"
+              @click="emit('section-change', subItem.key)"
+            >
+              {{ subItem.label }}
+            </button>
+          </div>
+        </template>
       </nav>
 
       <!-- 프로필 -->
