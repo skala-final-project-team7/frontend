@@ -182,7 +182,7 @@ onBeforeUnmount(() => {
           <h2
             id="settings-title"
             data-testid="settings-title"
-            class="font-lina text-[18px] font-bold text-black"
+            class="ml-2 pt-2 font-lina text-[18px] font-bold text-black"
           >
             설정
           </h2>

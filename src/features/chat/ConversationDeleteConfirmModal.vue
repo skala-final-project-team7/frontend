@@ -131,7 +131,7 @@ onBeforeUnmount(() => {
         <h2
           id="conversation-delete-title"
           data-testid="conversation-delete-title"
-          class="font-lina text-[18px]  leading-7 text-black"
+          class="font-lina text-[18px] leading-7 text-black"
         >
           채팅을 삭제하시겠습니까?
         </h2>
@@ -139,7 +139,8 @@ onBeforeUnmount(() => {
           data-testid="conversation-delete-description"
           class="mt-6 font-lina text-body leading-6 text-black"
         >
-          <strong class="font-bold">삭제</strong> 버튼을 클릭할 경우 <strong class="font-bold">{{ conversationTitle }}</strong
+          <strong class="font-bold">삭제</strong> 버튼을 클릭할 경우
+          <strong class="font-bold">{{ conversationTitle }}</strong
           >이(가) 삭제됩니다.
         </p>
         <div class="mt-7 flex justify-end gap-3">
