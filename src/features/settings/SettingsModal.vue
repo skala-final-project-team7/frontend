@@ -184,7 +184,7 @@ onBeforeUnmount(() => {
             data-testid="settings-title"
             class="font-lina text-[18px] font-bold text-black"
           >
-            Settings
+            설정
           </h2>
           <button
             data-testid="settings-close-button"
