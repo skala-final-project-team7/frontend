@@ -149,7 +149,7 @@ function getStatusClasses(status: AdminSyncStatus): string {
       </div>
       <BaseTooltip label="다시 불러오기" placement="left">
         <BaseIconButton
-          ariaLabel="다시 불러오기"
+          v-bind="{ ariaLabel: '다시 불러오기' }"
           variant="secondary"
           class="size-8 rounded-lg"
           :disabled="isLoading"

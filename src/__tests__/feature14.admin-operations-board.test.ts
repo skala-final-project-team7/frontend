@@ -128,9 +128,7 @@ describe('feature14 Admin operations board', () => {
     expect(wrapper.text()).toContain(
       '검색에 사용할 사용자 문서를 수집하고 최신 상태로 유지합니다.',
     );
-    expect(wrapper.text()).toContain(
-      '데이터 불러오기 버튼을 누르면 관리자 권한 확인 후 전체 수집을 시작합니다.',
-    );
+    expect(wrapper.find('[data-testid="admin-ingest-action-hint"]').exists()).toBe(false);
     expect(wrapper.text()).toContain('문서 데이터 관리');
     expect(wrapper.text()).toContain('사용자 현황');
     expect(wrapper.text()).toContain('피드백');
@@ -203,8 +201,8 @@ describe('feature14 Admin operations board', () => {
     await wrapper.get('[data-testid="admin-start-ingest-button"]').trigger('click');
     await flushPromises();
 
-    expect(wrapper.get('[data-testid="admin-ingest-action-hint"]').text()).toContain(
-      '데이터 수집을 시작하고 있습니다.',
+    expect(wrapper.get('[data-testid="admin-start-ingest-button"]').attributes('disabled')).toBe(
+      '',
     );
 
     ingestDeferred.resolve({
@@ -214,9 +212,7 @@ describe('feature14 Admin operations board', () => {
     });
     await flushPromises();
 
-    expect(wrapper.get('[data-testid="admin-ingest-action-hint"]').text()).toContain(
-      '데이터 불러오기를 시작했습니다.',
-    );
+    expect(wrapper.get('[data-testid="admin-ingest-status-pill"]').text()).toContain('수집 준비');
   });
 
   it('changes the ingest CTA to 다시 시도 when the latest ingest job failed', async () => {
