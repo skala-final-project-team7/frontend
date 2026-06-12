@@ -15,8 +15,10 @@
 <script setup lang="ts">
 import { computed, inject, onMounted, ref } from 'vue';
 
+import { RefreshCw } from '@lucide/vue';
+
 import { getAdminSyncHistory } from '@/api';
-import { BaseButton, BaseSpinner, EmptyState, ErrorRetryState } from '@/shared';
+import { BaseIconButton, BaseSpinner, BaseTooltip, EmptyState, ErrorRetryState } from '@/shared';
 import type { AdminSyncHistoryItem, AdminSyncHistoryResponse, AdminSyncStatus } from '@/types/api';
 import type { Ref } from 'vue';
 
@@ -145,9 +147,17 @@ function getStatusClasses(status: AdminSyncStatus): string {
           <span class="text-primary">동기화 이력</span>
         </h2>
       </div>
-      <BaseButton variant="secondary" class="font-normal" @click="loadSyncHistory">
-        새로고침
-      </BaseButton>
+      <BaseTooltip label="다시 불러오기" placement="left">
+        <BaseIconButton
+          ariaLabel="다시 불러오기"
+          variant="secondary"
+          class="size-8 rounded-lg"
+          :disabled="isLoading"
+          @click="loadSyncHistory"
+        >
+          <RefreshCw aria-hidden="true" class="size-3.5" />
+        </BaseIconButton>
+      </BaseTooltip>
     </header>
 
     <EmptyState

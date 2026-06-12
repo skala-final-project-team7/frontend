@@ -522,8 +522,6 @@ function getStatusClasses(s: AdminDisplayStatus): string {
 
     <!-- 데이터 현황 -->
     <section v-if="adminDataOverview" class="mb-6">
-
-
       <div class="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <!-- 마지막 동기화 -->
         <article
