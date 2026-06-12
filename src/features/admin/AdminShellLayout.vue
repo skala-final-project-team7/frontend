@@ -9,6 +9,7 @@
   - 2026-06-10, feature14-refactor.2, AdminEntryPage에서 shell UI 분리
   - 2026-06-10, feature15 보강, 대시보드 nav 라벨을 사용자 현황으로 변경
   - 2026-06-12, feature17 구현, 동기화 이력을 문서 데이터 관리 하위 탭으로 이동
+  - 2026-06-12, Admin 프로필 메뉴, 로그아웃 액션 추가
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -16,7 +17,11 @@
 --------------------------------------------------
 -->
 <script setup lang="ts">
-import { Database, LayoutDashboard, MessageSquareQuote } from '@lucide/vue';
+import { nextTick, onBeforeUnmount, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
+import { Database, LayoutDashboard, LogOut, MessageSquareQuote, MoreVertical } from '@lucide/vue';
+
+import { logout } from '@/api';
 import { linaAdminImageUrl } from '@/shared';
 import type { CurrentUser } from '@/types/api';
 
@@ -37,6 +42,11 @@ const emit = defineEmits<{
   'section-change': [key: SectionKey];
 }>();
 
+const router = useRouter();
+const isProfileMenuOpen = ref(false);
+const profileMenuRoot = ref<HTMLElement | null>(null);
+const profileLogoutButton = ref<HTMLButtonElement | null>(null);
+
 const navigationItems: NavigationItem[] = [
   { key: 'operations', label: '문서 데이터 관리', icon: Database },
   { key: 'dashboard', label: '사용자 현황', icon: LayoutDashboard },
@@ -50,6 +60,44 @@ const documentSubNavigationItems: {
   { key: 'operations', label: '운영 대시보드' },
   { key: 'sync', label: '동기화 이력' },
 ];
+
+watch(isProfileMenuOpen, async (isOpen) => {
+  if (!isOpen) {
+    document.removeEventListener('click', handleProfileOutsideClick);
+    return;
+  }
+
+  await nextTick();
+  profileLogoutButton.value?.focus();
+  document.addEventListener('click', handleProfileOutsideClick);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleProfileOutsideClick);
+});
+
+function toggleProfileMenu() {
+  isProfileMenuOpen.value = !isProfileMenuOpen.value;
+}
+
+function closeProfileMenu() {
+  isProfileMenuOpen.value = false;
+}
+
+function handleProfileOutsideClick(event: MouseEvent) {
+  if (!profileMenuRoot.value?.contains(event.target as Node | null)) {
+    closeProfileMenu();
+  }
+}
+
+async function handleLogout() {
+  closeProfileMenu();
+  try {
+    await logout();
+  } finally {
+    void router.push('/');
+  }
+}
 </script>
 
 <template>
@@ -122,20 +170,60 @@ const documentSubNavigationItems: {
 
       <!-- 프로필 -->
       <div class="border-t border-bg-300/60 px-4 py-4">
-        <div class="flex items-center gap-3 rounded-xl bg-bg-100 px-3 py-2.5">
-          <img
-            :src="currentUser?.profileImageUrl || linaAdminImageUrl"
-            alt=""
-            class="size-8 rounded-lg border border-bg-300/60 object-cover"
-          />
-          <div class="min-w-0">
-            <p
-              data-testid="admin-profile-name"
-              class="truncate text-[0.82rem] font-semibold text-overlay-dark-80"
+        <div
+          ref="profileMenuRoot"
+          class="group relative"
+          @click.stop
+          @pointerdown.stop
+          @keydown.esc.stop.prevent="closeProfileMenu"
+        >
+          <div class="flex items-center gap-3 rounded-xl bg-bg-100 px-3 py-2.5">
+            <img
+              :src="currentUser?.profileImageUrl || linaAdminImageUrl"
+              alt=""
+              class="size-8 rounded-lg border border-bg-300/60 object-cover"
+            />
+            <div class="min-w-0 flex-1">
+              <p
+                data-testid="admin-profile-name"
+                class="truncate text-[0.82rem] font-semibold text-overlay-dark-80"
+              >
+                {{ currentUser?.name }}
+              </p>
+              <p class="truncate text-[0.7rem] text-overlay-dark-40">Admin Mode</p>
+            </div>
+            <button
+              data-testid="admin-profile-menu-trigger"
+              type="button"
+              aria-label="관리자 프로필 메뉴 열기"
+              aria-haspopup="menu"
+              :aria-expanded="isProfileMenuOpen ? 'true' : 'false'"
+              class="inline-flex size-7 shrink-0 items-center justify-center rounded-lg text-overlay-dark-40 opacity-0 transition hover:bg-bg-200 hover:text-overlay-dark-80 focus-visible:opacity-100 focus-visible:outline-none focus-visible:shadow-focus group-hover:opacity-100"
+              :class="isProfileMenuOpen ? 'bg-bg-200 text-overlay-dark-80 opacity-100' : ''"
+              @click="toggleProfileMenu"
             >
-              {{ currentUser?.name }}
-            </p>
-            <p class="truncate text-[0.7rem] text-overlay-dark-40">Admin Mode</p>
+              <MoreVertical aria-hidden="true" class="size-4" />
+            </button>
+          </div>
+
+          <div
+            v-if="isProfileMenuOpen"
+            data-testid="admin-profile-menu"
+            role="menu"
+            aria-label="관리자 프로필 메뉴"
+            class="absolute bottom-[calc(100%+0.4rem)] right-0 z-40 w-36 overflow-hidden rounded-card border border-bg-300 bg-primary-white py-1 shadow-floating"
+          >
+            <button
+              ref="profileLogoutButton"
+              data-testid="admin-profile-logout"
+              type="button"
+              role="menuitem"
+              class="flex w-full items-center gap-2 px-3 py-2 text-left font-lina text-small text-status-error transition hover:bg-bg-100 focus-visible:bg-bg-100 focus-visible:outline-none"
+              @click="handleLogout"
+            >
+              <LogOut aria-hidden="true" class="size-4" />
+              <span>로그아웃</span>
+            </button>
           </div>
         </div>
       </div>

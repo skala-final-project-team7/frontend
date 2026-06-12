@@ -11,6 +11,7 @@ import {
   getAdminIngestStatus,
   getAdminSyncHistory,
   getCurrentUser,
+  logout,
   startAdminIngestJob,
 } from '@/api';
 import type { AdminFeedbackResponse } from '@/types/api';
@@ -24,11 +25,13 @@ vi.mock('@/api', () => ({
   getAdminSyncHistory: vi.fn(),
   getAdminUsers: vi.fn(),
   getCurrentUser: vi.fn(),
+  logout: vi.fn(),
   startAdminIngestJob: vi.fn(),
 }));
 
 vi.mocked(activateAdminKey);
 vi.mocked(getAdminIngestStatus);
+vi.mocked(logout);
 vi.mocked(startAdminIngestJob);
 
 const mockedGetCurrentUser = vi.mocked(getCurrentUser);

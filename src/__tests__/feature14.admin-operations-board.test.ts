@@ -10,6 +10,7 @@ import {
   getAdminIngestStatus,
   getAdminSyncHistory,
   getCurrentUser,
+  logout,
   startAdminIngestJob,
 } from '@/api';
 
@@ -20,6 +21,7 @@ vi.mock('@/api', () => ({
   getAdminIngestStatus: vi.fn(),
   getAdminSyncHistory: vi.fn(),
   startAdminIngestJob: vi.fn(),
+  logout: vi.fn(),
 }));
 
 const mockedActivateAdminKey = vi.mocked(activateAdminKey);
@@ -28,6 +30,7 @@ const mockedGetAdminDataOverview = vi.mocked(getAdminDataOverview);
 const mockedGetAdminIngestStatus = vi.mocked(getAdminIngestStatus);
 const mockedGetAdminSyncHistory = vi.mocked(getAdminSyncHistory);
 const mockedStartAdminIngestJob = vi.mocked(startAdminIngestJob);
+const mockedLogout = vi.mocked(logout);
 
 function createDeferredPromise<T>() {
   let resolvePromise: (value: T) => void;
@@ -49,6 +52,7 @@ describe('feature14 Admin operations board', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useRealTimers();
+    mockedLogout.mockResolvedValue(null);
   });
 
   function mockAdminBoardBase() {
@@ -176,6 +180,29 @@ describe('feature14 Admin operations board', () => {
     expect(mockedActivateAdminKey).not.toHaveBeenCalled();
     expect(mockedStartAdminIngestJob).toHaveBeenCalledTimes(1);
     expect(mockedStartAdminIngestJob).toHaveBeenCalledWith({ mode: 'full' });
+  });
+
+  it('opens the profile menu and logs out to the home route', async () => {
+    mockAdminBoardBase();
+    mockedLogout.mockResolvedValue(null);
+
+    const wrapper = mount(AdminEntryPage, {
+      global: {
+        plugins: [createPinia(), router],
+      },
+    });
+
+    await flushPromises();
+
+    await wrapper.get('[data-testid="admin-profile-menu-trigger"]').trigger('click');
+
+    expect(wrapper.get('[data-testid="admin-profile-menu"]').text()).toContain('로그아웃');
+
+    await wrapper.get('[data-testid="admin-profile-logout"]').trigger('click');
+    await flushPromises();
+
+    expect(mockedLogout).toHaveBeenCalledTimes(1);
+    expect(router.currentRoute.value.path).toBe('/');
   });
 
   it('shows action hints while ingest is in progress then on completion', async () => {
