@@ -271,13 +271,12 @@
 [x] 실패 상태를 완료 상태와 시각적으로 구분하되 임의 status 값을 만들지 않고 API enum을 따른다
 [x] pagination, loading, empty, error 상태 테스트 작성
 
-# feature18: Settings 모달 구현 (SCR-700~720)
+# feature18: Settings 모달 구현 (SCR-700~720 - 우선 계정 탭 먼저 구현)
 
 [ ] Settings 중앙 모달 shell 구현
-[ ] 일반 / 계정 / 데이터 탭 구현
+[ ] 계정 탭 구현
 [ ] ESC / 백드롭 / X 닫기와 포커스 트랩 구현
-[ ] 일반 설정의 히스토리 관리 UI 구현
-[ ] 계정 관리와 데이터 관리 UI 구현
+[ ] 계정 관리 UI 구현
 
 # feature19: 출처 패널 그래프 뷰 후속 구현
 
