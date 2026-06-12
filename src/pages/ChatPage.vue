@@ -430,7 +430,27 @@ function closeReferencePanel() {
   referenceSources.value = [];
 }
 
-function openFeedbackModal(message: Message, rating: FeedbackRating) {
+async function openFeedbackModal(message: Message, rating: FeedbackRating) {
+  if (rating === 'LIKE') {
+    if (isFeedbackSubmitting.value) {
+      return;
+    }
+
+    isFeedbackSubmitting.value = true;
+
+    try {
+      await submitMessageFeedback(message.messageId, {
+        rating: 'LIKE',
+      });
+    } catch {
+      showToast('피드백 제출에 실패했습니다', { variant: 'error' });
+    } finally {
+      isFeedbackSubmitting.value = false;
+    }
+
+    return;
+  }
+
   feedbackTarget.value = {
     messageId: message.messageId,
     rating,

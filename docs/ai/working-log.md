@@ -4016,3 +4016,70 @@
 
 - `./scripts/test.sh`: passed, 19 files / 178 tests passed / lint·format passed
 - Playwright 검증: 1600×900·1280×760 모두 스크롤 0px, ASK LINA 상단 정렬 복원, 대화 라우트에서 floating 버튼 미표시 유지
+
+## 2026-06-12 - 채팅 삭제 확인 모달, 설정 모달 위치 보정, BFF 연동 주의 문서, 좋아요 피드백 즉시 전송
+
+### Scope
+
+- 채팅 케밥 메뉴의 삭제 액션에서 브라우저 기본 `window.confirm()` 제거
+- 앱 내부 중앙 삭제 확인 모달 추가
+  - 문구: `채팅을 삭제하시겠습니까?`
+  - 보조 메모리 안내 문구는 사용자 요청에 따라 제외
+  - 확인 시에만 기존 `DELETE /api/conversations/{conversationId}` 호출
+  - 취소/ESC/backdrop 클릭 시 삭제 API 미호출
+- 삭제 확인 모달 크기·타이포 보정
+  - 최초 구현 후 화면 대비 과하게 커 보여 `max-width`, 제목/본문/버튼 타이포, 버튼 높이, 여백을 축소
+  - 최종 기준: `max-w-[480px]`, 제목 18px, 본문 `text-body`, 버튼 `text-body`/`min-h-10`
+- 대화 메뉴 API 연결 상태 확인
+  - 고정/이름 변경은 `PATCH /api/conversations/{conversationId}`
+  - 삭제는 `DELETE /api/conversations/{conversationId}`
+  - mock 전용이 아니라 실제 BFF 계약에 맞게 API 함수로 연결되어 있음을 확인
+- API spec/BFF 연동 리스크 검토
+  - 대화 수정/삭제 계약은 현재 FE 구현과 spec이 일치
+  - 실제 인증 활성화 시 `Authorization: Bearer {accessToken}` 주입 및 token 저장/refresh 흐름이 선행 필요
+  - SSE `done.messageId`가 피드백 기능에 올바르게 반영되는지 BFF 통합 시 확인 필요
+- BFF 연동 주의사항 문서 작성
+  - `frontend/docs/deploy-bff-integration-notes.md`
+  - 대화 메뉴 API 계약, 인증 헤더, token 저장/refresh, PATCH 검증, soft delete 목록 제외, SSE messageId 확인 항목 정리
+- Settings 모달 헤더 타이틀 위치 미세 보정
+  - `설정` 텍스트에 `ml-2 pt-1` 적용해 약간 오른쪽/아래로 이동
+- assistant 좋아요 피드백 UX 변경
+  - thumbs up 클릭 시 피드백 코멘트 모달을 열지 않고 즉시 `POST /api/messages/{messageId}/feedback`
+  - payload는 `{ rating: "LIKE" }`만 전송
+  - thumbs down은 기존처럼 사유/comment 모달 유지
+
+### Changed Files
+
+- `src/features/chat/ConversationDeleteConfirmModal.vue`: 삭제 확인 중앙 모달 신규 추가 및 크기/타이포 보정
+- `src/pages/ChatPage.vue`: 삭제 확인 모달 상태/confirm 흐름 연결, 좋아요 피드백 즉시 POST 분기 추가
+- `src/__tests__/feature10.1.conversation-menu.test.ts`: 삭제 확인 모달 표시, confirm 전 DELETE 미호출, 취소 시 DELETE 미호출 테스트 추가
+- `src/__tests__/feature9.chat-conversation.test.ts`: thumbs up 클릭 시 모달 없이 `{ rating: "LIKE" }` POST 검증으로 테스트 갱신
+- `src/__tests__/feature18.settings-modal.test.ts`: Settings 타이틀 기대값을 실제 한국어 UI(`설정`)와 정합화
+- `src/features/settings/SettingsModal.vue`: 설정 타이틀 위치 미세 보정
+- `frontend/docs/deploy-bff-integration-notes.md`: 배포 시 BFF 연동 주의사항 신규 작성
+
+### Commands
+
+- `npm test -- src/__tests__/feature10.1.conversation-menu.test.ts`
+- `npm test -- src/__tests__/feature18.settings-modal.test.ts`
+- `npm test -- src/__tests__/feature9.chat-conversation.test.ts`
+- `npm test -- src/__tests__/feature10.1.conversation-menu.test.ts src/__tests__/feature18.settings-modal.test.ts`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- `feature10.1.conversation-menu.test.ts`: passed, 6 tests
+- `feature18.settings-modal.test.ts`: passed, 12 tests
+- `feature9.chat-conversation.test.ts`: passed, 25 tests
+- `./scripts/test.sh`: passed, 19 files / 179 tests passed
+- `./scripts/verify.sh`: passed
+- `./scripts/format.sh` / `./scripts/lint.sh`: passed
+
+### Notes
+
+- 삭제 모달 추가 전 기존 `window.confirm()`은 브라우저 기본 UI라 앱 디자인과 맞지 않았음
+- Settings 모달 테스트가 실제 UI는 `설정`, 테스트 기대값은 `Settings`로 어긋나 있어 실제 UI 기준으로 정정
+- BFF 통합 시 가장 큰 남은 리스크는 대화 메뉴 API가 아니라 인증 Bearer 헤더/세션 token 저장·refresh 흐름임

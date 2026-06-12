@@ -378,34 +378,24 @@ describe('feature9 SCR-410, SCR-420, SCR-600 Chat conversation screen', () => {
     expect(wrapper.find('[data-testid="feedback-modal"]').exists()).toBe(false);
   });
 
-  it('enables feedback submit when only the optional comment is filled', async () => {
+  it('submits thumbs up feedback immediately without opening the feedback modal', async () => {
     const fetchMock = installFeature9FetchMock();
     const wrapper = mountChatPage();
     await flushAsyncUpdates();
 
     await wrapper.get('[data-testid="assistant-like-button"]').trigger('click');
-    await wrapper
-      .get('[data-testid="feedback-comment-input"]')
-      .setValue('답변이 짧고 바로 적용할 수 있었어요.');
-
-    expect(wrapper.get('[data-testid="feedback-submit-button"]').attributes('disabled')).toBe(
-      undefined,
-    );
-
-    await wrapper.get('[data-testid="feedback-submit-button"]').trigger('click');
     await flushAsyncUpdates();
 
+    expect(wrapper.find('[data-testid="feedback-modal"]').exists()).toBe(false);
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/messages/msg-mock-assistant-001/feedback',
       expect.objectContaining({
         method: 'POST',
         body: JSON.stringify({
           rating: 'LIKE',
-          comment: '답변이 짧고 바로 적용할 수 있었어요.',
         }),
       }),
     );
-    expect(wrapper.find('[data-testid="feedback-modal"]').exists()).toBe(false);
   });
 
   it('opens conversation search modal and blocks one-character queries before API call', async () => {
