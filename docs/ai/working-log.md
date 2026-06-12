@@ -3824,3 +3824,195 @@
 - `./scripts/lint.sh`: passed
 - `./scripts/test.sh`: passed, 18 files / 165 tests passed
 - `./scripts/verify.sh`: passed, 18 files / 165 tests passed
+
+## 2026-06-12 - feature18: Settings 모달 구현 (SCR-700~720 - 계정 탭)
+
+### Scope
+
+- 좌하단 `설정 및 도움말` 버튼 클릭 시 중앙 Settings 모달을 표시
+- SCR-710 기준 계정 탭을 기본 활성 탭으로 렌더링
+- 계정 관리 UI에 `Client_id`, 인증 갱신 날짜, 90일 갱신 안내, Confluence 이동 링크, 로그아웃 행 표시
+- ESC, 백드롭, X 버튼 닫기와 모달 내부 포커스 트랩 구현
+- 모달 오픈 중 `document.body` 스크롤 잠금 처리
+- API/DB/인증 흐름 변경 없음
+
+### Changed Files
+
+- `src/features/settings/SettingsModal.vue`: Settings 중앙 모달 shell과 계정 탭 UI 신규 구현
+- `src/features/chat/ChatSidebar.vue`: Settings entry 클릭 이벤트 emit 연결
+- `src/pages/ChatPage.vue`: Settings 모달 open/close 상태와 current user 이름 전달 연결
+- `src/__tests__/feature18.settings-modal.test.ts`: feature18 실패 테스트 작성 후 구현 검증
+- `docs/ai/current-plan.md`: feature18 완료 항목 체크
+- `docs/ai/working-log.md`: 작업 결과 기록
+
+### Commands
+
+- `npm test -- --run src/__tests__/feature18.settings-modal.test.ts`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- 최초 `npm test -- --run src/__tests__/feature18.settings-modal.test.ts`: failed, `SettingsModal.vue` import 미존재로 실패 확인
+- 구현 후 `npm test -- --run src/__tests__/feature18.settings-modal.test.ts`: passed, 1 file / 4 tests passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed, 19 files / 170 tests passed
+- `./scripts/verify.sh`: passed, 19 files / 170 tests passed
+
+## 2026-06-12 - feature18 follow-up: 계정 관리 단일화 및 갱신일 계산 보정
+
+### Scope
+
+- Settings 모달 좌측 섹션에서 일반 설정 / 데이터 관리 항목 제거
+- 계정 관리만 단일 섹션으로 노출
+- 계정 카드의 주황색 `C` 텍스트 아이콘을 Confluence 아이콘 asset으로 교체
+- 인증 갱신 날짜를 `GET /api/users/me`의 `lastLoginAt` 기준 90일 후 날짜로 계산해 표시
+
+### Changed Files
+
+- `src/features/settings/SettingsModal.vue`: 단일 계정 관리 UI, Confluence 아이콘, `lastLoginAt + 90일` 갱신일 계산 적용
+- `src/pages/ChatPage.vue`: current user의 `lastLoginAt`을 Settings 모달로 전달
+- `src/__tests__/feature18.settings-modal.test.ts`: 일반/데이터 탭 제거, Confluence 아이콘, 계산된 갱신일 회귀 테스트 갱신
+- `docs/ai/working-log.md`: 후속 보정 결과 기록
+
+### Commands
+
+- `npm test -- --run src/__tests__/feature18.settings-modal.test.ts`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- 변경 전 `npm test -- --run src/__tests__/feature18.settings-modal.test.ts`: failed, 일반 설정 탭 잔존 및 `currentUserLastLoginAt` prop 미구현 확인
+- 구현 후 `npm test -- --run src/__tests__/feature18.settings-modal.test.ts`: passed, 1 file / 4 tests passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed, 19 files / 170 tests passed
+- `./scripts/verify.sh`: passed, 19 files / 170 tests passed
+
+## 2026-06-12 - feature18 follow-up: 도움말 모달 추가 (Ask|Search|Verify 사용 가이드)
+
+### Scope
+
+- Settings 모달 좌측 nav의 계정 관리 아래에 도움말 항목 추가
+- 도움말 클릭 시 Settings 모달 위에 더 큰 도움말 오버레이 모달(z-60, max-w 1240px) 표시
+- Ask / Search / Verify 사용 가이드 3개 섹션을 01|02|03 단계 번호와 함께 가로 3단으로 동시 노출
+- 홈 화면보다 도움말 톤으로 작성: Enter/Shift+Enter, 사이드바 검색(2~50자), 대화 고정 기능, 출처 확인 방법 등 실제 사용법 안내
+- 각 섹션에 lina 캐릭터 이미지와 목업 비주얼(질문 입력 박스, 브라우저 채팅 목업, 지식 연결 그래프 SVG) 포함
+- 도움말 모달은 X/백드롭/ESC로 닫히며 Settings 모달은 유지, 자체 포커스 트랩과 닫힘 후 도움말 버튼 포커스 복귀 처리
+- Settings 모달 재오픈 시 도움말 모달 닫힘 상태로 초기화
+- 커밋되지 않은 로그아웃 한글 문구 변경('이 기기에서 로그아웃 하기')에 맞춰 기존 테스트 기대값 보정
+
+### Changed Files
+
+- `src/features/settings/SettingsModal.vue`: 도움말 nav 버튼 추가, 클릭 시 SettingsHelpModal 오픈, 재오픈 시 닫힘 초기화, 닫힘 후 포커스 복귀
+- `src/features/settings/SettingsHelpModal.vue`: 신규 — 대형 도움말 모달, 3단 가이드 섹션(단계 번호+불릿+캐릭터 이미지+목업 비주얼), ESC/백드롭/X 닫기와 포커스 트랩
+- `src/__tests__/feature18.settings-modal.test.ts`: 도움말 nav 렌더링/도움말 모달 오픈과 3단 동시 표시·고정 기능 언급/이미지·SVG 비주얼/닫기 3종과 Settings 유지/재오픈 초기화 테스트 5건 추가, 로그아웃 문구 기대값 한글로 보정
+- `docs/ai/current-plan.md`: feature18 도움말 항목 체크 처리
+- `docs/ai/working-log.md`: 작업 결과 기록
+
+### Commands
+
+- `npx vitest run src/__tests__/feature18.settings-modal.test.ts`
+- `npm test` / `npm run lint` / `npm run typecheck`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- 변경 전 `npx vitest run src/__tests__/feature18.settings-modal.test.ts`: failed, 신규 테스트 실패 확인(TDD) + 기존 로그아웃 문구 테스트가 커밋되지 않은 한글 문구 변경으로 사전 실패 상태였음을 확인
+- 구현 후 `npx vitest run src/__tests__/feature18.settings-modal.test.ts`: passed, 1 file / 9 tests passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed, 19 files / 175 tests passed
+- `./scripts/verify.sh`: passed
+- `npm run typecheck`: failed — feature12/15/16 테스트 파일의 기존 `DOMWrapper.exists` 타입 오류 13건(이번 변경 파일과 무관, 담당 범위 밖이라 미수정, 별도 보정 필요)
+
+## 2026-06-12 - feature18 follow-up: Settings 타이포 축소, 로그아웃 버튼 강조, 도움말/계정 진입 연결
+
+### Scope
+
+- Settings 모달 타이포 한 단계 축소: 타이틀 22→18px, nav/본문 16→14px, 보조 텍스트 13→12px (도움말 모달 헤더 동일 적용)
+- 로그아웃 버튼을 진한 색으로 변경: 테두리형 → 다크 배경(bg-overlay-dark-80) + 흰 글자(text-primary-white)
+- Chat main 우하단의 기존 floating ? 도움말 버튼(클릭 동작 없음)을 도움말 모달(SettingsHelpModal)과 연결
+- Chat 헤더 계정 이미지: hover 툴팁을 '계정 관리로 이동'으로 변경하고 클릭 시 Settings 모달(계정 관리) 오픈
+
+### Changed Files
+
+- `src/features/settings/SettingsModal.vue`: 타이포 축소, 로그아웃 버튼 다크 스타일
+- `src/features/settings/SettingsHelpModal.vue`: 헤더 타이포 축소
+- `src/features/chat/ChatHeader.vue`: 프로필 버튼 openSettings emit 추가(additive), 툴팁/aria-label '계정 관리로 이동'으로 변경
+- `src/pages/ChatPage.vue`: floating-help-button 클릭 → SettingsHelpModal 오픈, ChatHeader open-settings → Settings 모달 오픈 배선
+- `src/__tests__/feature18.settings-modal.test.ts`: 타이포/로그아웃 버튼 스타일, 프로필 진입+툴팁, floating 도움말 버튼 진입 테스트 3건 추가
+- `src/__tests__/feature8.chat-main.test.ts`: 프로필 툴팁 라벨 기대값을 의도된 변경('계정 관리로 이동')에 맞게 갱신 2곳
+- `docs/ai/current-plan.md`: feature18 항목 체크 처리
+- `docs/ai/working-log.md`: 작업 결과 기록
+
+### Commands
+
+- `npx vitest run src/__tests__/feature18.settings-modal.test.ts`
+- `./scripts/format.sh` / `./scripts/lint.sh` / `./scripts/test.sh` / `./scripts/verify.sh`
+- `npm run typecheck`
+
+### Results
+
+- 변경 전 신규 테스트 3건 실패 확인(TDD) 후 구현
+- 도중 ChatHeader에 도움말 버튼을 추가했다가, chat main에 이미 존재하던 floating ? 버튼(BaseFloatingIconButton)이 동일 역할임을 확인하고 중복 제거 후 기존 버튼에 연결
+- `./scripts/test.sh`: passed, 19 files / 178 tests passed
+- `./scripts/format.sh` / `./scripts/lint.sh` / `./scripts/verify.sh`: passed
+- `npm run typecheck`: failed — feature12/15/16 테스트 파일의 기존 `DOMWrapper.exists` 타입 오류 13건(이번 변경과 무관, 기존 이슈)
+
+## 2026-06-12 - feature18 follow-up: floating 도움말 버튼 가시성/노출 조건 보정 및 새 대화 스크롤 제거
+
+### Scope
+
+- floating ? 도움말 버튼이 화면에 보이지 않던 문제 수정: wrapper가 `absolute`(z-index 없음)여서 `fixed z-20` 입력 영역에 가려짐 → `fixed bottom-10 right-6 z-30`으로 변경
+- 도움말 버튼을 새 대화 화면에서만 노출하고 대화 화면에서는 숨김(`v-if="!hasActiveConversation"`)
+- 새 대화 화면 스크롤 문제 정의와 해결: scroll-region의 상시 `pb-[220px]`(고정 입력창 자리 확보) 때문에 최소 문서 높이가 872px이 되어 그보다 작은 창에서 스크롤 발생 → 빈 화면에서는 `pb-[220px]` 대신 `h-[calc(100vh-76px)]`로 viewport에 맞춰 ChatEmptyState가 내부 중앙 정렬되도록 변경(대화 화면은 기존 pb 유지)
+- Playwright로 실제 브라우저 검증: 760px/900px viewport에서 스크롤 없음, 버튼 표시·클릭 시 도움말 모달 오픈, 대화 라우트에서 버튼 미표시 확인
+
+### Changed Files
+
+- `src/pages/ChatPage.vue`: floating wrapper fixed/z-30/bottom-10 + 빈 화면 전용 노출, scroll-region 상태별 클래스 분기
+- `src/__tests__/feature8.chat-main.test.ts`: wrapper 클래스(fixed/bottom-10/z-30), 빈 화면 scroll-region 클래스 회귀 테스트 갱신
+- `src/__tests__/feature9.chat-conversation.test.ts`: 대화 화면에서 floating wrapper 미표시 회귀 테스트 추가
+- `docs/ai/current-plan.md`, `docs/ai/working-log.md`: 기록
+
+### Commands
+
+- `npx vitest run` (feature8/9/18)
+- `./scripts/format.sh` / `./scripts/lint.sh` / `./scripts/test.sh` / `./scripts/verify.sh`
+- `VITE_USE_MOCK=true npm run dev` + Playwright 스크립트(/tmp/lina-verify)로 브라우저 검증
+
+### Results
+
+- `./scripts/test.sh`: passed, 19 files / 178 tests passed
+- format/lint/verify: passed
+- 브라우저 검증: 760px viewport에서 docScrollHeight 760 == innerHeight 760(스크롤 없음), 버튼 클릭 → 도움말 모달 정상 오픈, `/chat/conv-mock-001`에서 floating wrapper 0개 확인
+
+## 2026-06-12 - feature18 follow-up 정정: 새 대화 화면 상단 정렬 복원
+
+### Scope
+
+- 직전 스크롤 제거에서 scroll-region을 `flex h-[calc(100vh-76px)] flex-col`로 바꾼 결과, ChatEmptyState(`flex-1`)가 화면 전체 높이로 늘어나 `justify-center`로 환영 문구·카드가 중앙으로 내려가고 `absolute top-12`인 ASK LINA와의 간격이 비정상적으로 벌어지는 회귀 발생
+- 빈 화면 scroll-region을 `h-[calc(100vh-76px)] overflow-y-hidden`(block)으로 변경해 flex 스트레치를 제거 — 원래의 상단 정렬 레이아웃을 복원하면서 스크롤 없음 유지
+- 환영 문구 간격은 검토(mt-36, mt-[100px]) 후 사용자 결정으로 기존 `mt-20` 유지. 참고: `mt-25`는 Tailwind 기본 스케일과 프로젝트 spacing 설정에 없는 값이라 클래스가 생성되지 않아 마진 0으로 렌더링됨
+- ChatEmptyState 주석의 잘못된 변경 이력(mt-36) 한 줄 제거 — 코드 변경 없음
+
+### Changed Files
+
+- `src/pages/ChatPage.vue`: 빈 화면 scroll-region 클래스 `flex ... flex-col` → `overflow-y-hidden` (직전 커밋에 포함)
+- `src/__tests__/feature8.chat-main.test.ts`: 빈 화면 scroll-region이 flex가 아니고 overflow-y-hidden인지 회귀 검증 (직전 커밋에 포함)
+- `src/features/chat/ChatEmptyState.vue`: 코드와 불일치하는 주석 이력 제거
+
+### Results
+
+- `./scripts/test.sh`: passed, 19 files / 178 tests passed / lint·format passed
+- Playwright 검증: 1600×900·1280×760 모두 스크롤 0px, ASK LINA 상단 정렬 복원, 대화 라우트에서 floating 버튼 미표시 유지

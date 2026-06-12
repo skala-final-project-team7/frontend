@@ -38,6 +38,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   closeConversationMenu: [];
+  openSettings: [];
   openSearchModal: [];
   removeConversation: [conversation: Conversation];
   renameConversation: [conversation: Conversation];
@@ -85,6 +86,10 @@ function startNewChat() {
 
 function openSearchModal() {
   emit('openSearchModal');
+}
+
+function openSettings() {
+  emit('openSettings');
 }
 
 function selectConversation(conversationId: string) {
@@ -530,6 +535,7 @@ onBeforeUnmount(() => {
             isOpen ? 'w-[calc(100%-2rem)] justify-start px-1 py-1.5' : 'size-8 justify-center'
           "
           aria-label="설정 및 도움말"
+          @click="openSettings"
         >
           <Settings data-testid="settings-entry-icon" aria-hidden="true" class="size-4" />
           <span

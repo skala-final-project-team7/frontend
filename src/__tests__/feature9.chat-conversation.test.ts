@@ -934,6 +934,7 @@ describe('feature9 SCR-410, SCR-420, SCR-600 Chat conversation screen', () => {
     expect(wrapper.get('[data-testid="chat-input-region"]').classes()).toEqual(
       expect.arrayContaining(['fixed', 'bottom-0', 'right-0', 'shrink-0']),
     );
+    expect(wrapper.find('[data-testid="floating-help-wrapper"]').exists()).toBe(false);
   });
 
   it('hides user message editing until backend version history contract is defined', async () => {
