@@ -3713,3 +3713,40 @@
 - `./scripts/lint.sh`: passed
 - `./scripts/test.sh`: passed, 17 files / 157 tests passed
 - `./scripts/verify.sh`: passed, 17 files / 157 tests passed
+
+## 2026-06-12 - feature16 follow-up: 피드백 상단 블럭 리디자인 (반원 게이지 + 라운드 그룹 바)
+
+### Scope
+
+- 차트 축 라벨 글자 크기를 8 → 6.5로 줄이고 그리드 점선을 `2 7` → `1.5 5`, 두께 0.65 → 0.55로 잘게 조정
+- 디자인 컨셉 비교용 프로토타입(`docs/ai/feedback-block-concepts.html`) 작성 — A(라인+게이지)/B(그룹 바)/C(미러 바) 3안 제안
+- 긍정/부정 비율 카드를 도넛에서 컨셉 C 기반 반원 게이지(브랜드 오렌지 그라데이션 arc + 중앙 % 숫자)로 전환
+- 피드백 추이를 스택 바에서 컨셉 B 기반 긍정/부정 라운드 그룹 바로 전환 — 긍정은 오렌지 그라데이션, 부정은 슬레이트(#8d99ae)
+- 의미색(success/error) 조합을 버리고 브랜드 오렌지=긍정 / 슬레이트=부정으로 색상 체계 통일 (범례·툴팁 포함)
+- 비율 칩을 텍스트 라벨 대신 엄지 아이콘(20px) + 건수 표기로 변경, sr-only로 긍정/부정 라벨 유지
+- 칩 줄바꿈 문제 수정 후 공간 배분 개선 — 게이지 190×110 → 230×133 확대, 중앙 % 글자 2rem로 확대
+- 칩의 (87%)/(13%) 표기는 게이지 중앙 %와 중복이라 제거하고 건수 글자를 0.9rem로 복원
+- 추이 바 폭 상한 9 → 13, 간격 상한 4 → 5로 올려 넓은 화면에서 바가 점처럼 보이는 문제 보정
+- 바 폭/간격은 슬롯 너비 기준 자동 보정이라 30일치 데이터에서도 그룹이 슬롯 안에 들어감
+- 값이 0인 날은 바를 그리지 않아 둥근 캡이 작은 바처럼 보이는 문제 방지
+
+### Changed Files
+
+- `src/features/admin/AdminFeedbackSection.vue`: 반원 게이지 전환, 라운드 그룹 바 전환, 오렌지/슬레이트 색상 통일, 비율 칩 아이콘화 및 공간 배분 개선
+- `src/__tests__/feature16.admin-feedback.test.ts`: 게이지 arc/그라데이션, 그룹 바 fill, 축 라벨 글자 크기, 칩 퍼센트 중복 제거 단언 갱신
+- `docs/ai/feedback-block-concepts.html`: 디자인 컨셉 3안 비교 프로토타입 신규 작성
+- `docs/ai/working-log.md`: EOF 기준 작업 기록 추가
+
+### Commands
+
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed, 17 files / 157 tests passed
+- `./scripts/verify.sh`: passed, 17 files / 157 tests passed

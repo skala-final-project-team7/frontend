@@ -135,12 +135,15 @@ describe('feature16 Admin feedback (SCR-820)', () => {
     const ratioCard = wrapper.get('[data-testid="admin-feedback-ratio-card"]');
     expect(ratioCard.text()).toContain('312');
     expect(ratioCard.text()).toContain('47');
+    // 퍼센트는 게이지 중앙에만 표시하고 칩에서는 중복 표기하지 않는다
     expect(ratioCard.text()).toContain('87%');
-    expect(ratioCard.text()).toContain('13%');
-    expect(ratioCard.findAll('circle').at(1)?.attributes('stroke')).toBe('var(--color-success)');
-    expect(ratioCard.findAll('circle').at(1)?.attributes('stroke-opacity')).toBe('0.72');
-    expect(ratioCard.findAll('circle').at(2)?.attributes('stroke')).toBe('var(--color-error)');
-    expect(ratioCard.findAll('circle').at(2)?.attributes('stroke-opacity')).toBe('0.62');
+    expect(ratioCard.text()).not.toContain('13%');
+    // 반원 게이지 — track 위에 브랜드 오렌지 그라데이션 arc를 그린다
+    const gaugeArcs = ratioCard.findAll('path');
+    expect(gaugeArcs.at(0)?.attributes('stroke')).toBe('var(--color-bg-200)');
+    expect(gaugeArcs.at(1)?.attributes('stroke')).toBe('url(#admin-feedback-gauge-gradient)');
+    expect(gaugeArcs.at(1)?.attributes('stroke-linecap')).toBe('round');
+    expect(gaugeArcs.at(1)?.attributes('stroke-dasharray')).toBeDefined();
   });
 
   it('renders the feedback trend chart with one bar per trend date', async () => {
@@ -156,22 +159,20 @@ describe('feature16 Admin feedback (SCR-820)', () => {
     expect(wrapper.findAll('[data-testid^="admin-feedback-trend-dislike-bar-"]')).toHaveLength(
       mockFeedback.trend.length,
     );
+    // 긍정 바 = 브랜드 오렌지 그라데이션, 부정 바 = 슬레이트 — 그룹 바 구성
     expect(wrapper.get('[data-testid^="admin-feedback-trend-like-bar-"]').attributes('fill')).toBe(
-      'var(--color-success)',
+      'url(#admin-feedback-trend-like-gradient)',
     );
     expect(
-      wrapper.get('[data-testid^="admin-feedback-trend-like-bar-"]').attributes('fill-opacity'),
-    ).toBe('0.72');
-    expect(
       wrapper.get('[data-testid^="admin-feedback-trend-dislike-bar-"]').attributes('fill'),
-    ).toBe('var(--color-error)');
+    ).toBe('#8d99ae');
     expect(
       wrapper.get('[data-testid^="admin-feedback-trend-dislike-bar-"]').attributes('fill-opacity'),
-    ).toBe('0.62');
+    ).toBe('0.55');
     expect(wrapper.get('[data-testid="admin-feedback-trend-chart"]').text()).toContain('05-19');
     expect(
       wrapper.get('[data-testid="admin-feedback-trend-chart"] text').attributes('font-size'),
-    ).toBe('8');
+    ).toBe('6.5');
     expect(wrapper.get('[data-testid="admin-feedback-section"]').text()).toContain('긍정');
     expect(wrapper.get('[data-testid="admin-feedback-section"]').text()).toContain('부정');
   });

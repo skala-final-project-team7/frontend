@@ -2,10 +2,15 @@
 --------------------------------------------------
 작성자 : 신유진
 작성목적 : LINA Admin SCR-820 피드백 탭 컨텐츠.
-          긍정/부정 비율 도넛, 일자별 피드백 추이 바 차트, 부정 피드백 원문 목록을 렌더링한다.
+          긍정/부정 비율 반원 게이지, 일자별 피드백 추이 그룹 바 차트, 부정 피드백 원문 목록을 렌더링한다.
 작성일 : 2026-06-11
 변경사항 내역 (날짜, 변경목적, 변경내용 순)
   - 2026-06-11, feature16 구현, Admin 피드백 확인 화면 신규 구현
+  - 2026-06-12, 피드백 추이 디자인 수정, 차트 축 라벨 글자 크기 축소 및 그리드 점선 간격·두께 축소
+  - 2026-06-12, 상단 블럭 리디자인, 비율 도넛→반원 게이지 + 추이 스택 바→긍정/부정 라운드 그룹 바(오렌지/슬레이트) 전환
+  - 2026-06-12, 비율 칩 개선, 텍스트 라벨 대신 엄지 아이콘 크게 표시
+  - 2026-06-12, 비율 칩 줄바꿈 수정, 건수·퍼센트 글자 크기 축소 및 한 줄 고정
+  - 2026-06-12, 비율 카드 공간 배분 개선, 게이지 확대·칩 퍼센트 중복 제거·추이 바 폭 상향
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -49,26 +54,15 @@ const error = ref('');
 const feedback = ref<AdminFeedbackResponse | null>(null);
 const activePeriod = ref<PeriodTab>('7d');
 
-// ── 긍정/부정 비율 도넛 ─────────────────────────────────────────────
-const DONUT_RADIUS = 30;
-const DONUT_CIRCUMFERENCE = 2 * Math.PI * DONUT_RADIUS;
+// ── 긍정/부정 비율 반원 게이지 ──────────────────────────────────────
+// viewBox(0 0 100 58) 기준 반지름 42 반원 arc의 전체 길이
+const GAUGE_ARC_LENGTH = Math.PI * 42;
 
 const positivePercent = computed(() => Math.round((feedback.value?.positiveRatio ?? 0) * 100));
-const negativePercent = computed(() => 100 - positivePercent.value);
 
-const donutDashArray = computed(() => {
-  const filled = (positivePercent.value / 100) * DONUT_CIRCUMFERENCE;
-  return `${filled.toFixed(1)} ${(DONUT_CIRCUMFERENCE - filled).toFixed(1)}`;
-});
-
-const negativeDonutDashArray = computed(() => {
-  const filled = (negativePercent.value / 100) * DONUT_CIRCUMFERENCE;
-  return `${filled.toFixed(1)} ${(DONUT_CIRCUMFERENCE - filled).toFixed(1)}`;
-});
-
-const negativeDonutDashOffset = computed(() => {
-  const positiveLength = (positivePercent.value / 100) * DONUT_CIRCUMFERENCE;
-  return `-${positiveLength.toFixed(1)}`;
+const gaugeDashArray = computed(() => {
+  const filled = (positivePercent.value / 100) * GAUGE_ARC_LENGTH;
+  return `${filled.toFixed(1)} ${GAUGE_ARC_LENGTH.toFixed(1)}`;
 });
 
 // ── 피드백 추이 바 차트 ─────────────────────────────────────────────
@@ -82,6 +76,16 @@ const CHART_Y_TICK_COUNT = 3;
 
 const hoveredTrendBarDate = ref<string | null>(null);
 
+// 상단만 둥근 세로 바 path를 만든다. 값이 0이면 빈 path를 반환해 바를 그리지 않는다.
+function roundedBarPath(x: number, width: number, height: number, bottomY: number): string {
+  if (height <= 0) return `M ${x} ${bottomY} Z`;
+  const radius = width / 2;
+  const topY = bottomY - Math.max(height, radius + 0.5);
+  return `M ${x} ${bottomY} V ${topY + radius} A ${radius} ${radius} 0 0 1 ${x + width} ${
+    topY + radius
+  } V ${bottomY} Z`;
+}
+
 const trendChart = computed(() => {
   const trend = feedback.value?.trend;
   if (!trend || trend.length === 0) return null;
@@ -90,40 +94,34 @@ const trendChart = computed(() => {
   const innerH = CHART_H - CHART_PAD_TOP - CHART_PAD_BOTTOM;
 
   // Y축 최대값을 눈금 간격이 깔끔한 수(자릿수 올림)로 보정한다.
-  const rawMax = Math.max(...trend.map((d) => d.likeCount + d.dislikeCount), 1);
+  const rawMax = Math.max(...trend.map((d) => Math.max(d.likeCount, d.dislikeCount)), 1);
   const rawStep = Math.ceil(rawMax / CHART_Y_TICK_COUNT);
   const magnitude = 10 ** Math.floor(Math.log10(rawStep));
   const tickStep = Math.ceil(rawStep / magnitude) * magnitude;
   const yMax = tickStep * CHART_Y_TICK_COUNT;
 
   const slotW = innerW / trend.length;
-  const barW = Math.min(18, slotW * 0.32);
+  // 긍정/부정 바 그룹이 슬롯 안에 들어가도록 슬롯 너비 기준으로 바 폭과 간격을 보정한다.
+  const barW = Math.min(13, slotW * 0.26);
+  const barGap = Math.min(5, slotW * 0.12);
 
   const bars = trend.map((d, index) => {
     const likeH = (d.likeCount / yMax) * innerH;
     const dislikeH = (d.dislikeCount / yMax) * innerH;
-    const totalH = likeH + dislikeH;
     const bottomY = CHART_PAD_TOP + innerH;
-    const likeY = bottomY - likeH;
-    const dislikeY = likeY - dislikeH;
+    const centerX = CHART_PAD_LEFT + slotW * index + slotW / 2;
+    const groupTopY = bottomY - Math.max(likeH, dislikeH);
 
     return {
       date: d.date,
       // '2026-06-03' → '06-03' 라벨
       label: d.date.slice(5),
-      x: CHART_PAD_LEFT + slotW * index + (slotW - barW) / 2,
-      width: barW,
-      likeY,
-      likeHeight: likeH,
-      dislikeY,
-      dislikeHeight: dislikeH,
-      totalY: bottomY - totalH,
-      totalHeight: totalH,
-      centerX: CHART_PAD_LEFT + slotW * index + slotW / 2,
-      tooltipLeftPercent: ((CHART_PAD_LEFT + slotW * index + slotW / 2) / CHART_W) * 100,
-      tooltipTopPercent: (Math.max(CHART_PAD_TOP, bottomY - totalH) / CHART_H) * 100,
-      clipId: `admin-feedback-trend-clip-${index}`,
-      tooltip: `${d.date} 긍정 ${d.likeCount}건 · 부정 ${d.dislikeCount}건`,
+      likePath: roundedBarPath(centerX - barW - barGap / 2, barW, likeH, bottomY),
+      dislikePath: roundedBarPath(centerX + barGap / 2, barW, dislikeH, bottomY),
+      centerX,
+      hitWidth: barW * 2 + barGap + 8,
+      tooltipLeftPercent: (centerX / CHART_W) * 100,
+      tooltipTopPercent: (Math.max(CHART_PAD_TOP, groupTopY) / CHART_H) * 100,
       likeCount: d.likeCount,
       dislikeCount: d.dislikeCount,
     };
@@ -235,59 +233,66 @@ function formatDateTime(value: string): string {
     </div>
 
     <div class="mt-5 grid grid-cols-[300px_1fr] items-stretch gap-5">
-      <!-- ── 긍정/부정 비율 도넛 ── -->
+      <!-- ── 긍정/부정 비율 반원 게이지 ── -->
       <div
         data-testid="admin-feedback-ratio-card"
         class="flex flex-col rounded-xl border border-bg-300/60 bg-primary-white p-5"
       >
         <h3 class="text-[0.95rem] font-bold text-overlay-dark-80">긍정 / 부정 비율</h3>
-        <div class="flex flex-1 items-center justify-center py-4">
-          <svg width="132" height="132" viewBox="0 0 72 72" aria-hidden="true">
-            <!-- 중립 track 위에 긍정/부정 arc를 피드백 추이와 동일 색상으로 분리해 그린다. -->
-            <circle
-              cx="36"
-              cy="36"
-              r="30"
-              fill="none"
-              stroke="var(--color-bg-200)"
-              stroke-width="9"
-            />
-            <circle
-              cx="36"
-              cy="36"
-              r="30"
-              fill="none"
-              stroke="var(--color-success)"
-              stroke-opacity="0.72"
-              stroke-width="9"
-              :stroke-dasharray="donutDashArray"
-              transform="rotate(-90 36 36)"
-            />
-            <circle
-              cx="36"
-              cy="36"
-              r="30"
-              fill="none"
-              stroke="var(--color-error)"
-              stroke-opacity="0.62"
-              stroke-width="9"
-              :stroke-dasharray="negativeDonutDashArray"
-              :stroke-dashoffset="negativeDonutDashOffset"
-              transform="rotate(-90 36 36)"
-            />
-          </svg>
-        </div>
-        <div class="flex items-center justify-center gap-5 text-[0.82rem]">
-          <span class="flex items-center gap-1.5 text-overlay-dark-80">
-            <ThumbsUp aria-hidden="true" class="size-3.5 text-status-success opacity-75" />
-            <b>{{ formatNumber(feedback.likeCount) }}</b>
-            <span class="text-overlay-dark-40">({{ positivePercent }}%)</span>
-          </span>
-          <span class="flex items-center gap-1.5 text-overlay-dark-80">
-            <ThumbsDown aria-hidden="true" class="size-3.5 text-status-error opacity-65" />
-            <b>{{ formatNumber(feedback.dislikeCount) }}</b>
-            <span class="text-overlay-dark-40">({{ negativePercent }}%)</span>
-          </span>
+        <div class="flex flex-1 flex-col items-center justify-center gap-4 py-4">
+          <div class="relative h-[133px] w-[230px]">
+            <svg width="230" height="133" viewBox="0 0 100 58" aria-hidden="true">
+              <defs>
+                <linearGradient id="admin-feedback-gauge-gradient" x1="0" y1="1" x2="1" y2="0">
+                  <stop offset="0" stop-color="var(--color-primary-light)" />
+                  <stop offset="1" stop-color="var(--color-primary)" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M 8 52 A 42 42 0 0 1 92 52"
+                fill="none"
+                stroke="var(--color-bg-200)"
+                stroke-width="8"
+                stroke-linecap="round"
+              />
+              <path
+                d="M 8 52 A 42 42 0 0 1 92 52"
+                fill="none"
+                stroke="url(#admin-feedback-gauge-gradient)"
+                stroke-width="8"
+                stroke-linecap="round"
+                :stroke-dasharray="gaugeDashArray"
+              />
+            </svg>
+            <div class="absolute inset-x-0 bottom-0 text-center">
+              <p
+                class="text-[2rem] font-extrabold leading-none tracking-tight text-overlay-dark-80"
+              >
+                {{ positivePercent }}%
+              </p>
+              <p class="mt-1 text-[0.7rem] text-overlay-dark-40">긍정 비율</p>
+            </div>
+          </div>
+          <div class="flex w-full gap-2">
+            <div
+              class="flex flex-1 items-center justify-center gap-2 rounded-lg border border-[rgba(244,129,34,0.3)] bg-[rgba(244,129,34,0.05)] px-3 py-2.5"
+            >
+              <ThumbsUp aria-hidden="true" class="size-5 shrink-0 text-primary" />
+              <span class="sr-only">긍정</span>
+              <b class="whitespace-nowrap text-[0.9rem] font-bold text-primary">
+                {{ formatNumber(feedback.likeCount) }}건
+              </b>
+            </div>
+            <div
+              class="flex flex-1 items-center justify-center gap-2 rounded-lg border border-bg-300/60 bg-bg-100 px-3 py-2.5"
+            >
+              <ThumbsDown aria-hidden="true" class="size-5 shrink-0 text-[#5b6678]" />
+              <span class="sr-only">부정</span>
+              <b class="whitespace-nowrap text-[0.9rem] font-bold text-overlay-dark-80">
+                {{ formatNumber(feedback.dislikeCount) }}건
+              </b>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -325,12 +330,13 @@ function formatDateTime(value: string): string {
           <span class="inline-flex items-center gap-1.5">
             <span
               aria-hidden="true"
-              class="size-2 rounded-full bg-status-success opacity-75"
+              class="size-2 rounded-full"
+              style="background: linear-gradient(180deg, #f7a254, var(--color-primary))"
             ></span>
             긍정
           </span>
           <span class="inline-flex items-center gap-1.5">
-            <span aria-hidden="true" class="size-2 rounded-full bg-status-error opacity-65"></span>
+            <span aria-hidden="true" class="size-2 rounded-full bg-[#8d99ae] opacity-[0.55]"></span>
             부정
           </span>
         </div>
@@ -351,65 +357,44 @@ function formatDateTime(value: string): string {
                 :x2="CHART_W - CHART_PAD_RIGHT"
                 :y2="tick.y"
                 stroke="var(--color-bg-300)"
-                :stroke-dasharray="tick.value === 0 ? 'none' : '2 7'"
-                stroke-width="0.65"
+                :stroke-dasharray="tick.value === 0 ? 'none' : '1.5 5'"
+                stroke-width="0.55"
               />
               <text
                 :x="CHART_PAD_LEFT - 7"
-                :y="tick.y + 2.5"
+                :y="tick.y + 2"
                 text-anchor="end"
-                font-size="8"
+                font-size="6.5"
                 fill="var(--color-dark-40)"
               >
                 {{ formatNumber(tick.value) }}
               </text>
             </g>
 
-            <!-- 일자별 피드백 바 -->
+            <!-- 일자별 긍정/부정 그룹 바 (상단 라운드) -->
+            <defs>
+              <linearGradient id="admin-feedback-trend-like-gradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#f7a254" />
+                <stop offset="1" stop-color="var(--color-primary)" />
+              </linearGradient>
+            </defs>
             <g v-for="bar in trendChart.bars" :key="bar.date">
-              <defs>
-                <clipPath :id="bar.clipId">
-                  <rect
-                    :x="bar.x"
-                    :y="bar.totalY"
-                    :width="bar.width"
-                    :height="bar.totalHeight"
-                    rx="4"
-                  />
-                </clipPath>
-              </defs>
-              <g :clip-path="`url(#${bar.clipId})`">
-                <rect
-                  :x="bar.x"
-                  :y="bar.totalY"
-                  :width="bar.width"
-                  :height="bar.totalHeight"
-                  fill="var(--color-bg-200)"
-                />
-                <rect
-                  :data-testid="`admin-feedback-trend-like-bar-${bar.date}`"
-                  :x="bar.x"
-                  :y="bar.likeY"
-                  :width="bar.width"
-                  :height="bar.likeHeight"
-                  fill="var(--color-success)"
-                  fill-opacity="0.72"
-                />
-                <rect
-                  :data-testid="`admin-feedback-trend-dislike-bar-${bar.date}`"
-                  :x="bar.x"
-                  :y="bar.dislikeY"
-                  :width="bar.width"
-                  :height="bar.dislikeHeight"
-                  fill="var(--color-error)"
-                  fill-opacity="0.62"
-                />
-              </g>
+              <path
+                :data-testid="`admin-feedback-trend-like-bar-${bar.date}`"
+                :d="bar.likePath"
+                fill="url(#admin-feedback-trend-like-gradient)"
+              />
+              <path
+                :data-testid="`admin-feedback-trend-dislike-bar-${bar.date}`"
+                :d="bar.dislikePath"
+                fill="#8d99ae"
+                fill-opacity="0.55"
+              />
               <text
                 :x="bar.centerX"
                 :y="CHART_H - 5"
                 text-anchor="middle"
-                font-size="8"
+                font-size="6.5"
                 fill="var(--color-dark-40)"
               >
                 {{ bar.label }}
@@ -423,7 +408,7 @@ function formatDateTime(value: string): string {
               class="absolute top-0 z-10 h-full -translate-x-1/2"
               :style="{
                 left: `${bar.tooltipLeftPercent}%`,
-                width: `${Math.max(18, bar.width + 10)}px`,
+                width: `${bar.hitWidth}px`,
               }"
               @mouseenter="hoveredTrendBarDate = bar.date"
               @mouseleave="hoveredTrendBarDate = null"
@@ -440,9 +425,9 @@ function formatDateTime(value: string): string {
                 <p class="font-semibold text-overlay-dark-80">{{ bar.label }}</p>
                 <p class="mt-0.5 text-overlay-dark-40">
                   긍정
-                  <b class="text-status-success">{{ formatNumber(bar.likeCount) }}건</b>
+                  <b class="text-primary">{{ formatNumber(bar.likeCount) }}건</b>
                   · 부정
-                  <b class="text-status-error">{{ formatNumber(bar.dislikeCount) }}건</b>
+                  <b class="text-[#5b6678]">{{ formatNumber(bar.dislikeCount) }}건</b>
                 </p>
               </div>
             </div>
