@@ -417,15 +417,9 @@ onBeforeUnmount(() => {
       </template>
 
       <div v-if="isOpen && isSidebarContentVisible" class="mt-6 space-y-7">
-        <section>
+        <section v-if="pinnedConversations.length > 0">
           <h2 class="font-lina text-small font-semibold text-overlay-dark-40">고정 채팅</h2>
-          <p
-            v-if="pinnedConversations.length === 0"
-            class="mt-3 rounded-button bg-bg-100 px-3 py-2 font-lina text-small text-overlay-dark-40"
-          >
-            고정 채팅 준비 중
-          </p>
-          <ul v-else data-testid="pinned-chat-list" class="mt-3 space-y-2">
+          <ul data-testid="pinned-chat-list" class="mt-3 space-y-2">
             <li
               v-for="conversation in pinnedConversations"
               :key="conversation.conversationId"

@@ -131,12 +131,14 @@ async function flushAsyncUpdates() {
 
 describe('feature10.5 ChatPage responsibility split', () => {
   beforeEach(async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
     setActivePinia(createPinia());
     installFeature105FetchMock();
     await router.push('/chat');
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.unstubAllGlobals();
   });
 
@@ -152,6 +154,32 @@ describe('feature10.5 ChatPage responsibility split', () => {
     expect(wrapper.findComponent(ChatHeader).exists()).toBe(true);
     expect(wrapper.get('[data-testid="chat-sidebar"]').attributes('data-state')).toBe('collapsed');
     expect(wrapper.get('header').text()).toContain('LINA');
+  });
+
+  it('hides the pinned conversation section when there are no pinned conversations', async () => {
+    const wrapper = mount(ChatSidebar, {
+      global: {
+        plugins: [router],
+      },
+      props: {
+        activeConversationId: '',
+        conversations: mockConversations.map((conversation) => ({
+          ...conversation,
+          isPinned: false,
+        })),
+        isOpen: false,
+        openConversationMenuId: '',
+        openConversationMenuSource: '',
+      },
+    });
+
+    await wrapper.setProps({ isOpen: true });
+    await vi.advanceTimersByTimeAsync(200);
+
+    expect(wrapper.find('[data-testid="pinned-chat-list"]').exists()).toBe(false);
+    expect(wrapper.text()).not.toContain('고정 채팅');
+    expect(wrapper.text()).not.toContain('고정 채팅 준비 중');
+    expect(wrapper.text()).toContain('최근 채팅');
   });
 
   it('moves submission and route synchronization responsibilities to composables', () => {
