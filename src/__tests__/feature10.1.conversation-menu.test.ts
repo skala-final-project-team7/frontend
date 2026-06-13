@@ -260,6 +260,24 @@ describe('feature10.1 conversation kebab menu', () => {
     expect(wrapper.find('[data-testid="conversation-action-menu"]').exists()).toBe(true);
   });
 
+  it('keeps sidebar and header menus scoped when they target the same active conversation', async () => {
+    const wrapper = await mountExpandedChatPage();
+
+    await openPinnedConversationMenu(wrapper);
+
+    expect(wrapper.findAll('[data-testid="conversation-action-menu"]')).toHaveLength(1);
+    expect(
+      wrapper.get('[data-testid="conversation-menu-button"]').attributes('aria-expanded'),
+    ).toBe('false');
+
+    await wrapper.get('[data-testid="conversation-menu-button"]').trigger('click');
+
+    expect(wrapper.findAll('[data-testid="conversation-action-menu"]')).toHaveLength(1);
+    expect(
+      wrapper.get('[data-testid="conversation-menu-button"]').attributes('aria-expanded'),
+    ).toBe('true');
+  });
+
   it('closes the open menu with Escape or outside click and focuses the first menu item on open', async () => {
     const wrapper = await mountExpandedChatPage();
 

@@ -74,6 +74,8 @@ type FeedbackTarget = {
   rating: FeedbackRating;
 };
 
+type ConversationMenuSource = 'header' | 'sidebar';
+
 const route = useRoute();
 const router = useRouter();
 const chatStore = useChatStore();
@@ -91,6 +93,7 @@ const userMessageVersionsById = ref<Record<string, UserMessageVersionState>>({})
 const isReferencePanelOpen = ref(false);
 const referenceSources = ref<Source[]>([]);
 const openConversationMenuId = ref('');
+const openConversationMenuSource = ref<ConversationMenuSource | ''>('');
 const feedbackTarget = ref<FeedbackTarget | null>(null);
 const isFeedbackSubmitting = ref(false);
 const isSearchModalOpen = ref(false);
@@ -224,11 +227,15 @@ async function selectConversation(conversationId: string) {
 
 function closeConversationMenu() {
   openConversationMenuId.value = '';
+  openConversationMenuSource.value = '';
 }
 
-function toggleConversationMenu(conversationId: string) {
-  openConversationMenuId.value =
-    openConversationMenuId.value === conversationId ? '' : conversationId;
+function toggleConversationMenu(conversationId: string, source: ConversationMenuSource) {
+  const isSameMenu =
+    openConversationMenuId.value === conversationId && openConversationMenuSource.value === source;
+
+  openConversationMenuId.value = isSameMenu ? '' : conversationId;
+  openConversationMenuSource.value = isSameMenu ? '' : source;
 }
 
 function replaceConversation(nextConversation: Conversation) {
@@ -526,6 +533,7 @@ watch(
         :active-conversation-id="chatStore.activeConversationId"
         :conversations="conversations"
         :open-conversation-menu-id="openConversationMenuId"
+        :open-conversation-menu-source="openConversationMenuSource"
         @close-conversation-menu="closeConversationMenu"
         @open-settings="openSettingsModal"
         @open-search-modal="openSearchModal"
@@ -533,7 +541,9 @@ watch(
         @rename-conversation="renameConversation"
         @select-conversation="selectConversation"
         @start-new-chat="startNewChat"
-        @toggle-conversation-menu="toggleConversationMenu"
+        @toggle-conversation-menu="
+          (conversationId) => toggleConversationMenu(conversationId, 'sidebar')
+        "
         @toggle-conversation-pin="toggleConversationPin"
       />
 
@@ -547,12 +557,15 @@ watch(
           :current-conversation-title="currentConversationTitle"
           :has-active-conversation="hasActiveConversation"
           :open-conversation-menu-id="openConversationMenuId"
+          :open-conversation-menu-source="openConversationMenuSource"
           :profile-image-url="profileImageUrl"
           @close-conversation-menu="closeConversationMenu"
           @open-settings="openSettingsModal"
           @remove-conversation="removeConversation"
           @rename-conversation="renameConversation"
-          @toggle-conversation-menu="toggleConversationMenu"
+          @toggle-conversation-menu="
+            (conversationId) => toggleConversationMenu(conversationId, 'header')
+          "
           @toggle-conversation-pin="toggleConversationPin"
         />
 

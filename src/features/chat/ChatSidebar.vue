@@ -34,6 +34,7 @@ const props = defineProps<{
   conversations: Conversation[];
   isOpen: boolean;
   openConversationMenuId: string;
+  openConversationMenuSource: string;
 }>();
 
 const emit = defineEmits<{
@@ -449,12 +450,16 @@ onBeforeUnmount(() => {
               <div
                 v-if="
                   hoveredConversationMenuId === conversation.conversationId ||
-                  openConversationMenuId === conversation.conversationId
+                  (openConversationMenuSource === 'sidebar' &&
+                    openConversationMenuId === conversation.conversationId)
                 "
                 class="absolute right-1 top-1"
               >
                 <ConversationActionMenu
-                  :is-open="openConversationMenuId === conversation.conversationId"
+                  :is-open="
+                    openConversationMenuSource === 'sidebar' &&
+                    openConversationMenuId === conversation.conversationId
+                  "
                   :is-pinned="conversation.isPinned"
                   menu-label="고정 채팅 메뉴"
                   trigger-class="size-8 rounded-button"
@@ -502,12 +507,16 @@ onBeforeUnmount(() => {
               <div
                 v-if="
                   hoveredConversationMenuId === conversation.conversationId ||
-                  openConversationMenuId === conversation.conversationId
+                  (openConversationMenuSource === 'sidebar' &&
+                    openConversationMenuId === conversation.conversationId)
                 "
                 class="absolute right-1 top-1"
               >
                 <ConversationActionMenu
-                  :is-open="openConversationMenuId === conversation.conversationId"
+                  :is-open="
+                    openConversationMenuSource === 'sidebar' &&
+                    openConversationMenuId === conversation.conversationId
+                  "
                   :is-pinned="conversation.isPinned"
                   menu-label="최근 채팅 메뉴"
                   trigger-class="size-8 rounded-button"
