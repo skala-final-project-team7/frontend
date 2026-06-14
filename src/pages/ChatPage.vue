@@ -29,8 +29,8 @@
 --------------------------------------------------
 -->
 <script setup lang="ts">
-import { HelpCircle } from '@lucide/vue';
-import { computed, onMounted, ref, watch } from 'vue';
+import { ArrowDown, HelpCircle } from '@lucide/vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import {
@@ -101,6 +101,7 @@ const isSettingsModalOpen = ref(false);
 const isHelpModalOpen = ref(false);
 const pendingDeleteConversation = ref<Conversation | null>(null);
 const isDeleteConversationSubmitting = ref(false);
+const isScrollToLatestVisible = ref(false);
 
 const routeConversationId = computed(() => {
   const conversationId = route.params.conversationId;
@@ -197,6 +198,34 @@ function openHelpModal() {
 
 function closeHelpModal() {
   isHelpModalOpen.value = false;
+}
+
+function getDocumentScrollHeight() {
+  return Math.max(
+    document.body.scrollHeight,
+    document.body.offsetHeight,
+    document.documentElement.clientHeight,
+    document.documentElement.scrollHeight,
+    document.documentElement.offsetHeight,
+  );
+}
+
+function updateScrollToLatestVisibility() {
+  if (!hasActiveConversation.value) {
+    isScrollToLatestVisible.value = false;
+    return;
+  }
+
+  const distanceFromBottom = getDocumentScrollHeight() - (window.scrollY + window.innerHeight);
+
+  isScrollToLatestVisible.value = distanceFromBottom > 180;
+}
+
+function scrollToLatestMessage() {
+  window.scrollTo({
+    behavior: 'smooth',
+    top: getDocumentScrollHeight(),
+  });
 }
 
 async function selectSearchResult(conversationId: string) {
@@ -495,6 +524,9 @@ async function submitFeedback(comment: string) {
 }
 
 onMounted(async () => {
+  window.addEventListener('scroll', updateScrollToLatestVisibility, { passive: true });
+  window.addEventListener('resize', updateScrollToLatestVisibility);
+
   try {
     const [currentUser, conversationList] = await Promise.all([
       getCurrentUser(),
@@ -511,6 +543,14 @@ onMounted(async () => {
     profileImageUrl.value = '';
     conversations.value = [];
   }
+
+  await nextTick();
+  updateScrollToLatestVisibility();
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', updateScrollToLatestVisibility);
+  window.removeEventListener('resize', updateScrollToLatestVisibility);
 });
 
 watch(
@@ -521,6 +561,14 @@ watch(
 
       return title ? { ...conversation, title } : conversation;
     });
+  },
+);
+
+watch(
+  () => [hasActiveConversation.value, activeMessages.value.length],
+  async () => {
+    await nextTick();
+    updateScrollToLatestVisibility();
   },
 );
 </script>
@@ -603,6 +651,27 @@ watch(
             ]"
           >
             <MessageInput :is-streaming="chatStore.isStreaming" @submit="submitMessage" />
+          </div>
+          <div
+            v-if="hasActiveConversation && isScrollToLatestVisible"
+            data-testid="scroll-to-latest-wrapper"
+            class="pointer-events-none fixed bottom-[148px] z-30 flex justify-center transition-[left,right] duration-200"
+            :class="[
+              isSidebarOpen ? 'left-[264px]' : 'left-[76px]',
+              isReferencePanelOpen ? 'right-[376px]' : 'right-0',
+            ]"
+          >
+            <BaseTooltip label="최신 메시지로 이동" placement="top">
+              <button
+                data-testid="scroll-to-latest-button"
+                type="button"
+                aria-label="최신 메시지로 이동"
+                class="pointer-events-auto inline-flex size-11 items-center justify-center rounded-full border border-bg-300 bg-primary-white text-overlay-dark-80 shadow-floating transition hover:bg-bg-100 focus-visible:outline-none focus-visible:shadow-focus"
+                @click="scrollToLatestMessage"
+              >
+                <ArrowDown aria-hidden="true" class="size-5" />
+              </button>
+            </BaseTooltip>
           </div>
         </div>
 

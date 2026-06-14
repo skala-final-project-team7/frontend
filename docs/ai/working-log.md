@@ -4083,3 +4083,46 @@
 - 삭제 모달 추가 전 기존 `window.confirm()`은 브라우저 기본 UI라 앱 디자인과 맞지 않았음
 - Settings 모달 테스트가 실제 UI는 `설정`, 테스트 기대값은 `Settings`로 어긋나 있어 실제 UI 기준으로 정정
 - BFF 통합 시 가장 큰 남은 리스크는 대화 메뉴 API가 아니라 인증 Bearer 헤더/세션 token 저장·refresh 흐름임
+
+## 2026-06-15 - 대화 화면 최신 메시지 이동 버튼 추가
+
+### Scope
+
+- 긴 대화에서 사용자가 과거 메시지를 보기 위해 위로 스크롤한 경우, 입력창 바로 위 중앙에 최신 메시지 이동 버튼을 표시
+- 버튼은 원형이며 `ArrowDown` 아이콘 사용
+- 현재 대화 화면에서만 표시하고, 새 채팅 빈 화면에서는 미표시
+- page-level scroll 구조를 유지
+  - 별도 메시지 내부 스크롤 컨테이너를 만들지 않음
+  - `window` scroll/resize 이벤트로 문서 하단과의 거리를 계산
+- 하단에서 180px 이상 떨어진 경우에만 버튼 표시
+- 버튼 클릭 시 `window.scrollTo({ top: documentHeight, behavior: "smooth" })`로 최신 메시지 위치로 이동
+- 사이드바 열림/닫힘, 출처 패널 열림 상태에서도 입력창 영역과 동일한 left/right 기준으로 중앙 정렬 유지
+
+### Changed Files
+
+- `src/pages/ChatPage.vue`
+  - `ArrowDown` 아이콘 import
+  - `isScrollToLatestVisible` 상태 추가
+  - document scroll height 계산, 표시 조건 갱신, smooth scroll handler 추가
+  - scroll/resize listener 등록 및 unmount 정리
+  - `scroll-to-latest-wrapper` / `scroll-to-latest-button` 렌더링 추가
+- `src/__tests__/feature9.chat-conversation.test.ts`
+  - page scroll 상태를 테스트에서 제어하는 helper 추가
+  - 하단에서 멀어졌을 때 버튼 표시, 클릭 시 smooth scroll 호출, 하단 근처에서 숨김 회귀 테스트 추가
+
+### Commands
+
+- `npm test -- src/__tests__/feature9.chat-conversation.test.ts`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+
+### Results
+
+- `feature9.chat-conversation.test.ts`: passed, 26 tests
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+
+### Notes
+
+- 기존 대화 화면은 message-list 내부 스크롤이 아니라 page-level scroll 방식이므로, 최신 이동 버튼도 `window` 스크롤 기준으로 구현
+- 버튼 wrapper는 `pointer-events-none`, 실제 button은 `pointer-events-auto`로 두어 입력 영역 위 floating UI가 주변 클릭을 과도하게 막지 않도록 처리

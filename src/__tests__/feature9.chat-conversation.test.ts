@@ -62,6 +62,25 @@ function getCollapsedConversationListButton(wrapper: ReturnType<typeof mountChat
   return conversationListButton;
 }
 
+function setPageScrollState(scrollY: number, innerHeight: number, scrollHeight: number) {
+  Object.defineProperty(window, 'scrollY', {
+    configurable: true,
+    value: scrollY,
+  });
+  Object.defineProperty(window, 'innerHeight', {
+    configurable: true,
+    value: innerHeight,
+  });
+  Object.defineProperty(document.documentElement, 'scrollHeight', {
+    configurable: true,
+    value: scrollHeight,
+  });
+  Object.defineProperty(document.documentElement, 'offsetHeight', {
+    configurable: true,
+    value: scrollHeight,
+  });
+}
+
 /**
  * JSON 응답을 생성한다.
  *
@@ -290,6 +309,7 @@ describe('feature9 SCR-410, SCR-420, SCR-600 Chat conversation screen', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 
   it('renders conversation messages with distinct user and LINA bubble treatments', async () => {
@@ -925,6 +945,39 @@ describe('feature9 SCR-410, SCR-420, SCR-600 Chat conversation screen', () => {
       expect.arrayContaining(['fixed', 'bottom-0', 'right-0', 'shrink-0']),
     );
     expect(wrapper.find('[data-testid="floating-help-wrapper"]').exists()).toBe(false);
+  });
+
+  it('shows a centered scroll-to-latest button above the input when the user is away from the bottom', async () => {
+    const scrollToSpy = vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined);
+
+    setPageScrollState(900, 600, 1800);
+
+    const wrapper = mountChatPage();
+    await flushAsyncUpdates();
+    window.dispatchEvent(new Event('scroll'));
+    await flushAsyncUpdates();
+
+    const wrapperButton = wrapper.get('[data-testid="scroll-to-latest-wrapper"]');
+
+    expect(wrapperButton.classes()).toEqual(
+      expect.arrayContaining(['fixed', 'bottom-[148px]', 'justify-center']),
+    );
+    expect(wrapper.get('[data-testid="scroll-to-latest-button"]').attributes('aria-label')).toBe(
+      '최신 메시지로 이동',
+    );
+
+    await wrapper.get('[data-testid="scroll-to-latest-button"]').trigger('click');
+
+    expect(scrollToSpy).toHaveBeenCalledWith({
+      behavior: 'smooth',
+      top: 1800,
+    });
+
+    setPageScrollState(1190, 600, 1800);
+    window.dispatchEvent(new Event('scroll'));
+    await flushAsyncUpdates();
+
+    expect(wrapper.find('[data-testid="scroll-to-latest-wrapper"]').exists()).toBe(false);
   });
 
   it('hides user message editing until backend version history contract is defined', async () => {
