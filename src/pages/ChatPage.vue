@@ -680,10 +680,10 @@ watch(
           data-testid="floating-help-wrapper"
           class="fixed bottom-10 right-6 z-30"
         >
-          <BaseTooltip label="도움말 열기" placement="left">
+          <BaseTooltip label="도움말" placement="left">
             <BaseFloatingIconButton
               data-testid="floating-help-button"
-              v-bind="{ ariaLabel: '도움말 열기' }"
+              v-bind="{ ariaLabel: '도움말' }"
               @click="openHelpModal"
             >
               <HelpCircle aria-hidden="true" class="size-5" />
