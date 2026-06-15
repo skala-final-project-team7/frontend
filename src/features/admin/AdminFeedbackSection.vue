@@ -126,7 +126,7 @@ const draftFrom = ref('');
 const draftTo = ref('');
 
 const customRangeLabel = computed(() => {
-  if (!customRange.value) return '기간 직접 선택';
+  if (!customRange.value) return '기간 선택';
   return `${customRange.value.from.slice(5)} ~ ${customRange.value.to.slice(5)}`;
 });
 
@@ -255,6 +255,12 @@ const totalPages = computed(() => {
 const isPrevDisabled = computed(() => currentPage.value <= 1);
 const isNextDisabled = computed(() => currentPage.value >= totalPages.value);
 
+// REFACTOR(고려): 피드백 응답(trend 등 서버 상태)을 Pinia 스토어로 올리는 방안.
+// 현재는 컴포넌트 로컬 ref라 (1) 탭을 v-if로 재방문할 때마다 재요청하고,
+// (2) 페이지네이션 시에도 전체 응답을 다시 받아 trend가 매번 중복 수신된다.
+// 스토어로 옮길 경우 fetch-once 가드 + 페이지 전환 시 negativeFeedbacks만 교체 + 새로고침 버튼 기반
+// 캐시 무효화까지 함께 설계해야 실효가 있다(서버 상태=Pinia 컨벤션, chat store 선례 참고).
+// 동작상 문제는 없어 지금은 보류.
 onMounted(() => {
   void loadFeedback();
 });
@@ -472,7 +478,7 @@ function formatDateTime(value: string): string {
                   data-testid="admin-feedback-custom-range-panel"
                   class="absolute right-0 z-40 mt-2 w-[230px] rounded-xl border border-bg-300/60 bg-primary-white p-4 shadow-floating"
                 >
-                  <p class="text-[0.74rem] font-semibold text-overlay-dark-80">기간 직접 선택</p>
+                  <p class="text-[0.74rem] font-semibold text-overlay-dark-80">기간 선택</p>
                   <p v-if="trendDateBounds" class="mt-0.5 text-[0.66rem] text-overlay-dark-40">
                     {{ trendDateBounds.min }} ~ {{ trendDateBounds.max }} 사이에서 선택할 수
                     있습니다.
