@@ -19,7 +19,7 @@ import { ChevronRight, CircleHelp, Info, UserRound, X } from '@lucide/vue';
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 
 import SettingsHelpModal from '@/features/settings/SettingsHelpModal.vue';
-import { confluenceIconImageUrl } from '@/shared/assets';
+import { confluenceIconImageUrl, notionIconImageUrl, slackIconImageUrl } from '@/shared/assets';
 
 const props = defineProps<{
   currentUserLastLoginAt: string;
@@ -256,6 +256,79 @@ onBeforeUnmount(() => {
                 Confluence로 이동하기
                 <ChevronRight aria-hidden="true" class="size-4" />
               </a>
+            </div>
+
+            <div class="relative mt-3 grid gap-3 overflow-hidden rounded-xl">
+              <div
+                data-testid="settings-slack-card"
+                class="flex min-h-[74px] rounded-xl border border-overlay-dark-10 px-5 py-4"
+                aria-disabled="true"
+              >
+                <div class="flex min-w-0 flex-1 items-center justify-between gap-5">
+                  <div class="flex min-w-0 items-center gap-5">
+                    <img
+                      data-testid="settings-slack-icon"
+                      :src="slackIconImageUrl"
+                      alt=""
+                      class="size-8 shrink-0 object-contain"
+                    />
+                    <div class="min-w-0">
+                      <p class="truncate font-lina text-[14px] text-black">Slack</p>
+                      <p class="mt-1 font-lina text-[12px] text-overlay-dark-40">
+                        슬랙 워크스페이스 연동
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    class="inline-flex shrink-0 items-center gap-3 rounded-button px-2 py-1 font-lina text-[12px] text-overlay-dark-40"
+                    disabled
+                  >
+                    슬랙 연동하기
+                    <ChevronRight aria-hidden="true" class="size-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div
+                data-testid="settings-notion-card"
+                class="flex min-h-[74px] rounded-xl border border-overlay-dark-10 px-5 py-4"
+                aria-disabled="true"
+              >
+                <div class="flex min-w-0 flex-1 items-center justify-between gap-5">
+                  <div class="flex min-w-0 items-center gap-5">
+                    <img
+                      data-testid="settings-notion-icon"
+                      :src="notionIconImageUrl"
+                      alt=""
+                      class="size-8 shrink-0 object-contain"
+                    />
+                    <div class="min-w-0">
+                      <p class="truncate font-lina text-[14px] text-black">Notion</p>
+                      <p class="mt-1 font-lina text-[12px] text-overlay-dark-40">
+                        노션 페이지 연동
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    class="inline-flex shrink-0 items-center gap-3 rounded-button px-2 py-1 font-lina text-[12px] text-overlay-dark-40"
+                    disabled
+                  >
+                    노션 연동하기
+                    <ChevronRight aria-hidden="true" class="size-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div
+                data-testid="settings-upcoming-overlay"
+                class="absolute inset-0 flex items-center justify-center bg-white/70 backdrop-blur-[1px]"
+              >
+                <span class="font-lina text-[18px] font-light tracking-wide text-overlay-dark-60">
+                  To be continued
+                </span>
+              </div>
             </div>
 
             <p
