@@ -248,7 +248,7 @@ describe('feature13 AuthCallbackPage', () => {
     expect(localStorageMock.setItem).toHaveBeenCalledWith('accessToken', 'new-token');
   });
 
-  it('USER 역할이면 /chat으로 라우팅한다', async () => {
+  it('returnTo가 없으면 비정상 진입으로 보고 /login으로 돌려보낸다', async () => {
     mockGetCurrentUser.mockResolvedValue(mockUser);
 
     const { router } = await mountCallbackPage({
@@ -256,10 +256,10 @@ describe('feature13 AuthCallbackPage', () => {
       refreshToken: 'ref-token',
     });
 
-    expect(router.currentRoute.value.path).toBe('/chat');
+    expect(router.currentRoute.value.path).toBe('/login');
   });
 
-  it('ADMIN 역할이면 /admin으로 라우팅한다', async () => {
+  it('ADMIN이어도 returnTo가 없으면 /login으로 돌려보낸다', async () => {
     mockGetCurrentUser.mockResolvedValue(mockAdminUser);
 
     const { router } = await mountCallbackPage({
@@ -267,7 +267,51 @@ describe('feature13 AuthCallbackPage', () => {
       refreshToken: 'ref-token',
     });
 
+    expect(router.currentRoute.value.path).toBe('/login');
+  });
+
+  it('returnTo=/chat이면 USER가 선택한 의도대로 /chat으로 라우팅한다', async () => {
+    mockGetCurrentUser.mockResolvedValue(mockUser);
+
+    const { router } = await mountCallbackPage({
+      accessToken: 'user-token',
+      returnTo: '/chat',
+    });
+
+    expect(router.currentRoute.value.path).toBe('/chat');
+  });
+
+  it('returnTo=/admin이면 ADMIN이 선택한 의도대로 /admin으로 라우팅한다', async () => {
+    mockGetCurrentUser.mockResolvedValue(mockAdminUser);
+
+    const { router } = await mountCallbackPage({
+      accessToken: 'admin-token',
+      returnTo: '/admin',
+    });
+
     expect(router.currentRoute.value.path).toBe('/admin');
+  });
+
+  it('ADMIN이 일반 사용자로 로그인(returnTo=/chat)하면 role이 ADMIN이어도 /chat으로 라우팅한다', async () => {
+    mockGetCurrentUser.mockResolvedValue(mockAdminUser);
+
+    const { router } = await mountCallbackPage({
+      accessToken: 'admin-token',
+      returnTo: '/chat',
+    });
+
+    expect(router.currentRoute.value.path).toBe('/chat');
+  });
+
+  it('허용되지 않은 returnTo(외부 URL)는 무시하고 /login으로 돌려보낸다', async () => {
+    mockGetCurrentUser.mockResolvedValue(mockUser);
+
+    const { router } = await mountCallbackPage({
+      accessToken: 'user-token',
+      returnTo: 'https://evil.example.com',
+    });
+
+    expect(router.currentRoute.value.path).toBe('/login');
   });
 
   it('errorCode=FORBIDDEN이면 /login?error=FORBIDDEN으로 리디렉션한다', async () => {

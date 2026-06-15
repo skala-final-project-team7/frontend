@@ -118,8 +118,9 @@ const sessionRestoreAttempted = ref(false);
 ```ts
 // src/pages/AuthCallbackPage.vue (onMounted 내부)
 
-// ① URL에서 accessToken 추출
-const { accessToken } = route.query;  // "eyJhbGciO..."
+// ① URL에서 accessToken, returnTo 추출
+const { accessToken, returnTo } = route.query;
+// returnTo = 로그인 화면에서 사용자가 누른 카드에 따라 붙는 이동 의도 (/chat 또는 /admin)
 
 // ② localStorage에 저장 — "열쇠고리에 열쇠 꽂기"
 localStorage.setItem('accessToken', accessToken);
@@ -127,11 +128,14 @@ localStorage.setItem('accessToken', accessToken);
 // ③ Pinia 세션 복원 (사용자 정보 가져오기)
 await authStore.restoreSession();
 
-// ④ 역할에 따라 이동
-if (authStore.currentUser?.role === 'ADMIN') {
-  router.replace('/admin');
+// ④ 사용자가 선택한 returnTo(의도)대로 이동
+//    - /admin 접근은 라우터 가드가 role을 다시 확인하므로, 비관리자는 토큰만으로 못 들어감
+if (['/chat', '/admin'].includes(returnTo)) {
+  router.replace(returnTo);
 } else {
-  router.replace('/chat');
+  // 정상 로그인 흐름엔 returnTo가 항상 있다(로그인 카드가 자동으로 붙임).
+  // 없으면 비정상 진입이므로 로그인 화면으로 돌려보내 재시도하게 한다.
+  router.replace('/login');
 }
 ```
 

@@ -4784,3 +4784,48 @@
 ### Notes / Remaining Issues
 
 - 투명도는 `/60` 기준이며, 더 투명/불투명하게 조정하려면 `/50`~`/80` 범위로 변경 가능.
+
+## 2026-06-15 - feature13 보강: callback 라우팅을 role 단독에서 returnTo(사용자 의도) 기준으로 전환
+
+### Scope
+
+- 기존 `AuthCallbackPage`가 `/api/users/me`의 `role`만으로 라우팅해, 관리자 계정이 "일반 사용자로 로그인"을 눌러도 무조건 `/admin`으로 가던 문제 수정
+- 사용자가 로그인 시 선택한 `returnTo`(의도)대로 라우팅하도록 전환 (`/chat` 또는 `/admin`)
+- `returnTo`는 로그인 화면 카드가 항상 자동으로 붙이므로 정상 흐름엔 항상 존재. 없거나 허용되지 않은 값(외부 URL 등)이면 비정상 진입으로 보고 `/login`으로 돌려보내 재시도하게 처리
+- `/admin` 접근 자체는 라우터 가드(`requiresAdmin`)가 `role`을 재검증하므로, `returnTo=/admin`만으로 비관리자가 진입할 수 없음(open redirect / 권한 우회 방지)
+
+### Test Cases
+
+- returnTo=/chat -> /chat, returnTo=/admin -> /admin (사용자 의도대로)
+- ADMIN 계정이 returnTo=/chat이면 role이 ADMIN이어도 /chat (의도 존중, 핵심 회귀)
+- returnTo 없음(USER/ADMIN) -> /login으로 돌려보냄
+- 허용되지 않은 returnTo(외부 URL) -> /login으로 돌려보냄
+
+### Changed Files
+
+- `src/pages/AuthCallbackPage.vue`
+  - `ALLOWED_RETURN_TO`(`/chat`, `/admin`) 화이트리스트 기준으로 `returnTo` 라우팅, 미해당 시 `/login` 리디렉션
+- `src/__tests__/feature13.auth-backend-connect.test.ts`
+  - returnTo 우선 라우팅 / 의도 존중 / 비정상 진입 -> /login 케이스 추가·수정 (총 27 tests)
+- `../mock-backend/server.mjs`
+  - `/api/auth/login`이 `returnTo`를 callback 리디렉션 쿼리로 전달하도록 보강(`sendAuthLoginRedirect`)
+- `docs/ai/current-plan.md`, `frontend/docs/auth-state-guide.md`, `../mock-backend/FEATURE13-VERIFY.md`
+  - returnTo 기준 라우팅 정책 반영
+
+### Commands
+
+- `npx vitest run src/__tests__/feature13.auth-backend-connect.test.ts`
+- `npx tsc --noEmit -p tsconfig.json`
+- `node --check ../mock-backend/server.mjs`
+
+### Results
+
+- feature13 테스트: 27/27 passed
+- 전체 스위트: 221/224 passed (실패 3건은 feature8 aria-label, feature12 LandingPage CSS로 기존 이슈, 이번 변경과 무관)
+- `tsc --noEmit -p tsconfig.json`: passed
+- `node --check`: passed
+
+### Notes / Remaining Issues
+
+- 실제 BFF 계약: `/api/auth/callback`은 JSON(`LoginTokenResponse`)을 반환하므로, 실제 연동 시 BFF가 최종 FE 리디렉션에 `accessToken`과 함께 `returnTo`를 실어주는지 확인 필요. mock-backend는 OAuth 왕복을 생략하고 callback 쿼리로 직접 전달한다.
+- `ALLOWED_RETURN_TO`는 현재 `/chat`, `/admin`만 허용. 향후 진입 대상 경로가 늘면 화이트리스트 확장 필요.

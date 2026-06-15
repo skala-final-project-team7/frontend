@@ -209,7 +209,7 @@
 [x] 관리자 선택 시 `GET /api/auth/login?mode=admin`으로 Confluence OAuth 시작 endpoint 연결
 [x] OAuth callback 이후 사용자 상태 복원 방식 확인
 [x] OAuth callback 성공 후 `GET /api/users/me`를 호출해 사용자 이름/프로필/`role` 표시 데이터 흐름 연결
-[x] `role === "USER"`이면 Chat 화면(`/chat`)으로 이동하고, `role === "ADMIN"`이면 Admin 화면(`/admin`)으로 진입
+[x] callback에서 사용자가 선택한 `returnTo`(의도)대로 라우팅(`/chat` 또는 `/admin`). 정상 흐름엔 항상 `returnTo`가 있으며, 없거나 허용되지 않은 값이면 비정상 진입으로 보고 `/login`으로 돌려보내 재시도. `/admin` 접근은 라우터 가드(`requiresAdmin`)가 `role`을 재검증
 [x] 관리자 선택 흐름에서 BFF가 `users.role != ADMIN`을 `403 FORBIDDEN`으로 거부하면 로그인 화면에 권한 부족 안내를 표시하고 토큰을 저장하지 않음
 [x] 일반 사용자 세션으로 `/admin` 접근 시 `role !== "ADMIN"`을 기준으로 접근 차단 처리
 [x] 인증 실패 / 세션 만료 / 로그아웃 상태 처리 (401 → clearAuth + /login 리디렉션)
@@ -276,6 +276,35 @@
 [x] floating ? 도움말 버튼을 fixed bottom-10 z-30으로 보정해 입력 영역에 가려지지 않게 표시, 새 대화 화면에서만 노출(대화 화면에서는 숨김) (2026-06-12)
 [x] 새 대화 화면 스크롤 문제 해결 — scroll-region의 상시 pb-[220px]로 최소 높이 872px이 되던 것을, 빈 화면에서는 viewport 높이(calc(100vh-76px))로 고정해 제거 (2026-06-12)
 [x] Chat 헤더 계정 이미지 hover 시 '계정 관리로 이동' 툴팁 표시, 클릭 시 Settings 모달(계정 관리) 오픈 (2026-06-12)
+
+# feature18.5: Admin 백엔드 연결 전환 및 통합 검증 (VITE_USE_MOCK=false)
+
+> 목적: feature14~17에서 `docs/api-spec.md` 계약 기반 mock으로 구현한 Admin 화면들을 실제 BFF와 연결하고, feature13 인증(토큰/`role`) 흐름과 합쳐 Admin 영역 전체가 실제 백엔드와 end-to-end로 동작하는지 검증한다. 마지막 백엔드 연동 검증 단계로, Chat(feature11)·Auth(feature13)에 이어 Admin을 실제 연동 완료한다.
+
+[ ] `docs/api-spec.md`의 Admin API 항목과 실제 BFF 응답을 대조해 `src/types/api.ts`의 Admin 타입(`AdminDataOverview`, `AdminSyncHistory*`, `AdminStats`, `AdminUsersResponse`, `AdminFeedbackResponse`, `AdminIngest*`, `AdminKeyActivationResponse`) 수정 필요 여부 확인
+[ ] `VITE_USE_MOCK=false` 환경에서 `GET /api/admin/data` 데이터 현황 조회 연결 (SCR-800)
+[ ] `VITE_USE_MOCK=false` 환경에서 `GET /api/admin/sync` 동기화 이력 조회 연결 (SCR-800 / SCR-830)
+[ ] `VITE_USE_MOCK=false` 환경에서 `POST /api/admin/ingest` 및 ingest status 조회 연결, 진행/완료/실패 상태 반영
+[ ] `VITE_USE_MOCK=false` 환경에서 `GET /api/admin/stats` 대시보드 통계 조회 연결 (SCR-810)
+[ ] `VITE_USE_MOCK=false` 환경에서 `GET /api/admin/users` 사용자 현황 조회 연결 (SCR-810)
+[ ] `VITE_USE_MOCK=false` 환경에서 `GET /api/admin/feedback` 피드백 통계/목록 조회 연결 (SCR-820)
+[ ] 관리자 키 활성화(`AdminKeyActivationResponse`) 흐름이 실제 API와 연결되는지 확인하고, 미확정이면 mock 유지 사유 기록
+[ ] feature13 인증과 통합 검증: 관리자 계정(`role === "ADMIN"`)으로 로그인 → `/admin` 진입 → 각 탭 데이터가 실제 응답으로 채워지는지 확인
+[ ] 일반 사용자 토큰으로 `/admin/*` 접근 시 라우터 가드 및 BFF 권한(`403`/`401`)이 함께 차단하는지 확인
+[ ] 각 Admin 화면의 Loading / Error / Empty / Success 상태가 실제 API 실패·빈 응답에서도 동작하는지 확인
+[ ] 기간 탭/페이지네이션 query parameter가 실제 BFF 계약과 일치하는지 확인하고, 불일치 시 `docs/api-spec.md`를 먼저 갱신
+[ ] 실제 API 전환 후 불필요한 `TODO(MOCK)` / `MOCK` 마커 제거 또는 후속 mock 유지 사유 기록
+[ ] Admin 연결 회귀 테스트 작성 (실제 API 응답 형태 기준 store/화면 상태 검증)
+
+#### 전환 체크리스트 (Admin 백엔드 연결시)
+
+- [ ] `src/types/api.ts`의 Admin 타입이 실제 API 응답과 일치하는가
+- [ ] `VITE_USE_MOCK=false`로 변경 시 `/admin` 전체 탭(운영/대시보드/피드백/동기화 이력)이 정상 동작하는가
+- [ ] feature13 인증 토큰(`Authorization: Bearer`)이 Admin API 요청에도 정상 첨부되는가
+- [ ] 관리자/일반 사용자 권한 분기가 라우터 가드와 BFF 응답(`401`/`403`) 양쪽에서 일관되게 동작하는가
+- [ ] `TODO(MOCK)` 마커가 모두 제거되었거나 mock 유지 사유가 기록되었는가
+- [ ] 백엔드 응답 구조가 `docs/api-spec.md`와 다르면 API 명세를 먼저 갱신했는가
+- [ ] 임시 토큰/하드코딩 secret을 커밋하지 않았는가
 
 # feature19: 출처 패널 그래프 뷰 후속 구현
 
