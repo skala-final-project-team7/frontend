@@ -389,7 +389,7 @@ describe('feature9 SCR-410, SCR-420, SCR-600 Chat conversation screen', () => {
       expect(writeText).toHaveBeenCalledWith(
         'S3 권한 오류는 IAM 정책의 버킷 접근 권한을 보강해 해결했습니다.',
       );
-      expect(wrapper.get('[data-testid="assistant-copy-confirmed-icon"]').exists()).toBe(true);
+      expect(wrapper.find('[data-testid="assistant-copy-confirmed-icon"]').exists()).toBe(true);
       expect(toasts.value.at(-1)).toMatchObject({
         message: '응답이 복사되었습니다',
         variant: 'success',
@@ -533,7 +533,7 @@ describe('feature9 SCR-410, SCR-420, SCR-600 Chat conversation screen', () => {
     await flushAsyncUpdates();
 
     expect(wrapper.get('[data-testid="assistant-like-button"]').attributes('disabled')).toBe('');
-    expect(wrapper.get('[data-testid="assistant-like-spinner"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="assistant-like-spinner"]').exists()).toBe(true);
 
     resolveFeedback(
       createJsonResponse(

@@ -203,7 +203,7 @@ describe('feature10.1 conversation kebab menu', () => {
     await trigger.trigger('click');
 
     expect(wrapper.get('[data-testid="conversation-action-menu"]').text()).toContain('고정');
-    expect(wrapper.get('[data-testid="conversation-menu-pin-icon"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="conversation-menu-pin-icon"]').exists()).toBe(true);
     expect(wrapper.find('[data-testid="conversation-menu-pin-off-icon"]').exists()).toBe(false);
 
     await recentItem.trigger('mouseleave');

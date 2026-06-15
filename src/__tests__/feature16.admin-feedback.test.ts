@@ -302,7 +302,7 @@ describe('feature16 Admin feedback (SCR-820)', () => {
     expect(wrapper.get('[data-testid="admin-feedback-comment-fb-uuid-101"]').text()).toContain(
       '출처가 질문과 관련 없었어요',
     );
-    expect(wrapper.get('[data-testid="admin-feedback-comment-fb-uuid-101"] svg').exists()).toBe(
+    expect(wrapper.find('[data-testid="admin-feedback-comment-fb-uuid-101"] svg').exists()).toBe(
       true,
     );
     expect(
