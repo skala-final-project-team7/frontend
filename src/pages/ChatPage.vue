@@ -29,8 +29,8 @@
 --------------------------------------------------
 -->
 <script setup lang="ts">
-import { HelpCircle } from '@lucide/vue';
-import { computed, onMounted, ref, watch } from 'vue';
+import { ArrowDown, HelpCircle } from '@lucide/vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import {
@@ -46,6 +46,7 @@ import ChatConversationView from '@/features/chat/ChatConversationView.vue';
 import ChatEmptyState from '@/features/chat/ChatEmptyState.vue';
 import ChatHeader from '@/features/chat/ChatHeader.vue';
 import ChatSidebar from '@/features/chat/ChatSidebar.vue';
+import ConversationDeleteConfirmModal from '@/features/chat/ConversationDeleteConfirmModal.vue';
 import ConversationSearchModal from '@/features/chat/ConversationSearchModal.vue';
 import FeedbackModal from '@/features/chat/FeedbackModal.vue';
 import MessageInput from '@/features/chat/MessageInput.vue';
@@ -73,6 +74,8 @@ type FeedbackTarget = {
   rating: FeedbackRating;
 };
 
+type ConversationMenuSource = 'header' | 'sidebar';
+
 const route = useRoute();
 const router = useRouter();
 const chatStore = useChatStore();
@@ -90,11 +93,17 @@ const userMessageVersionsById = ref<Record<string, UserMessageVersionState>>({})
 const isReferencePanelOpen = ref(false);
 const referenceSources = ref<Source[]>([]);
 const openConversationMenuId = ref('');
+const openConversationMenuSource = ref<ConversationMenuSource | ''>('');
 const feedbackTarget = ref<FeedbackTarget | null>(null);
 const isFeedbackSubmitting = ref(false);
+const pendingFeedbackMessageId = ref('');
+const pendingFeedbackRating = ref<FeedbackRating | ''>('');
 const isSearchModalOpen = ref(false);
 const isSettingsModalOpen = ref(false);
 const isHelpModalOpen = ref(false);
+const pendingDeleteConversation = ref<Conversation | null>(null);
+const isDeleteConversationSubmitting = ref(false);
+const isScrollToLatestVisible = ref(false);
 
 const routeConversationId = computed(() => {
   const conversationId = route.params.conversationId;
@@ -193,6 +202,34 @@ function closeHelpModal() {
   isHelpModalOpen.value = false;
 }
 
+function getDocumentScrollHeight() {
+  return Math.max(
+    document.body.scrollHeight,
+    document.body.offsetHeight,
+    document.documentElement.clientHeight,
+    document.documentElement.scrollHeight,
+    document.documentElement.offsetHeight,
+  );
+}
+
+function updateScrollToLatestVisibility() {
+  if (!hasActiveConversation.value) {
+    isScrollToLatestVisible.value = false;
+    return;
+  }
+
+  const distanceFromBottom = getDocumentScrollHeight() - (window.scrollY + window.innerHeight);
+
+  isScrollToLatestVisible.value = distanceFromBottom > 180;
+}
+
+function scrollToLatestMessage() {
+  window.scrollTo({
+    behavior: 'smooth',
+    top: getDocumentScrollHeight(),
+  });
+}
+
 async function selectSearchResult(conversationId: string) {
   closeSearchModal();
   await router.push({
@@ -221,11 +258,15 @@ async function selectConversation(conversationId: string) {
 
 function closeConversationMenu() {
   openConversationMenuId.value = '';
+  openConversationMenuSource.value = '';
 }
 
-function toggleConversationMenu(conversationId: string) {
-  openConversationMenuId.value =
-    openConversationMenuId.value === conversationId ? '' : conversationId;
+function toggleConversationMenu(conversationId: string, source: ConversationMenuSource) {
+  const isSameMenu =
+    openConversationMenuId.value === conversationId && openConversationMenuSource.value === source;
+
+  openConversationMenuId.value = isSameMenu ? '' : conversationId;
+  openConversationMenuSource.value = isSameMenu ? '' : source;
 }
 
 function replaceConversation(nextConversation: Conversation) {
@@ -279,10 +320,26 @@ async function renameConversation(conversation: Conversation) {
 }
 
 async function removeConversation(conversation: Conversation) {
-  if (!window.confirm('이 대화를 삭제할까요?')) {
-    closeConversationMenu();
+  pendingDeleteConversation.value = conversation;
+  closeConversationMenu();
+}
+
+function closeDeleteConversationModal() {
+  if (isDeleteConversationSubmitting.value) {
     return;
   }
+
+  pendingDeleteConversation.value = null;
+}
+
+async function confirmRemoveConversation() {
+  const conversation = pendingDeleteConversation.value;
+
+  if (!conversation || isDeleteConversationSubmitting.value) {
+    return;
+  }
+
+  isDeleteConversationSubmitting.value = true;
 
   try {
     await deleteConversation(conversation.conversationId);
@@ -298,6 +355,8 @@ async function removeConversation(conversation: Conversation) {
       variant: 'error',
     });
   } finally {
+    isDeleteConversationSubmitting.value = false;
+    pendingDeleteConversation.value = null;
     closeConversationMenu();
   }
 }
@@ -409,7 +468,31 @@ function closeReferencePanel() {
   referenceSources.value = [];
 }
 
-function openFeedbackModal(message: Message, rating: FeedbackRating) {
+async function openFeedbackModal(message: Message, rating: FeedbackRating) {
+  if (rating === 'LIKE') {
+    if (isFeedbackSubmitting.value) {
+      return;
+    }
+
+    isFeedbackSubmitting.value = true;
+    pendingFeedbackMessageId.value = message.messageId;
+    pendingFeedbackRating.value = rating;
+
+    try {
+      await submitMessageFeedback(message.messageId, {
+        rating: 'LIKE',
+      });
+    } catch {
+      showToast('피드백 제출에 실패했습니다', { variant: 'error' });
+    } finally {
+      isFeedbackSubmitting.value = false;
+      pendingFeedbackMessageId.value = '';
+      pendingFeedbackRating.value = '';
+    }
+
+    return;
+  }
+
   feedbackTarget.value = {
     messageId: message.messageId,
     rating,
@@ -432,6 +515,8 @@ async function submitFeedback(comment: string) {
   }
 
   isFeedbackSubmitting.value = true;
+  pendingFeedbackMessageId.value = target.messageId;
+  pendingFeedbackRating.value = target.rating;
 
   try {
     await submitMessageFeedback(target.messageId, {
@@ -443,10 +528,15 @@ async function submitFeedback(comment: string) {
     showToast('피드백 제출에 실패했습니다', { variant: 'error' });
   } finally {
     isFeedbackSubmitting.value = false;
+    pendingFeedbackMessageId.value = '';
+    pendingFeedbackRating.value = '';
   }
 }
 
 onMounted(async () => {
+  window.addEventListener('scroll', updateScrollToLatestVisibility, { passive: true });
+  window.addEventListener('resize', updateScrollToLatestVisibility);
+
   try {
     const [currentUser, conversationList] = await Promise.all([
       getCurrentUser(),
@@ -463,6 +553,14 @@ onMounted(async () => {
     profileImageUrl.value = '';
     conversations.value = [];
   }
+
+  await nextTick();
+  updateScrollToLatestVisibility();
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', updateScrollToLatestVisibility);
+  window.removeEventListener('resize', updateScrollToLatestVisibility);
 });
 
 watch(
@@ -475,6 +573,14 @@ watch(
     });
   },
 );
+
+watch(
+  () => [hasActiveConversation.value, activeMessages.value.length],
+  async () => {
+    await nextTick();
+    updateScrollToLatestVisibility();
+  },
+);
 </script>
 
 <template>
@@ -485,6 +591,7 @@ watch(
         :active-conversation-id="chatStore.activeConversationId"
         :conversations="conversations"
         :open-conversation-menu-id="openConversationMenuId"
+        :open-conversation-menu-source="openConversationMenuSource"
         @close-conversation-menu="closeConversationMenu"
         @open-settings="openSettingsModal"
         @open-search-modal="openSearchModal"
@@ -492,7 +599,9 @@ watch(
         @rename-conversation="renameConversation"
         @select-conversation="selectConversation"
         @start-new-chat="startNewChat"
-        @toggle-conversation-menu="toggleConversationMenu"
+        @toggle-conversation-menu="
+          (conversationId) => toggleConversationMenu(conversationId, 'sidebar')
+        "
         @toggle-conversation-pin="toggleConversationPin"
       />
 
@@ -506,12 +615,15 @@ watch(
           :current-conversation-title="currentConversationTitle"
           :has-active-conversation="hasActiveConversation"
           :open-conversation-menu-id="openConversationMenuId"
+          :open-conversation-menu-source="openConversationMenuSource"
           :profile-image-url="profileImageUrl"
           @close-conversation-menu="closeConversationMenu"
           @open-settings="openSettingsModal"
           @remove-conversation="removeConversation"
           @rename-conversation="renameConversation"
-          @toggle-conversation-menu="toggleConversationMenu"
+          @toggle-conversation-menu="
+            (conversationId) => toggleConversationMenu(conversationId, 'header')
+          "
           @toggle-conversation-pin="toggleConversationPin"
         />
 
@@ -527,6 +639,8 @@ watch(
               :messages="activeMessages"
               :editing-message-id="editingMessageId"
               :editing-content="editingContent"
+              :pending-feedback-message-id="pendingFeedbackMessageId"
+              :pending-feedback-rating="pendingFeedbackRating"
               :is-streaming="chatStore.isStreaming"
               :streaming-message-id="chatStore.streamingMessageId"
               :resent-message-ids="[...resentMessageIds]"
@@ -550,6 +664,27 @@ watch(
           >
             <MessageInput :is-streaming="chatStore.isStreaming" @submit="submitMessage" />
           </div>
+          <div
+            v-if="hasActiveConversation && isScrollToLatestVisible"
+            data-testid="scroll-to-latest-wrapper"
+            class="pointer-events-none fixed bottom-[148px] z-30 flex justify-center transition-[left,right] duration-200"
+            :class="[
+              isSidebarOpen ? 'left-[264px]' : 'left-[76px]',
+              isReferencePanelOpen ? 'right-[376px]' : 'right-0',
+            ]"
+          >
+            <BaseTooltip label="최신 메시지로 이동" placement="top">
+              <button
+                data-testid="scroll-to-latest-button"
+                type="button"
+                aria-label="최신 메시지로 이동"
+                class="pointer-events-auto inline-flex size-11 items-center justify-center rounded-full border border-bg-300 bg-primary-white text-overlay-dark-80 shadow-floating transition hover:bg-bg-100 focus-visible:outline-none focus-visible:shadow-focus"
+                @click="scrollToLatestMessage"
+              >
+                <ArrowDown aria-hidden="true" class="size-5" />
+              </button>
+            </BaseTooltip>
+          </div>
         </div>
 
         <div
@@ -557,10 +692,10 @@ watch(
           data-testid="floating-help-wrapper"
           class="fixed bottom-10 right-6 z-30"
         >
-          <BaseTooltip label="도움말 열기" placement="left">
+          <BaseTooltip label="도움말" placement="left">
             <BaseFloatingIconButton
               data-testid="floating-help-button"
-              v-bind="{ ariaLabel: '도움말 열기' }"
+              v-bind="{ ariaLabel: '도움말' }"
               @click="openHelpModal"
             >
               <HelpCircle aria-hidden="true" class="size-5" />
@@ -602,6 +737,13 @@ watch(
         @close="closeSettingsModal"
       />
       <SettingsHelpModal :is-open="isHelpModalOpen" @close="closeHelpModal" />
+      <ConversationDeleteConfirmModal
+        :conversation-title="pendingDeleteConversation?.title ?? ''"
+        :is-open="pendingDeleteConversation !== null"
+        :is-submitting="isDeleteConversationSubmitting"
+        @cancel="closeDeleteConversationModal"
+        @confirm="confirmRemoveConversation"
+      />
     </div>
   </main>
 </template>

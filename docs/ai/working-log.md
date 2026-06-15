@@ -4016,3 +4016,477 @@
 
 - `./scripts/test.sh`: passed, 19 files / 178 tests passed / lint·format passed
 - Playwright 검증: 1600×900·1280×760 모두 스크롤 0px, ASK LINA 상단 정렬 복원, 대화 라우트에서 floating 버튼 미표시 유지
+
+## 2026-06-12 - 채팅 삭제 확인 모달, 설정 모달 위치 보정, BFF 연동 주의 문서, 좋아요 피드백 즉시 전송
+
+### Scope
+
+- 채팅 케밥 메뉴의 삭제 액션에서 브라우저 기본 `window.confirm()` 제거
+- 앱 내부 중앙 삭제 확인 모달 추가
+  - 문구: `채팅을 삭제하시겠습니까?`
+  - 보조 메모리 안내 문구는 사용자 요청에 따라 제외
+  - 확인 시에만 기존 `DELETE /api/conversations/{conversationId}` 호출
+  - 취소/ESC/backdrop 클릭 시 삭제 API 미호출
+- 삭제 확인 모달 크기·타이포 보정
+  - 최초 구현 후 화면 대비 과하게 커 보여 `max-width`, 제목/본문/버튼 타이포, 버튼 높이, 여백을 축소
+  - 최종 기준: `max-w-[480px]`, 제목 18px, 본문 `text-body`, 버튼 `text-body`/`min-h-10`
+- 대화 메뉴 API 연결 상태 확인
+  - 고정/이름 변경은 `PATCH /api/conversations/{conversationId}`
+  - 삭제는 `DELETE /api/conversations/{conversationId}`
+  - mock 전용이 아니라 실제 BFF 계약에 맞게 API 함수로 연결되어 있음을 확인
+- API spec/BFF 연동 리스크 검토
+  - 대화 수정/삭제 계약은 현재 FE 구현과 spec이 일치
+  - 실제 인증 활성화 시 `Authorization: Bearer {accessToken}` 주입 및 token 저장/refresh 흐름이 선행 필요
+  - SSE `done.messageId`가 피드백 기능에 올바르게 반영되는지 BFF 통합 시 확인 필요
+- BFF 연동 주의사항 문서 작성
+  - `frontend/docs/deploy-bff-integration-notes.md`
+  - 대화 메뉴 API 계약, 인증 헤더, token 저장/refresh, PATCH 검증, soft delete 목록 제외, SSE messageId 확인 항목 정리
+- Settings 모달 헤더 타이틀 위치 미세 보정
+  - `설정` 텍스트에 `ml-2 pt-1` 적용해 약간 오른쪽/아래로 이동
+- assistant 좋아요 피드백 UX 변경
+  - thumbs up 클릭 시 피드백 코멘트 모달을 열지 않고 즉시 `POST /api/messages/{messageId}/feedback`
+  - payload는 `{ rating: "LIKE" }`만 전송
+  - thumbs down은 기존처럼 사유/comment 모달 유지
+
+### Changed Files
+
+- `src/features/chat/ConversationDeleteConfirmModal.vue`: 삭제 확인 중앙 모달 신규 추가 및 크기/타이포 보정
+- `src/pages/ChatPage.vue`: 삭제 확인 모달 상태/confirm 흐름 연결, 좋아요 피드백 즉시 POST 분기 추가
+- `src/__tests__/feature10.1.conversation-menu.test.ts`: 삭제 확인 모달 표시, confirm 전 DELETE 미호출, 취소 시 DELETE 미호출 테스트 추가
+- `src/__tests__/feature9.chat-conversation.test.ts`: thumbs up 클릭 시 모달 없이 `{ rating: "LIKE" }` POST 검증으로 테스트 갱신
+- `src/__tests__/feature18.settings-modal.test.ts`: Settings 타이틀 기대값을 실제 한국어 UI(`설정`)와 정합화
+- `src/features/settings/SettingsModal.vue`: 설정 타이틀 위치 미세 보정
+- `frontend/docs/deploy-bff-integration-notes.md`: 배포 시 BFF 연동 주의사항 신규 작성
+
+### Commands
+
+- `npm test -- src/__tests__/feature10.1.conversation-menu.test.ts`
+- `npm test -- src/__tests__/feature18.settings-modal.test.ts`
+- `npm test -- src/__tests__/feature9.chat-conversation.test.ts`
+- `npm test -- src/__tests__/feature10.1.conversation-menu.test.ts src/__tests__/feature18.settings-modal.test.ts`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- `feature10.1.conversation-menu.test.ts`: passed, 6 tests
+- `feature18.settings-modal.test.ts`: passed, 12 tests
+- `feature9.chat-conversation.test.ts`: passed, 25 tests
+- `./scripts/test.sh`: passed, 19 files / 179 tests passed
+- `./scripts/verify.sh`: passed
+- `./scripts/format.sh` / `./scripts/lint.sh`: passed
+
+### Notes
+
+- 삭제 모달 추가 전 기존 `window.confirm()`은 브라우저 기본 UI라 앱 디자인과 맞지 않았음
+- Settings 모달 테스트가 실제 UI는 `설정`, 테스트 기대값은 `Settings`로 어긋나 있어 실제 UI 기준으로 정정
+- BFF 통합 시 가장 큰 남은 리스크는 대화 메뉴 API가 아니라 인증 Bearer 헤더/세션 token 저장·refresh 흐름임
+
+## 2026-06-15 - 대화 화면 최신 메시지 이동 버튼 추가
+
+### Scope
+
+- 긴 대화에서 사용자가 과거 메시지를 보기 위해 위로 스크롤한 경우, 입력창 바로 위 중앙에 최신 메시지 이동 버튼을 표시
+- 버튼은 원형이며 `ArrowDown` 아이콘 사용
+- 현재 대화 화면에서만 표시하고, 새 채팅 빈 화면에서는 미표시
+- page-level scroll 구조를 유지
+  - 별도 메시지 내부 스크롤 컨테이너를 만들지 않음
+  - `window` scroll/resize 이벤트로 문서 하단과의 거리를 계산
+- 하단에서 180px 이상 떨어진 경우에만 버튼 표시
+- 버튼 클릭 시 `window.scrollTo({ top: documentHeight, behavior: "smooth" })`로 최신 메시지 위치로 이동
+- 사이드바 열림/닫힘, 출처 패널 열림 상태에서도 입력창 영역과 동일한 left/right 기준으로 중앙 정렬 유지
+
+### Changed Files
+
+- `src/pages/ChatPage.vue`
+  - `ArrowDown` 아이콘 import
+  - `isScrollToLatestVisible` 상태 추가
+  - document scroll height 계산, 표시 조건 갱신, smooth scroll handler 추가
+  - scroll/resize listener 등록 및 unmount 정리
+  - `scroll-to-latest-wrapper` / `scroll-to-latest-button` 렌더링 추가
+- `src/__tests__/feature9.chat-conversation.test.ts`
+  - page scroll 상태를 테스트에서 제어하는 helper 추가
+  - 하단에서 멀어졌을 때 버튼 표시, 클릭 시 smooth scroll 호출, 하단 근처에서 숨김 회귀 테스트 추가
+
+### Commands
+
+- `npm test -- src/__tests__/feature9.chat-conversation.test.ts`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+
+### Results
+
+- `feature9.chat-conversation.test.ts`: passed, 26 tests
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+
+### Notes
+
+- 기존 대화 화면은 message-list 내부 스크롤이 아니라 page-level scroll 방식이므로, 최신 이동 버튼도 `window` 스크롤 기준으로 구현
+- 버튼 wrapper는 `pointer-events-none`, 실제 button은 `pointer-events-auto`로 두어 입력 영역 위 floating UI가 주변 클릭을 과도하게 막지 않도록 처리
+
+## 2026-06-15 - 랜딩 화면 비율 변화 안정화
+
+### Scope
+
+- 랜딩 히어로 화면에서 화면 비율이 좁아질 때 LINA 로고, acronym 텍스트, 그래프 노드가 서로 어긋나거나 겹치는 문제 수정
+- 히어로 그래프/로고/acronym 텍스트 배치 기준을 viewport 전체가 아니라 16:9 내부 stage 기준으로 변경
+- 로그인 CTA는 stage 최대 폭 기준으로 우측 위치를 잡아 넓은 화면과 좁은 화면에서 과도하게 밀리지 않도록 보정
+- `How it works` 기능 섹션의 Ask 목업이 좁은 비율에서 화면 밖으로 잘리는 문제 수정
+  - 입력 박스를 `-right-28`로 화면 밖에 배치하던 구조 제거
+  - Ask 목업을 `max-w-[560px]` 컨테이너 안에서 안정적으로 배치
+  - 화살표 경로와 아이콘 위치를 새 목업 폭에 맞게 재조정
+- 기능 섹션 그리드는 고정 `grid-cols-2` 대신 최소 폭을 가진 명시적 grid track으로 조정
+
+### Changed Files
+
+- `src/pages/LandingPage.vue`
+  - `landing-hero-stage` 추가
+  - 히어로 그래프/로고/acronym 텍스트를 stage 내부 absolute 배치로 재구성
+  - acronym 텍스트 좌표를 로고 내부 안정 위치로 변경
+  - Ask 목업의 음수 right offset 제거 및 내부 컨테이너 기준 위치로 변경
+  - Ask 화살표 SVG 경로와 아이콘 위치 재조정
+- `src/__tests__/feature12.auth-login-role-selection.test.ts`
+  - 랜딩 hero stage 존재 및 16:9 기준 검증 추가
+  - acronym 좌표 기대값 갱신
+  - Ask 목업이 음수 offset 대신 컨테이너 내부 위치를 쓰는지 검증 갱신
+
+### Commands
+
+- `npm test -- src/__tests__/feature12.auth-login-role-selection.test.ts`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+
+### Results
+
+- `feature12.auth-login-role-selection.test.ts`: passed, 9 tests
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+
+### Notes
+
+- 이번 변경은 랜딩 화면의 시각 배치 안정화만 다루며 API, 인증, 채팅, 설정 로직은 변경하지 않음
+- 깨짐 원인은 viewport 기준 퍼센트 배치와 음수 오프셋이 섞여 특정 화면 비율에서 요소가 서로 다른 기준으로 움직이던 구조였음
+
+## 2026-06-15 - 설정 모달 헤더 구분선 간격 보정
+
+### Scope
+
+- 설정 모달 상단 `설정` 타이틀 아래 구분선이 너무 아래에 있어 상단 여백이 과해 보이는 문제 보정
+- 헤더 하단 padding을 줄여 구분선을 조금 위로 이동
+- 본문 wrapper의 상단 padding도 소폭 줄여 구분선과 본문 시작 간격이 과하게 벌어지지 않도록 조정
+
+### Changed Files
+
+- `src/features/settings/SettingsModal.vue`
+  - header `pb-9` → `pb-7`
+  - body grid `pt-10` → `pt-9`
+
+### Commands
+
+- `npm test -- src/__tests__/feature18.settings-modal.test.ts`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+
+### Results
+
+- `feature18.settings-modal.test.ts`: passed, 12 tests
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- 설정 모달 UI 간격만 변경했으며 기능/문구/API 동작 변경 없음
+
+## 2026-06-15 - assistant 응답 복사 기능 연결
+
+### Scope
+
+- 채팅방 assistant 답변 하단의 `응답 복사` 아이콘이 버튼만 있고 실제 동작이 없는 상태를 수정
+- 클릭 시 해당 assistant message의 `content`를 `navigator.clipboard.writeText`로 복사
+- 복사 성공 시 `응답이 복사되었습니다` toast 표시
+- 복사 실패 시 `응답 복사에 실패했습니다` error toast 표시
+- `다시 시도` 버튼은 사용자 요청에 따라 이번 작업에서 코드 수정하지 않고 가능 여부만 검토
+
+### Changed Files
+
+- `src/features/chat/MessageBubble.vue`
+  - `useToast` 연결
+  - assistant 응답 복사 handler 추가
+  - `assistant-copy-button` 클릭 이벤트 연결
+- `src/__tests__/feature9.chat-conversation.test.ts`
+  - assistant 응답 복사 성공 시 clipboard 호출 및 success toast 검증 추가
+  - assistant 응답 복사 실패 시 error toast 검증 추가
+
+### Commands
+
+- `npm test -- src/__tests__/feature9.chat-conversation.test.ts`
+
+### Results
+
+- `feature9.chat-conversation.test.ts`: passed, 28 tests
+
+### Notes
+
+- 다시시도 기능은 현재 API 응답 형태를 유지하면서도 직전 user message를 q로 재전송하는 방식으로 구현 가능
+- 다만 수정본/재생성 이력이 섞일 경우 정확한 query 매핑을 위해 BFF가 `parentUserMessageId` 또는 원본 query를 내려주는 계약이 더 안전함
+
+## 2026-06-15 - 피드백 제출 중 버튼 로딩 표시
+
+### Scope
+
+- assistant 피드백 POST 진행 중 해당 메시지의 해당 버튼 위치에 작은 원형 spinner 표시
+- 요청 중인 버튼은 disabled 처리해 중복 클릭 방지
+- LIKE 즉시 POST 흐름에서 버튼 아이콘이 spinner로 바뀌었다가 완료 후 원래 아이콘으로 복구
+- DISLIKE 제출 중에도 같은 pending 상태를 내려줄 수 있도록 messageId/rating 기반 상태 구조 추가
+- 다시시도 버튼은 구현하지 않고, 추후 발전 가능성 TODO로 남김
+
+### Changed Files
+
+- `src/pages/ChatPage.vue`
+  - pending feedback message id/rating 상태 추가
+  - LIKE/DISLIKE feedback submit 시작/종료 시 pending 상태 갱신
+  - `ChatConversationView`에 pending 상태 전달
+- `src/features/chat/ChatConversationView.vue`
+  - pending feedback 상태 prop 추가
+  - 현재 message에 해당하는 pending rating만 `MessageBubble`로 전달
+- `src/features/chat/MessageBubble.vue`
+  - pending rating prop 추가
+  - LIKE/DISLIKE 버튼에 disabled + 원형 spinner 표시
+  - 다시시도 버튼 확장 방향 TODO 추가
+- `src/__tests__/feature9.chat-conversation.test.ts`
+  - LIKE feedback POST pending 중 spinner/disabled 표시 및 완료 후 복구 테스트 추가
+
+### Commands
+
+- `npm test -- src/__tests__/feature9.chat-conversation.test.ts`
+
+### Results
+
+- `feature9.chat-conversation.test.ts`: passed, 29 tests
+
+## 2026-06-15 - Admin 피드백 추이 날짜 normalize 보강
+
+### Scope
+
+- Admin 피드백 추이의 `7일/14일/30일` FE 필터가 실데이터 datetime 문자열에도 안정적으로 동작하도록 보강
+- API 계약과 공용 타입은 변경하지 않음
+
+### Changed Files
+
+- `src/features/admin/AdminFeedbackSection.vue`
+  - trend 기간 비교 시 `date.slice(0, 10)` 기준으로 normalize 하도록 수정
+  - 차트 라벨도 normalize된 날짜 기준 `MM-DD`로 표시
+- `src/__tests__/feature16.admin-feedback.test.ts`
+  - trend mock을 `YYYY-MM-DDTHH:mm:ss+09:00` 형식으로 바꿔 실데이터 형태를 재현
+  - 7일/14일/30일 필터 테스트가 동일하게 통과하는지 검증
+
+### Commands
+
+- `npm test -- src/__tests__/feature16.admin-feedback.test.ts`
+
+### Results
+
+- `feature16.admin-feedback.test.ts`: passed, 12 tests
+
+### Notes
+
+- 현재 실제 즉시 POST 버튼은 LIKE이므로 화면에서 가장 명확한 pending UI는 LIKE 버튼에 적용됨
+- DISLIKE는 모달에서 submit하는 흐름이지만, submit 중 message action row에도 같은 pending 상태를 표현할 수 있도록 상태 구조를 열어둠
+
+## 2026-06-15 - 고정 대화 메뉴 PinOff 아이콘 적용
+
+### Scope
+
+- 대화 케밥 메뉴의 pin 항목 아이콘을 고정 상태에 따라 분기
+- 미고정 대화는 기존처럼 `Pin` 아이콘과 `고정` 텍스트 유지
+- 고정된 대화는 `PinOff` 아이콘과 `고정 해제` 텍스트 표시
+
+### Changed Files
+
+- `src/features/chat/ConversationActionMenu.vue`
+  - `PinOff` icon import
+  - `isPinned` 상태에 따라 `Pin` / `PinOff` 조건부 렌더링
+- `src/__tests__/feature10.1.conversation-menu.test.ts`
+  - 미고정 메뉴에서 `conversation-menu-pin-icon` 표시 검증
+  - 고정 메뉴에서 `conversation-menu-pin-off-icon` 표시 검증
+
+### Commands
+
+- `npm test -- src/__tests__/feature10.1.conversation-menu.test.ts`
+
+### Results
+
+- `feature10.1.conversation-menu.test.ts`: passed, 7 tests
+
+## 2026-06-15 - Admin 시계열 차트 FE 기간 필터링
+
+### Scope
+
+- Admin 사용자 현황의 `시간대별 접속 추이` 기간 탭을 FE 필터링으로 동작하게 변경
+- Admin 피드백의 `피드백 추이` 기간 탭을 FE 필터링으로 동작하게 변경
+- BFF/API 계약과 `docs/api-spec.md`는 변경하지 않음
+- 피드백 추이는 기존 `date` 필드를 기준으로 7일/14일/30일 필터 적용
+- 접속 추이는 기존 `{ hour, count }` 집계 응답을 그대로 지원
+  - 런타임 데이터에 `date`가 섞여 들어오는 경우에만 내부적으로 기간 필터링 후 hour별 count 합산
+  - `date`가 없으면 기존처럼 전체 hourly trend를 그대로 사용
+
+### Changed Files
+
+- `src/features/admin/AdminDashboardSection.vue`
+  - active period 기준 접속 추이 필터링/시간별 합산 computed 추가
+  - 모달 chart와 rail sparkline이 필터링된 trend를 사용하도록 변경
+- `src/features/admin/AdminFeedbackSection.vue`
+  - active period 기준 feedback trend 필터링 computed 추가
+  - trend chart가 필터링된 trend를 사용하도록 변경
+- `src/__tests__/feature15.admin-dashboard.test.ts`
+  - 날짜 포함 런타임 데이터가 들어왔을 때 today/7d/30d 필터링 및 hour 합산 검증
+- `src/__tests__/feature16.admin-feedback.test.ts`
+  - 7일/14일/30일 탭 전환 시 chart bar 수와 라벨이 FE에서 필터링되는지 검증
+
+### Commands
+
+- `npm test -- src/__tests__/feature15.admin-dashboard.test.ts`
+- `npm test -- src/__tests__/feature16.admin-feedback.test.ts`
+
+### Results
+
+- `feature15.admin-dashboard.test.ts`: passed, 18 tests
+- `feature16.admin-feedback.test.ts`: passed, 12 tests
+
+## 2026-06-15 - 응답 복사 성공 체크 아이콘 표시
+
+### Scope
+
+- assistant 응답 복사 성공 후 복사 아이콘 대신 check 아이콘을 임시 표시
+- 성공 상태는 4초 동안 유지 후 기존 복사 아이콘으로 자동 복구
+- 복사 실패 시에는 check 아이콘을 표시하지 않고 기존 error toast만 유지
+- 컴포넌트 unmount 시 check 복구 timer 정리
+
+### Changed Files
+
+- `src/features/chat/MessageBubble.vue`
+  - `Check` icon import
+  - copy 성공 상태와 4초 timer 추가
+  - `assistant-copy-confirmed-icon` 렌더링 추가
+- `src/__tests__/feature9.chat-conversation.test.ts`
+  - 복사 성공 직후 check icon 표시 검증
+  - 4초 후 check icon 제거 검증
+
+### Commands
+
+- `npm test -- src/__tests__/feature9.chat-conversation.test.ts`
+
+### Results
+
+- `feature9.chat-conversation.test.ts`: passed, 29 tests
+
+## 2026-06-15 - Admin 피드백 추이 기간 필터 데이터 보강 및 긍정/부정 비율 기간 재계산
+
+### Scope
+
+- 접속 추이(SCR-810): UI/동작은 그대로 두고, 기간 탭(오늘/7일/30일)이 동일하게 렌더링되는 원인이
+  `hourlyAccessTrend`에 `date` 필드가 없기 때문임을 `filteredHourlyAccessTrend` 위 TODO 주석으로 명시
+  - 추후 응답에 `date(YYYY-MM-DD)`가 추가되면 기존 일자 범위 필터가 동작함을 함께 기록
+- 피드백 추이(SCR-820): mock `trend`가 7일치뿐이라 7/14/30일 탭이 동일하게 보이던 문제를 30일치 데이터로 보강
+  - FE가 from/to 없이 전체 trend를 받아 기간 탭으로 클라이언트 필터링하는 기존 동작을 그대로 활용
+  - 30개 바에서 일자 라벨이 겹치지 않도록 라벨 thinning 추가(가장 최근 일자는 항상 표기)
+- 긍정/부정 비율 카드를 선택한 기간 탭(7/14/30일)의 추이 합계로 함께 재계산하도록 변경
+  - 게이지 퍼센트·긍정/부정 칩 건수를 기간 합계 기준으로 표시
+  - 부정 피드백 원문 목록/총 건수/페이지네이션은 서버 페이지네이션 기준이라 전체 `dislikeCount` 유지
+- BFF/API 계약과 `docs/api-spec.md`는 변경하지 않음
+
+### Test Cases
+
+- 긍정/부정 비율 카드가 기본 7일 구간(06-14·06-15) 합계(긍정 63건/부정 8건 → 89%)로 렌더링된다.
+- 기간 탭을 30일로 전환하면 비율 카드가 전체 구간 합계(긍정 186건/부정 31건 → 86%)로 재계산된다.
+- 기간 탭 전환 시 API를 재호출하지 않고 FE에서 trend bar 수·라벨이 필터링된다(기존 회귀 유지).
+
+### Changed Files
+
+- `src/features/admin/AdminDashboardSection.vue`
+  - `filteredHourlyAccessTrend` 위에 `date` 필드 부재로 기간 탭이 동작하지 않음을 설명하는 TODO 주석 추가(UI/로직 변경 없음)
+- `src/features/admin/AdminFeedbackSection.vue`
+  - 선택 기간 합계로 긍정/부정 비율을 재계산하는 `periodFeedbackSummary` computed 추가, `positivePercent`·비율 칩 연결
+  - 긴 구간 일자 라벨 겹침 방지용 `labelStep`/`showLabel` 추가 및 라벨 `v-if` 가드 적용
+- `src/mocks/data.ts`
+  - 7일치 인라인 `trend`를 30일치 생성 함수 `buildMockFeedbackTrend()`로 교체, `AdminFeedbackTrendItem` import 추가
+- `src/__tests__/feature16.admin-feedback.test.ts`
+  - 비율 카드 검증을 전체 기간(312/47/87%) → 선택 기간(63건/8건/89%) 기준으로 갱신
+  - 기간 탭 30일 전환 시 비율 카드가 86%·186건·31건으로 재계산되는지 검증 추가
+
+### Commands
+
+- `npm test -- src/__tests__/feature16.admin-feedback.test.ts`
+- `npm test -- src/__tests__/feature15.admin-dashboard.test.ts src/__tests__/feature17.admin-sync-history.test.ts`
+- `npx eslint`(변경 파일 대상, `--max-warnings 0`)
+- `npm run typecheck`
+
+### Results
+
+- `feature16.admin-feedback.test.ts`: passed, 12 tests
+- `feature15.admin-dashboard.test.ts` / `feature17.admin-sync-history.test.ts`: passed, 18 / 8 tests
+- 변경 파일 eslint: passed (max-warnings 0)
+- `npm run typecheck`: 변경으로 인한 신규 에러 없음(기존 선재 에러 17건은 본 작업 범위 밖 테스트·`MessageBubble.vue`에 존재)
+
+### Notes / Remaining Issues
+
+- 접속 추이 기간 탭은 응답에 `date`가 추가되기 전까지 오늘/7일/30일이 동일하게 렌더링된다(현행 UI 유지, TODO로 추적).
+- 피드백 추이는 mock 30일 데이터 기준으로 동작하며, 실제 백엔드 연결 시 백엔드가 from/to 또는 30일치 trend를 내려주면 그대로 동작한다.
+- 비율 카드(기간 합계)와 부정 피드백 원문 총 건수(전체 `dislikeCount`)는 기준이 달라 값이 다를 수 있음(의도된 동작).
+
+## 2026-06-15 - Admin 피드백 추이 커스텀 기간 선택(드롭다운) 추가 및 구간별 비율 차이 mock
+
+### Scope
+
+- 피드백 추이(SCR-820) 7/14/30일 프리셋 토글 옆에 `기간 직접 선택` 드롭다운 추가
+  - 받은 trend의 최소~최대 일자 범위 안에서 시작일/종료일을 직접 선택(최근 구간뿐 아니라 과거 30일 단위 구간도 이동해 조회 가능)
+  - native `<input type="date">` 사용, `min`/`max`로 데이터 범위 밖 선택을 막음(클램핑)
+  - 패널 안내 문구를 고정 "최근 30일" → 실제 데이터 범위(`{min} ~ {max}`)로 동적 표기해 "최근 30일만" 오해 제거
+  - 시작일 > 종료일이면 자동으로 뒤바꿔 항상 `from ≤ to` 보장
+  - 커스텀 범위 활성 시 프리셋 탭은 비선택 표시, 프리셋 선택 시 커스텀 해제
+  - from/to 를 API로 보내지 않고 FE에서 in-memory trend 를 잘라 표시(차트·비율 카드 모두 반영)
+- 부정 피드백 원문 목록/총 건수/페이지네이션은 기존대로 서버 페이지네이션 기준(`dislikeCount`) 유지 — 기간 필터 비대상
+- mock 데이터를 약 3개월(90일)로 확장해 30일 단위 구간을 과거로 이동해도 비율 차이가 보이도록 변경
+  - 최근일수록 부정 비중을 낮추는 시나리오(과거 약 40% → 최근 약 4%)
+  - 데이터 범위: 2026-03-17 ~ 2026-06-14
+  - 30일 윈도우 긍정 비율 예: 과거 30일 ≈ 66%, 중간 30일 ≈ 78%, 최근 30일 ≈ 90%
+  - 프리셋 긍정 비율 예: 7일 ≈ 94%, 14일 ≈ 93%, 30일 ≈ 90%
+
+### Test Cases
+
+- 커스텀 범위 토글로 패널을 열고 06-01~06-14 선택 시 trend 바가 3개(06-01·06-08·06-14)로 필터링된다.
+- 커스텀 범위 적용 시 프리셋 탭은 모두 비선택(aria-selected=false)이 된다.
+- 비율 카드도 커스텀 범위 합계(긍정 111건/부정 18건 → 86%)로 재계산된다.
+- 커스텀 범위 필터는 FE에서 처리하며 API를 재호출하지 않는다.
+
+### Changed Files
+
+- `src/features/admin/AdminFeedbackSection.vue`
+  - `Calendar` 아이콘 import
+  - `trendDateBounds`(min/max), 커스텀 범위 상태(`customRange`/`isCustomActive`/`isCustomRangeOpen`/`draftFrom`/`draftTo`)와 `selectPreset`/`openCustomRange`/`closeCustomRange`/`applyCustomRange` 추가
+  - `filteredFeedbackTrend`가 프리셋 또는 커스텀 범위로 trend 를 자르도록 변경
+  - 프리셋 토글 옆 `기간 직접 선택` 드롭다운 패널(날짜 입력·적용/취소·외부 클릭 닫기) 템플릿 추가, 안내 문구를 실제 데이터 범위로 동적 표기
+- `src/mocks/data.ts`
+  - 추이 데이터 범위를 30일 → 90일로 확장(`MOCK_ADMIN_FEEDBACK_TREND_DAYS`)
+  - `buildMockFeedbackTrend()`를 최근일수록 부정 비중이 낮아지는 시나리오로 변경(구간별 비율 차이 노출)
+- `src/__tests__/feature16.admin-feedback.test.ts`
+  - 커스텀 날짜 범위 필터링·비율 카드 재계산·프리셋 비선택·API 미재호출 검증 추가
+
+### Commands
+
+- `npm test -- src/__tests__/feature16.admin-feedback.test.ts`
+- `npm test -- src/__tests__/feature15.admin-dashboard.test.ts src/__tests__/feature17.admin-sync-history.test.ts`
+- `npx eslint`(변경 파일 대상, `--max-warnings 0`)
+- `npm run typecheck`
+
+### Results
+
+- `feature16.admin-feedback.test.ts`: passed, 13 tests
+- admin 3개 스위트(`feature15`/`feature16`/`feature17`): passed, 39 tests
+- 변경 파일 eslint: passed (max-warnings 0)
+- `npm run typecheck`: 총 에러 17건으로 변경 전과 동일(신규 에러 없음, 모두 본 작업 범위 밖 선재 이슈)
+
+### Notes / Remaining Issues
+
+- 커스텀 범위는 FE in-memory 필터라 선택 가능 범위가 받은 trend(현재 mock 90일)로 제한된다. 실제 백엔드에서 더 긴 기간이 필요하면 backend `from`/`to` 지원과 FE 전송이 필요하다.
+- 부정 피드백 원문 목록은 기간 필터 대상이 아니라, 커스텀 범위와 원문 목록 표시 범위가 다를 수 있음(사용자 확인된 의도된 동작).

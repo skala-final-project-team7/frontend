@@ -26,6 +26,7 @@ const props = defineProps<{
   currentConversationTitle: string;
   hasActiveConversation: boolean;
   openConversationMenuId: string;
+  openConversationMenuSource: string;
   profileImageUrl: string;
 }>();
 
@@ -65,7 +66,10 @@ watch(
       <div class="flex items-center gap-3">
         <ConversationActionMenu
           v-if="currentConversation"
-          :is-open="openConversationMenuId === currentConversation.conversationId"
+          :is-open="
+            openConversationMenuSource === 'header' &&
+            openConversationMenuId === currentConversation.conversationId
+          "
           :is-pinned="currentConversation.isPinned"
           menu-label="현재 대화 메뉴"
           trigger-class="size-10 rounded-full"

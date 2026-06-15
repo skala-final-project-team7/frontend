@@ -97,7 +97,7 @@ describe('feature18 Settings modal', () => {
     expect(getByTestId('settings-modal-backdrop').classList).toContain('fixed');
     expect(getByTestId('settings-dialog').getAttribute('role')).toBe('dialog');
     expect(getByTestId('settings-dialog').getAttribute('aria-modal')).toBe('true');
-    expect(getByTestId('settings-title').textContent?.trim()).toBe('Settings');
+    expect(getByTestId('settings-title').textContent?.trim()).toBe('설정');
     expect(document.body.querySelector('[data-testid="settings-tab-general"]')).toBeNull();
     expect(getByTestId('settings-account-panel').textContent).toContain('연결된 계정');
     expect(getByTestId('settings-account-nav-item').textContent).toContain('계정 관리');
@@ -106,6 +106,11 @@ describe('feature18 Settings modal', () => {
     expect(getByTestId('settings-confluence-icon').getAttribute('src')).toContain(
       'confluence-icon.png',
     );
+    expect(getByTestId('settings-slack-card').textContent).toContain('슬랙 연동하기');
+    expect(getByTestId('settings-slack-icon').getAttribute('src')).toContain('slack-icon.png');
+    expect(getByTestId('settings-notion-card').textContent).toContain('노션 연동하기');
+    expect(getByTestId('settings-notion-icon').getAttribute('src')).toContain('notion-icon.png');
+    expect(getByTestId('settings-upcoming-overlay').textContent).toContain('To be continued');
     expect(getByTestId('settings-account-panel').textContent).toContain(
       '인증 갱신 날짜 : 2026.08.18',
     );

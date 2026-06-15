@@ -38,6 +38,12 @@ type TabPaginationMap = Record<string, TabPaginationState>;
 
 type PeriodTab = 'today' | '7d' | '30d';
 
+type DatedHourlyAccessTrendItem = {
+  date?: string;
+  hour: number;
+  count: number;
+};
+
 const PERIOD_TABS: { key: PeriodTab; label: string }[] = [
   { key: 'today', label: '오늘' },
   { key: '7d', label: '7일' },
@@ -55,6 +61,56 @@ const error = ref('');
 const stats = ref<AdminStats | null>(null);
 const usersData = ref<AdminUsersResponse | null>(null);
 const activePeriod = ref<PeriodTab>('today');
+
+function dateKey(value: string | undefined): string | null {
+  if (!value) return null;
+  return value.slice(0, 10);
+}
+
+function periodDays(period: PeriodTab): number {
+  if (period === 'today') return 1;
+  if (period === '7d') return 7;
+  return 30;
+}
+
+function startDateKey(anchorDateKey: string, days: number): string {
+  const [year, month, day] = anchorDateKey.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  date.setUTCDate(date.getUTCDate() - (days - 1));
+  return date.toISOString().slice(0, 10);
+}
+
+// TODO(접속 추이 기간 필터): GET /api/admin/stats 의 hourlyAccessTrend 는 현재 시간대(hour)별
+// 집계만 내려오고 date 필드가 없다. 그래서 오늘/7일/30일 탭이 모두 같은 데이터를 렌더링한다.
+// 추후 응답 항목에 date(YYYY-MM-DD)가 추가되면 아래 일자 범위 필터가 실제로 동작한다.
+// 그 전까지는 date 없는 항목이면 전체 trend 를 그대로 반환하며 UI는 현행 유지한다.
+const filteredHourlyAccessTrend = computed(() => {
+  const trend = (stats.value?.hourlyAccessTrend ?? []) as DatedHourlyAccessTrendItem[];
+  if (trend.length === 0) return [];
+
+  const datedTrend = trend.filter((item) => dateKey(item.date));
+  if (datedTrend.length === 0) return trend;
+
+  const anchorDateKey = datedTrend
+    .map((item) => dateKey(item.date)!)
+    .sort((a, b) => a.localeCompare(b))
+    .at(-1)!;
+  const fromDateKey = startDateKey(anchorDateKey, periodDays(activePeriod.value));
+  const countsByHour = new Map<number, number>();
+
+  datedTrend
+    .filter((item) => {
+      const itemDateKey = dateKey(item.date)!;
+      return itemDateKey >= fromDateKey && itemDateKey <= anchorDateKey;
+    })
+    .forEach((item) => {
+      countsByHour.set(item.hour, (countsByHour.get(item.hour) ?? 0) + item.count);
+    });
+
+  return Array.from(countsByHour, ([hour, count]) => ({ hour, count })).sort(
+    (a, b) => a.hour - b.hour,
+  );
+});
 
 // ── 접속 추이 확대 모달 ─────────────────────────────────────────────
 const isTrendModalOpen = ref(false);
@@ -95,7 +151,7 @@ const CHART_HOUR_DOMAIN_MAX = 24;
 const CHART_HOUR_TICK_STEP = 3;
 
 const trendChart = computed(() => {
-  const trend = stats.value?.hourlyAccessTrend;
+  const trend = filteredHourlyAccessTrend.value;
   if (!trend || trend.length < 2) return null;
 
   const innerW = CHART_W - CHART_PAD_LEFT - CHART_PAD_RIGHT;
@@ -125,6 +181,7 @@ const trendChart = computed(() => {
     'Z',
   ].join(' ');
   const dots = trend.map((d) => ({
+    hour: d.hour,
     cx: toX(d.hour),
     cy: toY(d.count),
     label: `${d.hour}시 ${d.count}건`,
@@ -151,7 +208,7 @@ const SPARK_W = 220;
 const SPARK_H = 56;
 
 const sparkline = computed(() => {
-  const trend = stats.value?.hourlyAccessTrend;
+  const trend = filteredHourlyAccessTrend.value;
   if (!trend || trend.length < 2) return null;
 
   const max = Math.max(...trend.map((d) => d.count), 1);
@@ -881,6 +938,7 @@ function formatDateTime(value: string): string {
           <circle
             v-for="dot in trendChart.dots"
             :key="dot.label"
+            :data-testid="`admin-access-trend-modal-dot-${dot.hour}`"
             :cx="dot.cx"
             :cy="dot.cy"
             r="3"

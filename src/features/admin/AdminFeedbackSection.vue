@@ -19,7 +19,7 @@
 -->
 <script setup lang="ts">
 import { computed, inject, onMounted, ref, watch } from 'vue';
-import { RefreshCw, ThumbsDown, ThumbsUp } from '@lucide/vue';
+import { Calendar, RefreshCw, ThumbsDown, ThumbsUp } from '@lucide/vue';
 
 import { getAdminFeedback } from '@/api';
 import { BaseIconButton, BaseSpinner, BaseTooltip, EmptyState, ErrorRetryState } from '@/shared';
@@ -58,7 +58,21 @@ const activePeriod = ref<PeriodTab>('7d');
 // viewBox(0 0 100 58) 기준 반지름 42 반원 arc의 전체 길이
 const GAUGE_ARC_LENGTH = Math.PI * 42;
 
-const positivePercent = computed(() => Math.round((feedback.value?.positiveRatio ?? 0) * 100));
+// 긍정/부정 비율 카드는 선택한 기간 탭(7/14/30일)의 추이 합계로 함께 재계산한다.
+// (부정 피드백 원문 목록·총 건수는 서버 페이지네이션 기준이라 전체 dislikeCount를 그대로 사용한다.)
+const periodFeedbackSummary = computed(() => {
+  const trend = filteredFeedbackTrend.value;
+  const likeCount = trend.reduce((sum, item) => sum + item.likeCount, 0);
+  const dislikeCount = trend.reduce((sum, item) => sum + item.dislikeCount, 0);
+  const total = likeCount + dislikeCount;
+  return {
+    likeCount,
+    dislikeCount,
+    positiveRatio: total === 0 ? 0 : likeCount / total,
+  };
+});
+
+const positivePercent = computed(() => Math.round(periodFeedbackSummary.value.positiveRatio * 100));
 
 const gaugeDashArray = computed(() => {
   const filled = (positivePercent.value / 100) * GAUGE_ARC_LENGTH;
@@ -76,6 +90,96 @@ const CHART_Y_TICK_COUNT = 3;
 
 const hoveredTrendBarDate = ref<string | null>(null);
 
+function dateKey(value: string): string {
+  return value.slice(0, 10);
+}
+
+function periodDays(period: PeriodTab): number {
+  if (period === '7d') return 7;
+  if (period === '14d') return 14;
+  return 30;
+}
+
+function startDateKey(anchorDateKey: string, days: number): string {
+  const [year, month, day] = anchorDateKey.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  date.setUTCDate(date.getUTCDate() - (days - 1));
+  return date.toISOString().slice(0, 10);
+}
+
+// 받은 trend(현재 30일치)의 최소/최대 일자 — 커스텀 범위 입력의 min/max 경계로 사용한다.
+const trendDateBounds = computed(() => {
+  const trend = feedback.value?.trend ?? [];
+  if (trend.length === 0) return null;
+  const keys = trend.map((item) => dateKey(item.date)).sort((a, b) => a.localeCompare(b));
+  return { min: keys[0], max: keys[keys.length - 1] };
+});
+
+// ── 기간 직접 선택(커스텀 범위) ─────────────────────────────────────
+// 받은 trend 범위 안에서 시작/종료일을 직접 골라 차트·비율 카드에 반영한다.
+// from/to 를 API로 보내지 않고 FE에서 in-memory trend 를 자르므로, 선택 가능 범위는 받은 데이터로 제한된다.
+// (부정 피드백 원문 목록은 서버 페이지네이션 기준이라 기간 필터 대상이 아니다.)
+const customRange = ref<{ from: string; to: string } | null>(null);
+const isCustomActive = computed(() => customRange.value !== null);
+const isCustomRangeOpen = ref(false);
+const draftFrom = ref('');
+const draftTo = ref('');
+
+const customRangeLabel = computed(() => {
+  if (!customRange.value) return '기간 선택';
+  return `${customRange.value.from.slice(5)} ~ ${customRange.value.to.slice(5)}`;
+});
+
+function selectPreset(tab: PeriodTab) {
+  activePeriod.value = tab;
+  customRange.value = null;
+}
+
+function openCustomRange() {
+  const bounds = trendDateBounds.value;
+  if (bounds) {
+    draftFrom.value = customRange.value?.from ?? bounds.min;
+    draftTo.value = customRange.value?.to ?? bounds.max;
+  }
+  isCustomRangeOpen.value = true;
+}
+
+function closeCustomRange() {
+  isCustomRangeOpen.value = false;
+}
+
+function applyCustomRange() {
+  if (!draftFrom.value || !draftTo.value) return;
+  // 시작일이 종료일보다 뒤면 자동으로 뒤바꿔 항상 from ≤ to 를 보장한다.
+  const [from, to] =
+    draftFrom.value <= draftTo.value
+      ? [draftFrom.value, draftTo.value]
+      : [draftTo.value, draftFrom.value];
+  customRange.value = { from, to };
+  isCustomRangeOpen.value = false;
+}
+
+const filteredFeedbackTrend = computed(() => {
+  const trend = feedback.value?.trend ?? [];
+  if (trend.length === 0) return [];
+
+  const bounds = trendDateBounds.value!;
+  let fromDateKey: string;
+  let toDateKey: string;
+  if (customRange.value) {
+    fromDateKey = customRange.value.from;
+    toDateKey = customRange.value.to;
+  } else {
+    toDateKey = bounds.max;
+    fromDateKey = startDateKey(bounds.max, periodDays(activePeriod.value));
+  }
+
+  return trend.filter((item) => {
+    const itemDateKey = dateKey(item.date);
+    return itemDateKey >= fromDateKey && itemDateKey <= toDateKey;
+  });
+});
+
 // 상단만 둥근 세로 바 path를 만든다. 값이 0이면 빈 path를 반환해 바를 그리지 않는다.
 function roundedBarPath(x: number, width: number, height: number, bottomY: number): string {
   if (height <= 0) return `M ${x} ${bottomY} Z`;
@@ -87,7 +191,7 @@ function roundedBarPath(x: number, width: number, height: number, bottomY: numbe
 }
 
 const trendChart = computed(() => {
-  const trend = feedback.value?.trend;
+  const trend = filteredFeedbackTrend.value;
   if (!trend || trend.length === 0) return null;
 
   const innerW = CHART_W - CHART_PAD_LEFT - CHART_PAD_RIGHT;
@@ -105,6 +209,10 @@ const trendChart = computed(() => {
   const barW = Math.min(13, slotW * 0.26);
   const barGap = Math.min(5, slotW * 0.12);
 
+  // 30일 등 긴 구간에서 일자 라벨이 겹치지 않도록 일정 간격으로만 라벨을 노출한다.
+  // 가장 최근 일자(맨 오른쪽)는 항상 라벨을 표시한다.
+  const labelStep = Math.max(1, Math.ceil(trend.length / 12));
+
   const bars = trend.map((d, index) => {
     const likeH = (d.likeCount / yMax) * innerH;
     const dislikeH = (d.dislikeCount / yMax) * innerH;
@@ -115,7 +223,8 @@ const trendChart = computed(() => {
     return {
       date: d.date,
       // '2026-06-03' → '06-03' 라벨
-      label: d.date.slice(5),
+      label: dateKey(d.date).slice(5),
+      showLabel: (trend.length - 1 - index) % labelStep === 0,
       likePath: roundedBarPath(centerX - barW - barGap / 2, barW, likeH, bottomY),
       dislikePath: roundedBarPath(centerX + barGap / 2, barW, dislikeH, bottomY),
       centerX,
@@ -146,6 +255,12 @@ const totalPages = computed(() => {
 const isPrevDisabled = computed(() => currentPage.value <= 1);
 const isNextDisabled = computed(() => currentPage.value >= totalPages.value);
 
+// REFACTOR(고려): 피드백 응답(trend 등 서버 상태)을 Pinia 스토어로 올리는 방안.
+// 현재는 컴포넌트 로컬 ref라 (1) 탭을 v-if로 재방문할 때마다 재요청하고,
+// (2) 페이지네이션 시에도 전체 응답을 다시 받아 trend가 매번 중복 수신된다.
+// 스토어로 옮길 경우 fetch-once 가드 + 페이지 전환 시 negativeFeedbacks만 교체 + 새로고침 버튼 기반
+// 캐시 무효화까지 함께 설계해야 실효가 있다(서버 상태=Pinia 컨벤션, chat store 선례 참고).
+// 동작상 문제는 없어 지금은 보류.
 onMounted(() => {
   void loadFeedback();
 });
@@ -291,7 +406,7 @@ function formatDateTime(value: string): string {
               <ThumbsUp aria-hidden="true" class="size-5 shrink-0 text-primary" />
               <span class="sr-only">긍정</span>
               <b class="whitespace-nowrap text-[0.9rem] font-bold text-primary">
-                {{ formatNumber(feedback.likeCount) }}건
+                {{ formatNumber(periodFeedbackSummary.likeCount) }}건
               </b>
             </div>
             <div
@@ -300,7 +415,7 @@ function formatDateTime(value: string): string {
               <ThumbsDown aria-hidden="true" class="size-5 shrink-0 text-[#5b6678]" />
               <span class="sr-only">부정</span>
               <b class="whitespace-nowrap text-[0.9rem] font-bold text-overlay-dark-80">
-                {{ formatNumber(feedback.dislikeCount) }}건
+                {{ formatNumber(periodFeedbackSummary.dislikeCount) }}건
               </b>
             </div>
           </div>
@@ -311,29 +426,105 @@ function formatDateTime(value: string): string {
       <div class="rounded-xl border border-bg-300/60 bg-primary-white p-5">
         <div class="flex items-center justify-between gap-4">
           <h3 class="text-[0.95rem] font-bold text-overlay-dark-80">피드백 추이</h3>
-          <!-- 기간 탭 — query parameter(from/to) 미확정이므로 UI 상태만 관리 -->
-          <div
-            class="inline-flex items-center gap-0.5 rounded-lg border border-bg-300/60 bg-bg-100 p-0.5"
-            role="tablist"
-            aria-label="피드백 추이 기간 선택"
-          >
-            <button
-              v-for="tab in PERIOD_TABS"
-              :key="tab.key"
-              :data-testid="`admin-feedback-period-tab-${tab.key}`"
-              type="button"
-              role="tab"
-              :aria-selected="activePeriod === tab.key"
-              class="rounded-md px-3 py-1 text-[0.78rem] transition-colors"
-              :class="
-                activePeriod === tab.key
-                  ? 'bg-primary-white font-semibold text-overlay-dark-80 shadow-sm'
-                  : 'text-overlay-dark-40 hover:text-overlay-dark-80'
-              "
-              @click="activePeriod = tab.key"
+          <!-- 기간 선택 — from/to 를 API로 보내지 않고 FE에서 받은 trend 를 잘라 표시한다. -->
+          <div class="flex items-center gap-2">
+            <!-- 기간 프리셋 토글 -->
+            <div
+              class="inline-flex items-center gap-0.5 rounded-lg border border-bg-300/60 bg-bg-100 p-0.5"
+              role="tablist"
+              aria-label="피드백 추이 기간 선택"
             >
-              {{ tab.label }}
-            </button>
+              <button
+                v-for="tab in PERIOD_TABS"
+                :key="tab.key"
+                :data-testid="`admin-feedback-period-tab-${tab.key}`"
+                type="button"
+                role="tab"
+                :aria-selected="activePeriod === tab.key && !isCustomActive"
+                class="rounded-md px-3 py-1 text-[0.78rem] transition-colors"
+                :class="
+                  activePeriod === tab.key && !isCustomActive
+                    ? 'bg-primary-white font-semibold text-overlay-dark-80 shadow-sm'
+                    : 'text-overlay-dark-40 hover:text-overlay-dark-80'
+                "
+                @click="selectPreset(tab.key)"
+              >
+                {{ tab.label }}
+              </button>
+            </div>
+
+            <!-- 기간 직접 선택 드롭다운 -->
+            <div class="relative">
+              <button
+                data-testid="admin-feedback-custom-range-toggle"
+                type="button"
+                class="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-[0.78rem] transition-colors"
+                :class="
+                  isCustomActive
+                    ? 'border-primary/50 bg-primary/5 font-semibold text-overlay-dark-80'
+                    : 'border-bg-300/60 bg-bg-100 text-overlay-dark-40 hover:text-overlay-dark-80'
+                "
+                :aria-expanded="isCustomRangeOpen"
+                @click="isCustomRangeOpen ? closeCustomRange() : openCustomRange()"
+              >
+                <Calendar aria-hidden="true" class="size-3.5" />
+                {{ customRangeLabel }}
+              </button>
+
+              <div v-if="isCustomRangeOpen">
+                <!-- 외부 클릭 시 닫기 -->
+                <div class="fixed inset-0 z-30" @click="closeCustomRange" />
+                <div
+                  data-testid="admin-feedback-custom-range-panel"
+                  class="absolute right-0 z-40 mt-2 w-[230px] rounded-xl border border-bg-300/60 bg-primary-white p-4 shadow-floating"
+                >
+                  <p class="text-[0.74rem] font-semibold text-overlay-dark-80">기간 선택</p>
+                  <p v-if="trendDateBounds" class="mt-0.5 text-[0.66rem] text-overlay-dark-40">
+                    {{ trendDateBounds.min }} ~ {{ trendDateBounds.max }} 사이에서 선택할 수
+                    있습니다.
+                  </p>
+                  <label class="mt-3 block text-[0.68rem] text-overlay-dark-40">
+                    시작일
+                    <input
+                      v-model="draftFrom"
+                      data-testid="admin-feedback-custom-range-from"
+                      type="date"
+                      :min="trendDateBounds?.min"
+                      :max="draftTo || trendDateBounds?.max"
+                      class="mt-1 w-full rounded-md border border-bg-300/60 bg-bg-100 px-2 py-1 text-[0.74rem] text-overlay-dark-80"
+                    />
+                  </label>
+                  <label class="mt-2 block text-[0.68rem] text-overlay-dark-40">
+                    종료일
+                    <input
+                      v-model="draftTo"
+                      data-testid="admin-feedback-custom-range-to"
+                      type="date"
+                      :min="draftFrom || trendDateBounds?.min"
+                      :max="trendDateBounds?.max"
+                      class="mt-1 w-full rounded-md border border-bg-300/60 bg-bg-100 px-2 py-1 text-[0.74rem] text-overlay-dark-80"
+                    />
+                  </label>
+                  <div class="mt-3 flex items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      class="rounded-md px-2.5 py-1 text-[0.72rem] text-overlay-dark-40 transition-colors hover:text-overlay-dark-80"
+                      @click="closeCustomRange"
+                    >
+                      취소
+                    </button>
+                    <button
+                      data-testid="admin-feedback-custom-range-apply"
+                      type="button"
+                      class="rounded-md bg-primary px-2.5 py-1 text-[0.72rem] font-semibold text-primary-white transition-colors hover:bg-primary/90"
+                      @click="applyCustomRange"
+                    >
+                      적용
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -402,6 +593,7 @@ function formatDateTime(value: string): string {
                 fill-opacity="0.55"
               />
               <text
+                v-if="bar.showLabel"
                 :x="bar.centerX"
                 :y="CHART_H - 5"
                 text-anchor="middle"

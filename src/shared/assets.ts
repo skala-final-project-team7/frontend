@@ -17,7 +17,9 @@
  */
 import confluenceIconImageUrl from '../../frontend/assets/icons/confluence-icon.png';
 import iconsImageUrl from '../../frontend/assets/icons/icons.png';
+import notionIconImageUrl from '../../frontend/assets/icons/notion-icon.png';
 import searchImageUrl from '../../frontend/assets/icons/search.png';
+import slackIconImageUrl from '../../frontend/assets/icons/slack-icon.png';
 import skpSymbolImageUrl from '../../frontend/assets/icons/skp_symbol-nobg.png';
 import linaAdminImageUrl from '../../frontend/assets/lina-character/lina-admin.png';
 import linaAskImageUrl from '../../frontend/assets/lina-character/lina-ask.png';
@@ -57,6 +59,8 @@ export {
   mascotRealizeImageUrl,
   mascotSearchImageUrl,
   mascotWrongImageUrl,
+  notionIconImageUrl,
   searchImageUrl,
+  slackIconImageUrl,
   skpSymbolImageUrl,
 };

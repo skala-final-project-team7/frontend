@@ -30,6 +30,8 @@ defineProps<{
   messages: Message[];
   editingMessageId: string;
   editingContent: string;
+  pendingFeedbackMessageId: string;
+  pendingFeedbackRating: FeedbackRating | '';
   isStreaming: boolean;
   streamingMessageId: string;
   resentMessageIds: string[];
@@ -59,6 +61,9 @@ defineEmits<{
       :message="message"
       :editing-message-id="editingMessageId"
       :editing-content="editingContent"
+      :pending-feedback-rating="
+        pendingFeedbackMessageId === message.messageId ? pendingFeedbackRating : ''
+      "
       :is-streaming="isStreaming"
       :streaming-message-id="streamingMessageId"
       :show-user-version-indicator="resentMessageIds.includes(message.messageId)"

@@ -182,7 +182,14 @@ describe('feature15 Admin dashboard (SCR-810)', () => {
 
   it('opens the trend modal with period tabs and a 0~24시 axis when the rail chart is clicked', async () => {
     mockAdminBoardBase();
-    mockedGetAdminStats.mockResolvedValue(mockStats);
+    mockedGetAdminStats.mockResolvedValue({
+      ...mockStats,
+      hourlyAccessTrend: [
+        { date: '2026-06-08', hour: 9, count: 10 },
+        { date: '2026-06-15', hour: 9, count: 2 },
+        { date: '2026-06-15', hour: 10, count: 3 },
+      ],
+    } as unknown as AdminStats);
     mockedGetAdminUsers.mockResolvedValue(mockUsers);
 
     const wrapper = await mountAndNavigateToDashboard();
@@ -198,6 +205,7 @@ describe('feature15 Admin dashboard (SCR-810)', () => {
     expect(
       wrapper.find('[data-testid="admin-trend-period-tab-today"]').attributes('aria-selected'),
     ).toBe('true');
+    expect(wrapper.findAll('[data-testid^="admin-access-trend-modal-dot-"]')).toHaveLength(2);
 
     await wrapper.find('[data-testid="admin-trend-period-tab-7d"]').trigger('click');
 
@@ -207,6 +215,12 @@ describe('feature15 Admin dashboard (SCR-810)', () => {
     expect(
       wrapper.find('[data-testid="admin-trend-period-tab-today"]').attributes('aria-selected'),
     ).toBe('false');
+    expect(wrapper.findAll('[data-testid^="admin-access-trend-modal-dot-"]')).toHaveLength(2);
+
+    await wrapper.find('[data-testid="admin-trend-period-tab-30d"]').trigger('click');
+
+    expect(wrapper.findAll('[data-testid^="admin-access-trend-modal-dot-"]')).toHaveLength(2);
+    expect(wrapper.get('[data-testid="admin-trend-modal"]').text()).toContain('9시 12건');
     // query params가 미확정이므로 stats API 재호출 없음
     expect(mockedGetAdminStats).toHaveBeenCalledTimes(1);
   });

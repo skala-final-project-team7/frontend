@@ -19,7 +19,7 @@ import { ChevronRight, CircleHelp, Info, UserRound, X } from '@lucide/vue';
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 
 import SettingsHelpModal from '@/features/settings/SettingsHelpModal.vue';
-import { confluenceIconImageUrl } from '@/shared/assets';
+import { confluenceIconImageUrl, notionIconImageUrl, slackIconImageUrl } from '@/shared/assets';
 
 const props = defineProps<{
   currentUserLastLoginAt: string;
@@ -177,14 +177,14 @@ onBeforeUnmount(() => {
         @keydown="handleKeydown"
       >
         <header
-          class="flex shrink-0 items-center justify-between border-b border-overlay-dark-10 pb-9"
+          class="flex shrink-0 items-center justify-between border-b border-overlay-dark-10 pb-7"
         >
           <h2
             id="settings-title"
             data-testid="settings-title"
-            class="font-lina text-[18px] font-bold text-black"
+            class="ml-2 pt-2 font-lina text-[18px] font-bold text-black"
           >
-            Settings
+            설정
           </h2>
           <button
             data-testid="settings-close-button"
@@ -197,9 +197,7 @@ onBeforeUnmount(() => {
           </button>
         </header>
 
-        <div
-          class="grid min-h-0 flex-1 grid-cols-[196px_minmax(0,1fr)] gap-9 overflow-hidden pt-10"
-        >
+        <div class="grid min-h-0 flex-1 grid-cols-[196px_minmax(0,1fr)] gap-9 overflow-hidden pt-9">
           <nav aria-label="Settings section" class="flex flex-col gap-2">
             <div
               data-testid="settings-account-nav-item"
@@ -226,7 +224,7 @@ onBeforeUnmount(() => {
             aria-label="계정 관리"
             class="min-h-0 overflow-y-auto pr-1"
           >
-            <h3 class="mb-6 font-lina text-[14px] font-normal text-black">연결된 계정</h3>
+            <h3 class="mb-5 font-lina text-[14px] font-normal text-black">연결된 계정</h3>
 
             <div
               data-testid="settings-account-card"
@@ -258,9 +256,82 @@ onBeforeUnmount(() => {
               </a>
             </div>
 
+            <div class="relative mt-3 grid gap-2 overflow-hidden rounded-xl">
+              <div
+                data-testid="settings-slack-card"
+                class="flex min-h-[74px] rounded-xl border border-overlay-dark-10 px-5 py-4"
+                aria-disabled="true"
+              >
+                <div class="flex min-w-0 flex-1 items-center justify-between gap-5">
+                  <div class="flex min-w-0 items-center gap-5">
+                    <img
+                      data-testid="settings-slack-icon"
+                      :src="slackIconImageUrl"
+                      alt=""
+                      class="size-8 shrink-0 object-contain"
+                    />
+                    <div class="min-w-0">
+                      <p class="truncate font-lina text-[14px] text-black">Slack</p>
+                      <p class="mt-1 font-lina text-[12px] text-overlay-dark-40">
+                        슬랙 워크스페이스 연동
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    class="inline-flex shrink-0 items-center gap-3 rounded-button px-2 py-1 font-lina text-[12px] text-overlay-dark-40"
+                    disabled
+                  >
+                    슬랙 연동하기
+                    <ChevronRight aria-hidden="true" class="size-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div
+                data-testid="settings-notion-card"
+                class="flex min-h-[74px] rounded-xl border border-overlay-dark-10 px-5 py-4"
+                aria-disabled="true"
+              >
+                <div class="flex min-w-0 flex-1 items-center justify-between gap-5">
+                  <div class="flex min-w-0 items-center gap-5">
+                    <img
+                      data-testid="settings-notion-icon"
+                      :src="notionIconImageUrl"
+                      alt=""
+                      class="size-8 shrink-0 object-contain"
+                    />
+                    <div class="min-w-0">
+                      <p class="truncate font-lina text-[14px] text-black">Notion</p>
+                      <p class="mt-1 font-lina text-[12px] text-overlay-dark-40">
+                        노션 페이지 연동
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    class="inline-flex shrink-0 items-center gap-3 rounded-button px-2 py-1 font-lina text-[12px] text-overlay-dark-40"
+                    disabled
+                  >
+                    노션 연동하기
+                    <ChevronRight aria-hidden="true" class="size-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div
+                data-testid="settings-upcoming-overlay"
+                class="absolute inset-0 flex items-center justify-center bg-white/70 backdrop-blur-[1px]"
+              >
+                <span class="font-lina text-[18px] font-light tracking-wide text-overlay-dark-60">
+                  To be continued
+                </span>
+              </div>
+            </div>
+
             <p
               data-testid="settings-account-renewal-note"
-              class="mt-5 inline-flex items-center gap-2 font-lina text-[12px] text-overlay-dark-40"
+              class="mt-4 inline-flex items-center gap-2 font-lina text-[12px] text-overlay-dark-40"
             >
               <Info aria-hidden="true" class="size-4" />
               90일마다 인증 갱신되어야 합니다.
@@ -268,7 +339,7 @@ onBeforeUnmount(() => {
 
             <div
               data-testid="settings-logout-row"
-              class="mt-10 flex items-center justify-between border-t border-overlay-dark-10 pt-7"
+              class="mt-8 flex items-center justify-between border-t border-overlay-dark-10 pt-6"
             >
               <p class="font-lina text-[14px] text-black">이 기기에서 로그아웃 하기</p>
               <button
