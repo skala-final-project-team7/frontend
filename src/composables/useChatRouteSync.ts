@@ -6,6 +6,7 @@
  * 작성일 : 2026-06-04
  * 변경사항 내역 (날짜, 변경목적, 변경내용 순)
  *   - 2026-06-04, feature10.5 구현, ChatPage route sync 책임 분리
+ *   - 2026-06-15, feature11 구현, 메시지 이력 로드 상태 훅과 retry 경로 추가
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -20,6 +21,10 @@ type UseChatRouteSyncOptions = {
   chatStore: ReturnType<typeof useChatStore>;
   closeConversationMenu: () => void;
   closeReferencePanel: () => void;
+  onConversationCleared?: () => void;
+  onConversationLoadError?: () => void;
+  onConversationLoadStart?: () => void;
+  onConversationLoadSuccess?: () => void;
   resetMessageDraftState: () => void;
   routeConversationId: Ref<string>;
 };
@@ -34,18 +39,34 @@ export function useChatRouteSync(options: UseChatRouteSyncOptions) {
     chatStore,
     closeConversationMenu,
     closeReferencePanel,
+    onConversationCleared,
+    onConversationLoadError,
+    onConversationLoadStart,
+    onConversationLoadSuccess,
     resetMessageDraftState,
     routeConversationId,
   } = options;
 
   async function loadRouteConversationMessages(conversationId: string) {
     resetMessageDraftState();
+    onConversationLoadStart?.();
 
     try {
       await chatStore.loadConversationMessages(conversationId);
+      onConversationLoadSuccess?.();
     } catch {
       // 지연된 조회 실패가 현재 화면에 이미 추가된 로컬/SSE 메시지를 제거하지 않도록 보존한다.
+      onConversationLoadError?.();
     }
+  }
+
+  async function reloadRouteConversationMessages() {
+    if (!routeConversationId.value) {
+      return;
+    }
+
+    await loadRouteConversationMessages(routeConversationId.value);
+    closeConversationMenu();
   }
 
   watch(
@@ -56,6 +77,7 @@ export function useChatRouteSync(options: UseChatRouteSyncOptions) {
         closeReferencePanel();
         closeConversationMenu();
         resetMessageDraftState();
+        onConversationCleared?.();
         return;
       }
 
@@ -66,4 +88,8 @@ export function useChatRouteSync(options: UseChatRouteSyncOptions) {
       immediate: true,
     },
   );
+
+  return {
+    reloadRouteConversationMessages,
+  };
 }

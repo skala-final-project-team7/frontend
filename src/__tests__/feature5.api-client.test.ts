@@ -221,6 +221,35 @@ describe('feature5 API types and client skeleton', () => {
     });
   });
 
+  it('attaches Authorization header from localStorage to JSON APIs', async () => {
+    stubLocalStorage({ accessToken: 'token-from-storage' });
+
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      expect(init?.headers).toMatchObject({
+        Accept: 'application/json',
+        Authorization: 'Bearer token-from-storage',
+      });
+
+      return jsonResponse({
+        isSuccess: true,
+        code: 200,
+        message: '대화 목록 조회 성공',
+        data: {
+          conversations: [],
+          totalCount: 0,
+          page: 0,
+          size: 20,
+        },
+      });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(listConversations()).resolves.toMatchObject({
+      conversations: [],
+      totalCount: 0,
+    });
+  });
+
   it('creates update, delete, and feedback API requests with JSON bodies', async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const requestUrl = String(input);
@@ -477,6 +506,32 @@ describe('feature5 API types and client skeleton', () => {
       profileImageUrl: 'https://example.com/profile/dayeon.png',
     });
   });
+
+  it('attaches Authorization header from localStorage to SSE chat requests', async () => {
+    stubLocalStorage({ accessToken: 'token-for-sse' });
+
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      expect(init?.headers).toMatchObject({
+        Accept: 'text/event-stream',
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer token-for-sse',
+      });
+
+      return new Response('event: done\ndata: {"messageId":"msg-stream-001"}\n\n', {
+        headers: {
+          'Content-Type': 'text/event-stream',
+        },
+        status: 200,
+      });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(
+      streamConversationChat('conv-uuid-001', {
+        question: '실제 BFF 연동 테스트',
+      }),
+    ).resolves.toBeInstanceOf(Response);
+  });
 });
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -486,4 +541,29 @@ function jsonResponse(body: unknown, status = 200): Response {
     },
     status,
   });
+}
+
+function stubLocalStorage(initialValues: Record<string, string> = {}) {
+  const storage = new Map(Object.entries(initialValues));
+
+  const localStorageMock = {
+    getItem: vi.fn((key: string) => storage.get(key) ?? null),
+    setItem: vi.fn((key: string, value: string) => {
+      storage.set(key, value);
+    }),
+    removeItem: vi.fn((key: string) => {
+      storage.delete(key);
+    }),
+    clear: vi.fn(() => {
+      storage.clear();
+    }),
+  };
+
+  vi.stubGlobal('localStorage', localStorageMock);
+  Object.defineProperty(window, 'localStorage', {
+    configurable: true,
+    value: localStorageMock,
+  });
+
+  return localStorageMock;
 }

@@ -4490,3 +4490,69 @@
 
 - 커스텀 범위는 FE in-memory 필터라 선택 가능 범위가 받은 trend(현재 mock 90일)로 제한된다. 실제 백엔드에서 더 긴 기간이 필요하면 backend `from`/`to` 지원과 FE 전송이 필요하다.
 - 부정 피드백 원문 목록은 기간 필터 대상이 아니라, 커스텀 범위와 원문 목록 표시 범위가 다를 수 있음(사용자 확인된 의도된 동작).
+
+## 2026-06-15 - feature11 Chat 백엔드 연결 전환 준비: 인증 헤더 및 Chat 로드 에러 상태 보강
+
+### Scope
+
+- `docs/api-spec.md`와 `backend-template` BFF Chat/Feedback 컨트롤러를 다시 대조해 Chat API 타입 변경 필요 여부를 확인
+  - 이번 범위에서는 `src/types/api.ts` 수정 없이 기존 타입이 실제 계약과 정합함을 확인
+- JSON API와 SSE Chat 요청 모두에 `localStorage.accessToken` 기반 `Authorization: Bearer ...` 헤더 주입
+  - `auth-session-storage-plan.md`의 localStorage 단일 소스 원칙을 따름
+- ChatPage 초기 진입의 대화 목록 로드와 conversation route 진입 후 메시지 이력 로드에 `loading / error / retry / success` 상태 추가
+  - 기존 SSE 스트리밍, feedback, route sync 계약은 유지
+  - 메시지 이력 실패 시 이미 붙은 로컬/SSE 메시지를 지우지 않는 기존 보존 정책은 그대로 유지
+- 실제 BFF 런타임 검증(`VITE_USE_MOCK=false`)과 feature13 인증 callback/refresh 구현은 이번 범위에서 제외
+
+### Test Cases
+
+- `apiRequest()`가 JSON API 호출 시 `Authorization: Bearer {accessToken}` 헤더를 붙인다.
+- `streamConversationChat()`가 SSE 요청 시 `Authorization: Bearer {accessToken}` 헤더를 붙인다.
+- 초기 대화 목록 로드 실패 시 Chat 빈 화면 대신 재시도 가능한 오류 상태가 보인다.
+- 메시지 이력 로드 실패 시 route/title 컨텍스트를 유지한 채 재시도 가능한 오류 상태가 보인다.
+
+### Changed Files
+
+- `src/api/client.ts`
+  - JSON API와 SSE 요청에 공통으로 적용할 Bearer 헤더 주입 추가
+  - 테스트/SSR 안전성을 위해 `localStorage.getItem` 존재 여부를 먼저 확인하도록 보호 로직 추가
+- `src/composables/useChatRouteSync.ts`
+  - conversation load start/success/error/clear 훅과 route 기준 재시도 함수 추가
+- `src/pages/ChatPage.vue`
+  - 초기 대화 목록 로드 상태(`isInitialLoading`, `initialLoadErrorMessage`) 추가
+  - 메시지 이력 로드 상태(`isMessageHistoryLoading`, `messageHistoryErrorMessage`) 추가
+  - `BaseSpinner` / `ErrorRetryState`를 이용한 대화 목록/메시지 이력 retry UI 추가
+- `src/__tests__/feature5.api-client.test.ts`
+  - JSON API 및 SSE Authorization 헤더 첨부 테스트 추가
+  - 테스트용 `localStorage` stub helper 추가
+- `src/__tests__/feature9.chat-conversation.test.ts`
+  - 초기 대화 목록 실패 retry UI 테스트 추가
+  - 메시지 이력 실패 retry UI 테스트 추가
+- `docs/ai/current-plan.md`
+  - 이번 턴에서 실제로 확인 완료한 feature11 항목만 체크 처리
+
+### Commands
+
+- `npx vitest run src/__tests__/feature5.api-client.test.ts src/__tests__/feature9.chat-conversation.test.ts`
+- `npx vitest run src/__tests__/feature9.chat-sse-store.test.ts src/__tests__/feature10.5.chat-page-refactor.test.ts src/__tests__/feature5.api-client.test.ts src/__tests__/feature9.chat-conversation.test.ts`
+- `npm run lint`
+- `npx prettier --check src/api/client.ts src/composables/useChatRouteSync.ts src/pages/ChatPage.vue src/__tests__/feature5.api-client.test.ts src/__tests__/feature9.chat-conversation.test.ts`
+- `npm run typecheck`
+
+### Results
+
+- feature11 대상 2개 스위트(`feature5.api-client`, `feature9.chat-conversation`): passed, 41 tests
+- 관련 회귀 포함 4개 스위트(`feature9.chat-sse-store`, `feature10.5.chat-page-refactor` 포함): passed, 54 tests
+- `npm run lint`: passed
+- `prettier --check`(변경 파일만): passed
+- `npm run typecheck`: failed, 하지만 이번 변경으로 인한 신규 오류는 확인되지 않음
+
+### Notes / Remaining Issues
+
+- `npm run typecheck`는 본 작업과 무관한 선재 오류로 실패한다.
+  - 대상: `src/__tests__/feature10.1.conversation-menu.test.ts`
+  - 대상: `src/__tests__/feature12.auth-login-role-selection.test.ts`
+  - 대상: `src/__tests__/feature15.admin-dashboard.test.ts`
+  - 대상: `src/__tests__/feature16.admin-feedback.test.ts`
+  - 대상: `src/features/chat/MessageBubble.vue`
+- 실제 BFF 연동 상태(`VITE_USE_MOCK=false`)는 이 세션에서 검증하지 못했다. 이번 작업은 FE 요청 헤더/오류 상태/회귀 테스트까지 준비한 단계다.

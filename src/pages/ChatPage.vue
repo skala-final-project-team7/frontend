@@ -22,6 +22,7 @@
   - 2026-06-12, feature18 보정, floating 도움말 버튼을 새 대화 화면에서만 bottom-10 위치로 표시
   - 2026-06-12, 레이아웃 보정, 새 대화 화면 scroll-region을 viewport 높이로 고정해 불필요한 스크롤 제거
   - 2026-06-12, 레이아웃 보정, 빈 화면 scroll-region flex 스트레치 제거로 ASK LINA 상단 정렬 복원
+  - 2026-06-15, feature11 구현, 대화 목록/메시지 이력 loading-error-retry 상태와 Bearer 인증 연동 UI 보강
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -54,7 +55,7 @@ import ReferencePanel from '@/features/chat/ReferencePanel.vue';
 import SettingsHelpModal from '@/features/settings/SettingsHelpModal.vue';
 import SettingsModal from '@/features/settings/SettingsModal.vue';
 import { useToast } from '@/composables/useToast';
-import { BaseFloatingIconButton, BaseTooltip } from '@/shared';
+import { BaseFloatingIconButton, BaseSpinner, BaseTooltip, ErrorRetryState } from '@/shared';
 import { useChatStore } from '@/stores';
 import type { Conversation, FeedbackRating, Message, Source } from '@/types/api';
 
@@ -82,6 +83,10 @@ const chatStore = useChatStore();
 const { showToast } = useToast();
 
 const isSidebarOpen = ref(false);
+const isInitialLoading = ref(true);
+const initialLoadErrorMessage = ref('');
+const isMessageHistoryLoading = ref(false);
+const messageHistoryErrorMessage = ref('');
 const userName = ref('00');
 const userLastLoginAt = ref('');
 const profileImageUrl = ref('');
@@ -376,10 +381,27 @@ const { submitMessage } = useChatSubmission({
   showToast,
 });
 
-useChatRouteSync({
+const { reloadRouteConversationMessages } = useChatRouteSync({
   chatStore,
   closeConversationMenu,
   closeReferencePanel,
+  onConversationCleared: () => {
+    isMessageHistoryLoading.value = false;
+    messageHistoryErrorMessage.value = '';
+  },
+  onConversationLoadError: () => {
+    isMessageHistoryLoading.value = false;
+    messageHistoryErrorMessage.value =
+      '메시지 이력을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.';
+  },
+  onConversationLoadStart: () => {
+    isMessageHistoryLoading.value = true;
+    messageHistoryErrorMessage.value = '';
+  },
+  onConversationLoadSuccess: () => {
+    isMessageHistoryLoading.value = false;
+    messageHistoryErrorMessage.value = '';
+  },
   resetMessageDraftState,
   routeConversationId,
 });
@@ -533,9 +555,9 @@ async function submitFeedback(comment: string) {
   }
 }
 
-onMounted(async () => {
-  window.addEventListener('scroll', updateScrollToLatestVisibility, { passive: true });
-  window.addEventListener('resize', updateScrollToLatestVisibility);
+async function loadInitialChatData() {
+  isInitialLoading.value = true;
+  initialLoadErrorMessage.value = '';
 
   try {
     const [currentUser, conversationList] = await Promise.all([
@@ -552,8 +574,18 @@ onMounted(async () => {
     userLastLoginAt.value = '';
     profileImageUrl.value = '';
     conversations.value = [];
+    initialLoadErrorMessage.value =
+      '대화 목록을 불러오지 못했습니다. 연결 상태를 확인한 뒤 다시 시도해 주세요.';
+  } finally {
+    isInitialLoading.value = false;
   }
+}
 
+onMounted(async () => {
+  window.addEventListener('scroll', updateScrollToLatestVisibility, { passive: true });
+  window.addEventListener('resize', updateScrollToLatestVisibility);
+
+  await loadInitialChatData();
   await nextTick();
   updateScrollToLatestVisibility();
 });
@@ -633,7 +665,39 @@ watch(
             class="w-full overflow-x-clip"
             :class="hasActiveConversation ? 'pb-[220px]' : 'h-[calc(100vh-76px)] overflow-y-hidden'"
           >
-            <ChatEmptyState v-if="!hasActiveConversation" :user-name="userName" />
+            <div
+              v-if="isInitialLoading && !hasActiveConversation"
+              class="flex min-h-[calc(100vh-76px)] items-center justify-center px-6"
+            >
+              <BaseSpinner label="대화 목록을 불러오고 있어요" />
+            </div>
+            <ErrorRetryState
+              v-else-if="initialLoadErrorMessage && !hasActiveConversation"
+              data-testid="chat-initial-load-error"
+              title="대화 목록을 불러오지 못했습니다"
+              :message="initialLoadErrorMessage"
+              retry-label="다시 불러오기"
+              @retry="loadInitialChatData"
+            />
+            <div
+              v-else-if="
+                hasActiveConversation && isMessageHistoryLoading && activeMessages.length === 0
+              "
+              class="flex min-h-[calc(100vh-76px)] items-center justify-center px-6"
+            >
+              <BaseSpinner label="메시지 이력을 불러오고 있어요" />
+            </div>
+            <ErrorRetryState
+              v-else-if="
+                hasActiveConversation && messageHistoryErrorMessage && activeMessages.length === 0
+              "
+              data-testid="chat-message-history-error"
+              title="메시지 이력을 불러오지 못했습니다"
+              :message="messageHistoryErrorMessage"
+              retry-label="다시 불러오기"
+              @retry="reloadRouteConversationMessages"
+            />
+            <ChatEmptyState v-else-if="!hasActiveConversation" :user-name="userName" />
             <ChatConversationView
               v-else
               :messages="activeMessages"

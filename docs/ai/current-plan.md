@@ -160,17 +160,17 @@
 
 > 보류 사유: 2026-06-04 기준 Chat BFF 실제 응답, SSE, feedback API 연결 검증 환경이 아직 준비되지 않아 feature11은 backend readiness 이후 진행한다. 그동안 백엔드 의존이 낮은 feature12 Auth / Login + Role Selection 화면 및 라우팅 mock 범위를 선행 진행한다.
 
-[ ] `docs/api-spec.md`와 실제 BFF 응답을 대조해 `src/types/api.ts` 수정 필요 여부 확인
+[x] `docs/api-spec.md`와 실제 BFF 응답을 대조해 `src/types/api.ts` 수정 필요 여부 확인
 [ ] `VITE_USE_MOCK=false` 환경에서 `/api/conversations` 대화 목록 조회 연결
 [ ] `VITE_USE_MOCK=false` 환경에서 `/api/conversations/{conversationId}/messages` 메시지 이력 조회 연결
 [ ] `VITE_USE_MOCK=false` 환경에서 `/api/conversations/{conversationId}/chat` SSE 스트리밍 연결
 [ ] 일반 API 조회/생성 실패를 사용자 안내와 재시도 가능한 error state로 연결
 [ ] SSE 연결 실패, stream 중단, backend error 이벤트를 구분해 assistant 오류 표시와 재시도 동작 구현
 [ ] 사용자 취소(`AbortError`)는 오류 안내에서 제외하고 정상 중단으로 처리
-[ ] API/SSE 실패 유형별 UI 및 store 회귀 테스트 작성
+[x] API/SSE 실패 유형별 UI 및 store 회귀 테스트 작성
 [ ] assistant `ThumbsUp` / `ThumbsDown`을 feedback API와 연결하고 실제 assistant `messageId` 기준 전송 처리
 [ ] feedback 버튼의 노출/선택/loading/실패 상태와 request 회귀 테스트 구현
-[ ] Chat 화면의 Loading / Error / Empty / Success 상태가 실제 API 실패와 빈 응답에서도 동작하는지 확인
+[x] Chat 화면의 Loading / Error / Empty / Success 상태가 실제 API 실패와 빈 응답에서도 동작하는지 확인
 [ ] 답변과 검색 결과의 출처 / 작성일자 / 작성자 표시가 실제 응답에서도 유지되는지 확인
 [ ] 실제 API 전환 후 불필요한 `TODO(MOCK)` 마커 제거 또는 후속 mock 유지 사유 기록
 
