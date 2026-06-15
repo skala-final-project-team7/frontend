@@ -9,6 +9,7 @@
   - 2026-06-09, UX 개선, 카드 hover transform과 rise animation을 분리해 진입 직후 hover impact가 바로 보이도록 조정
   - 2026-06-15, feature13 구현, ?error=FORBIDDEN 쿼리 기반 권한 부족 에러 배너 추가
   - 2026-06-15, UX 개선, 에러 배너를 역할 카드 하단으로 이동하고 제목/설명 위계 분리·아이콘 배지로 가독성 향상
+  - 2026-06-15, UX 개선, 에러 배너 배경을 반투명(bg-primary-white/60)+backdrop blur로 조정해 부드러운 글래스 톤 적용
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -94,7 +95,7 @@ const roleImageUrlByRole = {
       <div
         v-if="authErrorCode"
         data-testid="auth-error-banner"
-        class="mt-8 flex w-full max-w-[1120px] items-start gap-3.5 rounded-card border border-status-error/15 bg-primary-white px-6 py-4 text-left shadow-floating"
+        class="mt-8 flex w-full max-w-[1120px] items-start gap-3.5 rounded-card border border-status-error/15 bg-primary-white/60 px-6 py-4 text-left shadow-floating backdrop-blur-panel"
         role="alert"
       >
         <span

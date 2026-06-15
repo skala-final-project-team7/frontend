@@ -4755,3 +4755,32 @@
 - 라우터 가드는 `main.ts`의 `restoreSession()` 이후에만 활성화된다(`sessionRestoreAttempted` 플래그). Pinia 미설정 테스트 컨텍스트에서는 `getActivePinia()` 가드로 우회해 기존 테스트 회귀를 방지했다.
 - 검증 보조 코드(`vite.config.ts`의 `/api` proxy, `../mock-backend/`의 feature13 auth stub)는 실제 BFF 인증 연동이 완료되면 정리 대상이다.
 - 후속: `refreshToken` / `expiresAt` 도입, 401 -> `POST /api/auth/refresh` 재발급, rotating refresh 반영.
+
+## 2026-06-15 - Login 권한 부족 에러 배너 글래스 톤 보정
+
+### Scope
+
+- feature13에서 추가한 `?error=FORBIDDEN` 권한 부족 에러 배너의 배경을 부드러운 글래스 톤으로 조정
+- 불투명 흰 배경이 다소 무겁게 보이는 문제를 반투명 + backdrop blur로 완화
+
+### Test Cases
+
+- LoginPage 에러 배너: `?error=FORBIDDEN` 배너 표시, 에러 파라미터 없을 때 미표시 (feature13 기존 2건 회귀 확인)
+
+### Changed Files
+
+- `src/pages/LoginPage.vue`
+  - 에러 배너 배경 `bg-primary-white`(불투명) -> `bg-primary-white/60`(반투명) + `backdrop-blur-panel` 적용
+  - `backdrop-blur-panel`은 기존 `tailwind.config.js` 토큰(9.25px)으로 Reference 패널 등과 글래스 톤 통일
+
+### Commands
+
+- `npx vitest run src/__tests__/feature13.auth-backend-connect.test.ts`
+
+### Results
+
+- feature13 테스트: 23/23 passed
+
+### Notes / Remaining Issues
+
+- 투명도는 `/60` 기준이며, 더 투명/불투명하게 조정하려면 `/50`~`/80` 범위로 변경 가능.
