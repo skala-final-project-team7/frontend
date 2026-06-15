@@ -8,6 +8,7 @@
  *   - 2026-05-18, feature5 구현, apiRequest 및 streamRequest 추가
  *   - 2026-05-22, feature9 보강, SSE chat request에 AbortSignal 전달 추가
  *   - 2026-05-26, API 계약 정합성 수정, Common Response errorCode 예외 전달 추가
+ *   - 2026-06-15, feature11 구현, localStorage accessToken 기반 Authorization Bearer 헤더 주입 추가
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -68,10 +69,7 @@ export async function streamChatRequest(
 ): Promise<Response> {
   const requestInit: RequestInit = {
     method: 'POST',
-    headers: {
-      Accept: 'text/event-stream',
-      'Content-Type': 'application/json',
-    },
+    headers: buildStreamHeaders(),
     body: JSON.stringify(request),
   };
 
@@ -120,13 +118,40 @@ function buildJsonHeaders(headers: HeadersInit | undefined, body: unknown): Head
   const baseHeaders: Record<string, string> = {
     Accept: 'application/json',
   };
+  const accessToken = readAccessToken();
 
   if (body !== undefined) {
     baseHeaders['Content-Type'] = 'application/json';
+  }
+
+  if (accessToken) {
+    baseHeaders.Authorization = `Bearer ${accessToken}`;
   }
 
   return {
     ...baseHeaders,
     ...headers,
   };
+}
+
+function buildStreamHeaders(): HeadersInit {
+  const headers: Record<string, string> = {
+    Accept: 'text/event-stream',
+    'Content-Type': 'application/json',
+  };
+  const accessToken = readAccessToken();
+
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+
+  return headers;
+}
+
+function readAccessToken(): string {
+  if (typeof localStorage === 'undefined' || typeof localStorage.getItem !== 'function') {
+    return '';
+  }
+
+  return localStorage.getItem('accessToken') ?? '';
 }

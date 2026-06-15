@@ -1268,4 +1268,165 @@ describe('feature9 SCR-410, SCR-420, SCR-600 Chat conversation screen', () => {
     expect(wrapper.find('[data-testid="chat-empty-state"]').exists()).toBe(false);
     expect(wrapper.text()).toContain('문서 동기화가 마지막으로 언제 성공했어?');
   });
+
+  it('shows a retryable error state when the initial conversation list load fails', async () => {
+    await router.push('/chat');
+
+    let shouldFailConversationList = true;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const requestUrl =
+        typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+      const method = init?.method ?? 'GET';
+
+      if (requestUrl === '/api/users/me' && method === 'GET') {
+        return createJsonResponse({
+          isSuccess: true,
+          code: 200,
+          message: '사용자 정보 조회 성공',
+          data: mockCurrentUser,
+        });
+      }
+
+      if (requestUrl === '/api/conversations' && method === 'GET') {
+        if (shouldFailConversationList) {
+          return createJsonResponse(
+            {
+              isSuccess: false,
+              code: 500,
+              errorCode: 'INTERNAL_ERROR',
+              message: '대화 목록 조회 실패',
+            },
+            500,
+          );
+        }
+
+        return createJsonResponse({
+          isSuccess: true,
+          code: 200,
+          message: '대화 목록 조회 성공',
+          data: {
+            conversations: mockConversations,
+            totalCount: mockConversations.length,
+            page: 0,
+            size: 20,
+          },
+        });
+      }
+
+      return createJsonResponse(
+        {
+          isSuccess: false,
+          code: 404,
+          errorCode: 'RESOURCE_NOT_FOUND',
+          message: `Unexpected request: ${method} ${requestUrl}`,
+        },
+        404,
+      );
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const wrapper = mountChatPage();
+    await flushAsyncUpdates();
+
+    expect(wrapper.find('[data-testid="chat-initial-load-error"]').exists()).toBe(true);
+    expect(wrapper.get('[data-testid="chat-initial-load-error"]').text()).toContain(
+      '대화 목록을 불러오지 못했습니다',
+    );
+
+    shouldFailConversationList = false;
+    await wrapper.get('[data-testid="chat-initial-load-error"] button').trigger('click');
+    await flushAsyncUpdates();
+
+    expect(wrapper.find('[data-testid="chat-initial-load-error"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="chat-empty-state"]').exists()).toBe(true);
+  });
+
+  it('shows a retryable message history error without clearing the route context', async () => {
+    let shouldFailMessageHistory = true;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const requestUrl =
+        typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+      const method = init?.method ?? 'GET';
+
+      if (requestUrl === '/api/users/me' && method === 'GET') {
+        return createJsonResponse({
+          isSuccess: true,
+          code: 200,
+          message: '사용자 정보 조회 성공',
+          data: mockCurrentUser,
+        });
+      }
+
+      if (requestUrl === '/api/conversations' && method === 'GET') {
+        return createJsonResponse({
+          isSuccess: true,
+          code: 200,
+          message: '대화 목록 조회 성공',
+          data: {
+            conversations: mockConversations,
+            totalCount: mockConversations.length,
+            page: 0,
+            size: 20,
+          },
+        });
+      }
+
+      if (requestUrl.includes('/api/conversations/') && requestUrl.endsWith('/messages')) {
+        if (shouldFailMessageHistory) {
+          return createJsonResponse(
+            {
+              isSuccess: false,
+              code: 500,
+              errorCode: 'INTERNAL_ERROR',
+              message: '메시지 이력 조회 실패',
+            },
+            500,
+          );
+        }
+
+        const conversationId =
+          requestUrl.match(/\/api\/conversations\/([^/]+)\/messages/)?.[1] ?? '';
+
+        return createJsonResponse({
+          isSuccess: true,
+          code: 200,
+          message: '메시지 이력 조회 성공',
+          data: {
+            conversationId,
+            messages: mockMessagesByConversationId[conversationId] ?? [],
+          },
+        });
+      }
+
+      return createJsonResponse(
+        {
+          isSuccess: false,
+          code: 404,
+          errorCode: 'RESOURCE_NOT_FOUND',
+          message: `Unexpected request: ${method} ${requestUrl}`,
+        },
+        404,
+      );
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const wrapper = mountChatPage();
+    await flushAsyncUpdates();
+
+    expect(wrapper.find('[data-testid="chat-message-history-error"]').exists()).toBe(true);
+    expect(wrapper.get('[data-testid="chat-message-history-error"]').text()).toContain(
+      '메시지 이력을 불러오지 못했습니다',
+    );
+    expect(wrapper.get('[data-testid="conversation-title"]').text()).toBe(
+      mockConversations.find((conversation) => conversation.conversationId === 'conv-mock-001')
+        ?.title,
+    );
+
+    shouldFailMessageHistory = false;
+    await wrapper.get('[data-testid="chat-message-history-error"] button').trigger('click');
+    await flushAsyncUpdates();
+
+    expect(wrapper.find('[data-testid="chat-message-history-error"]').exists()).toBe(false);
+    expect(wrapper.findAll('[data-testid="message-bubble"]')).toHaveLength(2);
+  });
 });
