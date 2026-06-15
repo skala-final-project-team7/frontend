@@ -362,6 +362,68 @@ describe('feature9 SCR-410, SCR-420, SCR-600 Chat conversation screen', () => {
     );
   });
 
+  it('copies assistant response text from the copy icon and reports the result', async () => {
+    vi.useFakeTimers();
+
+    try {
+      const writeText = vi.fn().mockResolvedValue(undefined);
+
+      Object.defineProperty(navigator, 'clipboard', {
+        configurable: true,
+        value: {
+          writeText,
+        },
+      });
+
+      const wrapper = mountChatPage();
+      await vi.advanceTimersByTimeAsync(0);
+      await vi.advanceTimersByTimeAsync(0);
+
+      await wrapper.get('[data-testid="assistant-copy-button"]').trigger('click');
+      await Promise.resolve();
+      await wrapper.vm.$nextTick();
+
+      const { toasts } = useToast();
+
+      expect(writeText).toHaveBeenCalledWith(
+        'S3 권한 오류는 IAM 정책의 버킷 접근 권한을 보강해 해결했습니다.',
+      );
+      expect(wrapper.get('[data-testid="assistant-copy-confirmed-icon"]').exists()).toBe(true);
+      expect(toasts.value.at(-1)).toMatchObject({
+        message: '응답이 복사되었습니다',
+        variant: 'success',
+      });
+
+      await vi.advanceTimersByTimeAsync(4000);
+
+      expect(wrapper.find('[data-testid="assistant-copy-confirmed-icon"]').exists()).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('shows an error toast when assistant response copy fails', async () => {
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText: vi.fn().mockRejectedValue(new Error('clipboard unavailable')),
+      },
+    });
+
+    const wrapper = mountChatPage();
+    await flushAsyncUpdates();
+
+    await wrapper.get('[data-testid="assistant-copy-button"]').trigger('click');
+    await flushAsyncUpdates();
+
+    const { toasts } = useToast();
+
+    expect(toasts.value.at(-1)).toMatchObject({
+      message: '응답 복사에 실패했습니다',
+      variant: 'error',
+    });
+  });
+
   it('opens feedback modal from assistant thumbs down and submits reason with optional comment', async () => {
     const fetchMock = installFeature9FetchMock();
     const wrapper = mountChatPage();
@@ -416,6 +478,61 @@ describe('feature9 SCR-410, SCR-420, SCR-600 Chat conversation screen', () => {
         }),
       }),
     );
+  });
+
+  it('shows a spinner on the thumbs up button while feedback is submitting', async () => {
+    let resolveFeedback: (response: Response) => void = () => undefined;
+    const fetchMock = installFeature9FetchMock();
+    const defaultFetchMock = fetchMock.getMockImplementation();
+
+    fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const requestUrl =
+        typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+
+      if (requestUrl.includes('/api/messages/') && requestUrl.endsWith('/feedback')) {
+        return await new Promise<Response>((resolve) => {
+          resolveFeedback = resolve;
+        });
+      }
+
+      if (!defaultFetchMock) {
+        throw new Error('Default fetch mock was not installed');
+      }
+
+      return await defaultFetchMock(input, init);
+    });
+
+    const wrapper = mountChatPage();
+    await flushAsyncUpdates();
+
+    await wrapper.get('[data-testid="assistant-like-button"]').trigger('click');
+    await flushAsyncUpdates();
+
+    expect(wrapper.get('[data-testid="assistant-like-button"]').attributes('disabled')).toBe('');
+    expect(wrapper.get('[data-testid="assistant-like-spinner"]').exists()).toBe(true);
+
+    resolveFeedback(
+      createJsonResponse(
+        {
+          isSuccess: true,
+          code: 201,
+          message: '피드백 등록 성공',
+          data: {
+            feedbackId: 'fb-mock-001',
+            messageId: 'msg-mock-assistant-001',
+            rating: 'LIKE',
+            createdAt: '2026-05-21T19:10:00+09:00',
+          },
+        },
+        201,
+      ),
+    );
+    await flushAsyncUpdates();
+
+    expect(wrapper.get('[data-testid="assistant-like-button"]').attributes('disabled')).toBe(
+      undefined,
+    );
+    expect(wrapper.find('[data-testid="assistant-like-spinner"]').exists()).toBe(false);
   });
 
   it('opens conversation search modal and blocks one-character queries before API call', async () => {

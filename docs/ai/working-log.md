@@ -4196,3 +4196,127 @@
 - `./scripts/format.sh`: passed
 - `./scripts/lint.sh`: passed
 - 설정 모달 UI 간격만 변경했으며 기능/문구/API 동작 변경 없음
+
+## 2026-06-15 - assistant 응답 복사 기능 연결
+
+### Scope
+
+- 채팅방 assistant 답변 하단의 `응답 복사` 아이콘이 버튼만 있고 실제 동작이 없는 상태를 수정
+- 클릭 시 해당 assistant message의 `content`를 `navigator.clipboard.writeText`로 복사
+- 복사 성공 시 `응답이 복사되었습니다` toast 표시
+- 복사 실패 시 `응답 복사에 실패했습니다` error toast 표시
+- `다시 시도` 버튼은 사용자 요청에 따라 이번 작업에서 코드 수정하지 않고 가능 여부만 검토
+
+### Changed Files
+
+- `src/features/chat/MessageBubble.vue`
+  - `useToast` 연결
+  - assistant 응답 복사 handler 추가
+  - `assistant-copy-button` 클릭 이벤트 연결
+- `src/__tests__/feature9.chat-conversation.test.ts`
+  - assistant 응답 복사 성공 시 clipboard 호출 및 success toast 검증 추가
+  - assistant 응답 복사 실패 시 error toast 검증 추가
+
+### Commands
+
+- `npm test -- src/__tests__/feature9.chat-conversation.test.ts`
+
+### Results
+
+- `feature9.chat-conversation.test.ts`: passed, 28 tests
+
+### Notes
+
+- 다시시도 기능은 현재 API 응답 형태를 유지하면서도 직전 user message를 q로 재전송하는 방식으로 구현 가능
+- 다만 수정본/재생성 이력이 섞일 경우 정확한 query 매핑을 위해 BFF가 `parentUserMessageId` 또는 원본 query를 내려주는 계약이 더 안전함
+
+## 2026-06-15 - 피드백 제출 중 버튼 로딩 표시
+
+### Scope
+
+- assistant 피드백 POST 진행 중 해당 메시지의 해당 버튼 위치에 작은 원형 spinner 표시
+- 요청 중인 버튼은 disabled 처리해 중복 클릭 방지
+- LIKE 즉시 POST 흐름에서 버튼 아이콘이 spinner로 바뀌었다가 완료 후 원래 아이콘으로 복구
+- DISLIKE 제출 중에도 같은 pending 상태를 내려줄 수 있도록 messageId/rating 기반 상태 구조 추가
+- 다시시도 버튼은 구현하지 않고, 추후 발전 가능성 TODO로 남김
+
+### Changed Files
+
+- `src/pages/ChatPage.vue`
+  - pending feedback message id/rating 상태 추가
+  - LIKE/DISLIKE feedback submit 시작/종료 시 pending 상태 갱신
+  - `ChatConversationView`에 pending 상태 전달
+- `src/features/chat/ChatConversationView.vue`
+  - pending feedback 상태 prop 추가
+  - 현재 message에 해당하는 pending rating만 `MessageBubble`로 전달
+- `src/features/chat/MessageBubble.vue`
+  - pending rating prop 추가
+  - LIKE/DISLIKE 버튼에 disabled + 원형 spinner 표시
+  - 다시시도 버튼 확장 방향 TODO 추가
+- `src/__tests__/feature9.chat-conversation.test.ts`
+  - LIKE feedback POST pending 중 spinner/disabled 표시 및 완료 후 복구 테스트 추가
+
+### Commands
+
+- `npm test -- src/__tests__/feature9.chat-conversation.test.ts`
+
+### Results
+
+- `feature9.chat-conversation.test.ts`: passed, 29 tests
+
+### Notes
+
+- 현재 실제 즉시 POST 버튼은 LIKE이므로 화면에서 가장 명확한 pending UI는 LIKE 버튼에 적용됨
+- DISLIKE는 모달에서 submit하는 흐름이지만, submit 중 message action row에도 같은 pending 상태를 표현할 수 있도록 상태 구조를 열어둠
+
+## 2026-06-15 - 고정 대화 메뉴 PinOff 아이콘 적용
+
+### Scope
+
+- 대화 케밥 메뉴의 pin 항목 아이콘을 고정 상태에 따라 분기
+- 미고정 대화는 기존처럼 `Pin` 아이콘과 `고정` 텍스트 유지
+- 고정된 대화는 `PinOff` 아이콘과 `고정 해제` 텍스트 표시
+
+### Changed Files
+
+- `src/features/chat/ConversationActionMenu.vue`
+  - `PinOff` icon import
+  - `isPinned` 상태에 따라 `Pin` / `PinOff` 조건부 렌더링
+- `src/__tests__/feature10.1.conversation-menu.test.ts`
+  - 미고정 메뉴에서 `conversation-menu-pin-icon` 표시 검증
+  - 고정 메뉴에서 `conversation-menu-pin-off-icon` 표시 검증
+
+### Commands
+
+- `npm test -- src/__tests__/feature10.1.conversation-menu.test.ts`
+
+### Results
+
+- `feature10.1.conversation-menu.test.ts`: passed, 7 tests
+
+## 2026-06-15 - 응답 복사 성공 체크 아이콘 표시
+
+### Scope
+
+- assistant 응답 복사 성공 후 복사 아이콘 대신 check 아이콘을 임시 표시
+- 성공 상태는 4초 동안 유지 후 기존 복사 아이콘으로 자동 복구
+- 복사 실패 시에는 check 아이콘을 표시하지 않고 기존 error toast만 유지
+- 컴포넌트 unmount 시 check 복구 timer 정리
+
+### Changed Files
+
+- `src/features/chat/MessageBubble.vue`
+  - `Check` icon import
+  - copy 성공 상태와 4초 timer 추가
+  - `assistant-copy-confirmed-icon` 렌더링 추가
+- `src/__tests__/feature9.chat-conversation.test.ts`
+  - 복사 성공 직후 check icon 표시 검증
+  - 4초 후 check icon 제거 검증
+
+### Commands
+
+- `npm test -- src/__tests__/feature9.chat-conversation.test.ts`
+
+### Results
+
+- `feature9.chat-conversation.test.ts`: passed, 29 tests

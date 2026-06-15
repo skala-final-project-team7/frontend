@@ -203,6 +203,8 @@ describe('feature10.1 conversation kebab menu', () => {
     await trigger.trigger('click');
 
     expect(wrapper.get('[data-testid="conversation-action-menu"]').text()).toContain('고정');
+    expect(wrapper.get('[data-testid="conversation-menu-pin-icon"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="conversation-menu-pin-off-icon"]').exists()).toBe(false);
 
     await recentItem.trigger('mouseleave');
 
@@ -219,6 +221,8 @@ describe('feature10.1 conversation kebab menu', () => {
 
     expect(recentMenu.findAll('[role="menuitem"]')).toHaveLength(3);
     expect(recentMenu.text()).toContain('고정');
+    expect(recentMenu.find('[data-testid="conversation-menu-pin-icon"]').exists()).toBe(true);
+    expect(recentMenu.find('[data-testid="conversation-menu-pin-off-icon"]').exists()).toBe(false);
     expect(recentMenu.text()).toContain('이름 변경');
     expect(recentMenu.text()).toContain('삭제');
     expect(
@@ -232,6 +236,8 @@ describe('feature10.1 conversation kebab menu', () => {
 
     expect(headerMenu.findAll('[role="menuitem"]')).toHaveLength(3);
     expect(headerMenu.text()).toContain('고정 해제');
+    expect(headerMenu.find('[data-testid="conversation-menu-pin-off-icon"]').exists()).toBe(true);
+    expect(headerMenu.find('[data-testid="conversation-menu-pin-icon"]').exists()).toBe(false);
     expect(headerMenu.text()).toContain('이름 변경');
     expect(headerMenu.text()).toContain('삭제');
     expect(
@@ -251,6 +257,8 @@ describe('feature10.1 conversation kebab menu', () => {
     const pinnedMenu = wrapper.get('[data-testid="conversation-action-menu"]');
 
     expect(pinnedMenu.text()).toContain('고정 해제');
+    expect(pinnedMenu.find('[data-testid="conversation-menu-pin-off-icon"]').exists()).toBe(true);
+    expect(pinnedMenu.find('[data-testid="conversation-menu-pin-icon"]').exists()).toBe(false);
     expect(pinnedMenu.text()).toContain('이름 변경');
     expect(pinnedMenu.text()).toContain('삭제');
 

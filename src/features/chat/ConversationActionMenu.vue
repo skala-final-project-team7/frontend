@@ -13,7 +13,7 @@
 --------------------------------------------------
 -->
 <script setup lang="ts">
-import { MoreVertical, Pencil, Pin, Trash2 } from '@lucide/vue';
+import { MoreVertical, Pencil, Pin, PinOff, Trash2 } from '@lucide/vue';
 import { nextTick, ref, watch } from 'vue';
 
 defineOptions({
@@ -95,7 +95,13 @@ watch(
         class="flex w-full items-center gap-2 px-3 py-2 text-left font-lina text-small text-overlay-dark-80 transition hover:bg-bg-100 focus-visible:bg-bg-100 focus-visible:outline-none"
         @click="emit('pin')"
       >
-        <Pin aria-hidden="true" class="size-4" />
+        <PinOff
+          v-if="props.isPinned"
+          data-testid="conversation-menu-pin-off-icon"
+          aria-hidden="true"
+          class="size-4"
+        />
+        <Pin v-else data-testid="conversation-menu-pin-icon" aria-hidden="true" class="size-4" />
         <span>{{ props.isPinned ? '고정 해제' : '고정' }}</span>
       </button>
       <button

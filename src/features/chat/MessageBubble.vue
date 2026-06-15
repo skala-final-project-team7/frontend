@@ -22,6 +22,7 @@
 -->
 <script setup lang="ts">
 import {
+  Check,
   ChevronLeft,
   ChevronRight,
   Copy,
@@ -30,8 +31,9 @@ import {
   ThumbsDown,
   ThumbsUp,
 } from '@lucide/vue';
-import { computed, nextTick, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 
+import { useToast } from '@/composables/useToast';
 import { BaseSpinner, BaseTooltip } from '@/shared';
 import type { FeedbackRating, Message, Source } from '@/types/api';
 
@@ -39,6 +41,7 @@ const props = defineProps<{
   message: Message;
   editingMessageId: string;
   editingContent: string;
+  pendingFeedbackRating?: FeedbackRating | '';
   isStreaming: boolean;
   streamingMessageId: string;
   showUserVersionIndicator?: boolean;
@@ -85,8 +88,12 @@ const canShowNextUserVersion = computed(
   () => userVersionActiveIndex.value < userVersionTotal.value - 1,
 );
 const editTextarea = ref<HTMLTextAreaElement | null>(null);
+const isAssistantCopyConfirmed = ref(false);
+let assistantCopyConfirmedTimer: ReturnType<typeof window.setTimeout> | undefined;
+const { showToast } = useToast();
 // TODO(SCR-420): backend message version list/regeneration 계약 확정 후 사용자 수정 UI를 활성화한다.
 const isUserMessageRevisionEnabled = false;
+// TODO: 다시시도 버튼은 해당 assistant 답변 직전 user message의 content를 q로 재전송하는 방식으로 확장할 수 있다.
 
 /**
  * 편집 textarea 높이를 현재 내용에 맞춰 갱신하되 CSS max-height 이상은 내부 스크롤로 넘긴다.
@@ -143,7 +150,24 @@ function handleEditTextareaKeydown(event: KeyboardEvent) {
   emit('submitEdit', props.message.messageId);
 }
 
-//TODO: 메시지 복사 구현 -> 클립보드 API 사용, 복사 완료 토스트 UI 연결
+async function copyAssistantMessage() {
+  try {
+    await navigator.clipboard.writeText(props.message.content);
+    isAssistantCopyConfirmed.value = true;
+    window.clearTimeout(assistantCopyConfirmedTimer);
+    assistantCopyConfirmedTimer = window.setTimeout(() => {
+      isAssistantCopyConfirmed.value = false;
+    }, 4000);
+    showToast('응답이 복사되었습니다');
+  } catch {
+    showToast('응답 복사에 실패했습니다', { variant: 'error' });
+  }
+}
+
+onBeforeUnmount(() => {
+  window.clearTimeout(assistantCopyConfirmedTimer);
+});
+
 /**
  * 사용자 메시지 수정본 내비게이션 선택을 상위로 전달한다.
  *
@@ -296,8 +320,15 @@ function selectUserMessageVersion(versionIndex: number) {
           type="button"
           aria-label="응답 복사"
           class="inline-flex size-5 items-center justify-center rounded-button transition hover:bg-bg-200 focus-visible:outline-none focus-visible:shadow-focus"
+          @click="copyAssistantMessage"
         >
-          <Copy aria-hidden="true" class="size-4" />
+          <Check
+            v-if="isAssistantCopyConfirmed"
+            data-testid="assistant-copy-confirmed-icon"
+            aria-hidden="true"
+            class="size-4"
+          />
+          <Copy v-else aria-hidden="true" class="size-4" />
         </button>
       </BaseTooltip>
       <BaseTooltip label="좋은 응답" placement="bottom">
@@ -305,10 +336,17 @@ function selectUserMessageVersion(versionIndex: number) {
           data-testid="assistant-like-button"
           type="button"
           aria-label="좋은 응답"
-          class="inline-flex size-5 items-center justify-center rounded-button transition hover:bg-bg-200 focus-visible:outline-none focus-visible:shadow-focus"
+          :disabled="pendingFeedbackRating === 'LIKE'"
+          class="inline-flex size-5 items-center justify-center rounded-button transition hover:bg-bg-200 focus-visible:outline-none focus-visible:shadow-focus disabled:cursor-wait disabled:text-overlay-dark-40 disabled:hover:bg-transparent"
           @click="emit('openFeedback', message, 'LIKE')"
         >
-          <ThumbsUp aria-hidden="true" class="size-4" />
+          <span
+            v-if="pendingFeedbackRating === 'LIKE'"
+            data-testid="assistant-like-spinner"
+            aria-hidden="true"
+            class="size-3 animate-spin rounded-full border-2 border-bg-300 border-t-overlay-dark-60"
+          />
+          <ThumbsUp v-else aria-hidden="true" class="size-4" />
         </button>
       </BaseTooltip>
       <BaseTooltip label="별로인 응답" placement="bottom">
@@ -316,10 +354,17 @@ function selectUserMessageVersion(versionIndex: number) {
           data-testid="assistant-dislike-button"
           type="button"
           aria-label="별로인 응답"
-          class="inline-flex size-5 items-center justify-center rounded-button transition hover:bg-bg-200 focus-visible:outline-none focus-visible:shadow-focus"
+          :disabled="pendingFeedbackRating === 'DISLIKE'"
+          class="inline-flex size-5 items-center justify-center rounded-button transition hover:bg-bg-200 focus-visible:outline-none focus-visible:shadow-focus disabled:cursor-wait disabled:text-overlay-dark-40 disabled:hover:bg-transparent"
           @click="emit('openFeedback', message, 'DISLIKE')"
         >
-          <ThumbsDown aria-hidden="true" class="size-4" />
+          <span
+            v-if="pendingFeedbackRating === 'DISLIKE'"
+            data-testid="assistant-dislike-spinner"
+            aria-hidden="true"
+            class="size-3 animate-spin rounded-full border-2 border-bg-300 border-t-overlay-dark-60"
+          />
+          <ThumbsDown v-else aria-hidden="true" class="size-4" />
         </button>
       </BaseTooltip>
       <BaseTooltip label="다시 시도" placement="bottom">

@@ -96,6 +96,8 @@ const openConversationMenuId = ref('');
 const openConversationMenuSource = ref<ConversationMenuSource | ''>('');
 const feedbackTarget = ref<FeedbackTarget | null>(null);
 const isFeedbackSubmitting = ref(false);
+const pendingFeedbackMessageId = ref('');
+const pendingFeedbackRating = ref<FeedbackRating | ''>('');
 const isSearchModalOpen = ref(false);
 const isSettingsModalOpen = ref(false);
 const isHelpModalOpen = ref(false);
@@ -473,6 +475,8 @@ async function openFeedbackModal(message: Message, rating: FeedbackRating) {
     }
 
     isFeedbackSubmitting.value = true;
+    pendingFeedbackMessageId.value = message.messageId;
+    pendingFeedbackRating.value = rating;
 
     try {
       await submitMessageFeedback(message.messageId, {
@@ -482,6 +486,8 @@ async function openFeedbackModal(message: Message, rating: FeedbackRating) {
       showToast('피드백 제출에 실패했습니다', { variant: 'error' });
     } finally {
       isFeedbackSubmitting.value = false;
+      pendingFeedbackMessageId.value = '';
+      pendingFeedbackRating.value = '';
     }
 
     return;
@@ -509,6 +515,8 @@ async function submitFeedback(comment: string) {
   }
 
   isFeedbackSubmitting.value = true;
+  pendingFeedbackMessageId.value = target.messageId;
+  pendingFeedbackRating.value = target.rating;
 
   try {
     await submitMessageFeedback(target.messageId, {
@@ -520,6 +528,8 @@ async function submitFeedback(comment: string) {
     showToast('피드백 제출에 실패했습니다', { variant: 'error' });
   } finally {
     isFeedbackSubmitting.value = false;
+    pendingFeedbackMessageId.value = '';
+    pendingFeedbackRating.value = '';
   }
 }
 
@@ -629,6 +639,8 @@ watch(
               :messages="activeMessages"
               :editing-message-id="editingMessageId"
               :editing-content="editingContent"
+              :pending-feedback-message-id="pendingFeedbackMessageId"
+              :pending-feedback-rating="pendingFeedbackRating"
               :is-streaming="chatStore.isStreaming"
               :streaming-message-id="chatStore.streamingMessageId"
               :resent-message-ids="[...resentMessageIds]"
