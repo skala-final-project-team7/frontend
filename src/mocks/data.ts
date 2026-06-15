@@ -20,6 +20,7 @@
 import type {
   AdminDataOverview,
   AdminFeedbackResponse,
+  AdminFeedbackTrendItem,
   AdminIngestStatusResponse,
   AdminKeyActivationResponse,
   AdminStats,
@@ -228,20 +229,39 @@ const MOCK_ADMIN_FEEDBACK_ANSWERS = [
   'ACL 필터링은 질의 요청에 포함된 userId와 groupId를 기준으로 벡터 검색 전 단계에서 적용됩니다. 권한 밖 문서가 출처로 보인다면 먼저 해당 사용자의 Confluence groupId 동기화 상태와 페이지 제한 메타데이터가 최신으로 적재됐는지 확인해야 합니다.',
 ];
 
+// 피드백 추이는 FE가 from/to 없이 전체 trend를 받아 기간 탭(7/14/30일)·커스텀 범위로 클라이언트 필터링한다.
+// 30일 단위 구간을 과거로도 이동해 볼 수 있도록 약 3개월(90일)치 일자별 추이를 제공한다.
+const MOCK_ADMIN_FEEDBACK_TREND_DAYS = 90;
+const MOCK_ADMIN_FEEDBACK_TREND_ANCHOR_DATE = '2026-06-14';
+
+function buildMockFeedbackTrend(): AdminFeedbackTrendItem[] {
+  const [year, month, day] = MOCK_ADMIN_FEEDBACK_TREND_ANCHOR_DATE.split('-').map(Number);
+  const anchorMs = Date.UTC(year, month - 1, day);
+  return Array.from({ length: MOCK_ADMIN_FEEDBACK_TREND_DAYS }, (_, index) => {
+    const date = new Date(anchorMs);
+    date.setUTCDate(date.getUTCDate() - (MOCK_ADMIN_FEEDBACK_TREND_DAYS - 1 - index));
+    // 최근일수록(인덱스가 클수록) 만족도가 개선되는 시나리오.
+    // 부정 비중을 과거 약 40% → 최근 약 4%로 낮춰, 7/14/30일·커스텀 구간 긍정 비율이 눈에 띄게 달라지게 한다.
+    const recency = index / (MOCK_ADMIN_FEEDBACK_TREND_DAYS - 1); // 0(과거) ~ 1(최근)
+    const dislikeShare = 0.4 - recency * 0.36;
+    // 주중 38~58건, 주말 14~24건 범위로 자연스러운 막대 높이 등락을 준다.
+    const isWeekend = date.getUTCDay() === 0 || date.getUTCDay() === 6;
+    const likeCount = isWeekend ? 14 + ((index * 5) % 11) : 38 + ((index * 7) % 21);
+    const dislikeCount = Math.max(1, Math.round((likeCount * dislikeShare) / (1 - dislikeShare)));
+    return {
+      date: date.toISOString().slice(0, 10),
+      likeCount,
+      dislikeCount,
+    };
+  });
+}
+
 export const mockAdminFeedbackData: AdminFeedbackResponse = {
   totalCount: 359,
   likeCount: 312,
   dislikeCount: MOCK_ADMIN_NEGATIVE_FEEDBACK_COUNT,
   positiveRatio: 0.87,
-  trend: [
-    { date: '2026-06-03', likeCount: 38, dislikeCount: 7 },
-    { date: '2026-06-04', likeCount: 52, dislikeCount: 11 },
-    { date: '2026-06-05', likeCount: 27, dislikeCount: 4 },
-    { date: '2026-06-06', likeCount: 19, dislikeCount: 2 },
-    { date: '2026-06-07', likeCount: 33, dislikeCount: 6 },
-    { date: '2026-06-08', likeCount: 57, dislikeCount: 9 },
-    { date: '2026-06-09', likeCount: 44, dislikeCount: 8 },
-  ],
+  trend: buildMockFeedbackTrend(),
   negativeFeedbacks: Array.from({ length: MOCK_ADMIN_NEGATIVE_FEEDBACK_COUNT }, (_, index) => ({
     feedbackId: `fb-mock-${String(index + 1).padStart(3, '0')}`,
     messageId: `msg-mock-${String(index + 1).padStart(3, '0')}`,

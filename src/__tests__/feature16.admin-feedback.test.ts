@@ -45,9 +45,11 @@ const mockFeedback: AdminFeedbackResponse = {
   dislikeCount: 47,
   positiveRatio: 0.87,
   trend: [
-    { date: '2026-05-19', likeCount: 40, dislikeCount: 8 },
-    { date: '2026-05-20', likeCount: 52, dislikeCount: 11 },
-    { date: '2026-05-21', likeCount: 31, dislikeCount: 4 },
+    { date: '2026-05-19T00:00:00+09:00', likeCount: 40, dislikeCount: 8 },
+    { date: '2026-06-01T00:00:00+09:00', likeCount: 52, dislikeCount: 11 },
+    { date: '2026-06-08T00:00:00+09:00', likeCount: 31, dislikeCount: 4 },
+    { date: '2026-06-14T00:00:00+09:00', likeCount: 28, dislikeCount: 3 },
+    { date: '2026-06-15T09:30:00+09:00', likeCount: 35, dislikeCount: 5 },
   ],
   negativeFeedbacks: [
     {
@@ -128,7 +130,7 @@ describe('feature16 Admin feedback (SCR-820)', () => {
     expect(mockedGetAdminFeedback).toHaveBeenCalledTimes(1);
   });
 
-  it('renders 긍정/부정 비율 card with likeCount, dislikeCount, positiveRatio', async () => {
+  it('renders 긍정/부정 비율 card recomputed from the selected 기간(기본 7일) 추이 합계', async () => {
     mockAdminBoardBase();
     mockedGetAdminFeedback.mockResolvedValue(mockFeedback);
 
@@ -136,11 +138,13 @@ describe('feature16 Admin feedback (SCR-820)', () => {
 
     expect(wrapper.find('[data-testid="admin-feedback-section"]').exists()).toBe(true);
     const ratioCard = wrapper.get('[data-testid="admin-feedback-ratio-card"]');
-    expect(ratioCard.text()).toContain('312');
-    expect(ratioCard.text()).toContain('47');
+    // 기본 7일 구간(06-14·06-15) 합계: 긍정 28+35=63건, 부정 3+5=8건 → 63/71 ≈ 89%
+    expect(ratioCard.text()).toContain('63건');
+    expect(ratioCard.text()).toContain('8건');
     // 퍼센트는 게이지 중앙에만 표시하고 칩에서는 중복 표기하지 않는다
-    expect(ratioCard.text()).toContain('87%');
-    expect(ratioCard.text()).not.toContain('13%');
+    expect(ratioCard.text()).toContain('89%');
+    // 전체 기간 비율(87%)이 아니라 선택 기간 비율로 계산한다
+    expect(ratioCard.text()).not.toContain('87%');
     // 반원 게이지 — track 위에 브랜드 오렌지 그라데이션 arc를 그린다
     const gaugeArcs = ratioCard.findAll('path');
     expect(gaugeArcs.at(0)?.attributes('stroke')).toBe('var(--color-bg-200)');
@@ -156,12 +160,8 @@ describe('feature16 Admin feedback (SCR-820)', () => {
     const wrapper = await mountAndNavigateToFeedback();
 
     expect(wrapper.find('[data-testid="admin-feedback-trend-chart"]').exists()).toBe(true);
-    expect(wrapper.findAll('[data-testid^="admin-feedback-trend-like-bar-"]')).toHaveLength(
-      mockFeedback.trend.length,
-    );
-    expect(wrapper.findAll('[data-testid^="admin-feedback-trend-dislike-bar-"]')).toHaveLength(
-      mockFeedback.trend.length,
-    );
+    expect(wrapper.findAll('[data-testid^="admin-feedback-trend-like-bar-"]')).toHaveLength(2);
+    expect(wrapper.findAll('[data-testid^="admin-feedback-trend-dislike-bar-"]')).toHaveLength(2);
     // 긍정 바 = 브랜드 오렌지 그라데이션, 부정 바 = 슬레이트 — 그룹 바 구성
     expect(wrapper.get('[data-testid^="admin-feedback-trend-like-bar-"]').attributes('fill')).toBe(
       'url(#admin-feedback-trend-like-gradient)',
@@ -172,7 +172,8 @@ describe('feature16 Admin feedback (SCR-820)', () => {
     expect(
       wrapper.get('[data-testid^="admin-feedback-trend-dislike-bar-"]').attributes('fill-opacity'),
     ).toBe('0.55');
-    expect(wrapper.get('[data-testid="admin-feedback-trend-chart"]').text()).toContain('05-19');
+    expect(wrapper.get('[data-testid="admin-feedback-trend-chart"]').text()).toContain('06-14');
+    expect(wrapper.get('[data-testid="admin-feedback-trend-chart"]').text()).not.toContain('05-19');
     expect(
       wrapper.get('[data-testid="admin-feedback-trend-chart"] text').attributes('font-size'),
     ).toBe('6.5');
@@ -194,15 +195,15 @@ describe('feature16 Admin feedback (SCR-820)', () => {
       .trigger('mouseenter');
 
     const tooltip = wrapper.get('[data-testid="admin-feedback-trend-tooltip"]');
-    expect(tooltip.text()).toContain('05-19');
+    expect(tooltip.text()).toContain('06-14');
     expect(tooltip.text()).toContain('긍정');
-    expect(tooltip.text()).toContain('40건');
+    expect(tooltip.text()).toContain('28건');
     expect(tooltip.text()).toContain('부정');
-    expect(tooltip.text()).toContain('8건');
+    expect(tooltip.text()).toContain('3건');
     expect(tooltip.classes()).toContain('bg-primary-white');
   });
 
-  it('switches 기간 탭(7일/14일/30일) UI state only, without re-calling the API', async () => {
+  it('filters feedback trend chart on the FE when switching 기간 탭 without re-calling the API', async () => {
     mockAdminBoardBase();
     mockedGetAdminFeedback.mockResolvedValue(mockFeedback);
 
@@ -211,6 +212,8 @@ describe('feature16 Admin feedback (SCR-820)', () => {
     expect(
       wrapper.find('[data-testid="admin-feedback-period-tab-7d"]').attributes('aria-selected'),
     ).toBe('true');
+    expect(wrapper.findAll('[data-testid^="admin-feedback-trend-like-bar-"]')).toHaveLength(2);
+    expect(wrapper.get('[data-testid="admin-feedback-trend-chart"]').text()).not.toContain('06-01');
 
     await wrapper.find('[data-testid="admin-feedback-period-tab-14d"]').trigger('click');
 
@@ -220,14 +223,60 @@ describe('feature16 Admin feedback (SCR-820)', () => {
     expect(
       wrapper.find('[data-testid="admin-feedback-period-tab-7d"]').attributes('aria-selected'),
     ).toBe('false');
+    expect(wrapper.findAll('[data-testid^="admin-feedback-trend-like-bar-"]')).toHaveLength(3);
+    expect(wrapper.get('[data-testid="admin-feedback-trend-chart"]').text()).toContain('06-08');
 
     await wrapper.find('[data-testid="admin-feedback-period-tab-30d"]').trigger('click');
 
     expect(
       wrapper.find('[data-testid="admin-feedback-period-tab-30d"]').attributes('aria-selected'),
     ).toBe('true');
+    expect(wrapper.findAll('[data-testid^="admin-feedback-trend-like-bar-"]')).toHaveLength(5);
+    expect(wrapper.get('[data-testid="admin-feedback-trend-chart"]').text()).toContain('05-19');
 
-    // query parameter(from/to)가 미확정이므로 feedback API 재호출 없음 — mock 격리
+    // 긍정/부정 비율 카드도 선택 기간에 맞춰 재계산된다.
+    // 7일(63/71 ≈ 89%) → 30일 전체(긍정 186 / 부정 31 = 217 → 186/217 ≈ 86%)
+    const ratioCard = wrapper.get('[data-testid="admin-feedback-ratio-card"]');
+    expect(ratioCard.text()).toContain('86%');
+    expect(ratioCard.text()).toContain('186건');
+    expect(ratioCard.text()).toContain('31건');
+
+    expect(mockedGetAdminFeedback).toHaveBeenCalledTimes(1);
+  });
+
+  it('filters trend and ratio card by a custom date range within the received trend', async () => {
+    mockAdminBoardBase();
+    mockedGetAdminFeedback.mockResolvedValue(mockFeedback);
+
+    const wrapper = await mountAndNavigateToFeedback();
+
+    // 커스텀 범위 패널 열기
+    await wrapper.get('[data-testid="admin-feedback-custom-range-toggle"]').trigger('click');
+    expect(wrapper.find('[data-testid="admin-feedback-custom-range-panel"]').exists()).toBe(true);
+
+    // 06-01 ~ 06-14 범위 선택 → trend 중 06-01·06-08·06-14 3개만 포함
+    await wrapper.get('[data-testid="admin-feedback-custom-range-from"]').setValue('2026-06-01');
+    await wrapper.get('[data-testid="admin-feedback-custom-range-to"]').setValue('2026-06-14');
+    await wrapper.get('[data-testid="admin-feedback-custom-range-apply"]').trigger('click');
+
+    expect(wrapper.findAll('[data-testid^="admin-feedback-trend-like-bar-"]')).toHaveLength(3);
+    const chartText = wrapper.get('[data-testid="admin-feedback-trend-chart"]').text();
+    expect(chartText).toContain('06-01');
+    expect(chartText).toContain('06-14');
+    expect(chartText).not.toContain('06-15');
+
+    // 커스텀 범위가 활성화되면 프리셋 탭은 모두 비선택 상태가 된다.
+    expect(
+      wrapper.find('[data-testid="admin-feedback-period-tab-7d"]').attributes('aria-selected'),
+    ).toBe('false');
+
+    // 비율 카드도 커스텀 범위 합계로 재계산: 긍정 52+31+28=111 / 부정 11+4+3=18 → 111/129 ≈ 86%
+    const ratioCard = wrapper.get('[data-testid="admin-feedback-ratio-card"]');
+    expect(ratioCard.text()).toContain('111건');
+    expect(ratioCard.text()).toContain('18건');
+    expect(ratioCard.text()).toContain('86%');
+
+    // 커스텀 범위 필터는 FE에서 처리하며 API를 재호출하지 않는다.
     expect(mockedGetAdminFeedback).toHaveBeenCalledTimes(1);
   });
 

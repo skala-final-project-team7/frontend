@@ -4264,6 +4264,30 @@
 
 - `feature9.chat-conversation.test.ts`: passed, 29 tests
 
+## 2026-06-15 - Admin 피드백 추이 날짜 normalize 보강
+
+### Scope
+
+- Admin 피드백 추이의 `7일/14일/30일` FE 필터가 실데이터 datetime 문자열에도 안정적으로 동작하도록 보강
+- API 계약과 공용 타입은 변경하지 않음
+
+### Changed Files
+
+- `src/features/admin/AdminFeedbackSection.vue`
+  - trend 기간 비교 시 `date.slice(0, 10)` 기준으로 normalize 하도록 수정
+  - 차트 라벨도 normalize된 날짜 기준 `MM-DD`로 표시
+- `src/__tests__/feature16.admin-feedback.test.ts`
+  - trend mock을 `YYYY-MM-DDTHH:mm:ss+09:00` 형식으로 바꿔 실데이터 형태를 재현
+  - 7일/14일/30일 필터 테스트가 동일하게 통과하는지 검증
+
+### Commands
+
+- `npm test -- src/__tests__/feature16.admin-feedback.test.ts`
+
+### Results
+
+- `feature16.admin-feedback.test.ts`: passed, 12 tests
+
 ### Notes
 
 - 현재 실제 즉시 POST 버튼은 LIKE이므로 화면에서 가장 명확한 pending UI는 LIKE 버튼에 적용됨
@@ -4294,6 +4318,41 @@
 
 - `feature10.1.conversation-menu.test.ts`: passed, 7 tests
 
+## 2026-06-15 - Admin 시계열 차트 FE 기간 필터링
+
+### Scope
+
+- Admin 사용자 현황의 `시간대별 접속 추이` 기간 탭을 FE 필터링으로 동작하게 변경
+- Admin 피드백의 `피드백 추이` 기간 탭을 FE 필터링으로 동작하게 변경
+- BFF/API 계약과 `docs/api-spec.md`는 변경하지 않음
+- 피드백 추이는 기존 `date` 필드를 기준으로 7일/14일/30일 필터 적용
+- 접속 추이는 기존 `{ hour, count }` 집계 응답을 그대로 지원
+  - 런타임 데이터에 `date`가 섞여 들어오는 경우에만 내부적으로 기간 필터링 후 hour별 count 합산
+  - `date`가 없으면 기존처럼 전체 hourly trend를 그대로 사용
+
+### Changed Files
+
+- `src/features/admin/AdminDashboardSection.vue`
+  - active period 기준 접속 추이 필터링/시간별 합산 computed 추가
+  - 모달 chart와 rail sparkline이 필터링된 trend를 사용하도록 변경
+- `src/features/admin/AdminFeedbackSection.vue`
+  - active period 기준 feedback trend 필터링 computed 추가
+  - trend chart가 필터링된 trend를 사용하도록 변경
+- `src/__tests__/feature15.admin-dashboard.test.ts`
+  - 날짜 포함 런타임 데이터가 들어왔을 때 today/7d/30d 필터링 및 hour 합산 검증
+- `src/__tests__/feature16.admin-feedback.test.ts`
+  - 7일/14일/30일 탭 전환 시 chart bar 수와 라벨이 FE에서 필터링되는지 검증
+
+### Commands
+
+- `npm test -- src/__tests__/feature15.admin-dashboard.test.ts`
+- `npm test -- src/__tests__/feature16.admin-feedback.test.ts`
+
+### Results
+
+- `feature15.admin-dashboard.test.ts`: passed, 18 tests
+- `feature16.admin-feedback.test.ts`: passed, 12 tests
+
 ## 2026-06-15 - 응답 복사 성공 체크 아이콘 표시
 
 ### Scope
@@ -4320,3 +4379,114 @@
 ### Results
 
 - `feature9.chat-conversation.test.ts`: passed, 29 tests
+
+## 2026-06-15 - Admin 피드백 추이 기간 필터 데이터 보강 및 긍정/부정 비율 기간 재계산
+
+### Scope
+
+- 접속 추이(SCR-810): UI/동작은 그대로 두고, 기간 탭(오늘/7일/30일)이 동일하게 렌더링되는 원인이
+  `hourlyAccessTrend`에 `date` 필드가 없기 때문임을 `filteredHourlyAccessTrend` 위 TODO 주석으로 명시
+  - 추후 응답에 `date(YYYY-MM-DD)`가 추가되면 기존 일자 범위 필터가 동작함을 함께 기록
+- 피드백 추이(SCR-820): mock `trend`가 7일치뿐이라 7/14/30일 탭이 동일하게 보이던 문제를 30일치 데이터로 보강
+  - FE가 from/to 없이 전체 trend를 받아 기간 탭으로 클라이언트 필터링하는 기존 동작을 그대로 활용
+  - 30개 바에서 일자 라벨이 겹치지 않도록 라벨 thinning 추가(가장 최근 일자는 항상 표기)
+- 긍정/부정 비율 카드를 선택한 기간 탭(7/14/30일)의 추이 합계로 함께 재계산하도록 변경
+  - 게이지 퍼센트·긍정/부정 칩 건수를 기간 합계 기준으로 표시
+  - 부정 피드백 원문 목록/총 건수/페이지네이션은 서버 페이지네이션 기준이라 전체 `dislikeCount` 유지
+- BFF/API 계약과 `docs/api-spec.md`는 변경하지 않음
+
+### Test Cases
+
+- 긍정/부정 비율 카드가 기본 7일 구간(06-14·06-15) 합계(긍정 63건/부정 8건 → 89%)로 렌더링된다.
+- 기간 탭을 30일로 전환하면 비율 카드가 전체 구간 합계(긍정 186건/부정 31건 → 86%)로 재계산된다.
+- 기간 탭 전환 시 API를 재호출하지 않고 FE에서 trend bar 수·라벨이 필터링된다(기존 회귀 유지).
+
+### Changed Files
+
+- `src/features/admin/AdminDashboardSection.vue`
+  - `filteredHourlyAccessTrend` 위에 `date` 필드 부재로 기간 탭이 동작하지 않음을 설명하는 TODO 주석 추가(UI/로직 변경 없음)
+- `src/features/admin/AdminFeedbackSection.vue`
+  - 선택 기간 합계로 긍정/부정 비율을 재계산하는 `periodFeedbackSummary` computed 추가, `positivePercent`·비율 칩 연결
+  - 긴 구간 일자 라벨 겹침 방지용 `labelStep`/`showLabel` 추가 및 라벨 `v-if` 가드 적용
+- `src/mocks/data.ts`
+  - 7일치 인라인 `trend`를 30일치 생성 함수 `buildMockFeedbackTrend()`로 교체, `AdminFeedbackTrendItem` import 추가
+- `src/__tests__/feature16.admin-feedback.test.ts`
+  - 비율 카드 검증을 전체 기간(312/47/87%) → 선택 기간(63건/8건/89%) 기준으로 갱신
+  - 기간 탭 30일 전환 시 비율 카드가 86%·186건·31건으로 재계산되는지 검증 추가
+
+### Commands
+
+- `npm test -- src/__tests__/feature16.admin-feedback.test.ts`
+- `npm test -- src/__tests__/feature15.admin-dashboard.test.ts src/__tests__/feature17.admin-sync-history.test.ts`
+- `npx eslint`(변경 파일 대상, `--max-warnings 0`)
+- `npm run typecheck`
+
+### Results
+
+- `feature16.admin-feedback.test.ts`: passed, 12 tests
+- `feature15.admin-dashboard.test.ts` / `feature17.admin-sync-history.test.ts`: passed, 18 / 8 tests
+- 변경 파일 eslint: passed (max-warnings 0)
+- `npm run typecheck`: 변경으로 인한 신규 에러 없음(기존 선재 에러 17건은 본 작업 범위 밖 테스트·`MessageBubble.vue`에 존재)
+
+### Notes / Remaining Issues
+
+- 접속 추이 기간 탭은 응답에 `date`가 추가되기 전까지 오늘/7일/30일이 동일하게 렌더링된다(현행 UI 유지, TODO로 추적).
+- 피드백 추이는 mock 30일 데이터 기준으로 동작하며, 실제 백엔드 연결 시 백엔드가 from/to 또는 30일치 trend를 내려주면 그대로 동작한다.
+- 비율 카드(기간 합계)와 부정 피드백 원문 총 건수(전체 `dislikeCount`)는 기준이 달라 값이 다를 수 있음(의도된 동작).
+
+## 2026-06-15 - Admin 피드백 추이 커스텀 기간 선택(드롭다운) 추가 및 구간별 비율 차이 mock
+
+### Scope
+
+- 피드백 추이(SCR-820) 7/14/30일 프리셋 토글 옆에 `기간 직접 선택` 드롭다운 추가
+  - 받은 trend의 최소~최대 일자 범위 안에서 시작일/종료일을 직접 선택(최근 구간뿐 아니라 과거 30일 단위 구간도 이동해 조회 가능)
+  - native `<input type="date">` 사용, `min`/`max`로 데이터 범위 밖 선택을 막음(클램핑)
+  - 패널 안내 문구를 고정 "최근 30일" → 실제 데이터 범위(`{min} ~ {max}`)로 동적 표기해 "최근 30일만" 오해 제거
+  - 시작일 > 종료일이면 자동으로 뒤바꿔 항상 `from ≤ to` 보장
+  - 커스텀 범위 활성 시 프리셋 탭은 비선택 표시, 프리셋 선택 시 커스텀 해제
+  - from/to 를 API로 보내지 않고 FE에서 in-memory trend 를 잘라 표시(차트·비율 카드 모두 반영)
+- 부정 피드백 원문 목록/총 건수/페이지네이션은 기존대로 서버 페이지네이션 기준(`dislikeCount`) 유지 — 기간 필터 비대상
+- mock 데이터를 약 3개월(90일)로 확장해 30일 단위 구간을 과거로 이동해도 비율 차이가 보이도록 변경
+  - 최근일수록 부정 비중을 낮추는 시나리오(과거 약 40% → 최근 약 4%)
+  - 데이터 범위: 2026-03-17 ~ 2026-06-14
+  - 30일 윈도우 긍정 비율 예: 과거 30일 ≈ 66%, 중간 30일 ≈ 78%, 최근 30일 ≈ 90%
+  - 프리셋 긍정 비율 예: 7일 ≈ 94%, 14일 ≈ 93%, 30일 ≈ 90%
+
+### Test Cases
+
+- 커스텀 범위 토글로 패널을 열고 06-01~06-14 선택 시 trend 바가 3개(06-01·06-08·06-14)로 필터링된다.
+- 커스텀 범위 적용 시 프리셋 탭은 모두 비선택(aria-selected=false)이 된다.
+- 비율 카드도 커스텀 범위 합계(긍정 111건/부정 18건 → 86%)로 재계산된다.
+- 커스텀 범위 필터는 FE에서 처리하며 API를 재호출하지 않는다.
+
+### Changed Files
+
+- `src/features/admin/AdminFeedbackSection.vue`
+  - `Calendar` 아이콘 import
+  - `trendDateBounds`(min/max), 커스텀 범위 상태(`customRange`/`isCustomActive`/`isCustomRangeOpen`/`draftFrom`/`draftTo`)와 `selectPreset`/`openCustomRange`/`closeCustomRange`/`applyCustomRange` 추가
+  - `filteredFeedbackTrend`가 프리셋 또는 커스텀 범위로 trend 를 자르도록 변경
+  - 프리셋 토글 옆 `기간 직접 선택` 드롭다운 패널(날짜 입력·적용/취소·외부 클릭 닫기) 템플릿 추가, 안내 문구를 실제 데이터 범위로 동적 표기
+- `src/mocks/data.ts`
+  - 추이 데이터 범위를 30일 → 90일로 확장(`MOCK_ADMIN_FEEDBACK_TREND_DAYS`)
+  - `buildMockFeedbackTrend()`를 최근일수록 부정 비중이 낮아지는 시나리오로 변경(구간별 비율 차이 노출)
+- `src/__tests__/feature16.admin-feedback.test.ts`
+  - 커스텀 날짜 범위 필터링·비율 카드 재계산·프리셋 비선택·API 미재호출 검증 추가
+
+### Commands
+
+- `npm test -- src/__tests__/feature16.admin-feedback.test.ts`
+- `npm test -- src/__tests__/feature15.admin-dashboard.test.ts src/__tests__/feature17.admin-sync-history.test.ts`
+- `npx eslint`(변경 파일 대상, `--max-warnings 0`)
+- `npm run typecheck`
+
+### Results
+
+- `feature16.admin-feedback.test.ts`: passed, 13 tests
+- admin 3개 스위트(`feature15`/`feature16`/`feature17`): passed, 39 tests
+- 변경 파일 eslint: passed (max-warnings 0)
+- `npm run typecheck`: 총 에러 17건으로 변경 전과 동일(신규 에러 없음, 모두 본 작업 범위 밖 선재 이슈)
+
+### Notes / Remaining Issues
+
+- 커스텀 범위는 FE in-memory 필터라 선택 가능 범위가 받은 trend(현재 mock 90일)로 제한된다. 실제 백엔드에서 더 긴 기간이 필요하면 backend `from`/`to` 지원과 FE 전송이 필요하다.
+- 부정 피드백 원문 목록은 기간 필터 대상이 아니라, 커스텀 범위와 원문 목록 표시 범위가 다를 수 있음(사용자 확인된 의도된 동작).
