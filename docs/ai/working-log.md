@@ -4599,3 +4599,91 @@
 - 여전히 남은 feature11 항목은 실서버 기준 검증 성격이다.
   - `/api/conversations`, `/messages`, `/chat`의 localhost BFF 런타임 확인
   - 실제 응답 기준 source/작성일자/작성자 표시 확인
+
+## 2026-06-15 - feature11 Chat 백엔드 연결 보강: assistant feedback 선택 상태 유지
+
+### Scope
+
+- assistant feedback(`LIKE`/`DISLIKE`) 제출 성공 후, 어떤 응답을 보냈는지 버튼 상태만으로 즉시 식별 가능하도록 선택 상태를 메시지별로 유지
+- 기존 loading spinner와 실패 toast 동작은 유지
+- 성공 toast 추가는 이번 범위에서 제외
+
+### Test Cases
+
+- `LIKE` 즉시 제출 성공 후 해당 assistant의 좋아요 버튼이 선택 상태(`aria-pressed=true`)로 유지된다.
+- `DISLIKE` 모달 제출 성공 후 해당 assistant의 싫어요 버튼이 선택 상태(`aria-pressed=true`)로 유지된다.
+- 선택되지 않은 반대편 버튼은 `aria-pressed=false` 상태를 유지한다.
+
+### Changed Files
+
+- `src/pages/ChatPage.vue`
+  - `selectedFeedbackRatingsByMessageId` 상태를 추가해 assistant 메시지별 마지막 feedback rating을 유지
+  - `LIKE` 즉시 제출 성공, `DISLIKE` 모달 제출 성공 시 해당 messageId의 선택 상태를 저장
+- `src/features/chat/ChatConversationView.vue`
+  - 메시지별 선택된 feedback rating을 `MessageBubble`로 전달
+- `src/features/chat/MessageBubble.vue`
+  - 선택된 feedback 버튼에 `aria-pressed`와 진한 활성 스타일을 적용
+- `src/__tests__/feature9.chat-conversation.test.ts`
+  - 좋아요/싫어요 제출 성공 후 선택 상태 유지 회귀 테스트 추가
+
+### Commands
+
+- `npx vitest run src/__tests__/feature9.chat-conversation.test.ts --testNamePattern "feedback|selected dislike"`
+- `npx prettier --check src/pages/ChatPage.vue src/features/chat/ChatConversationView.vue src/features/chat/MessageBubble.vue src/__tests__/feature9.chat-conversation.test.ts`
+
+### Results
+
+- feedback 관련 회귀 테스트: passed
+- `prettier --check`: passed
+
+### Notes / Remaining Issues
+
+- 현재 구현은 “전송 성공 여부가 버튼 선택 상태로 보이게 하는 것”에 집중한다.
+- 성공 toast는 아직 추가하지 않았으며, 제품 요구사항이 확정되면 별도 보강 가능하다.
+
+## 2026-06-15 - feature11 localhost 검증 보조 도구 추가: mock-backend
+
+### Scope
+
+- `feature11`의 localhost 검증을 위해 실제 BFF를 최대한 유지하면서 비어 있는 경계만 보조하는 로컬 도구를 `mock-backend/` 아래에 추가
+- `backend-template/`는 수정하지 않고, reverse proxy / ML mock SSE / Mongo seed만 별도 제공
+- 브라우저 진입점을 `http://localhost:8090`으로 고정해 Frontend dev server(`:5173`)와 실제 BFF(`:8080`)를 연결
+
+### Test Cases
+
+- `node --check server.mjs`로 proxy / ML mock 서버 스크립트 문법이 유효하다.
+- `docker compose -f docker-compose.feature11.yml config`가 정상 파싱된다.
+
+### Changed Files
+
+- `../mock-backend/Dockerfile`
+  - proxy / ML mock 공용 Node 컨테이너 정의
+- `../mock-backend/docker-compose.feature11.yml`
+  - Mongo, reverse proxy, ML mock 기동 구성 추가
+- `../mock-backend/fixtures/mongo-init.js`
+  - 실제 BFF `conversations` / `messages` / `feedbacks` 컬렉션 스키마에 맞춘 seed 데이터 추가
+- `../mock-backend/server.mjs`
+  - `/api/users/me` / `/api/confluence/pages/preview` stub
+  - 나머지 `/api/*` -> 실제 BFF proxy
+  - `/ml/query` SSE mock 제공
+- `../mock-backend/README.md`
+  - feature11 localhost 검증 절차를 단계별로 문서화
+- `vite.config.ts`
+  - proxy 경유 개발 접근을 위해 `host.docker.internal`을 `server.allowedHosts`에 추가
+
+### Commands
+
+- `node --check server.mjs`
+- `docker compose -f docker-compose.feature11.yml config`
+
+### Results
+
+- `node --check`: passed
+- `docker compose ... config`: passed
+
+### Notes / Remaining Issues
+
+- 이 도구는 실제 배포 구조(Vercel + public BFF) 검증용이 아니라 localhost 기능 검증용이다.
+- 현재 로컬 조합에서 실제 경로와 stub 경로는 다음과 같다.
+  - 실제: `/api/conversations`, `/api/conversations/{id}/messages`, `/api/conversations/{id}/chat`, `/api/messages/{id}/feedback`, Mongo 저장
+  - stub: `/api/users/me`, `/api/confluence/pages/preview`, ML upstream `/ml/query`

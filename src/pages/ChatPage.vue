@@ -24,6 +24,7 @@
   - 2026-06-12, 레이아웃 보정, 빈 화면 scroll-region flex 스트레치 제거로 ASK LINA 상단 정렬 복원
   - 2026-06-15, feature11 구현, 대화 목록/메시지 이력 loading-error-retry 상태와 Bearer 인증 연동 UI 보강
   - 2026-06-15, feature11 구현, 첫 질문 대화 생성 실패용 retry error state 추가
+  - 2026-06-15, feature11 구현, assistant 피드백 성공 후 선택 상태 고정 추가
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -106,6 +107,7 @@ const feedbackTarget = ref<FeedbackTarget | null>(null);
 const isFeedbackSubmitting = ref(false);
 const pendingFeedbackMessageId = ref('');
 const pendingFeedbackRating = ref<FeedbackRating | ''>('');
+const selectedFeedbackRatingsByMessageId = ref<Record<string, FeedbackRating>>({});
 const isSearchModalOpen = ref(false);
 const isSettingsModalOpen = ref(false);
 const isHelpModalOpen = ref(false);
@@ -547,6 +549,10 @@ async function openFeedbackModal(message: Message, rating: FeedbackRating) {
       await submitMessageFeedback(message.messageId, {
         rating: 'LIKE',
       });
+      selectedFeedbackRatingsByMessageId.value = {
+        ...selectedFeedbackRatingsByMessageId.value,
+        [message.messageId]: 'LIKE',
+      };
     } catch {
       showToast('피드백 제출에 실패했습니다', { variant: 'error' });
     } finally {
@@ -588,6 +594,10 @@ async function submitFeedback(comment: string) {
       rating: target.rating,
       comment,
     });
+    selectedFeedbackRatingsByMessageId.value = {
+      ...selectedFeedbackRatingsByMessageId.value,
+      [target.messageId]: target.rating,
+    };
     feedbackTarget.value = null;
   } catch {
     showToast('피드백 제출에 실패했습니다', { variant: 'error' });
@@ -756,6 +766,7 @@ watch(
               :editing-content="editingContent"
               :pending-feedback-message-id="pendingFeedbackMessageId"
               :pending-feedback-rating="pendingFeedbackRating"
+              :selected-feedback-ratings-by-message-id="selectedFeedbackRatingsByMessageId"
               :is-streaming="chatStore.isStreaming"
               :streaming-message-id="chatStore.streamingMessageId"
               :resent-message-ids="[...resentMessageIds]"

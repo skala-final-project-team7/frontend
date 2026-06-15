@@ -479,6 +479,30 @@ describe('feature9 SCR-410, SCR-420, SCR-600 Chat conversation screen', () => {
         }),
       }),
     );
+    expect(wrapper.get('[data-testid="assistant-like-button"]').attributes('aria-pressed')).toBe(
+      'true',
+    );
+    expect(wrapper.get('[data-testid="assistant-dislike-button"]').attributes('aria-pressed')).toBe(
+      'false',
+    );
+  });
+
+  it('keeps the selected dislike button highlighted after feedback modal submission succeeds', async () => {
+    const wrapper = mountChatPage();
+    await flushAsyncUpdates();
+
+    await wrapper.get('[data-testid="assistant-dislike-button"]').trigger('click');
+    await wrapper.get('[data-testid="feedback-reason-incorrect"]').trigger('click');
+    await wrapper.get('[data-testid="feedback-submit-button"]').trigger('click');
+    await flushAsyncUpdates();
+
+    expect(wrapper.find('[data-testid="feedback-modal"]').exists()).toBe(false);
+    expect(wrapper.get('[data-testid="assistant-dislike-button"]').attributes('aria-pressed')).toBe(
+      'true',
+    );
+    expect(wrapper.get('[data-testid="assistant-like-button"]').attributes('aria-pressed')).toBe(
+      'false',
+    );
   });
 
   it('submits feedback with the server assistant messageId after SSE done replaces the local placeholder id', async () => {

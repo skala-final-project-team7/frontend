@@ -12,6 +12,7 @@
   - 2026-05-22, SCR-420 보강, 사용자 메시지 version 선택 이벤트 전달 추가
   - 2026-06-02, feature10.4 보강, assistant 피드백 선택 이벤트 전달 추가
   - 2026-06-15, feature11 구현, assistant 오류 재시도 이벤트 전달 추가
+  - 2026-06-15, feature11 구현, assistant 피드백 선택 상태 전달 추가
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -33,6 +34,7 @@ defineProps<{
   editingContent: string;
   pendingFeedbackMessageId: string;
   pendingFeedbackRating: FeedbackRating | '';
+  selectedFeedbackRatingsByMessageId: Record<string, FeedbackRating | undefined>;
   isStreaming: boolean;
   streamingMessageId: string;
   resentMessageIds: string[];
@@ -66,6 +68,7 @@ defineEmits<{
       :pending-feedback-rating="
         pendingFeedbackMessageId === message.messageId ? pendingFeedbackRating : ''
       "
+      :selected-feedback-rating="selectedFeedbackRatingsByMessageId[message.messageId] ?? ''"
       :is-streaming="isStreaming"
       :streaming-message-id="streamingMessageId"
       :show-user-version-indicator="resentMessageIds.includes(message.messageId)"
