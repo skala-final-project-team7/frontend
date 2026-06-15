@@ -4556,3 +4556,46 @@
   - 대상: `src/__tests__/feature16.admin-feedback.test.ts`
   - 대상: `src/features/chat/MessageBubble.vue`
 - 실제 BFF 연동 상태(`VITE_USE_MOCK=false`)는 이 세션에서 검증하지 못했다. 이번 작업은 FE 요청 헤더/오류 상태/회귀 테스트까지 준비한 단계다.
+
+## 2026-06-15 - feature11 Chat 백엔드 연결 전환 보강: 첫 질문 생성 실패 retry state
+
+### Scope
+
+- 새 채팅 화면(`/chat`)에서 첫 질문 전송 시 `POST /api/conversations` 생성 실패를 toast만으로 끝내지 않고 page-level retry 상태로 노출
+- 기존 active conversation 진입 후의 SSE 오류 bubble, 목록/이력 retry 흐름은 유지
+- 실제 `VITE_USE_MOCK=false` 런타임 검증과 source metadata 실서버 확인은 이번 범위에서 제외
+
+### Test Cases
+
+- 첫 질문 전송 중 `POST /api/conversations`가 실패하면 empty state 대신 재시도 가능한 error state가 보인다.
+- 같은 error state의 retry 버튼으로 동일 질문을 다시 전송하면 새 conversation 생성과 SSE 전송이 이어진다.
+
+### Changed Files
+
+- `src/composables/useChatSubmission.ts`
+  - 첫 대화 생성 실패를 page shell에 위임할 수 있도록 `onInitialConversationCreateError`, `onSubmitStart`, `onSubmitSuccess` 훅 추가
+- `src/pages/ChatPage.vue`
+  - 첫 질문 실패 상태(`initialSubmitErrorMessage`, `pendingInitialSubmitQuestion`)와 retry action 추가
+  - empty state 앞단에 `chat-start-submit-error` 렌더링 추가
+- `src/__tests__/feature9.chat-conversation.test.ts`
+  - 첫 질문 conversation 생성 실패와 retry 회귀 테스트 추가
+- `docs/ai/current-plan.md`
+  - `일반 API 조회/생성 실패를 사용자 안내와 재시도 가능한 error state로 연결` 항목 체크
+
+### Commands
+
+- `npx vitest run src/__tests__/feature9.chat-conversation.test.ts --testNamePattern "creating the first conversation fails"` 실패 확인
+- `npx vitest run src/__tests__/feature9.chat-conversation.test.ts --testNamePattern "creating the first conversation fails"`
+
+### Results
+
+- 최초 실행: failed, 생성 실패 후에도 `chat-empty-state`가 그대로 보여 retry state 부재를 확인
+- 구현 후 재실행: passed
+
+### Notes / Remaining Issues
+
+- `src/mocks/handlers.ts`의 `TODO(MOCK)` 마커는 유지한다.
+  - 사유: `feature13` 인증 백엔드 연결과 `VITE_USE_MOCK=false` 실환경 검증이 아직 완료되지 않아, 개발/테스트용 mock fallback 경계를 아직 제거할 수 없다.
+- 여전히 남은 feature11 항목은 실서버 기준 검증 성격이다.
+  - `/api/conversations`, `/messages`, `/chat`의 localhost BFF 런타임 확인
+  - 실제 응답 기준 source/작성일자/작성자 표시 확인

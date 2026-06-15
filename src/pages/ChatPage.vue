@@ -23,6 +23,7 @@
   - 2026-06-12, 레이아웃 보정, 새 대화 화면 scroll-region을 viewport 높이로 고정해 불필요한 스크롤 제거
   - 2026-06-12, 레이아웃 보정, 빈 화면 scroll-region flex 스트레치 제거로 ASK LINA 상단 정렬 복원
   - 2026-06-15, feature11 구현, 대화 목록/메시지 이력 loading-error-retry 상태와 Bearer 인증 연동 UI 보강
+  - 2026-06-15, feature11 구현, 첫 질문 대화 생성 실패용 retry error state 추가
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -87,6 +88,8 @@ const isInitialLoading = ref(true);
 const initialLoadErrorMessage = ref('');
 const isMessageHistoryLoading = ref(false);
 const messageHistoryErrorMessage = ref('');
+const initialSubmitErrorMessage = ref('');
+const pendingInitialSubmitQuestion = ref('');
 const userName = ref('00');
 const userLastLoginAt = ref('');
 const profileImageUrl = ref('');
@@ -373,13 +376,32 @@ function resetMessageDraftState() {
   userMessageVersionsById.value = {};
 }
 
+function clearInitialSubmitError() {
+  initialSubmitErrorMessage.value = '';
+  pendingInitialSubmitQuestion.value = '';
+}
+
 const { submitMessage } = useChatSubmission({
   chatStore,
   conversations,
+  onInitialConversationCreateError: (question) => {
+    pendingInitialSubmitQuestion.value = question;
+    initialSubmitErrorMessage.value = '대화를 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.';
+  },
+  onSubmitStart: clearInitialSubmitError,
+  onSubmitSuccess: clearInitialSubmitError,
   routeConversationId,
   router,
   showToast,
 });
+
+async function retryInitialSubmit() {
+  if (!pendingInitialSubmitQuestion.value) {
+    return;
+  }
+
+  await submitMessage(pendingInitialSubmitQuestion.value);
+}
 
 const { reloadRouteConversationMessages } = useChatRouteSync({
   chatStore,
@@ -473,6 +495,27 @@ function selectUserMessageVersion(messageId: string, versionIndex: number) {
       activeIndex: nextIndex,
     },
   };
+}
+
+async function retryAssistantMessage(message: Message) {
+  const assistantMessageIndex = activeMessages.value.findIndex(
+    (currentMessage) => currentMessage.messageId === message.messageId,
+  );
+
+  if (assistantMessageIndex <= 0) {
+    return;
+  }
+
+  const previousUserMessage = [...activeMessages.value]
+    .slice(0, assistantMessageIndex)
+    .reverse()
+    .find((currentMessage) => currentMessage.role === 'user');
+
+  if (!previousUserMessage) {
+    return;
+  }
+
+  await submitMessage(previousUserMessage.content);
 }
 
 function openReferencePanelFromSourceButton(sources: Source[] | undefined) {
@@ -679,6 +722,14 @@ watch(
               retry-label="다시 불러오기"
               @retry="loadInitialChatData"
             />
+            <ErrorRetryState
+              v-else-if="initialSubmitErrorMessage && !hasActiveConversation"
+              data-testid="chat-start-submit-error"
+              title="메시지를 전송하지 못했습니다"
+              :message="initialSubmitErrorMessage"
+              retry-label="다시 시도"
+              @retry="retryInitialSubmit"
+            />
             <div
               v-else-if="
                 hasActiveConversation && isMessageHistoryLoading && activeMessages.length === 0
@@ -716,6 +767,7 @@ watch(
               @select-user-message-version="selectUserMessageVersion"
               @open-sources="openReferencePanelFromSourceButton"
               @open-feedback="openFeedbackModal"
+              @retry-assistant-message="retryAssistantMessage"
             />
           </div>
           <div

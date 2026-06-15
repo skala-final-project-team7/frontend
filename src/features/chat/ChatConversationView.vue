@@ -11,6 +11,7 @@
   - 2026-05-22, SCR-420 보강, 수정 재전송 메시지 버전 indicator 전달 추가
   - 2026-05-22, SCR-420 보강, 사용자 메시지 version 선택 이벤트 전달 추가
   - 2026-06-02, feature10.4 보강, assistant 피드백 선택 이벤트 전달 추가
+  - 2026-06-15, feature11 구현, assistant 오류 재시도 이벤트 전달 추가
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -46,6 +47,7 @@ defineEmits<{
   selectUserMessageVersion: [messageId: string, versionIndex: number];
   openSources: [sources: Source[] | undefined];
   openFeedback: [message: Message, rating: FeedbackRating];
+  retryAssistantMessage: [message: Message];
 }>();
 </script>
 
@@ -78,6 +80,7 @@ defineEmits<{
       "
       @open-sources="$emit('openSources', $event)"
       @open-feedback="(message, rating) => $emit('openFeedback', message, rating)"
+      @retry-assistant-message="$emit('retryAssistantMessage', $event)"
     />
   </div>
 </template>

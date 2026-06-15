@@ -9,6 +9,7 @@
  *   - 2026-05-22, feature9 보강, streaming phase/status, abort, error event 처리 추가
  *   - 2026-05-22, feature9 SSE 보강, backend status.message 직접 렌더링 상태 추가
  *   - 2026-05-22, RAG status 계약 반영, 알 수 없는 status phase 무시 처리 추가
+ *   - 2026-06-15, feature11 구현, SSE HTTP 실패/스트림 중단/backend error 문구 구분 추가
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -180,7 +181,7 @@ export const useChatStore = defineStore('chat', {
               this.applySseEvent(conversationId, assistantMessage.messageId, event);
 
               if (event.event === 'error') {
-                throw new Error(event.data.message);
+                throw new SseEventError(event.data.errorCode, event.data.message);
               }
             },
           },
@@ -314,8 +315,7 @@ export const useChatStore = defineStore('chat', {
      * @param error 수신 또는 파싱 중 발생한 오류
      */
     applyStreamFailure(conversationId: string, messageId: string, error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : '답변 생성 중 오류가 발생했습니다';
+      const errorMessage = getStreamFailureMessage(error);
 
       this.messagesByConversationId[conversationId] = (
         this.messagesByConversationId[conversationId] ?? []
@@ -347,4 +347,45 @@ function isAbortError(error: unknown): boolean {
     'name' in error &&
     (error as { name: unknown }).name === 'AbortError'
   );
+}
+
+function isSseHttpFailure(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    /^SSE request failed with status \d+$/.test(error.message)
+  );
+}
+
+function isStreamInterruptedError(error: unknown): boolean {
+  return (
+    error instanceof TypeError ||
+    (error instanceof Error &&
+      (error.message === 'Failed to fetch' || error.message.includes('NetworkError')))
+  );
+}
+
+function getStreamFailureMessage(error: unknown): string {
+  if (error instanceof SseEventError) {
+    return error.message;
+  }
+
+  if (isSseHttpFailure(error)) {
+    return '답변 스트림 연결에 실패했습니다. 다시 시도해 주세요.';
+  }
+
+  if (isStreamInterruptedError(error)) {
+    return '답변 스트림이 중단되었습니다. 다시 시도해 주세요.';
+  }
+
+  return error instanceof Error ? error.message : '답변 생성 중 오류가 발생했습니다';
+}
+
+class SseEventError extends Error {
+  public readonly errorCode: string;
+
+  constructor(errorCode: string, message: string) {
+    super(message);
+    this.name = 'SseEventError';
+    this.errorCode = errorCode;
+  }
 }
