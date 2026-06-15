@@ -4687,3 +4687,145 @@
 - 현재 로컬 조합에서 실제 경로와 stub 경로는 다음과 같다.
   - 실제: `/api/conversations`, `/api/conversations/{id}/messages`, `/api/conversations/{id}/chat`, `/api/messages/{id}/feedback`, Mongo 저장
   - stub: `/api/users/me`, `/api/confluence/pages/preview`, ML upstream `/ml/query`
+
+## 2026-06-15 - feature13: Auth 백엔드 연결 전환
+
+### Scope
+
+- 실제 BFF 인증 흐름(`/api/auth/login` -> Confluence OAuth -> `/auth/callback`)과 FE를 연결하는 인증 상태 관리 구현
+- 토큰 저장 전략 확정: `accessToken`만 `localStorage`에 단일 소스로 저장하고, Pinia는 토큰을 미러링하지 않고 `currentUser` / `isAuthenticated` / `isRestoringSession` 앱 상태만 관리
+- POC 범위: `refreshToken` / `expiresAt` 제외. access token 만료(401)는 자동 갱신 없이 재로그인으로 처리
+- OAuth callback 성공 시 `accessToken` localStorage 저장 -> `GET /api/users/me`로 세션 복원 -> `role` 기준 라우팅(`USER` -> `/chat`, `ADMIN` -> `/admin`)
+- 관리자 거부(403 FORBIDDEN) 시 토큰 저장 없이 `/login?error=FORBIDDEN` 안내, 미인증/`role !== ADMIN`의 `/chat`·`/admin` 접근 차단(라우터 가드)
+- `backend-template/`는 읽기 전용으로 계약 참조만 하고, 검증 보조 코드는 `frontend/` 또는 `mock-backend/`에만 작성
+
+### Test Cases
+
+- `useAuthStore`: 초기 상태, 토큰 없을 때 no-op, 토큰 있을 때 `/api/users/me` 복원, `isRestoringSession` 토글, 401 시 토큰 제거, `clearAuth`, `logout`(성공/실패 시에도 clearAuth), ADMIN 복원 (9건)
+- `AuthCallbackPage`: accessToken localStorage 저장, USER -> `/chat`, ADMIN -> `/admin`, `errorCode=FORBIDDEN` -> `/login?error=FORBIDDEN`, 토큰 없음 -> `/login`, `/api/users/me` 실패 -> 토큰 제거 + `/login`, 콜백 페이지 렌더 (7건)
+- 라우터 가드: 미인증 `/chat`·`/admin` 차단, USER의 `/admin` 차단, `/auth/callback`·`/login`·`/` 미인증 접근 허용 (5건)
+- LoginPage 에러 배너: `?error=FORBIDDEN` 배너 표시, 에러 파라미터 없을 때 미표시 (2건)
+
+### Changed Files
+
+- `src/stores/auth.ts` (신규)
+  - Auth Pinia store: `currentUser` / `isAuthenticated`(computed) / `isRestoringSession` / `sessionRestoreAttempted`, `restoreSession` / `clearAuth` / `logout`
+- `src/pages/AuthCallbackPage.vue` (신규)
+  - `/auth/callback` 처리: 쿼리에서 `accessToken` / `errorCode` 읽어 localStorage 저장 -> restoreSession -> 역할별 라우팅
+- `src/__tests__/feature13.auth-backend-connect.test.ts` (신규)
+  - useAuthStore / AuthCallbackPage / 라우터 가드 / LoginPage 에러 배너 23건
+- `src/stores/index.ts`
+  - `useAuthStore` re-export 추가
+- `src/types/api.ts`
+  - `AuthCallbackTokenData`(`accessToken` + `expiresAt`, POC에서 `refreshToken` 제외) 추가
+- `src/router/index.ts`
+  - `/auth/callback` 라우트 추가, `/chat`·`/admin/**`에 `meta.requiresAuth` / `requiresAdmin` 부여
+  - `beforeEach` 가드: `getActivePinia()` + `sessionRestoreAttempted` 방어 후 인증/권한 체크
+- `src/main.ts`
+  - 앱 마운트 전 `restoreSession()` 호출로 가드가 올바른 인증 상태를 참조하도록 보장
+- `src/pages/LoginPage.vue`
+  - `?error=FORBIDDEN` 권한 부족 에러 배너 추가, 이후 UX 보강(역할 카드 하단 이동, 제목/설명 위계 분리, 아이콘 배지)
+- `vite.config.ts`
+  - `VITE_USE_MOCK=false` 검증용 `/api` -> `http://localhost:8090` dev proxy 추가
+- `docs/ai/current-plan.md`
+  - feature13 체크박스 완료 처리
+- `../mock-backend/server.mjs`
+  - `GET /api/auth/login` -> `/auth/callback?accessToken=...` 302(`mode=admin` 시 admin 토큰), `POST /api/auth/logout` stub
+  - `GET /api/users/me` 토큰값 기준 role 분기, 기본 origin `host.docker.internal` -> `localhost`, auth 리디렉션 주소 `AUTH_CALLBACK_BASE`로 분리(8090 루프 방지)
+- `../mock-backend/FEATURE13-VERIFY.md` (신규)
+  - 수동 검증 가이드(방법 A: MSW mock / 방법 B: mock-backend proxy)
+- `frontend/docs/auth-state-guide.md` (신규)
+  - localStorage·Pinia 저장 동작 정리 
+
+### Commands
+
+- `npx vitest run src/__tests__/feature13.auth-backend-connect.test.ts`
+- `npx vitest run`
+- `npx tsc --noEmit -p tsconfig.json`
+
+### Results
+
+- feature13 테스트: 23/23 passed
+- 전체 스위트: 217/220 passed
+  - 실패 3건은 feature13 이전부터 존재한 별개 이슈(feature8 `floating-help-button` aria-label, feature12 LandingPage `landing-ask-input-box` CSS 클래스)로 이번 변경과 무관
+- `tsc --noEmit -p tsconfig.json`: passed
+
+### Notes / Remaining Issues
+
+- 라우터 가드는 `main.ts`의 `restoreSession()` 이후에만 활성화된다(`sessionRestoreAttempted` 플래그). Pinia 미설정 테스트 컨텍스트에서는 `getActivePinia()` 가드로 우회해 기존 테스트 회귀를 방지했다.
+- 검증 보조 코드(`vite.config.ts`의 `/api` proxy, `../mock-backend/`의 feature13 auth stub)는 실제 BFF 인증 연동이 완료되면 정리 대상이다.
+- 후속: `refreshToken` / `expiresAt` 도입, 401 -> `POST /api/auth/refresh` 재발급, rotating refresh 반영.
+
+## 2026-06-15 - Login 권한 부족 에러 배너 글래스 톤 보정
+
+### Scope
+
+- feature13에서 추가한 `?error=FORBIDDEN` 권한 부족 에러 배너의 배경을 부드러운 글래스 톤으로 조정
+- 불투명 흰 배경이 다소 무겁게 보이는 문제를 반투명 + backdrop blur로 완화
+
+### Test Cases
+
+- LoginPage 에러 배너: `?error=FORBIDDEN` 배너 표시, 에러 파라미터 없을 때 미표시 (feature13 기존 2건 회귀 확인)
+
+### Changed Files
+
+- `src/pages/LoginPage.vue`
+  - 에러 배너 배경 `bg-primary-white`(불투명) -> `bg-primary-white/60`(반투명) + `backdrop-blur-panel` 적용
+  - `backdrop-blur-panel`은 기존 `tailwind.config.js` 토큰(9.25px)으로 Reference 패널 등과 글래스 톤 통일
+
+### Commands
+
+- `npx vitest run src/__tests__/feature13.auth-backend-connect.test.ts`
+
+### Results
+
+- feature13 테스트: 23/23 passed
+
+### Notes / Remaining Issues
+
+- 투명도는 `/60` 기준이며, 더 투명/불투명하게 조정하려면 `/50`~`/80` 범위로 변경 가능.
+
+## 2026-06-15 - feature13 보강: callback 라우팅을 role 단독에서 returnTo(사용자 의도) 기준으로 전환
+
+### Scope
+
+- 기존 `AuthCallbackPage`가 `/api/users/me`의 `role`만으로 라우팅해, 관리자 계정이 "일반 사용자로 로그인"을 눌러도 무조건 `/admin`으로 가던 문제 수정
+- 사용자가 로그인 시 선택한 `returnTo`(의도)대로 라우팅하도록 전환 (`/chat` 또는 `/admin`)
+- `returnTo`는 로그인 화면 카드가 항상 자동으로 붙이므로 정상 흐름엔 항상 존재. 없거나 허용되지 않은 값(외부 URL 등)이면 비정상 진입으로 보고 `/login`으로 돌려보내 재시도하게 처리
+- `/admin` 접근 자체는 라우터 가드(`requiresAdmin`)가 `role`을 재검증하므로, `returnTo=/admin`만으로 비관리자가 진입할 수 없음(open redirect / 권한 우회 방지)
+
+### Test Cases
+
+- returnTo=/chat -> /chat, returnTo=/admin -> /admin (사용자 의도대로)
+- ADMIN 계정이 returnTo=/chat이면 role이 ADMIN이어도 /chat (의도 존중, 핵심 회귀)
+- returnTo 없음(USER/ADMIN) -> /login으로 돌려보냄
+- 허용되지 않은 returnTo(외부 URL) -> /login으로 돌려보냄
+
+### Changed Files
+
+- `src/pages/AuthCallbackPage.vue`
+  - `ALLOWED_RETURN_TO`(`/chat`, `/admin`) 화이트리스트 기준으로 `returnTo` 라우팅, 미해당 시 `/login` 리디렉션
+- `src/__tests__/feature13.auth-backend-connect.test.ts`
+  - returnTo 우선 라우팅 / 의도 존중 / 비정상 진입 -> /login 케이스 추가·수정 (총 27 tests)
+- `../mock-backend/server.mjs`
+  - `/api/auth/login`이 `returnTo`를 callback 리디렉션 쿼리로 전달하도록 보강(`sendAuthLoginRedirect`)
+- `docs/ai/current-plan.md`, `frontend/docs/auth-state-guide.md`, `../mock-backend/FEATURE13-VERIFY.md`
+  - returnTo 기준 라우팅 정책 반영
+
+### Commands
+
+- `npx vitest run src/__tests__/feature13.auth-backend-connect.test.ts`
+- `npx tsc --noEmit -p tsconfig.json`
+- `node --check ../mock-backend/server.mjs`
+
+### Results
+
+- feature13 테스트: 27/27 passed
+- 전체 스위트: 221/224 passed (실패 3건은 feature8 aria-label, feature12 LandingPage CSS로 기존 이슈, 이번 변경과 무관)
+- `tsc --noEmit -p tsconfig.json`: passed
+- `node --check`: passed
+
+### Notes / Remaining Issues
+
+- 실제 BFF 계약: `/api/auth/callback`은 JSON(`LoginTokenResponse`)을 반환하므로, 실제 연동 시 BFF가 최종 FE 리디렉션에 `accessToken`과 함께 `returnTo`를 실어주는지 확인 필요. mock-backend는 OAuth 왕복을 생략하고 callback 쿼리로 직접 전달한다.
+- `ALLOWED_RETURN_TO`는 현재 `/chat`, `/admin`만 허용. 향후 진입 대상 경로가 늘면 화이트리스트 확장 필요.

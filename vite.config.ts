@@ -6,6 +6,7 @@
  * 작성일 : 2026-05-18
  * 변경사항 내역 (날짜, 변경목적, 변경내용 순)
  *   - 2026-05-18, 최초 작성, Vue/Vitest/Vite 기본 설정 추가
+ *   - 2026-06-15, feature13 검증, /api proxy → mock-backend(:8090) 추가 (VITE_USE_MOCK=false 시 사용)
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -21,6 +22,14 @@ export default defineConfig({
   plugins: [vue()],
   server: {
     allowedHosts: ['host.docker.internal'],
+    // VITE_USE_MOCK=false 시 /api/* 요청을 mock-backend proxy 서버(:8090)로 전달한다.
+    // VITE_USE_MOCK=true(기본값)일 때는 MSW가 브라우저 서비스 워커에서 먼저 가로채므로 이 설정은 무시된다.
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8090',
+        changeOrigin: true,
+      },
+    },
   },
   resolve: {
     alias: {

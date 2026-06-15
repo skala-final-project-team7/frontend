@@ -7,6 +7,7 @@
  * 변경사항 내역 (날짜, 변경목적, 변경내용 순)
  *   - 2026-05-18, feature2 구현, 서버 상태 소유 기준 상수 추가
  *   - 2026-05-21, feature9 보강, Chat Pinia store export 추가
+ *   - 2026-06-15, feature13 구현, Auth Pinia store export 추가
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -19,4 +20,5 @@ export const SERVER_STATE_POLICY = {
 } as const;
 
 export { useAdminIngestStore } from './adminIngest';
+export { useAuthStore } from './auth';
 export { useChatStore } from './chat';
