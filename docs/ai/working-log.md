@@ -4169,3 +4169,30 @@
 
 - 이번 변경은 랜딩 화면의 시각 배치 안정화만 다루며 API, 인증, 채팅, 설정 로직은 변경하지 않음
 - 깨짐 원인은 viewport 기준 퍼센트 배치와 음수 오프셋이 섞여 특정 화면 비율에서 요소가 서로 다른 기준으로 움직이던 구조였음
+
+## 2026-06-15 - 설정 모달 헤더 구분선 간격 보정
+
+### Scope
+
+- 설정 모달 상단 `설정` 타이틀 아래 구분선이 너무 아래에 있어 상단 여백이 과해 보이는 문제 보정
+- 헤더 하단 padding을 줄여 구분선을 조금 위로 이동
+- 본문 wrapper의 상단 padding도 소폭 줄여 구분선과 본문 시작 간격이 과하게 벌어지지 않도록 조정
+
+### Changed Files
+
+- `src/features/settings/SettingsModal.vue`
+  - header `pb-9` → `pb-7`
+  - body grid `pt-10` → `pt-9`
+
+### Commands
+
+- `npm test -- src/__tests__/feature18.settings-modal.test.ts`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+
+### Results
+
+- `feature18.settings-modal.test.ts`: passed, 12 tests
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- 설정 모달 UI 간격만 변경했으며 기능/문구/API 동작 변경 없음

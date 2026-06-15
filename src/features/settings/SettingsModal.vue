@@ -177,7 +177,7 @@ onBeforeUnmount(() => {
         @keydown="handleKeydown"
       >
         <header
-          class="flex shrink-0 items-center justify-between border-b border-overlay-dark-10 pb-9"
+          class="flex shrink-0 items-center justify-between border-b border-overlay-dark-10 pb-7"
         >
           <h2
             id="settings-title"
@@ -197,9 +197,7 @@ onBeforeUnmount(() => {
           </button>
         </header>
 
-        <div
-          class="grid min-h-0 flex-1 grid-cols-[196px_minmax(0,1fr)] gap-9 overflow-hidden pt-10"
-        >
+        <div class="grid min-h-0 flex-1 grid-cols-[196px_minmax(0,1fr)] gap-9 overflow-hidden pt-9">
           <nav aria-label="Settings section" class="flex flex-col gap-2">
             <div
               data-testid="settings-account-nav-item"
