@@ -226,7 +226,7 @@ onBeforeUnmount(() => {
             aria-label="계정 관리"
             class="min-h-0 overflow-y-auto pr-1"
           >
-            <h3 class="mb-6 font-lina text-[14px] font-normal text-black">연결된 계정</h3>
+            <h3 class="mb-5 font-lina text-[14px] font-normal text-black">연결된 계정</h3>
 
             <div
               data-testid="settings-account-card"
@@ -258,7 +258,7 @@ onBeforeUnmount(() => {
               </a>
             </div>
 
-            <div class="relative mt-3 grid gap-3 overflow-hidden rounded-xl">
+            <div class="relative mt-3 grid gap-2 overflow-hidden rounded-xl">
               <div
                 data-testid="settings-slack-card"
                 class="flex min-h-[74px] rounded-xl border border-overlay-dark-10 px-5 py-4"
@@ -333,7 +333,7 @@ onBeforeUnmount(() => {
 
             <p
               data-testid="settings-account-renewal-note"
-              class="mt-5 inline-flex items-center gap-2 font-lina text-[12px] text-overlay-dark-40"
+              class="mt-4 inline-flex items-center gap-2 font-lina text-[12px] text-overlay-dark-40"
             >
               <Info aria-hidden="true" class="size-4" />
               90일마다 인증 갱신되어야 합니다.
@@ -341,7 +341,7 @@ onBeforeUnmount(() => {
 
             <div
               data-testid="settings-logout-row"
-              class="mt-10 flex items-center justify-between border-t border-overlay-dark-10 pt-7"
+              class="mt-8 flex items-center justify-between border-t border-overlay-dark-10 pt-6"
             >
               <p class="font-lina text-[14px] text-black">이 기기에서 로그아웃 하기</p>
               <button
