@@ -7,6 +7,8 @@
 변경사항 내역 (날짜, 변경목적, 변경내용 순)
   - 2026-06-05, feature12 구현, LoginPage와 역할 선택 mock 경계 작성
   - 2026-06-09, UX 개선, 카드 hover transform과 rise animation을 분리해 진입 직후 hover impact가 바로 보이도록 조정
+  - 2026-06-15, feature13 구현, ?error=FORBIDDEN 쿼리 기반 권한 부족 에러 배너 추가
+  - 2026-06-15, UX 개선, 에러 배너를 역할 카드 하단으로 이동하고 제목/설명 위계 분리·아이콘 배지로 가독성 향상
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -14,10 +16,15 @@
 --------------------------------------------------
 -->
 <script setup lang="ts">
-import { ShieldCheck } from '@lucide/vue';
+import { computed } from 'vue';
+import { useRoute } from 'vue-router';
+import { AlertCircle, ShieldCheck } from '@lucide/vue';
 
 import { AUTH_INTENT_OPTIONS } from '@/features/auth';
 import { linaAdminImageUrl, linaUserImageUrl, mascotImageUrl } from '@/shared';
+
+const route = useRoute();
+const authErrorCode = computed(() => route.query.error as string | undefined);
 
 const roleImageUrlByRole = {
   user: linaUserImageUrl,
@@ -83,6 +90,35 @@ const roleImageUrlByRole = {
           </div>
         </a>
       </section>
+
+      <div
+        v-if="authErrorCode"
+        data-testid="auth-error-banner"
+        class="mt-8 flex w-full max-w-[1120px] items-start gap-3.5 rounded-card border border-status-error/15 bg-primary-white px-6 py-4 text-left shadow-floating"
+        role="alert"
+      >
+        <span
+          class="flex size-9 shrink-0 items-center justify-center rounded-full bg-status-error/10 text-status-error"
+        >
+          <AlertCircle class="size-5" aria-hidden="true" />
+        </span>
+        <div class="flex flex-col gap-1">
+          <span class="text-button font-semibold text-overlay-dark-80">
+            {{
+              authErrorCode === 'FORBIDDEN'
+                ? '관리자 권한이 없는 계정입니다'
+                : '로그인 중 오류가 발생했습니다'
+            }}
+          </span>
+          <span class="text-small leading-relaxed text-overlay-dark-40">
+            {{
+              authErrorCode === 'FORBIDDEN'
+                ? '일반 사용자로 로그인하거나 관리자에게 권한을 요청하세요.'
+                : '잠시 후 다시 시도해주세요.'
+            }}
+          </span>
+        </div>
+      </div>
     </section>
 
     <footer class="absolute inset-x-0 bottom-8 text-center text-button text-overlay-dark-40">

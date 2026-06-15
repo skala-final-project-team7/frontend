@@ -4687,3 +4687,71 @@
 - 현재 로컬 조합에서 실제 경로와 stub 경로는 다음과 같다.
   - 실제: `/api/conversations`, `/api/conversations/{id}/messages`, `/api/conversations/{id}/chat`, `/api/messages/{id}/feedback`, Mongo 저장
   - stub: `/api/users/me`, `/api/confluence/pages/preview`, ML upstream `/ml/query`
+
+## 2026-06-15 - feature13: Auth 백엔드 연결 전환
+
+### Scope
+
+- 실제 BFF 인증 흐름(`/api/auth/login` -> Confluence OAuth -> `/auth/callback`)과 FE를 연결하는 인증 상태 관리 구현
+- 토큰 저장 전략 확정: `accessToken`만 `localStorage`에 단일 소스로 저장하고, Pinia는 토큰을 미러링하지 않고 `currentUser` / `isAuthenticated` / `isRestoringSession` 앱 상태만 관리
+- POC 범위: `refreshToken` / `expiresAt` 제외. access token 만료(401)는 자동 갱신 없이 재로그인으로 처리
+- OAuth callback 성공 시 `accessToken` localStorage 저장 -> `GET /api/users/me`로 세션 복원 -> `role` 기준 라우팅(`USER` -> `/chat`, `ADMIN` -> `/admin`)
+- 관리자 거부(403 FORBIDDEN) 시 토큰 저장 없이 `/login?error=FORBIDDEN` 안내, 미인증/`role !== ADMIN`의 `/chat`·`/admin` 접근 차단(라우터 가드)
+- `backend-template/`는 읽기 전용으로 계약 참조만 하고, 검증 보조 코드는 `frontend/` 또는 `mock-backend/`에만 작성
+
+### Test Cases
+
+- `useAuthStore`: 초기 상태, 토큰 없을 때 no-op, 토큰 있을 때 `/api/users/me` 복원, `isRestoringSession` 토글, 401 시 토큰 제거, `clearAuth`, `logout`(성공/실패 시에도 clearAuth), ADMIN 복원 (9건)
+- `AuthCallbackPage`: accessToken localStorage 저장, USER -> `/chat`, ADMIN -> `/admin`, `errorCode=FORBIDDEN` -> `/login?error=FORBIDDEN`, 토큰 없음 -> `/login`, `/api/users/me` 실패 -> 토큰 제거 + `/login`, 콜백 페이지 렌더 (7건)
+- 라우터 가드: 미인증 `/chat`·`/admin` 차단, USER의 `/admin` 차단, `/auth/callback`·`/login`·`/` 미인증 접근 허용 (5건)
+- LoginPage 에러 배너: `?error=FORBIDDEN` 배너 표시, 에러 파라미터 없을 때 미표시 (2건)
+
+### Changed Files
+
+- `src/stores/auth.ts` (신규)
+  - Auth Pinia store: `currentUser` / `isAuthenticated`(computed) / `isRestoringSession` / `sessionRestoreAttempted`, `restoreSession` / `clearAuth` / `logout`
+- `src/pages/AuthCallbackPage.vue` (신규)
+  - `/auth/callback` 처리: 쿼리에서 `accessToken` / `errorCode` 읽어 localStorage 저장 -> restoreSession -> 역할별 라우팅
+- `src/__tests__/feature13.auth-backend-connect.test.ts` (신규)
+  - useAuthStore / AuthCallbackPage / 라우터 가드 / LoginPage 에러 배너 23건
+- `src/stores/index.ts`
+  - `useAuthStore` re-export 추가
+- `src/types/api.ts`
+  - `AuthCallbackTokenData`(`accessToken` + `expiresAt`, POC에서 `refreshToken` 제외) 추가
+- `src/router/index.ts`
+  - `/auth/callback` 라우트 추가, `/chat`·`/admin/**`에 `meta.requiresAuth` / `requiresAdmin` 부여
+  - `beforeEach` 가드: `getActivePinia()` + `sessionRestoreAttempted` 방어 후 인증/권한 체크
+- `src/main.ts`
+  - 앱 마운트 전 `restoreSession()` 호출로 가드가 올바른 인증 상태를 참조하도록 보장
+- `src/pages/LoginPage.vue`
+  - `?error=FORBIDDEN` 권한 부족 에러 배너 추가, 이후 UX 보강(역할 카드 하단 이동, 제목/설명 위계 분리, 아이콘 배지)
+- `vite.config.ts`
+  - `VITE_USE_MOCK=false` 검증용 `/api` -> `http://localhost:8090` dev proxy 추가
+- `docs/ai/current-plan.md`
+  - feature13 체크박스 완료 처리
+- `../mock-backend/server.mjs`
+  - `GET /api/auth/login` -> `/auth/callback?accessToken=...` 302(`mode=admin` 시 admin 토큰), `POST /api/auth/logout` stub
+  - `GET /api/users/me` 토큰값 기준 role 분기, 기본 origin `host.docker.internal` -> `localhost`, auth 리디렉션 주소 `AUTH_CALLBACK_BASE`로 분리(8090 루프 방지)
+- `../mock-backend/FEATURE13-VERIFY.md` (신규)
+  - 수동 검증 가이드(방법 A: MSW mock / 방법 B: mock-backend proxy)
+- `frontend/docs/auth-state-guide.md` (신규)
+  - localStorage·Pinia 저장 동작 정리 
+
+### Commands
+
+- `npx vitest run src/__tests__/feature13.auth-backend-connect.test.ts`
+- `npx vitest run`
+- `npx tsc --noEmit -p tsconfig.json`
+
+### Results
+
+- feature13 테스트: 23/23 passed
+- 전체 스위트: 217/220 passed
+  - 실패 3건은 feature13 이전부터 존재한 별개 이슈(feature8 `floating-help-button` aria-label, feature12 LandingPage `landing-ask-input-box` CSS 클래스)로 이번 변경과 무관
+- `tsc --noEmit -p tsconfig.json`: passed
+
+### Notes / Remaining Issues
+
+- 라우터 가드는 `main.ts`의 `restoreSession()` 이후에만 활성화된다(`sessionRestoreAttempted` 플래그). Pinia 미설정 테스트 컨텍스트에서는 `getActivePinia()` 가드로 우회해 기존 테스트 회귀를 방지했다.
+- 검증 보조 코드(`vite.config.ts`의 `/api` proxy, `../mock-backend/`의 feature13 auth stub)는 실제 BFF 인증 연동이 완료되면 정리 대상이다.
+- 후속: `refreshToken` / `expiresAt` 도입, 401 -> `POST /api/auth/refresh` 재발급, rotating refresh 반영.

@@ -204,16 +204,16 @@
 
 # feature13: Auth 백엔드 연결 전환
 
-[ ] `docs/api-spec.md`의 인증 API 예정 항목과 실제 BFF 인증 흐름 대조
-[ ] 일반 사용자 선택 시 `GET /api/auth/login`으로 Confluence OAuth 시작 endpoint 연결
-[ ] 관리자 선택 시 `GET /api/auth/login?mode=admin`으로 Confluence OAuth 시작 endpoint 연결
-[ ] OAuth callback 이후 사용자 상태 복원 방식 확인
-[ ] OAuth callback 성공 후 `GET /api/users/me`를 호출해 사용자 이름/프로필/`role` 표시 데이터 흐름 연결
-[ ] `role === "USER"`이면 Chat 화면(`/chat`)으로 이동하고, `role === "ADMIN"`이면 선택한 흐름에 맞춰 Admin 화면(`/admin`) 또는 Chat 화면 진입 정책을 확정해 적용
-[ ] 관리자 선택 흐름에서 BFF가 `users.role != ADMIN`을 `403 FORBIDDEN`으로 거부하면 로그인 화면에 권한 부족 안내를 표시하고 토큰을 저장하지 않음
-[ ] 일반 사용자 세션으로 `/admin` 접근 시 `403 FORBIDDEN` 또는 `role !== "ADMIN"`을 기준으로 접근 차단 처리
-[ ] 인증 실패 / 세션 만료 / 로그아웃 상태 처리
-[ ] 인증/인가 흐름 변경 시 관련 문서 갱신
+[x] `docs/api-spec.md`의 인증 API 예정 항목과 실제 BFF 인증 흐름 대조
+[x] 일반 사용자 선택 시 `GET /api/auth/login`으로 Confluence OAuth 시작 endpoint 연결
+[x] 관리자 선택 시 `GET /api/auth/login?mode=admin`으로 Confluence OAuth 시작 endpoint 연결
+[x] OAuth callback 이후 사용자 상태 복원 방식 확인
+[x] OAuth callback 성공 후 `GET /api/users/me`를 호출해 사용자 이름/프로필/`role` 표시 데이터 흐름 연결
+[x] `role === "USER"`이면 Chat 화면(`/chat`)으로 이동하고, `role === "ADMIN"`이면 Admin 화면(`/admin`)으로 진입
+[x] 관리자 선택 흐름에서 BFF가 `users.role != ADMIN`을 `403 FORBIDDEN`으로 거부하면 로그인 화면에 권한 부족 안내를 표시하고 토큰을 저장하지 않음
+[x] 일반 사용자 세션으로 `/admin` 접근 시 `role !== "ADMIN"`을 기준으로 접근 차단 처리
+[x] 인증 실패 / 세션 만료 / 로그아웃 상태 처리 (401 → clearAuth + /login 리디렉션)
+[x] `useAuthStore` Pinia store, `AuthCallbackPage.vue`, 라우터 가드, LoginPage 에러 배너 구현 (TDD 23 tests)
 
 # feature14: Admin 기본 shell 및 데이터 수집 메인 보드 구현 (SCR-800)
 

@@ -17,6 +17,7 @@
  *   - 2026-06-02, API v2.3.0 정합화, Message role lowercase 및 messageCount 제거 반영
  *   - 2026-06-10, feature15 구현, AdminStats·AdminUserItem·AdminUsersResponse 타입 추가
  *   - 2026-06-11, feature16 구현, AdminFeedbackResponse 계열 타입 추가
+ *   - 2026-06-15, feature13 구현, AuthCallbackTokenData 타입 추가
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -114,6 +115,11 @@ export type ConfluencePagePreview = {
 };
 
 export type CurrentUserRole = 'USER' | 'ADMIN';
+
+export type AuthCallbackTokenData = {
+  accessToken: string;
+  expiresAt: string;
+};
 
 export type CurrentUser = {
   userId: string;
