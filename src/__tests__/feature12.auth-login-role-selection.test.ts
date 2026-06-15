@@ -46,6 +46,8 @@ describe('feature12 Auth / Login + Role Selection', () => {
     expect(wrapper.get('[data-testid="landing-hero-panel"]').exists()).toBe(true);
     expect(wrapper.get('[data-testid="landing-headline-panel"]').exists()).toBe(true);
     expect(wrapper.get('[data-testid="landing-login-panel"]').exists()).toBe(true);
+    expect(wrapper.get('[data-testid="landing-hero-stage"]').classes()).toContain('aspect-[16/9]');
+    expect(wrapper.get('[data-testid="landing-hero-stage"]').classes()).toContain('max-w-[1180px]');
     expect(wrapper.get('[data-testid="landing-graph"]').exists()).toBe(true);
     expect(wrapper.text()).toContain('scroll');
     expect(wrapper.text()).not.toContain('continue');
@@ -63,8 +65,8 @@ describe('feature12 Auth / Login + Role Selection', () => {
     expect(acronymWords[0].classes()).toContain('landing-acronym-word');
     expect(acronymWords[0].classes()).toContain('text-body');
     expect(acronymWords[0].classes()).toContain('text-overlay-dark-80');
-    expect(acronymWords[0].attributes('style')).toContain('left: 30%');
-    expect(acronymWords[0].attributes('style')).toContain('top: -62%');
+    expect(acronymWords[0].attributes('style')).toContain('left: 28%');
+    expect(acronymWords[0].attributes('style')).toContain('top: 54%');
   });
 
   it('scrolls through Landing panels before routing from the final Confluence CTA to Login', async () => {
@@ -113,10 +115,11 @@ describe('feature12 Auth / Login + Role Selection', () => {
     expect(wrapper.get('[data-testid="landing-feature-icon-ask"]').classes()).toContain(
       'text-primary',
     );
-    expect(wrapper.get('[data-testid="landing-ask-input-box"]').classes()).toContain('-right-28');
-    expect(wrapper.get('[data-testid="landing-ask-input-box"]').classes()).toContain('top-24');
+    expect(wrapper.get('[data-testid="landing-ask-mockup"]').classes()).toContain('max-w-[560px]');
+    expect(wrapper.get('[data-testid="landing-ask-input-box"]').classes()).toContain('right-0');
+    expect(wrapper.get('[data-testid="landing-ask-input-box"]').classes()).toContain('top-[122px]');
     expect(wrapper.get('[data-testid="landing-ask-arrow-path"]').attributes('d')).toBe(
-      'M 152 236 C 168 168 268 140 310 140',
+      'M 160 236 C 180 172 296 148 354 148',
     );
 
     await wrapper.get('[data-testid="landing-feature-tab-verify"]').trigger('click');

@@ -4126,3 +4126,46 @@
 
 - 기존 대화 화면은 message-list 내부 스크롤이 아니라 page-level scroll 방식이므로, 최신 이동 버튼도 `window` 스크롤 기준으로 구현
 - 버튼 wrapper는 `pointer-events-none`, 실제 button은 `pointer-events-auto`로 두어 입력 영역 위 floating UI가 주변 클릭을 과도하게 막지 않도록 처리
+
+## 2026-06-15 - 랜딩 화면 비율 변화 안정화
+
+### Scope
+
+- 랜딩 히어로 화면에서 화면 비율이 좁아질 때 LINA 로고, acronym 텍스트, 그래프 노드가 서로 어긋나거나 겹치는 문제 수정
+- 히어로 그래프/로고/acronym 텍스트 배치 기준을 viewport 전체가 아니라 16:9 내부 stage 기준으로 변경
+- 로그인 CTA는 stage 최대 폭 기준으로 우측 위치를 잡아 넓은 화면과 좁은 화면에서 과도하게 밀리지 않도록 보정
+- `How it works` 기능 섹션의 Ask 목업이 좁은 비율에서 화면 밖으로 잘리는 문제 수정
+  - 입력 박스를 `-right-28`로 화면 밖에 배치하던 구조 제거
+  - Ask 목업을 `max-w-[560px]` 컨테이너 안에서 안정적으로 배치
+  - 화살표 경로와 아이콘 위치를 새 목업 폭에 맞게 재조정
+- 기능 섹션 그리드는 고정 `grid-cols-2` 대신 최소 폭을 가진 명시적 grid track으로 조정
+
+### Changed Files
+
+- `src/pages/LandingPage.vue`
+  - `landing-hero-stage` 추가
+  - 히어로 그래프/로고/acronym 텍스트를 stage 내부 absolute 배치로 재구성
+  - acronym 텍스트 좌표를 로고 내부 안정 위치로 변경
+  - Ask 목업의 음수 right offset 제거 및 내부 컨테이너 기준 위치로 변경
+  - Ask 화살표 SVG 경로와 아이콘 위치 재조정
+- `src/__tests__/feature12.auth-login-role-selection.test.ts`
+  - 랜딩 hero stage 존재 및 16:9 기준 검증 추가
+  - acronym 좌표 기대값 갱신
+  - Ask 목업이 음수 offset 대신 컨테이너 내부 위치를 쓰는지 검증 갱신
+
+### Commands
+
+- `npm test -- src/__tests__/feature12.auth-login-role-selection.test.ts`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+
+### Results
+
+- `feature12.auth-login-role-selection.test.ts`: passed, 9 tests
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+
+### Notes
+
+- 이번 변경은 랜딩 화면의 시각 배치 안정화만 다루며 API, 인증, 채팅, 설정 로직은 변경하지 않음
+- 깨짐 원인은 viewport 기준 퍼센트 배치와 음수 오프셋이 섞여 특정 화면 비율에서 요소가 서로 다른 기준으로 움직이던 구조였음

@@ -149,10 +149,10 @@ const graphLines = [
 ] as const;
 
 const acronymWords = [
-  { text: 'INKED', x: 30, y: -62 },
-  { text: 'INTELLIGENCE', x: 42, y: 0 },
-  { text: 'AVIGATION', x: 59, y: 0 },
-  { text: 'GENT', x: 78, y: 0 },
+  { text: 'INKED', x: 28, y: 54 },
+  { text: 'INTELLIGENCE', x: 42, y: 54 },
+  { text: 'AVIGATION', x: 61, y: 54 },
+  { text: 'GENT', x: 80, y: 54 },
 ] as const;
 
 function enterLogin() {
@@ -191,7 +191,7 @@ const tabData = {
     bullets: [
       '10,000+ 문서 실시간 인덱싱',
       '평균 응답 시간 3초 이내',
-      '스페이스·페이지·첨부파일 통합 검색',
+      '워크스페이스·페이지·첨부파일까지 통합 검색',
     ],
   },
   verify: {
@@ -253,57 +253,73 @@ onMounted(() => {
       aria-label="LINA 브랜드 소개"
     >
       <div
-        data-testid="landing-graph"
-        class="pointer-events-none absolute inset-0 z-0 opacity-90"
-        aria-hidden="true"
+        data-testid="landing-hero-stage"
+        class="relative z-0 aspect-[16/9] w-full max-w-[1180px] overflow-visible"
       >
-        <svg class="absolute inset-0 size-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-          <line
-            v-for="([x1, y1, x2, y2], index) in graphLines"
-            :key="index"
-            :x1="x1"
-            :y1="y1"
-            :x2="x2"
-            :y2="y2"
-            class="stroke-overlay-dark-10 opacity-50"
-            stroke-width="0.08"
-            stroke-linecap="round"
-          />
-        </svg>
-        <span
-          v-for="node in graphNodes"
-          :key="node.label"
-          class="absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-2"
-          :style="{ left: `${node.x}%`, top: `${node.y}%` }"
+        <div
+          data-testid="landing-graph"
+          class="pointer-events-none absolute inset-0 z-0 opacity-90"
+          aria-hidden="true"
         >
+          <svg class="absolute inset-0 size-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <line
+              v-for="([x1, y1, x2, y2], index) in graphLines"
+              :key="index"
+              :x1="x1"
+              :y1="y1"
+              :x2="x2"
+              :y2="y2"
+              class="stroke-overlay-dark-10 opacity-50"
+              stroke-width="0.08"
+              stroke-linecap="round"
+            />
+          </svg>
           <span
-            class="absolute top-0 size-12 -translate-y-1/2 rounded-full blur-lg"
-            :style="{ background: node.halo }"
-            aria-hidden="true"
-          />
-          <span
-            class="relative size-3 rounded-full opacity-75 ring-2 ring-primary-white/80"
-            :style="{
-              background: `radial-gradient(circle at 35% 30%, var(--color-primary-white), ${node.color})`,
-              boxShadow: `0 0 16px ${node.halo}`,
-            }"
-            aria-hidden="true"
-          />
-          <span class="text-small font-normal tracking-[0.08em] text-overlay-dark-20">
-            {{ node.label }}
+            v-for="node in graphNodes"
+            :key="node.label"
+            class="absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-2"
+            :style="{ left: `${node.x}%`, top: `${node.y}%` }"
+          >
+            <span
+              class="absolute top-0 size-12 -translate-y-1/2 rounded-full blur-lg"
+              :style="{ background: node.halo }"
+              aria-hidden="true"
+            />
+            <span
+              class="relative size-3 rounded-full opacity-75 ring-2 ring-primary-white/80"
+              :style="{
+                background: `radial-gradient(circle at 35% 30%, var(--color-primary-white), ${node.color})`,
+                boxShadow: `0 0 16px ${node.halo}`,
+              }"
+              aria-hidden="true"
+            />
+            <span class="text-small font-normal tracking-[0.08em] text-overlay-dark-20">
+              {{ node.label }}
+            </span>
           </span>
-        </span>
-      </div>
+        </div>
 
-      <img
-        class="relative z-10 w-[min(92vw,1060px)] object-contain"
-        :src="logoLinaCuteImageUrl"
-        alt="LINA"
-      />
+        <img
+          class="absolute left-1/2 top-[55%] z-10 w-[76%] max-w-[920px] -translate-x-1/2 -translate-y-1/2 object-contain"
+          :src="logoLinaCuteImageUrl"
+          alt="LINA"
+        />
+        <div class="pointer-events-none absolute inset-0 z-20" aria-hidden="true">
+          <span
+            v-for="word in acronymWords"
+            :key="word.text"
+            data-testid="landing-acronym-word"
+            class="landing-acronym-word absolute -translate-x-1/2 -translate-y-1/2 text-body font-normal tracking-[0.34em] text-overlay-dark-80"
+            :style="{ left: `${word.x}%`, top: `${word.y}%` }"
+          >
+            {{ word.text }}
+          </span>
+        </div>
+      </div>
       <button
         type="button"
         data-testid="landing-cta-button"
-        class="landing-cta-button landing-hero-login-button absolute bottom-20 right-12 z-30 inline-flex items-center gap-3 rounded-full px-8 py-3.5 text-button font-medium backdrop-blur-sm focus-visible:outline-none focus-visible:shadow-focus"
+        class="landing-cta-button landing-hero-login-button absolute bottom-20 right-[max(3rem,calc((100vw-1180px)/2))] z-30 inline-flex items-center gap-3 rounded-full px-8 py-3.5 text-button font-medium backdrop-blur-sm focus-visible:outline-none focus-visible:shadow-focus"
         @click="scrollToLoginPanel"
       >
         <span>로그인</span>
@@ -317,17 +333,6 @@ onMounted(() => {
           />
         </svg>
       </button>
-      <div class="pointer-events-none absolute inset-x-0 top-[52%] z-20" aria-hidden="true">
-        <span
-          v-for="word in acronymWords"
-          :key="word.text"
-          data-testid="landing-acronym-word"
-          class="landing-acronym-word absolute -translate-x-1/2 -translate-y-1/2 text-body font-normal tracking-[0.34em] text-overlay-dark-80"
-          :style="{ left: `${word.x}%`, top: `${word.y}%` }"
-        >
-          {{ word.text }}
-        </span>
-      </div>
       <button
         type="button"
         data-testid="landing-continue-button"
@@ -418,8 +423,8 @@ onMounted(() => {
         <Transition name="tab-fade" mode="out-in">
           <div
             :key="activeTab"
-            class="mt-10 grid w-full max-w-5xl grid-cols-2 items-start gap-14"
-            style="min-height: 380px"
+            class="mt-8 grid w-full max-w-[1120px] grid-cols-[minmax(340px,0.88fr)_minmax(440px,1.12fr)] items-center gap-12"
+            style="min-height: 390px"
           >
             <!-- 좌측: 설명 텍스트 -->
             <div class="text-left" style="min-height: 320px">
@@ -497,7 +502,7 @@ onMounted(() => {
             </div>
 
             <!-- 우측: 시각적 목업 -->
-            <div style="min-height: 340px">
+            <div class="min-w-0" style="min-height: 340px">
               <!-- Search 탭: 브라우저 채팅 목업 -->
               <div
                 v-if="activeTab === 'search'"
@@ -742,9 +747,13 @@ onMounted(() => {
               </div>
 
               <!-- Ask 탭: 브라우저에서 질문 입력 박스로 이어지는 흐름 -->
-              <div v-else data-testid="landing-ask-mockup" class="relative h-[340px]">
+              <div
+                v-else
+                data-testid="landing-ask-mockup"
+                class="relative mx-auto h-[340px] w-full max-w-[560px] overflow-visible"
+              >
                 <div
-                  class="absolute left-0 top-2 z-10 w-[58%] overflow-hidden rounded-2xl border border-bg-200 shadow-lg"
+                  class="absolute left-[3%] top-6 z-10 w-[56%] overflow-hidden rounded-2xl border border-bg-200 shadow-lg"
                   style="height: 265px"
                 >
                   <div class="flex items-center gap-3 border-b border-bg-300 bg-bg-200 px-4 py-2.5">
@@ -776,14 +785,14 @@ onMounted(() => {
                 >
                   <path
                     data-testid="landing-ask-arrow-path"
-                    d="M 152 236 C 168 168 268 140 310 140"
+                    d="M 160 236 C 180 172 296 148 354 148"
                     stroke="var(--color-primary)"
                     stroke-width="5"
                     stroke-linecap="round"
                     stroke-linejoin="round"
                   />
                   <path
-                    d="M 287 130 L 310 140 L 290 155"
+                    d="M 330 136 L 354 148 L 332 164"
                     stroke="var(--color-primary)"
                     stroke-width="5"
                     stroke-linecap="round"
@@ -795,13 +804,13 @@ onMounted(() => {
                   :src="iconsImageUrl"
                   alt=""
                   aria-hidden="true"
-                  class="absolute right-14 -top-10 z-20 w-28 object-contain opacity-90 drop-shadow-sm"
+                  class="absolute right-[12%] top-0 z-20 w-28 object-contain opacity-90 drop-shadow-sm"
                 />
                 <img
                   data-testid="landing-ask-input-box"
                   :src="chatInputBoxImageUrl"
                   alt="질문 입력"
-                  class="absolute -right-28 top-24 z-30 w-[60%] drop-shadow-xl"
+                  class="absolute -right-28 top-[122px] z-30 w-[52%] drop-shadow-xl"
                 />
               </div>
             </div>
