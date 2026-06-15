@@ -172,18 +172,43 @@ describe('feature6 Chat mock API foundation', () => {
     });
   });
 
-  it('keeps TODO(MOCK) markers on each mock endpoint handler', () => {
+  it('feature11-connected chat handlers have MOCK comments without TODO prefix', () => {
     const handlersSource = readFileSync(join(process.cwd(), 'src/mocks/handlers.ts'), 'utf8');
 
-    expect(handlersSource).toContain('TODO(MOCK): GET /api/conversations');
-    expect(handlersSource).toContain('TODO(MOCK): POST /api/conversations');
+    // feature11 실제 API 연결 완료 — TODO 제거, MOCK 유지 사유 기록
+    expect(handlersSource).toContain('MOCK: GET /api/conversations — feature11');
+    expect(handlersSource).toContain('MOCK: GET /api/conversations/search — feature11');
+    expect(handlersSource).toContain('MOCK: POST /api/conversations — feature11');
+    expect(handlersSource).toContain(
+      'MOCK: GET /api/conversations/{conversationId}/messages — feature11',
+    );
+    expect(handlersSource).toContain(
+      'MOCK: POST /api/conversations/{conversationId}/chat — feature11',
+    );
+    expect(handlersSource).toContain(
+      'MOCK: GET /api/confluence/pages/preview?pageId={pageId} — feature11',
+    );
+
+    // Chat 엔드포인트에 TODO(MOCK) 마커가 남아 있으면 안 된다
+    expect(handlersSource).not.toContain('TODO(MOCK): GET /api/conversations\n');
+    expect(handlersSource).not.toContain('TODO(MOCK): GET /api/conversations/search\n');
+    expect(handlersSource).not.toContain('TODO(MOCK): POST /api/conversations\n');
+    expect(handlersSource).not.toContain(
+      'TODO(MOCK): GET /api/conversations/{conversationId}/messages\n',
+    );
+    expect(handlersSource).not.toContain(
+      'TODO(MOCK): POST /api/conversations/{conversationId}/chat\n',
+    );
+    expect(handlersSource).not.toContain(
+      'TODO(MOCK): GET /api/confluence/pages/preview?pageId={pageId}\n',
+    );
+  });
+
+  it('auth endpoints retain TODO(MOCK) pending feature13 backend connection', () => {
+    const handlersSource = readFileSync(join(process.cwd(), 'src/mocks/handlers.ts'), 'utf8');
+
+    // feature13 인증 백엔드 연결 미완료 — TODO(MOCK) 유지
+    expect(handlersSource).toContain('TODO(MOCK): POST /api/auth/logout');
     expect(handlersSource).toContain('TODO(MOCK): GET /api/users/me');
-    expect(handlersSource).toContain(
-      'TODO(MOCK): GET /api/conversations/{conversationId}/messages',
-    );
-    expect(handlersSource).toContain('TODO(MOCK): POST /api/conversations/{conversationId}/chat');
-    expect(handlersSource).toContain(
-      'TODO(MOCK): GET /api/confluence/pages/preview?pageId={pageId}',
-    );
   });
 });

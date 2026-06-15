@@ -14,6 +14,8 @@
   - 2026-05-26, SCR-420 보류, backend version 계약 확정 전 사용자 수정 action 비노출
   - 2026-05-26, feature9 회귀 수정, 빈/오류/진행 중 assistant 액션 비노출 처리
   - 2026-06-02, feature10.4 보강, assistant 피드백 rating 선택 이벤트 추가
+  - 2026-06-15, feature11 구현, assistant 오류 상태에서도 다시 시도 액션 노출
+  - 2026-06-15, feature11 구현, assistant 피드백 선택 상태 스타일 추가
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -42,6 +44,7 @@ const props = defineProps<{
   editingMessageId: string;
   editingContent: string;
   pendingFeedbackRating?: FeedbackRating | '';
+  selectedFeedbackRating?: FeedbackRating | '';
   isStreaming: boolean;
   streamingMessageId: string;
   showUserVersionIndicator?: boolean;
@@ -57,6 +60,7 @@ const emit = defineEmits<{
   selectUserMessageVersion: [messageId: string, versionIndex: number];
   openSources: [sources: Source[] | undefined];
   openFeedback: [message: Message, rating: FeedbackRating];
+  retryAssistantMessage: [message: Message];
 }>();
 
 const isEditing = computed(
@@ -72,12 +76,19 @@ const canShowAssistantActions = computed(
   () =>
     props.message.role === 'assistant' &&
     props.message.content.trim().length > 0 &&
-    props.message.phase !== 'error' &&
     !isStreamingAssistantMessage.value,
 );
 const canShowSourceButton = computed(
-  () => canShowAssistantActions.value && (props.message.sources?.length ?? 0) > 0,
+  () =>
+    canShowAssistantActions.value &&
+    props.message.phase !== 'error' &&
+    (props.message.sources?.length ?? 0) > 0,
 );
+const canShowFeedbackActions = computed(
+  () => canShowAssistantActions.value && props.message.phase !== 'error',
+);
+const isAssistantLikeSelected = computed(() => props.selectedFeedbackRating === 'LIKE');
+const isAssistantDislikeSelected = computed(() => props.selectedFeedbackRating === 'DISLIKE');
 const userVersionActiveIndex = computed(() => props.userVersionActiveIndex ?? 0);
 const userVersionTotal = computed(() => props.userVersionTotal ?? 1);
 const userVersionLabel = computed(
@@ -89,7 +100,7 @@ const canShowNextUserVersion = computed(
 );
 const editTextarea = ref<HTMLTextAreaElement | null>(null);
 const isAssistantCopyConfirmed = ref(false);
-let assistantCopyConfirmedTimer: ReturnType<typeof window.setTimeout> | undefined;
+let assistantCopyConfirmedTimer: number | undefined;
 const { showToast } = useToast();
 // TODO(SCR-420): backend message version list/regeneration 계약 확정 후 사용자 수정 UI를 활성화한다.
 const isUserMessageRevisionEnabled = false;
@@ -333,11 +344,17 @@ function selectUserMessageVersion(versionIndex: number) {
       </BaseTooltip>
       <BaseTooltip label="좋은 응답" placement="bottom">
         <button
+          v-if="canShowFeedbackActions"
           data-testid="assistant-like-button"
           type="button"
           aria-label="좋은 응답"
+          :aria-pressed="isAssistantLikeSelected"
           :disabled="pendingFeedbackRating === 'LIKE'"
-          class="inline-flex size-5 items-center justify-center rounded-button transition hover:bg-bg-200 focus-visible:outline-none focus-visible:shadow-focus disabled:cursor-wait disabled:text-overlay-dark-40 disabled:hover:bg-transparent"
+          :class="
+            isAssistantLikeSelected
+              ? 'inline-flex size-5 items-center justify-center rounded-button text-primary transition hover:bg-bg-200 focus-visible:outline-none focus-visible:shadow-focus disabled:cursor-wait disabled:text-primary disabled:hover:bg-transparent'
+              : 'inline-flex size-5 items-center justify-center rounded-button transition hover:bg-bg-200 focus-visible:outline-none focus-visible:shadow-focus disabled:cursor-wait disabled:text-overlay-dark-40 disabled:hover:bg-transparent'
+          "
           @click="emit('openFeedback', message, 'LIKE')"
         >
           <span
@@ -351,11 +368,17 @@ function selectUserMessageVersion(versionIndex: number) {
       </BaseTooltip>
       <BaseTooltip label="별로인 응답" placement="bottom">
         <button
+          v-if="canShowFeedbackActions"
           data-testid="assistant-dislike-button"
           type="button"
           aria-label="별로인 응답"
+          :aria-pressed="isAssistantDislikeSelected"
           :disabled="pendingFeedbackRating === 'DISLIKE'"
-          class="inline-flex size-5 items-center justify-center rounded-button transition hover:bg-bg-200 focus-visible:outline-none focus-visible:shadow-focus disabled:cursor-wait disabled:text-overlay-dark-40 disabled:hover:bg-transparent"
+          :class="
+            isAssistantDislikeSelected
+              ? 'inline-flex size-5 items-center justify-center rounded-button text-primary transition hover:bg-bg-200 focus-visible:outline-none focus-visible:shadow-focus disabled:cursor-wait disabled:text-primary disabled:hover:bg-transparent'
+              : 'inline-flex size-5 items-center justify-center rounded-button transition hover:bg-bg-200 focus-visible:outline-none focus-visible:shadow-focus disabled:cursor-wait disabled:text-overlay-dark-40 disabled:hover:bg-transparent'
+          "
           @click="emit('openFeedback', message, 'DISLIKE')"
         >
           <span
@@ -373,6 +396,7 @@ function selectUserMessageVersion(versionIndex: number) {
           type="button"
           aria-label="다시 시도"
           class="inline-flex size-5 items-center justify-center rounded-button transition hover:bg-bg-200 focus-visible:outline-none focus-visible:shadow-focus"
+          @click="emit('retryAssistantMessage', message)"
         >
           <RefreshCcw aria-hidden="true" class="size-4" />
         </button>

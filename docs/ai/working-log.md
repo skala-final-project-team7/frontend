@@ -4556,3 +4556,134 @@
   - 대상: `src/__tests__/feature16.admin-feedback.test.ts`
   - 대상: `src/features/chat/MessageBubble.vue`
 - 실제 BFF 연동 상태(`VITE_USE_MOCK=false`)는 이 세션에서 검증하지 못했다. 이번 작업은 FE 요청 헤더/오류 상태/회귀 테스트까지 준비한 단계다.
+
+## 2026-06-15 - feature11 Chat 백엔드 연결 전환 보강: 첫 질문 생성 실패 retry state
+
+### Scope
+
+- 새 채팅 화면(`/chat`)에서 첫 질문 전송 시 `POST /api/conversations` 생성 실패를 toast만으로 끝내지 않고 page-level retry 상태로 노출
+- 기존 active conversation 진입 후의 SSE 오류 bubble, 목록/이력 retry 흐름은 유지
+- 실제 `VITE_USE_MOCK=false` 런타임 검증과 source metadata 실서버 확인은 이번 범위에서 제외
+
+### Test Cases
+
+- 첫 질문 전송 중 `POST /api/conversations`가 실패하면 empty state 대신 재시도 가능한 error state가 보인다.
+- 같은 error state의 retry 버튼으로 동일 질문을 다시 전송하면 새 conversation 생성과 SSE 전송이 이어진다.
+
+### Changed Files
+
+- `src/composables/useChatSubmission.ts`
+  - 첫 대화 생성 실패를 page shell에 위임할 수 있도록 `onInitialConversationCreateError`, `onSubmitStart`, `onSubmitSuccess` 훅 추가
+- `src/pages/ChatPage.vue`
+  - 첫 질문 실패 상태(`initialSubmitErrorMessage`, `pendingInitialSubmitQuestion`)와 retry action 추가
+  - empty state 앞단에 `chat-start-submit-error` 렌더링 추가
+- `src/__tests__/feature9.chat-conversation.test.ts`
+  - 첫 질문 conversation 생성 실패와 retry 회귀 테스트 추가
+- `docs/ai/current-plan.md`
+  - `일반 API 조회/생성 실패를 사용자 안내와 재시도 가능한 error state로 연결` 항목 체크
+
+### Commands
+
+- `npx vitest run src/__tests__/feature9.chat-conversation.test.ts --testNamePattern "creating the first conversation fails"` 실패 확인
+- `npx vitest run src/__tests__/feature9.chat-conversation.test.ts --testNamePattern "creating the first conversation fails"`
+
+### Results
+
+- 최초 실행: failed, 생성 실패 후에도 `chat-empty-state`가 그대로 보여 retry state 부재를 확인
+- 구현 후 재실행: passed
+
+### Notes / Remaining Issues
+
+- `src/mocks/handlers.ts`의 `TODO(MOCK)` 마커는 유지한다.
+  - 사유: `feature13` 인증 백엔드 연결과 `VITE_USE_MOCK=false` 실환경 검증이 아직 완료되지 않아, 개발/테스트용 mock fallback 경계를 아직 제거할 수 없다.
+- 여전히 남은 feature11 항목은 실서버 기준 검증 성격이다.
+  - `/api/conversations`, `/messages`, `/chat`의 localhost BFF 런타임 확인
+  - 실제 응답 기준 source/작성일자/작성자 표시 확인
+
+## 2026-06-15 - feature11 Chat 백엔드 연결 보강: assistant feedback 선택 상태 유지
+
+### Scope
+
+- assistant feedback(`LIKE`/`DISLIKE`) 제출 성공 후, 어떤 응답을 보냈는지 버튼 상태만으로 즉시 식별 가능하도록 선택 상태를 메시지별로 유지
+- 기존 loading spinner와 실패 toast 동작은 유지
+- 성공 toast 추가는 이번 범위에서 제외
+
+### Test Cases
+
+- `LIKE` 즉시 제출 성공 후 해당 assistant의 좋아요 버튼이 선택 상태(`aria-pressed=true`)로 유지된다.
+- `DISLIKE` 모달 제출 성공 후 해당 assistant의 싫어요 버튼이 선택 상태(`aria-pressed=true`)로 유지된다.
+- 선택되지 않은 반대편 버튼은 `aria-pressed=false` 상태를 유지한다.
+
+### Changed Files
+
+- `src/pages/ChatPage.vue`
+  - `selectedFeedbackRatingsByMessageId` 상태를 추가해 assistant 메시지별 마지막 feedback rating을 유지
+  - `LIKE` 즉시 제출 성공, `DISLIKE` 모달 제출 성공 시 해당 messageId의 선택 상태를 저장
+- `src/features/chat/ChatConversationView.vue`
+  - 메시지별 선택된 feedback rating을 `MessageBubble`로 전달
+- `src/features/chat/MessageBubble.vue`
+  - 선택된 feedback 버튼에 `aria-pressed`와 진한 활성 스타일을 적용
+- `src/__tests__/feature9.chat-conversation.test.ts`
+  - 좋아요/싫어요 제출 성공 후 선택 상태 유지 회귀 테스트 추가
+
+### Commands
+
+- `npx vitest run src/__tests__/feature9.chat-conversation.test.ts --testNamePattern "feedback|selected dislike"`
+- `npx prettier --check src/pages/ChatPage.vue src/features/chat/ChatConversationView.vue src/features/chat/MessageBubble.vue src/__tests__/feature9.chat-conversation.test.ts`
+
+### Results
+
+- feedback 관련 회귀 테스트: passed
+- `prettier --check`: passed
+
+### Notes / Remaining Issues
+
+- 현재 구현은 “전송 성공 여부가 버튼 선택 상태로 보이게 하는 것”에 집중한다.
+- 성공 toast는 아직 추가하지 않았으며, 제품 요구사항이 확정되면 별도 보강 가능하다.
+
+## 2026-06-15 - feature11 localhost 검증 보조 도구 추가: mock-backend
+
+### Scope
+
+- `feature11`의 localhost 검증을 위해 실제 BFF를 최대한 유지하면서 비어 있는 경계만 보조하는 로컬 도구를 `mock-backend/` 아래에 추가
+- `backend-template/`는 수정하지 않고, reverse proxy / ML mock SSE / Mongo seed만 별도 제공
+- 브라우저 진입점을 `http://localhost:8090`으로 고정해 Frontend dev server(`:5173`)와 실제 BFF(`:8080`)를 연결
+
+### Test Cases
+
+- `node --check server.mjs`로 proxy / ML mock 서버 스크립트 문법이 유효하다.
+- `docker compose -f docker-compose.feature11.yml config`가 정상 파싱된다.
+
+### Changed Files
+
+- `../mock-backend/Dockerfile`
+  - proxy / ML mock 공용 Node 컨테이너 정의
+- `../mock-backend/docker-compose.feature11.yml`
+  - Mongo, reverse proxy, ML mock 기동 구성 추가
+- `../mock-backend/fixtures/mongo-init.js`
+  - 실제 BFF `conversations` / `messages` / `feedbacks` 컬렉션 스키마에 맞춘 seed 데이터 추가
+- `../mock-backend/server.mjs`
+  - `/api/users/me` / `/api/confluence/pages/preview` stub
+  - 나머지 `/api/*` -> 실제 BFF proxy
+  - `/ml/query` SSE mock 제공
+- `../mock-backend/README.md`
+  - feature11 localhost 검증 절차를 단계별로 문서화
+- `vite.config.ts`
+  - proxy 경유 개발 접근을 위해 `host.docker.internal`을 `server.allowedHosts`에 추가
+
+### Commands
+
+- `node --check server.mjs`
+- `docker compose -f docker-compose.feature11.yml config`
+
+### Results
+
+- `node --check`: passed
+- `docker compose ... config`: passed
+
+### Notes / Remaining Issues
+
+- 이 도구는 실제 배포 구조(Vercel + public BFF) 검증용이 아니라 localhost 기능 검증용이다.
+- 현재 로컬 조합에서 실제 경로와 stub 경로는 다음과 같다.
+  - 실제: `/api/conversations`, `/api/conversations/{id}/messages`, `/api/conversations/{id}/chat`, `/api/messages/{id}/feedback`, Mongo 저장
+  - stub: `/api/users/me`, `/api/confluence/pages/preview`, ML upstream `/ml/query`

@@ -8,6 +8,7 @@
  *   - 2026-05-21, feature9 구현, SSE token 누적 store 테스트 추가
  *   - 2026-05-22, feature9 보강, streaming status, AbortSignal, CRLF, error event 회귀 테스트 추가
  *   - 2026-05-22, RAG status 계약 반영, 확정 phase 순서와 meta/unknown phase 테스트 추가
+ *   - 2026-06-15, feature11 구현, SSE 실패 유형별 오류 문구 회귀 테스트 추가
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -130,6 +131,23 @@ function createErrorSseResponse(): Response {
         'Content-Type': 'text/event-stream',
       },
       status: 200,
+    },
+  );
+}
+
+function createHttpFailureResponse(status = 502): Response {
+  return new Response(
+    JSON.stringify({
+      isSuccess: false,
+      code: status,
+      errorCode: 'INTERNAL_ERROR',
+      message: 'gateway error',
+    }),
+    {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      status,
     },
   );
 }
@@ -342,6 +360,42 @@ describe('feature9 chat SSE store integration', () => {
       role: 'assistant',
       content: '답변 생성 중 오류가 발생했습니다',
       statusMessage: '',
+    });
+  });
+
+  it('maps initial SSE HTTP failures to a retryable connection error message', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => createHttpFailureResponse(503)),
+    );
+    const chatStore = useChatStore();
+
+    await chatStore.streamMessage('conv-mock-001', 'http failure 테스트');
+
+    expect(chatStore.activeMessages[1]).toMatchObject({
+      role: 'assistant',
+      phase: 'error',
+      content: '답변 스트림 연결에 실패했습니다. 다시 시도해 주세요.',
+      error: '답변 스트림 연결에 실패했습니다. 다시 시도해 주세요.',
+    });
+  });
+
+  it('maps network stream interruptions to a retryable interrupted-stream message', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new TypeError('Failed to fetch');
+      }),
+    );
+    const chatStore = useChatStore();
+
+    await chatStore.streamMessage('conv-mock-001', 'network interruption 테스트');
+
+    expect(chatStore.activeMessages[1]).toMatchObject({
+      role: 'assistant',
+      phase: 'error',
+      content: '답변 스트림이 중단되었습니다. 다시 시도해 주세요.',
+      error: '답변 스트림이 중단되었습니다. 다시 시도해 주세요.',
     });
   });
 

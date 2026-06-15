@@ -43,12 +43,12 @@ describe('feature12 Auth / Login + Role Selection', () => {
       },
     });
 
-    expect(wrapper.get('[data-testid="landing-hero-panel"]').exists()).toBe(true);
-    expect(wrapper.get('[data-testid="landing-headline-panel"]').exists()).toBe(true);
-    expect(wrapper.get('[data-testid="landing-login-panel"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="landing-hero-panel"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="landing-headline-panel"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="landing-login-panel"]').exists()).toBe(true);
     expect(wrapper.get('[data-testid="landing-hero-stage"]').classes()).toContain('aspect-[16/9]');
     expect(wrapper.get('[data-testid="landing-hero-stage"]').classes()).toContain('max-w-[1180px]');
-    expect(wrapper.get('[data-testid="landing-graph"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="landing-graph"]').exists()).toBe(true);
     expect(wrapper.text()).toContain('scroll');
     expect(wrapper.text()).not.toContain('continue');
     expect(wrapper.find('[data-testid="login-page"]').exists()).toBe(false);
@@ -105,7 +105,7 @@ describe('feature12 Auth / Login + Role Selection', () => {
 
     await wrapper.get('[data-testid="landing-feature-tab-ask"]').trigger('click');
 
-    expect(wrapper.get('[data-testid="landing-ask-mockup"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="landing-ask-mockup"]').exists()).toBe(true);
     expect(wrapper.get('[data-testid="landing-ask-arrow"]').classes()).toContain(
       'landing-ask-arrow',
     );
@@ -124,17 +124,17 @@ describe('feature12 Auth / Login + Role Selection', () => {
 
     await wrapper.get('[data-testid="landing-feature-tab-verify"]').trigger('click');
 
-    expect(wrapper.get('[data-testid="landing-verify-tab-icon"]').exists()).toBe(true);
-    expect(wrapper.get('[data-testid="landing-feature-icon-verify"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="landing-verify-tab-icon"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="landing-feature-icon-verify"]').exists()).toBe(true);
     expect(wrapper.get('[data-testid="landing-verify-toggle-graph"]').classes()).toContain(
       'bg-overlay-dark-80',
     );
-    expect(wrapper.get('[data-testid="landing-verify-graph-panel"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="landing-verify-graph-panel"]').exists()).toBe(true);
     expect(wrapper.find('[data-testid="landing-verify-list-panel"]').exists()).toBe(false);
 
     await wrapper.get('[data-testid="landing-verify-toggle-list"]').trigger('click');
 
-    expect(wrapper.get('[data-testid="landing-verify-list-panel"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="landing-verify-list-panel"]').exists()).toBe(true);
     expect(wrapper.find('[data-testid="landing-verify-graph-panel"]').exists()).toBe(false);
   });
 
@@ -183,7 +183,7 @@ describe('feature12 Auth / Login + Role Selection', () => {
     expect(wrapper.get('[data-testid="user-role-button"] span:nth-of-type(2)').classes()).toContain(
       'whitespace-pre-line',
     );
-    expect(wrapper.get('[data-testid="admin-role-note-icon"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="admin-role-note-icon"]').exists()).toBe(true);
     expect(wrapper.get('[data-testid="admin-role-note"]').text()).toBe(
       '관리자 권한 확인 후 접근할 수 있습니다.',
     );

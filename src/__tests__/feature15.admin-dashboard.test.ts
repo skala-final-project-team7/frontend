@@ -349,13 +349,13 @@ describe('feature15 Admin dashboard (SCR-810)', () => {
 
     const sparklineArea = wrapper.get('[data-testid="admin-access-trend-sparkline-area"]');
     expect(sparklineArea.attributes('fill')).toBe('url(#admin-access-trend-sparkline-gradient)');
-    expect(wrapper.get('#admin-access-trend-sparkline-gradient').exists()).toBe(true);
+    expect(wrapper.find('#admin-access-trend-sparkline-gradient').exists()).toBe(true);
 
     await wrapper.get('[data-testid="admin-trend-expand"]').trigger('click');
 
     const modalArea = wrapper.get('[data-testid="admin-access-trend-modal-area"]');
     expect(modalArea.attributes('fill')).toBe('url(#admin-access-trend-modal-gradient)');
-    expect(wrapper.get('#admin-access-trend-modal-gradient').exists()).toBe(true);
+    expect(wrapper.find('#admin-access-trend-modal-gradient').exists()).toBe(true);
   });
 
   it('renders user table rows with name, space/page/attachment, conversationCount', async () => {

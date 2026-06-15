@@ -47,7 +47,7 @@ import type {
   CurrentUser,
 } from '@/types/api';
 
-// TODO(MOCK): 3초 mock SSE 지연은 token streaming 확인용이므로 backend 연결 전 제거하거나 단축한다.
+// MOCK: SSE 지연은 token streaming UI 확인용이며 VITE_USE_MOCK=true 환경에서만 적용된다.
 const MOCK_SSE_DEMO_DELAY_MS = import.meta.env.MODE === 'test' ? 0 : 375;
 const ADMIN_INGEST_STEP_INTERVAL_MS = 3000;
 
@@ -60,7 +60,7 @@ type MockAdminIngestJob = {
 const mockAdminIngestJobs = new Map<string, MockAdminIngestJob>();
 
 export const mockHandlers = [
-  // TODO(MOCK): POST /api/auth/logout
+  // TODO(MOCK): POST /api/auth/logout — feature13 인증 백엔드 연결 미완료. VITE_USE_MOCK=false 전환 전 실제 BFF 로그아웃 흐름 연결 필요
   http.post('*/api/auth/logout', () => {
     return HttpResponse.json<ApiSuccessResponse<null>>({
       isSuccess: true,
@@ -70,7 +70,7 @@ export const mockHandlers = [
     });
   }),
 
-  // TODO(MOCK): GET /api/users/me
+  // TODO(MOCK): GET /api/users/me — feature13 인증 백엔드 연결 미완료. VITE_USE_MOCK=false 전환 전 실제 BFF 사용자 조회 연결 필요
   http.get('*/api/users/me', () => {
     return HttpResponse.json<ApiSuccessResponse<CurrentUser>>({
       isSuccess: true,
@@ -80,7 +80,7 @@ export const mockHandlers = [
     });
   }),
 
-  // TODO(MOCK): GET /api/admin/stats
+  // MOCK: GET /api/admin/stats — feature15 실제 API 함수 연결 완료. VITE_USE_MOCK=true 개발/테스트 전용
   http.get('*/api/admin/stats', () => {
     return HttpResponse.json<ApiSuccessResponse<typeof mockAdminStats>>({
       isSuccess: true,
@@ -90,7 +90,7 @@ export const mockHandlers = [
     });
   }),
 
-  // TODO(MOCK): GET /api/admin/users
+  // MOCK: GET /api/admin/users — feature15 실제 API 함수 연결 완료. VITE_USE_MOCK=true 개발/테스트 전용
   http.get('*/api/admin/users', ({ request }) => {
     const url = new URL(request.url);
     const page = Number(url.searchParams.get('page') ?? 0);
@@ -109,7 +109,7 @@ export const mockHandlers = [
     });
   }),
 
-  // TODO(MOCK): GET /api/admin/feedback
+  // MOCK: GET /api/admin/feedback — feature16 실제 API 함수 연결 완료. VITE_USE_MOCK=true 개발/테스트 전용
   http.get('*/api/admin/feedback', ({ request }) => {
     const url = new URL(request.url);
     const page = Number(url.searchParams.get('page') ?? 0);
@@ -133,7 +133,7 @@ export const mockHandlers = [
     });
   }),
 
-  // TODO(MOCK): GET /api/admin/data
+  // MOCK: GET /api/admin/data — feature14 실제 API 함수 연결 완료. VITE_USE_MOCK=true 개발/테스트 전용
   http.get('*/api/admin/data', () => {
     return HttpResponse.json<ApiSuccessResponse<typeof mockAdminDataOverview>>({
       isSuccess: true,
@@ -143,7 +143,7 @@ export const mockHandlers = [
     });
   }),
 
-  // TODO(MOCK): GET /api/admin/sync
+  // MOCK: GET /api/admin/sync — feature14/17 실제 API 함수 연결 완료. VITE_USE_MOCK=true 개발/테스트 전용
   http.get('*/api/admin/sync', () => {
     return HttpResponse.json<ApiSuccessResponse<typeof mockAdminSyncHistory>>({
       isSuccess: true,
@@ -153,7 +153,7 @@ export const mockHandlers = [
     });
   }),
 
-  // TODO(MOCK): POST /api/admin/key/activate
+  // MOCK: POST /api/admin/key/activate — feature14 실제 API 함수 연결 완료. VITE_USE_MOCK=true 개발/테스트 전용
   http.post('*/api/admin/key/activate', () => {
     return HttpResponse.json<ApiSuccessResponse<typeof mockAdminKeyActivation>>({
       isSuccess: true,
@@ -163,7 +163,7 @@ export const mockHandlers = [
     });
   }),
 
-  // TODO(MOCK): POST /api/admin/ingest
+  // MOCK: POST /api/admin/ingest — feature14 실제 API 함수 연결 완료. VITE_USE_MOCK=true 개발/테스트 전용
   http.post('*/api/admin/ingest', () => {
     const startedAtMs = Date.now();
     const startedAtIso = new Date(startedAtMs).toISOString();
@@ -187,7 +187,7 @@ export const mockHandlers = [
     });
   }),
 
-  // TODO(MOCK): GET /api/admin/ingest/status/{jobId}
+  // MOCK: GET /api/admin/ingest/status/{jobId} — feature14 실제 API 함수 연결 완료. VITE_USE_MOCK=true 개발/테스트 전용
   http.get('*/api/admin/ingest/status/:jobId', ({ params }) => {
     const jobId = String(params.jobId);
     const job = mockAdminIngestJobs.get(jobId);
@@ -223,7 +223,7 @@ export const mockHandlers = [
     } satisfies ApiSuccessResponse<typeof sequence>);
   }),
 
-  // TODO(MOCK): GET /api/conversations
+  // MOCK: GET /api/conversations — feature11 실제 API 연결 완료. VITE_USE_MOCK=true 개발/테스트 전용
   http.get('/api/conversations', ({ request }) => {
     const url = new URL(request.url);
     const page = Number(url.searchParams.get('page') ?? 0);
@@ -244,7 +244,7 @@ export const mockHandlers = [
     });
   }),
 
-  // TODO(MOCK): GET /api/conversations/search
+  // MOCK: GET /api/conversations/search — feature11 실제 API 연결 완료. VITE_USE_MOCK=true 개발/테스트 전용
   http.get('*/api/conversations/search', ({ request }) => {
     const url = new URL(request.url);
     const query = url.searchParams.get('q')?.trim() ?? '';
@@ -287,7 +287,7 @@ export const mockHandlers = [
     });
   }),
 
-  // TODO(MOCK): POST /api/conversations
+  // MOCK: POST /api/conversations — feature11 실제 API 연결 완료. VITE_USE_MOCK=true 개발/테스트 전용
   http.post('*/api/conversations', () => {
     return HttpResponse.json<ApiSuccessResponse<CreateConversationResponse>>({
       isSuccess: true,
@@ -302,7 +302,7 @@ export const mockHandlers = [
     });
   }),
 
-  // TODO(MOCK): GET /api/conversations/{conversationId}/messages
+  // MOCK: GET /api/conversations/{conversationId}/messages — feature11 실제 API 연결 완료. VITE_USE_MOCK=true 개발/테스트 전용
   http.get('*/api/conversations/:conversationId/messages', ({ params }) => {
     const conversationId = String(params.conversationId);
 
@@ -317,7 +317,7 @@ export const mockHandlers = [
     });
   }),
 
-  // TODO(MOCK): POST /api/conversations/{conversationId}/chat
+  // MOCK: POST /api/conversations/{conversationId}/chat — feature11 실제 SSE 스트리밍 연결 완료. VITE_USE_MOCK=true 개발/테스트 전용
   http.post('*/api/conversations/:conversationId/chat', () => {
     return new HttpResponse(createMockSseStream(), {
       status: 200,
@@ -329,7 +329,7 @@ export const mockHandlers = [
     });
   }),
 
-  // TODO(MOCK): GET /api/confluence/pages/preview?pageId={pageId}
+  // MOCK: GET /api/confluence/pages/preview?pageId={pageId} — feature11 실제 API 연결 완료. VITE_USE_MOCK=true 개발/테스트 전용
   http.get('*/api/confluence/pages/preview', ({ request }) => {
     const url = new URL(request.url);
     const pageId = url.searchParams.get('pageId') ?? '';

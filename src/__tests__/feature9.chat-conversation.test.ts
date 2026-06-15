@@ -8,6 +8,7 @@
  *   - 2026-05-21, feature9 구현, 대화 화면 렌더링과 입력 플로우 테스트 추가
  *   - 2026-05-22, feature9 보강, streaming status, IME, route fallback, page-level scroll 회귀 테스트 추가
  *   - 2026-05-26, feature9 회귀 보강, 지연된 메시지 이력 실패가 새 스트림을 제거하지 않는지 검증
+ *   - 2026-06-15, feature11 구현, Chat 로드 에러 retry 및 assistant 오류 재시도/feedback messageId 회귀 테스트 추가
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -388,7 +389,7 @@ describe('feature9 SCR-410, SCR-420, SCR-600 Chat conversation screen', () => {
       expect(writeText).toHaveBeenCalledWith(
         'S3 권한 오류는 IAM 정책의 버킷 접근 권한을 보강해 해결했습니다.',
       );
-      expect(wrapper.get('[data-testid="assistant-copy-confirmed-icon"]').exists()).toBe(true);
+      expect(wrapper.find('[data-testid="assistant-copy-confirmed-icon"]').exists()).toBe(true);
       expect(toasts.value.at(-1)).toMatchObject({
         message: '응답이 복사되었습니다',
         variant: 'success',
@@ -478,6 +479,53 @@ describe('feature9 SCR-410, SCR-420, SCR-600 Chat conversation screen', () => {
         }),
       }),
     );
+    expect(wrapper.get('[data-testid="assistant-like-button"]').attributes('aria-pressed')).toBe(
+      'true',
+    );
+    expect(wrapper.get('[data-testid="assistant-dislike-button"]').attributes('aria-pressed')).toBe(
+      'false',
+    );
+  });
+
+  it('keeps the selected dislike button highlighted after feedback modal submission succeeds', async () => {
+    const wrapper = mountChatPage();
+    await flushAsyncUpdates();
+
+    await wrapper.get('[data-testid="assistant-dislike-button"]').trigger('click');
+    await wrapper.get('[data-testid="feedback-reason-incorrect"]').trigger('click');
+    await wrapper.get('[data-testid="feedback-submit-button"]').trigger('click');
+    await flushAsyncUpdates();
+
+    expect(wrapper.find('[data-testid="feedback-modal"]').exists()).toBe(false);
+    expect(wrapper.get('[data-testid="assistant-dislike-button"]').attributes('aria-pressed')).toBe(
+      'true',
+    );
+    expect(wrapper.get('[data-testid="assistant-like-button"]').attributes('aria-pressed')).toBe(
+      'false',
+    );
+  });
+
+  it('submits feedback with the server assistant messageId after SSE done replaces the local placeholder id', async () => {
+    const fetchMock = installFeature9FetchMock();
+    const wrapper = mountChatPage();
+    await flushAsyncUpdates();
+
+    await wrapper.get('textarea').setValue('SSE feedback 대상 질문');
+    await wrapper.get('textarea').trigger('keydown.enter');
+    await flushAsyncUpdates();
+
+    await wrapper.findAll('[data-testid="assistant-like-button"]').at(-1)!.trigger('click');
+    await flushAsyncUpdates();
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/messages/msg-streamed-assistant/feedback',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          rating: 'LIKE',
+        }),
+      }),
+    );
   });
 
   it('shows a spinner on the thumbs up button while feedback is submitting', async () => {
@@ -509,7 +557,7 @@ describe('feature9 SCR-410, SCR-420, SCR-600 Chat conversation screen', () => {
     await flushAsyncUpdates();
 
     expect(wrapper.get('[data-testid="assistant-like-button"]').attributes('disabled')).toBe('');
-    expect(wrapper.get('[data-testid="assistant-like-spinner"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="assistant-like-spinner"]').exists()).toBe(true);
 
     resolveFeedback(
       createJsonResponse(
@@ -1008,7 +1056,10 @@ describe('feature9 SCR-410, SCR-420, SCR-600 Chat conversation screen', () => {
       false,
     );
     expect(errorWrapper.find('[data-testid="source-button"]').exists()).toBe(false);
-    expect(errorWrapper.find('[data-testid="message-action-row-assistant"]').exists()).toBe(false);
+    expect(errorWrapper.find('[data-testid="message-action-row-assistant"]').exists()).toBe(true);
+    expect(errorWrapper.find('[data-testid="assistant-like-button"]').exists()).toBe(false);
+    expect(errorWrapper.find('[data-testid="assistant-dislike-button"]').exists()).toBe(false);
+    expect(errorWrapper.find('[data-testid="assistant-regenerate-button"]').exists()).toBe(true);
   });
 
   it('keeps the first streamed answer visible when entering chat from /chat', async () => {
@@ -1341,6 +1392,127 @@ describe('feature9 SCR-410, SCR-420, SCR-600 Chat conversation screen', () => {
     expect(wrapper.find('[data-testid="chat-empty-state"]').exists()).toBe(true);
   });
 
+  it('shows a retryable error state when creating the first conversation fails', async () => {
+    await router.push('/chat');
+
+    let createConversationAttemptCount = 0;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const requestUrl =
+        typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+      const method = init?.method ?? 'GET';
+
+      if (requestUrl === '/api/users/me' && method === 'GET') {
+        return createJsonResponse({
+          isSuccess: true,
+          code: 200,
+          message: '사용자 정보 조회 성공',
+          data: mockCurrentUser,
+        });
+      }
+
+      if (requestUrl === '/api/conversations' && method === 'GET') {
+        return createJsonResponse({
+          isSuccess: true,
+          code: 200,
+          message: '대화 목록 조회 성공',
+          data: {
+            conversations: mockConversations,
+            totalCount: mockConversations.length,
+            page: 0,
+            size: 20,
+          },
+        });
+      }
+
+      if (requestUrl === '/api/conversations' && method === 'POST') {
+        createConversationAttemptCount += 1;
+
+        if (createConversationAttemptCount === 1) {
+          return createJsonResponse(
+            {
+              isSuccess: false,
+              code: 500,
+              errorCode: 'INTERNAL_ERROR',
+              message: '대화 생성 실패',
+            },
+            500,
+          );
+        }
+
+        return createJsonResponse(
+          {
+            isSuccess: true,
+            code: 201,
+            message: '새 대화 생성 성공',
+            data: {
+              conversationId: 'conv-mock-created',
+              title: '새 대화',
+              createdAt: '2026-05-21T19:00:00+09:00',
+            },
+          },
+          201,
+        );
+      }
+
+      if (requestUrl.includes('/api/conversations/') && requestUrl.endsWith('/chat')) {
+        return createSseResponse();
+      }
+
+      if (requestUrl.includes('/api/conversations/') && requestUrl.endsWith('/messages')) {
+        const conversationId =
+          requestUrl.match(/\/api\/conversations\/([^/]+)\/messages/)?.[1] ?? '';
+
+        return createJsonResponse({
+          isSuccess: true,
+          code: 200,
+          message: '메시지 이력 조회 성공',
+          data: {
+            conversationId,
+            messages: mockMessagesByConversationId[conversationId] ?? [],
+          },
+        });
+      }
+
+      return createJsonResponse(
+        {
+          isSuccess: false,
+          code: 404,
+          errorCode: 'RESOURCE_NOT_FOUND',
+          message: `Unexpected request: ${method} ${requestUrl}`,
+        },
+        404,
+      );
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const wrapper = mountChatPage();
+    await flushAsyncUpdates();
+
+    await wrapper.get('#lina-message-input').setValue('첫 질문입니다');
+    await wrapper.get('[data-testid="message-input"]').trigger('submit');
+    await flushAsyncUpdates();
+
+    expect(wrapper.find('[data-testid="chat-empty-state"]').exists()).toBe(false);
+    expect(wrapper.get('[data-testid="chat-start-submit-error"]').text()).toContain(
+      '메시지를 전송하지 못했습니다',
+    );
+    expect(wrapper.get('[data-testid="chat-start-submit-error"]').text()).toContain(
+      '대화를 시작하지 못했습니다',
+    );
+
+    await wrapper.get('[data-testid="chat-start-submit-error"] button').trigger('click');
+    await flushAsyncUpdates();
+
+    expect(createConversationAttemptCount).toBe(2);
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/conversations/conv-mock-created/chat',
+      expect.objectContaining({
+        method: 'POST',
+      }),
+    );
+    expect(wrapper.find('[data-testid="chat-start-submit-error"]').exists()).toBe(false);
+  });
+
   it('shows a retryable message history error without clearing the route context', async () => {
     let shouldFailMessageHistory = true;
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -1428,5 +1600,112 @@ describe('feature9 SCR-410, SCR-420, SCR-600 Chat conversation screen', () => {
 
     expect(wrapper.find('[data-testid="chat-message-history-error"]').exists()).toBe(false);
     expect(wrapper.findAll('[data-testid="message-bubble"]')).toHaveLength(2);
+  });
+
+  it('retries the previous user question from an assistant error bubble', async () => {
+    let chatAttempt = 0;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const requestUrl =
+        typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+      const method = init?.method ?? 'GET';
+
+      if (requestUrl.includes('/api/users/me')) {
+        return createJsonResponse({
+          isSuccess: true,
+          code: 200,
+          message: '사용자 정보 조회 성공',
+          data: mockCurrentUser,
+        });
+      }
+
+      if (requestUrl.includes('/api/conversations/') && requestUrl.endsWith('/messages')) {
+        const conversationId =
+          requestUrl.match(/\/api\/conversations\/([^/]+)\/messages/)?.[1] ?? '';
+
+        return createJsonResponse({
+          isSuccess: true,
+          code: 200,
+          message: '메시지 이력 조회 성공',
+          data: {
+            conversationId,
+            messages: mockMessagesByConversationId[conversationId] ?? [],
+          },
+        });
+      }
+
+      if (requestUrl.includes('/api/conversations/') && requestUrl.endsWith('/chat')) {
+        chatAttempt += 1;
+
+        if (chatAttempt === 1) {
+          return new Response(
+            'event: error\ndata: {"errorCode":"ML_CONNECTION_ERROR","message":"답변 생성 중 오류가 발생했습니다"}\n\n',
+            {
+              headers: {
+                'Content-Type': 'text/event-stream',
+              },
+              status: 200,
+            },
+          );
+        }
+
+        return new Response(
+          [
+            'event: token\n',
+            'data: {"content":"재시도 성공 답변"}\n\n',
+            'event: done\n',
+            'data: {"messageId":"msg-regenerated-assistant"}\n\n',
+          ].join(''),
+          {
+            headers: {
+              'Content-Type': 'text/event-stream',
+            },
+            status: 200,
+          },
+        );
+      }
+
+      if (requestUrl.includes('/api/conversations')) {
+        return createJsonResponse({
+          isSuccess: true,
+          code: 200,
+          message: '대화 목록 조회 성공',
+          data: {
+            conversations: mockConversations,
+            totalCount: mockConversations.length,
+            page: 0,
+            size: 20,
+          },
+        });
+      }
+
+      return createJsonResponse(
+        {
+          isSuccess: false,
+          code: 404,
+          errorCode: 'RESOURCE_NOT_FOUND',
+          message: `Unexpected request: ${method} ${requestUrl}`,
+        },
+        404,
+      );
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const wrapper = mountChatPage();
+    await flushAsyncUpdates();
+
+    await wrapper.get('textarea').setValue('재시도 질문');
+    await wrapper.get('textarea').trigger('keydown.enter');
+    await flushAsyncUpdates();
+
+    expect(wrapper.text()).toContain('답변 생성 중 오류가 발생했습니다');
+    expect(wrapper.findAll('[data-testid="assistant-regenerate-button"]').length).toBeGreaterThan(
+      0,
+    );
+
+    await wrapper.findAll('[data-testid="assistant-regenerate-button"]').at(-1)!.trigger('click');
+    await flushAsyncUpdates();
+
+    expect(chatAttempt).toBe(2);
+    expect(wrapper.text()).toContain('재시도 성공 답변');
   });
 });
