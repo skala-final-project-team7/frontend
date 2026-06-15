@@ -183,12 +183,6 @@
 - [ ] 인증 전 임시 토큰/하드코딩이 필요한 경우 `.env` 또는 secret을 커밋하지 않았는가
 - [ ] 백엔드 응답 구조가 `docs/api-spec.md`와 다르면 API 명세를 먼저 갱신했는가
 
-# feature11.5: Chat 스트리밍 중단 backend 처리 고려
-
-[ ] stop 버튼의 FE `AbortController` SSE 중단 이후 BFF/RAG downstream 작업 취소 전파 필요 여부 확인
-[ ] 사용자 중단 시 partial assistant 응답 저장/폐기와 대화 이력 복원 정책을 backend와 합의
-[ ] 별도 cancel API가 필요한 구조로 결정된 경우에만 `docs/api-spec.md` 갱신 후 구현 범위 확정
-[ ] stop icon 노출과 사용자 중단 기능은 별도 cancel API 또는 backend 취소 전파 정책이 확정된 뒤 후속 구현한다
 
 # feature12: Auth / Login + Role Selection 화면 구현 (SCR-100~200 기반, SCR-300~310 제거)
 
@@ -301,6 +295,13 @@
 [ ] feature11 완료 후 message version/답변 재생성 API 계약을 확정하고 `docs/api-spec.md` 및 FE 타입을 갱신
 [ ] 사용자 메시지 inline edit와 version navigation을 backend version 응답 기준으로 활성화
 [ ] 수정 version 전환 핵심 플로우 테스트 작성
+
+# feature20.5: Chat 스트리밍 중단 backend 처리 고려
+
+[ ] stop 버튼의 FE `AbortController` SSE 중단 이후 BFF/RAG downstream 작업 취소 전파 필요 여부 확인
+[ ] 사용자 중단 시 partial assistant 응답 저장/폐기와 대화 이력 복원 정책을 backend와 합의
+[ ] 별도 cancel API가 필요한 구조로 결정된 경우에만 `docs/api-spec.md` 갱신 후 구현 범위 확정
+[ ] stop icon 노출과 사용자 중단 기능은 별도 cancel API 또는 backend 취소 전파 정책이 확정된 뒤 후속 구현한다
 
 # feature21: 테스트 및 검증 기반 확장
 
