@@ -4999,3 +4999,38 @@
 - feature18.5/feature6/feature14 묶음: 27/27 passed
 - feature13~18.5 Admin/Auth 관련 회귀 묶음: 93/93 passed
 - `./scripts/lint.sh`: passed
+
+## 2026-06-16 - Vercel 프론트 배포 준비: API base URL 반영 및 SPA rewrite 추가
+
+### Scope
+
+- Vercel Production env에 넣을 `VITE_API_BASE_URL`이 실제 fetch URL에 반영되도록 API client 보강
+- Vue Router `createWebHistory()` 기준으로 Vercel 직접 진입/새로고침 404를 막는 SPA rewrite 설정 추가
+- Vercel 배포 준비 변경이 테스트로 검증되도록 API client 단위 테스트 추가
+
+### Changed Files
+
+- `src/api/client.ts`
+  - `/api/...` 상대 경로 앞에 `import.meta.env.VITE_API_BASE_URL`을 붙이는 `buildApiUrl()` 추가
+  - JSON API와 SSE chat 요청 모두 동일한 base URL 경로 조합을 사용하도록 정리
+- `src/vite-env.d.ts`
+  - `ImportMetaEnv`에 `VITE_API_BASE_URL` 타입 선언 추가
+- `src/__tests__/feature5.api-client.test.ts`
+  - `VITE_API_BASE_URL='https://api.example.com/'`일 때 요청 URL이 `https://api.example.com/api/...`로 조합되는지 검증 추가
+  - env stub 정리를 위해 `vi.unstubAllEnvs()` 추가
+- `vercel.json`
+  - 모든 경로를 `/index.html`로 rewrite하는 Vercel SPA 설정 추가
+
+### Commands
+
+- `npx vitest run src/__tests__/feature5.api-client.test.ts`
+- `npm test`
+- `npm run build`
+
+### Results
+
+- `feature5.api-client.test.ts`: 12/12 passed
+- `npm test`: 기존 실패 1건 확인
+  - `src/__tests__/feature12.auth-login-role-selection.test.ts`
+- `npm run build`: 기존 TypeScript 오류로 실패
+  - `src/__tests__/feature13.auth-backend-connect.test.ts`의 `null` 인자 타입 오류 5건

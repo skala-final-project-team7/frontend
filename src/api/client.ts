@@ -77,7 +77,10 @@ export async function streamChatRequest(
     requestInit.signal = signal;
   }
 
-  return fetch(`/api/conversations/${encodeURIComponent(conversationId)}/chat`, requestInit);
+  return fetch(
+    buildUrl(`/api/conversations/${encodeURIComponent(conversationId)}/chat`),
+    requestInit,
+  );
 }
 
 export class ApiClientError extends Error {
@@ -97,8 +100,10 @@ export class ApiClientError extends Error {
 }
 
 function buildUrl(path: string, query?: Record<string, QueryValue>): string {
+  const requestUrl = buildApiUrl(path);
+
   if (!query) {
-    return path;
+    return requestUrl;
   }
 
   const searchParams = new URLSearchParams();
@@ -111,7 +116,21 @@ function buildUrl(path: string, query?: Record<string, QueryValue>): string {
 
   const queryString = searchParams.toString();
 
-  return queryString ? `${path}?${queryString}` : path;
+  return queryString ? `${requestUrl}?${queryString}` : requestUrl;
+}
+
+function buildApiUrl(path: string): string {
+  if (!path.startsWith('/')) {
+    return path;
+  }
+
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim();
+
+  if (!apiBaseUrl) {
+    return path;
+  }
+
+  return `${apiBaseUrl.replace(/\/+$/, '')}${path}`;
 }
 
 function buildJsonHeaders(headers: HeadersInit | undefined, body: unknown): HeadersInit {
