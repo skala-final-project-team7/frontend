@@ -4911,3 +4911,26 @@
 
 - `mock-backend`는 Admin 인증 전체를 대체하지 않고 `/api/users/me`만 stub 한다. 따라서 Admin 연결 확인의 핵심은 `/api/admin/*`가 실제 localhost BFF까지 도달하는지 보는 것이다.
 - `backend-template`의 `/api/admin/users`는 MySQL read datasource가 없으면 empty가 정상일 수 있어, localhost 검증에서는 실패와 empty를 구분해서 봐야 한다.
+
+## 2026-06-16 - Admin 보드 에러 화면 보조 동선 추가
+
+### Scope
+
+- 관리자 보드 로딩 실패 화면에 사용자가 빠져나갈 수 있는 보조 링크 추가
+
+### Changed Files
+
+- `src/pages/AdminEntryPage.vue`
+  - `보드 다시 불러오기` 아래에 `홈으로 돌아가기` 보조 액션 추가
+  - 클릭 시 `/`로 이동하도록 연결
+  - 링크처럼 보이도록 underline 스타일 적용
+- `src/__tests__/feature14.admin-operations-board.test.ts`
+  - 에러 화면에서 `홈으로 돌아가기` 노출 및 `/` 이동 검증 추가
+
+### Commands
+
+- `npm test -- --run src/__tests__/feature14.admin-operations-board.test.ts`
+
+### Results
+
+- feature14 운영 보드 테스트: 11/11 passed

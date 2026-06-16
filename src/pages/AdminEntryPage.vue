@@ -99,6 +99,10 @@ function goToLogin() {
   void router.push('/login');
 }
 
+function goToHome() {
+  void router.push('/');
+}
+
 function handleSectionChange(section: SectionKey) {
   activeSection.value = section;
   const targetPath = getPathFromSection(section);
@@ -144,6 +148,14 @@ function getPathFromSection(section: SectionKey): string {
           data-testid="admin-board-retry"
           @retry="reloadAdminBoard"
         />
+        <button
+          data-testid="admin-board-error-home-button"
+          type="button"
+          class="mt-4 text-[0.84rem] text-overlay-dark-40 underline underline-offset-4 transition-colors hover:text-overlay-dark-80"
+          @click="goToHome"
+        >
+          홈으로 돌아가기
+        </button>
       </div>
     </section>
 
