@@ -13,9 +13,14 @@
 --------------------------------------------------
 -->
 <script setup lang="ts">
-import PreviewPageCard from '@/features/chat/PreviewPageCard.vue';
-import { mockHomeConfluencePages } from '@/mocks/data';
-import { mascotRealizeImageUrl, searchImageUrl, skpSymbolImageUrl } from '@/shared/assets';
+import HomeDocumentMockCard from '@/features/chat/HomeDocumentMockCard.vue';
+import {
+  confluenceScreenshot1ImageUrl,
+  confluenceScreenshot2ImageUrl,
+  mascotRealizeImageUrl,
+  searchImageUrl,
+  skpSymbolImageUrl,
+} from '@/shared/assets';
 
 defineProps({
   userName: {
@@ -66,14 +71,16 @@ defineProps({
         class="relative mt-10 h-[380px] w-full max-w-[740px] -translate-x-8"
         aria-label="문서 미리보기"
       >
-        <PreviewPageCard
-          :page="mockHomeConfluencePages[0]"
-          class="absolute left-1/2 top-8 z-20 -translate-x-[62%]"
+        <HomeDocumentMockCard
+          title="통합 서비스 태깅 문서 예시"
+          :image-url="confluenceScreenshot1ImageUrl"
+          class="absolute left-1/2 top-8 z-20 h-[292px] w-[255px] -translate-x-[62%] rotate-[-5deg]"
         />
 
-        <PreviewPageCard
-          :page="mockHomeConfluencePages[1]"
-          class="absolute left-1/2 top-0 z-10 -translate-x-[4%]"
+        <HomeDocumentMockCard
+          title="배포 체크리스트 문서 예시"
+          :image-url="confluenceScreenshot2ImageUrl"
+          class="absolute left-1/2 top-0 z-10 h-[304px] w-[266px] -translate-x-[4%] rotate-[4deg]"
         />
 
         <img

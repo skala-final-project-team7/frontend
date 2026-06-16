@@ -4959,3 +4959,43 @@
 ### Results
 
 - feature18 설정 모달 테스트: 12/12 passed
+
+## 2026-06-16 - feature18.5 잔여 검증 완료: 권한 차단/실응답 상태/query 계약/MOCK 마커 정리
+
+### Scope
+
+- Admin API의 `401`/`403`을 일반 보드 오류와 분리해 권한 차단 상태로 처리
+- 실제 fetch 기반 통합 테스트로 success/empty/error와 페이지네이션 query 계약 검증
+- stale `TODO(MOCK)` 마커를 실제 상태에 맞는 `MOCK` 유지 사유로 정리
+- 실제 BFF 계약과 달랐던 Admin query parameter 문서를 `docs/api-spec.md`에 반영
+
+### Changed Files
+
+- `src/pages/AdminEntryPage.vue`
+  - `ApiClientError.status`가 `401`/`403`일 때 보드 에러 대신 권한 차단 화면으로 분기
+  - 역할 부족(`role`)과 API 거부(`401/403`)를 구분해 문구를 다르게 표시
+- `src/__tests__/feature18.5.admin-backend-integration.test.ts`
+  - BFF `403` 거부 시 권한 차단 화면 표시 검증 추가
+  - `/api/admin/users?page=0|1&size=12`, `/api/admin/feedback?page=0|1&size=5` 실제 query 검증 추가
+  - 실제 fetch 응답 기준 operations empty, dashboard error, feedback empty 상태 통합 회귀 추가
+- `src/mocks/handlers.ts`
+  - `/api/auth/logout`, `/api/users/me` 주석을 `TODO(MOCK)`에서 `MOCK` 유지 사유로 정리
+- `src/__tests__/feature6.mock-api.test.ts`
+  - auth mock handler가 `TODO(MOCK)` 없이 유지 사유를 가진 `MOCK` 마커인지 검증하도록 갱신
+- `docs/api-spec.md`
+  - Admin 공통 query parameter를 실제 BFF 기준으로 `page/size` 중심으로 정리
+  - `period` / `from` / `to` 미지원과 FE in-memory 기간 필터 현황 명시
+- `docs/ai/current-plan.md`
+  - feature18.5 잔여 체크 항목 완료 처리
+
+### Commands
+
+- `npm test -- --run src/__tests__/feature18.5.admin-backend-integration.test.ts src/__tests__/feature6.mock-api.test.ts src/__tests__/feature14.admin-operations-board.test.ts`
+- `npm test -- --run src/__tests__/feature13.auth-backend-connect.test.ts src/__tests__/feature14.admin-operations-board.test.ts src/__tests__/feature15.admin-dashboard.test.ts src/__tests__/feature16.admin-feedback.test.ts src/__tests__/feature17.admin-sync-history.test.ts src/__tests__/feature18.5.admin-backend-integration.test.ts src/__tests__/feature6.mock-api.test.ts`
+- `./scripts/lint.sh`
+
+### Results
+
+- feature18.5/feature6/feature14 묶음: 27/27 passed
+- feature13~18.5 Admin/Auth 관련 회귀 묶음: 93/93 passed
+- `./scripts/lint.sh`: passed

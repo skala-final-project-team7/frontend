@@ -204,11 +204,12 @@ describe('feature6 Chat mock API foundation', () => {
     );
   });
 
-  it('auth endpoints retain TODO(MOCK) pending feature13 backend connection', () => {
+  it('auth endpoints use MOCK markers with explicit retention reasons after feature18.5', () => {
     const handlersSource = readFileSync(join(process.cwd(), 'src/mocks/handlers.ts'), 'utf8');
 
-    // feature13 인증 백엔드 연결 미완료 — TODO(MOCK) 유지
-    expect(handlersSource).toContain('TODO(MOCK): POST /api/auth/logout');
-    expect(handlersSource).toContain('TODO(MOCK): GET /api/users/me');
+    expect(handlersSource).toContain('MOCK: POST /api/auth/logout');
+    expect(handlersSource).toContain('MOCK: GET /api/users/me');
+    expect(handlersSource).not.toContain('TODO(MOCK): POST /api/auth/logout');
+    expect(handlersSource).not.toContain('TODO(MOCK): GET /api/users/me');
   });
 });

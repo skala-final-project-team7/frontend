@@ -3,12 +3,12 @@ import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import ChatEmptyState from '@/features/chat/ChatEmptyState.vue';
+import HomeDocumentMockCard from '@/features/chat/HomeDocumentMockCard.vue';
 import MessageInput from '@/features/chat/MessageInput.vue';
 import PreviewPageCard from '@/features/chat/PreviewPageCard.vue';
 import {
   mockConversations,
   mockCurrentUser,
-  mockHomeConfluencePages,
   mockMessagesByConversationId,
 } from '@/mocks/data';
 import ChatPage from '@/pages/ChatPage.vue';
@@ -138,9 +138,7 @@ describe('feature8 SCR-400 Chat main screen', () => {
     );
     expect(wrapper.get('[data-testid="chat-scroll-region"]').classes()).not.toContain('pb-[220px]');
     expect(wrapper.get('[data-testid="chat-scroll-region"]').classes()).not.toContain('flex');
-    expect(wrapper.get('[data-testid="floating-help-button"]').attributes('aria-label')).toBe(
-      '도움말 열기',
-    );
+    expect(wrapper.get('[data-testid="floating-help-button"]').attributes('aria-label')).toBe('도움말');
     expect(wrapper.find('[data-testid="conversation-title"]').exists()).toBe(false);
     expect(wrapper.find('[data-testid="conversation-menu-button"]').exists()).toBe(false);
     expect(wrapper.get('header').text()).toContain('LINA');
@@ -150,7 +148,7 @@ describe('feature8 SCR-400 Chat main screen', () => {
       mockCurrentUser.profileImageUrl,
     );
     expect(wrapper.find('[data-testid="profile-entry-icon"]').exists()).toBe(false);
-    expect(wrapper.findAll('[data-testid="preview-page-card"]')).toHaveLength(2);
+    expect(wrapper.findAll('[data-testid="home-document-mock-card"]')).toHaveLength(2);
     expect(wrapper.text()).toContain('환영합니다. 이다연님');
   });
 
@@ -250,7 +248,7 @@ describe('feature8 SCR-400 Chat main screen', () => {
         '채팅 목록',
         '설정 및 도움말',
         '계정 관리',
-        '도움말 열기',
+        '도움말',
         '메시지 보내기',
       ]),
     );
@@ -345,7 +343,7 @@ describe('feature8 SCR-400 Chat main screen', () => {
     wrapper.unmount();
   });
 
-  it('renders ASK LINA, SKP symbol, welcome copy, mascot, and two preview page cards', () => {
+  it('renders ASK LINA, SKP symbol, welcome copy, mascot, and two static home document cards', () => {
     const wrapper = mount(ChatEmptyState, {
       props: {
         userName: '유진',
@@ -377,13 +375,34 @@ describe('feature8 SCR-400 Chat main screen', () => {
       expect.arrayContaining(['right-[-15%]', 'top-[-120px]']),
     );
 
-    const cards = wrapper.findAll('[data-testid="preview-page-card"]');
+    const cards = wrapper.findAll('[data-testid="home-document-mock-card"]');
 
     expect(cards).toHaveLength(2);
-    expect(cards[0].html()).toContain('data-testid="preview-page-card-body"');
-    expect(cards[0].text()).not.toContain('2026.05.19 게시됨');
-    expect(cards[0].text()).not.toContain(mockHomeConfluencePages[0].authorName);
-    expect(cards[1].text()).toContain(mockHomeConfluencePages[1].title);
+    expect(cards[0]?.attributes('aria-label')).toBe('통합 서비스 태깅 문서 예시');
+    expect(cards[1]?.attributes('aria-label')).toBe('배포 체크리스트 문서 예시');
+    expect(cards[0]?.find('[data-testid="home-document-mock-card-image"]').attributes('src')).toContain(
+      'confluence-screenshot1',
+    );
+    expect(cards[1]?.find('[data-testid="home-document-mock-card-image"]').attributes('src')).toContain(
+      'confluence-screenshot2',
+    );
+  });
+
+  it('renders HomeDocumentMockCard as a static screenshot card without preview actions', () => {
+    const wrapper = mount(HomeDocumentMockCard, {
+      props: {
+        imageUrl: '/mock/confluence-screenshot1.png',
+        title: '통합 서비스 태깅 문서 예시',
+      },
+    });
+
+    expect(wrapper.get('[data-testid="home-document-mock-card"]').attributes('aria-label')).toBe(
+      '통합 서비스 태깅 문서 예시',
+    );
+    expect(
+      wrapper.get('[data-testid="home-document-mock-card-image"]').attributes('src'),
+    ).toContain('confluence-screenshot1.png');
+    expect(wrapper.find('[data-testid="preview-page-card-actions"]').exists()).toBe(false);
   });
 
   it('renders PreviewPageCard with reusable 166:191 preview proportions and sanitized body HTML', () => {

@@ -1102,9 +1102,9 @@ FE 는 보관한 access/refresh 토큰을 폐기하고, BFF 는 Authorization Se
 
 | Key | Type | Required | Default | Description |
 |-----|------|----------|---------|-------------|
-| `period` | string | N | `daily` | 추이 집계 단위(`daily` / `hourly`) — `stats` / `feedback` |
-| `from` / `to` | string (ISO-8601, KST) | N | 최근 7일 | 기간 필터 — `stats` / `feedback` / `sync` |
-| `page` / `size` | int | N | `0` / `20` | 목록 페이지네이션 — `users` / `feedback` / `sync` |
+| `page` / `size` | int | N | `0` / `20` | 목록 페이지네이션 — 현재 BFF 확정: `users` / `feedback` |
+
+> 2026-06-16 확인: `backend-template` 기준 현재 Admin API 는 `GET /api/admin/stats` 와 `GET /api/admin/feedback` 에 `period` / `from` / `to` query parameter 계약이 없다. 프론트의 기간 탭은 받은 응답을 in-memory로 필터링하며, 백엔드 range query 가 확정되면 이 절과 함께 갱신한다.
 
 > 위 파라미터·기본값은 **제안**이며 6주차 구현 시 확정한다.
 
@@ -1204,7 +1204,8 @@ FE 는 보관한 access/refresh 토큰을 폐기하고, BFF 는 Authorization Se
 }
 ```
 
-- 집계는 `LIKE` / `DISLIKE` 기준(§1-3). `positiveRatio` = `likeCount / totalCount`. `trend` 는 `period` / `from` / `to` 로 집계 단위·범위를 조정한다.
+- 집계는 `LIKE` / `DISLIKE` 기준(§1-3). `positiveRatio` = `likeCount / totalCount`.
+- 2026-06-16 현재 BFF 기준 `trend` 는 query parameter 없이 내려오며, 프론트의 7일/14일/30일 탭은 받은 `trend` 배열을 in-memory로 잘라 표시한다.
 - `negativeFeedbacks` 는 `DISLIKE` 원문 목록으로 `page` / `size` 페이지네이션한다. `question` / `answer` 는 QCA 추적(assistant `messageId` → 직전 `USER` 메시지, `backend/rules/domains.md` §2)으로 매핑한다.
 
 **`GET /api/admin/sync` Response**
