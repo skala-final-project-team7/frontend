@@ -4735,7 +4735,7 @@
 - `../mock-backend/FEATURE13-VERIFY.md` (신규)
   - 수동 검증 가이드(방법 A: MSW mock / 방법 B: mock-backend proxy)
 - `frontend/docs/auth-state-guide.md` (신규)
-  - localStorage·Pinia 저장 동작 정리 
+  - localStorage·Pinia 저장 동작 정리
 
 ### Commands
 
@@ -4829,3 +4829,173 @@
 
 - 실제 BFF 계약: `/api/auth/callback`은 JSON(`LoginTokenResponse`)을 반환하므로, 실제 연동 시 BFF가 최종 FE 리디렉션에 `accessToken`과 함께 `returnTo`를 실어주는지 확인 필요. mock-backend는 OAuth 왕복을 생략하고 callback 쿼리로 직접 전달한다.
 - `ALLOWED_RETURN_TO`는 현재 `/chat`, `/admin`만 허용. 향후 진입 대상 경로가 늘면 화이트리스트 확장 필요.
+
+## 2026-06-16 - feature18.5 Admin 백엔드 연결 회귀 테스트 및 타입 정합성 보정
+
+### Scope
+
+- `docs/ai/current-plan.md`의 feature18.5 기준으로 Admin API 연결 상태를 점검
+- 실제 BFF 응답 형태를 기준으로 Admin API wrapper 테스트와 `/admin` 통합 회귀 테스트 추가
+- Admin 통계 응답의 `hourlyAccessTrend.date` 확장 필드를 FE 타입에 반영
+
+### Test Cases
+
+- `AdminStats.hourlyAccessTrend`가 `date` 메타데이터를 포함한 실제 응답 형태를 허용한다
+- Admin API 함수가 Bearer 토큰과 함께 `/api/admin/data`, `/sync`, `/stats`, `/users`, `/feedback`, `/ingest`, `/ingest/status/{jobId}`, `/key/activate`를 올바르게 호출한다
+- 관리자 계정 응답으로 `/admin` 진입 시 운영/대시보드/피드백/동기화 이력 탭이 실제 응답 형태로 렌더링된다
+
+### Changed Files
+
+- `src/types/api.ts`
+  - `HourlyAccessTrendItem`에 `date?: string` 추가로 실제 BFF 응답 확장 필드 허용
+- `src/__tests__/feature5.api-client.test.ts`
+  - Admin API wrapper, Bearer 헤더, query/body 계약, ingest/status, admin key activation 테스트 추가
+- `src/__tests__/feature18.5.admin-backend-integration.test.ts` (신규)
+  - `/admin` 진입 후 각 Admin 탭이 실제 API 응답 형태로 채워지는 통합 회귀 테스트 추가
+- `docs/ai/current-plan.md`
+  - feature18.5 중 이번 세션에서 테스트와 타입 정합성으로 확인한 항목 체크 처리
+
+### Commands
+
+- `npm test -- --run src/__tests__/feature5.api-client.test.ts src/__tests__/feature18.5.admin-backend-integration.test.ts`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- 타깃 테스트: 13/13 passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: failed, 기존 회귀 3건 재현
+  - `src/__tests__/feature8.chat-main.test.ts` 2건 (`도움말` vs `도움말 열기`)
+  - `src/__tests__/feature12.auth-login-role-selection.test.ts` 1건 (`right-0` 기대)
+- `./scripts/verify.sh`: failed, 동일한 기존 회귀 3건으로 중단
+
+### Notes / Remaining Issues
+
+- 이번 작업에서는 feature18.5 범위 밖인 feature8/feature12 기존 실패는 수정하지 않았다.
+- 작업 중 `git status` 기준으로 `src/features/chat/PreviewPageCard.vue`, `src/pages/AuthCallbackPage.vue`, `src/stores/auth.ts`, `src/stores/chat.ts`에 이미 별도 변경이 있었고, 이번 feature18.5 구현 범위에서는 건드리지 않았다.
+
+## 2026-06-16 - feature18.5 localhost 검증 보강: mock-backend Admin 가이드와 seed 추가
+
+### Scope
+
+- 실제 localhost BFF(`:8080`)를 프록시로 확인할 수 있도록 `mock-backend/`에 Admin 검증 가이드 추가
+- Admin 화면이 localhost에서 비지 않도록 Mongo seed에 운영/통계/피드백/동기화 이력용 샘플 데이터 추가
+- `backend-template/`은 참고만 하고 수정하지 않음
+
+### Changed Files
+
+- `../mock-backend/FEATURE18.5-VERIFY.md` (신규)
+  - `VITE_USE_MOCK=false` + `http://localhost:8090` 경유로 `/api/admin/*`를 실제 BFF에 붙여 확인하는 절차 정리
+  - `/api/users/me`만 stub, `/api/admin/*`는 실제 BFF proxy라는 경계 명시
+  - `backend-template`의 MySQL 미설정 시 `/api/admin/users` empty가 정상일 수 있다는 한계 기록
+- `../mock-backend/fixtures/mongo-init.js`
+  - `raw_pages`, `raw_attachments`, `chunked_units`, `sync_logs`, 추가 `feedbacks` seed 확장
+  - `/api/admin/data`, `/api/admin/sync`, `/api/admin/stats`, `/api/admin/feedback` localhost 검증 시 숫자/목록이 보이도록 보강
+- `../mock-backend/README.md`
+  - Admin localhost 검증 가이드 링크 추가
+
+### Commands
+
+- `node --check ../mock-backend/server.mjs`
+- `node --check ../mock-backend/fixtures/mongo-init.js`
+
+### Results
+
+- `server.mjs` syntax check: passed
+- `mongo-init.js` syntax check: passed
+
+### Notes / Remaining Issues
+
+- `mock-backend`는 Admin 인증 전체를 대체하지 않고 `/api/users/me`만 stub 한다. 따라서 Admin 연결 확인의 핵심은 `/api/admin/*`가 실제 localhost BFF까지 도달하는지 보는 것이다.
+- `backend-template`의 `/api/admin/users`는 MySQL read datasource가 없으면 empty가 정상일 수 있어, localhost 검증에서는 실패와 empty를 구분해서 봐야 한다.
+
+## 2026-06-16 - Admin 보드 에러 화면 보조 동선 추가
+
+### Scope
+
+- 관리자 보드 로딩 실패 화면에 사용자가 빠져나갈 수 있는 보조 링크 추가
+
+### Changed Files
+
+- `src/pages/AdminEntryPage.vue`
+  - `보드 다시 불러오기` 아래에 `홈으로 돌아가기` 보조 액션 추가
+  - 클릭 시 `/`로 이동하도록 연결
+  - 링크처럼 보이도록 underline 스타일 적용
+- `src/__tests__/feature14.admin-operations-board.test.ts`
+  - 에러 화면에서 `홈으로 돌아가기` 노출 및 `/` 이동 검증 추가
+
+### Commands
+
+- `npm test -- --run src/__tests__/feature14.admin-operations-board.test.ts`
+
+### Results
+
+- feature14 운영 보드 테스트: 11/11 passed
+
+## 2026-06-16 - 설정 모달 계정 카드 라벨을 userId 기반으로 정리
+
+### Scope
+
+- 계정 관리 설정 모달의 하드코딩 `Client_id` 문구를 제거
+- `/api/users/me`에서 받은 `userId`를 표시하도록 연결
+- `userId`가 없을 때만 `Confluence` fallback이 보이도록 정리
+
+### Changed Files
+
+- `src/features/settings/SettingsModal.vue`
+  - 계정 카드 제목을 정적 문자열 대신 `currentUserId` prop 기반으로 렌더링
+- `src/pages/ChatPage.vue`
+  - `getCurrentUser()` 응답의 `userId`를 Settings 모달로 전달
+- `src/__tests__/feature18.settings-modal.test.ts`
+  - 계정 카드에 `mockCurrentUser.userId`가 노출되는지 검증하도록 기대값 수정
+
+### Commands
+
+- `npm test -- --run src/__tests__/feature18.settings-modal.test.ts`
+
+### Results
+
+- feature18 설정 모달 테스트: 12/12 passed
+
+## 2026-06-16 - feature18.5 잔여 검증 완료: 권한 차단/실응답 상태/query 계약/MOCK 마커 정리
+
+### Scope
+
+- Admin API의 `401`/`403`을 일반 보드 오류와 분리해 권한 차단 상태로 처리
+- 실제 fetch 기반 통합 테스트로 success/empty/error와 페이지네이션 query 계약 검증
+- stale `TODO(MOCK)` 마커를 실제 상태에 맞는 `MOCK` 유지 사유로 정리
+- 실제 BFF 계약과 달랐던 Admin query parameter 문서를 `docs/api-spec.md`에 반영
+
+### Changed Files
+
+- `src/pages/AdminEntryPage.vue`
+  - `ApiClientError.status`가 `401`/`403`일 때 보드 에러 대신 권한 차단 화면으로 분기
+  - 역할 부족(`role`)과 API 거부(`401/403`)를 구분해 문구를 다르게 표시
+- `src/__tests__/feature18.5.admin-backend-integration.test.ts`
+  - BFF `403` 거부 시 권한 차단 화면 표시 검증 추가
+  - `/api/admin/users?page=0|1&size=12`, `/api/admin/feedback?page=0|1&size=5` 실제 query 검증 추가
+  - 실제 fetch 응답 기준 operations empty, dashboard error, feedback empty 상태 통합 회귀 추가
+- `src/mocks/handlers.ts`
+  - `/api/auth/logout`, `/api/users/me` 주석을 `TODO(MOCK)`에서 `MOCK` 유지 사유로 정리
+- `src/__tests__/feature6.mock-api.test.ts`
+  - auth mock handler가 `TODO(MOCK)` 없이 유지 사유를 가진 `MOCK` 마커인지 검증하도록 갱신
+- `docs/api-spec.md`
+  - Admin 공통 query parameter를 실제 BFF 기준으로 `page/size` 중심으로 정리
+  - `period` / `from` / `to` 미지원과 FE in-memory 기간 필터 현황 명시
+- `docs/ai/current-plan.md`
+  - feature18.5 잔여 체크 항목 완료 처리
+
+### Commands
+
+- `npm test -- --run src/__tests__/feature18.5.admin-backend-integration.test.ts src/__tests__/feature6.mock-api.test.ts src/__tests__/feature14.admin-operations-board.test.ts`
+- `npm test -- --run src/__tests__/feature13.auth-backend-connect.test.ts src/__tests__/feature14.admin-operations-board.test.ts src/__tests__/feature15.admin-dashboard.test.ts src/__tests__/feature16.admin-feedback.test.ts src/__tests__/feature17.admin-sync-history.test.ts src/__tests__/feature18.5.admin-backend-integration.test.ts src/__tests__/feature6.mock-api.test.ts`
+- `./scripts/lint.sh`
+
+### Results
+
+- feature18.5/feature6/feature14 묶음: 27/27 passed
+- feature13~18.5 Admin/Auth 관련 회귀 묶음: 93/93 passed
+- `./scripts/lint.sh`: passed

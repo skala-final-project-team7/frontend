@@ -23,6 +23,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { ArrowLeft, ShieldAlert } from '@lucide/vue';
 
 import { getAdminDataOverview, getAdminSyncHistory, getCurrentUser } from '@/api';
+import { ApiClientError } from '@/api/client';
 import { useTabPagination } from '@/composables/useTabPagination';
 import type { AdminDataOverview, AdminSyncHistoryResponse, CurrentUser } from '@/types/api';
 import { BaseButton, BaseSpinner, ErrorRetryState, mascotWrongImageUrl } from '@/shared';
@@ -39,6 +40,7 @@ const errorMessage = ref('');
 const currentUser = ref<CurrentUser | null>(null);
 const adminDataOverview = ref<AdminDataOverview | null>(null);
 const adminSyncHistory = ref<AdminSyncHistoryResponse['syncHistory']>([]);
+const accessDeniedReason = ref<'role' | 'api' | ''>('');
 
 type SectionKey = 'operations' | 'dashboard' | 'feedback' | 'sync';
 const activeSection = ref<SectionKey>('operations');
@@ -48,7 +50,15 @@ const { pagination: tabPagination } = useTabPagination<SectionKey>(SECTION_KEYS)
 // feature15-17 탭 서브컴포넌트에서 inject('adminTabPagination')으로 탭별 독립 페이지네이션 상태에 접근한다.
 provide('adminTabPagination', tabPagination);
 
-const isAccessDenied = computed(() => currentUser.value?.role !== 'ADMIN');
+const isAccessDenied = computed(() => accessDeniedReason.value !== '');
+const accessDeniedTitle = computed(() =>
+  accessDeniedReason.value === 'api' ? '관리자 API 접근이 거부되었습니다' : '관리자 권한이 없는 계정입니다',
+);
+const accessDeniedDescription = computed(() =>
+  accessDeniedReason.value === 'api'
+    ? '세션이 만료되었거나 관리자 권한이 필요합니다. 다시 로그인한 뒤 시도해 주세요.'
+    : '관리자 화면은 ADMIN 권한이 확인된 사용자만 접근할 수 있습니다.',
+);
 
 onMounted(() => {
   void loadAdminBoard();
@@ -65,18 +75,22 @@ watch(
 async function loadAdminBoard() {
   isLoading.value = true;
   errorMessage.value = '';
+  accessDeniedReason.value = '';
   try {
     const user = await getCurrentUser();
     currentUser.value = user;
     if (user.role !== 'ADMIN') {
+      accessDeniedReason.value = 'role';
       adminDataOverview.value = null;
       adminSyncHistory.value = [];
       return;
     }
     await refreshAdminBoardData();
   } catch (error) {
-    errorMessage.value =
-      error instanceof Error ? error.message : '관리자 데이터를 불러오는 중 오류가 발생했습니다.';
+    if (!handleAdminAccessError(error)) {
+      errorMessage.value =
+        error instanceof Error ? error.message : '관리자 데이터를 불러오는 중 오류가 발생했습니다.';
+    }
   } finally {
     isLoading.value = false;
   }
@@ -87,16 +101,42 @@ function reloadAdminBoard() {
 }
 
 async function refreshAdminBoardData() {
-  const [dataOverview, syncHistory] = await Promise.all([
-    getAdminDataOverview(),
-    getAdminSyncHistory(),
-  ]);
-  adminDataOverview.value = dataOverview;
-  adminSyncHistory.value = syncHistory.syncHistory;
+  errorMessage.value = '';
+  accessDeniedReason.value = '';
+
+  try {
+    const [dataOverview, syncHistory] = await Promise.all([
+      getAdminDataOverview(),
+      getAdminSyncHistory(),
+    ]);
+    adminDataOverview.value = dataOverview;
+    adminSyncHistory.value = syncHistory.syncHistory;
+  } catch (error) {
+    if (!handleAdminAccessError(error)) {
+      errorMessage.value =
+        error instanceof Error ? error.message : '관리자 데이터를 불러오는 중 오류가 발생했습니다.';
+    }
+  }
+}
+
+function handleAdminAccessError(error: unknown): boolean {
+  if (!(error instanceof ApiClientError) || (error.status !== 401 && error.status !== 403)) {
+    return false;
+  }
+
+  accessDeniedReason.value = 'api';
+  adminDataOverview.value = null;
+  adminSyncHistory.value = [];
+  errorMessage.value = '';
+  return true;
 }
 
 function goToLogin() {
   void router.push('/login');
+}
+
+function goToHome() {
+  void router.push('/');
 }
 
 function handleSectionChange(section: SectionKey) {
@@ -144,6 +184,14 @@ function getPathFromSection(section: SectionKey): string {
           data-testid="admin-board-retry"
           @retry="reloadAdminBoard"
         />
+        <button
+          data-testid="admin-board-error-home-button"
+          type="button"
+          class="mt-4 text-[0.84rem] text-overlay-dark-40 underline underline-offset-4 transition-colors hover:text-overlay-dark-80"
+          @click="goToHome"
+        >
+          홈으로 돌아가기
+        </button>
       </div>
     </section>
 
@@ -160,10 +208,10 @@ function getPathFromSection(section: SectionKey): string {
           <ShieldAlert aria-hidden="true" class="size-7" />
         </div>
         <h1 class="mt-5 text-heading font-semibold text-overlay-dark-80">
-          관리자 권한이 없는 계정입니다
+          {{ accessDeniedTitle }}
         </h1>
         <p class="mt-3 text-body text-overlay-dark-40">
-          관리자 화면은 ADMIN 권한이 확인된 사용자만 접근할 수 있습니다.
+          {{ accessDeniedDescription }}
         </p>
         <div class="mt-6">
           <BaseButton

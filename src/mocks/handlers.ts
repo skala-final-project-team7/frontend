@@ -60,7 +60,7 @@ type MockAdminIngestJob = {
 const mockAdminIngestJobs = new Map<string, MockAdminIngestJob>();
 
 export const mockHandlers = [
-  // TODO(MOCK): POST /api/auth/logout — feature13 인증 백엔드 연결 미완료. VITE_USE_MOCK=false 전환 전 실제 BFF 로그아웃 흐름 연결 필요
+  // MOCK: POST /api/auth/logout — 실제 API 연결은 완료됐고, VITE_USE_MOCK=true 개발/테스트 전용으로만 유지한다.
   http.post('*/api/auth/logout', () => {
     return HttpResponse.json<ApiSuccessResponse<null>>({
       isSuccess: true,
@@ -70,7 +70,7 @@ export const mockHandlers = [
     });
   }),
 
-  // TODO(MOCK): GET /api/users/me — feature13 인증 백엔드 연결 미완료. VITE_USE_MOCK=false 전환 전 실제 BFF 사용자 조회 연결 필요
+  // MOCK: GET /api/users/me — 실제 API 연결은 완료됐고, VITE_USE_MOCK=true 개발/테스트 전용으로만 유지한다.
   http.get('*/api/users/me', () => {
     return HttpResponse.json<ApiSuccessResponse<CurrentUser>>({
       isSuccess: true,

@@ -91,6 +91,7 @@ const isMessageHistoryLoading = ref(false);
 const messageHistoryErrorMessage = ref('');
 const initialSubmitErrorMessage = ref('');
 const pendingInitialSubmitQuestion = ref('');
+const userId = ref('');
 const userName = ref('00');
 const userLastLoginAt = ref('');
 const profileImageUrl = ref('');
@@ -619,10 +620,12 @@ async function loadInitialChatData() {
     ]);
 
     userName.value = currentUser.name;
+    userId.value = currentUser.userId;
     userLastLoginAt.value = currentUser.lastLoginAt;
     profileImageUrl.value = currentUser.profileImageUrl;
     conversations.value = conversationList.conversations;
   } catch {
+    userId.value = '';
     userName.value = '00';
     userLastLoginAt.value = '';
     profileImageUrl.value = '';
@@ -859,6 +862,7 @@ watch(
       />
       <SettingsModal
         :current-user-last-login-at="userLastLoginAt"
+        :current-user-id="userId"
         :current-user-name="userName"
         :is-open="isSettingsModalOpen"
         @close="closeSettingsModal"

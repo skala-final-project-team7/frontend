@@ -350,10 +350,7 @@ function isAbortError(error: unknown): boolean {
 }
 
 function isSseHttpFailure(error: unknown): boolean {
-  return (
-    error instanceof Error &&
-    /^SSE request failed with status \d+$/.test(error.message)
-  );
+  return error instanceof Error && /^SSE request failed with status \d+$/.test(error.message);
 }
 
 function isStreamInterruptedError(error: unknown): boolean {

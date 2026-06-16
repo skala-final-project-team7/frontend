@@ -449,11 +449,19 @@ describe('feature14 Admin operations board', () => {
     await flushPromises();
 
     expect(wrapper.find('[data-testid="admin-board-error"]').exists()).toBe(true);
+    expect(wrapper.get('[data-testid="admin-board-error-home-button"]').text()).toContain(
+      '홈으로 돌아가기',
+    );
 
     await wrapper.get('[data-testid="admin-board-error"] button').trigger('click');
     await flushPromises();
 
     expect(reloadSpy).toHaveBeenCalledTimes(1);
+
+    await wrapper.get('[data-testid="admin-board-error-home-button"]').trigger('click');
+    await flushPromises();
+
+    expect(router.currentRoute.value.path).toBe('/');
 
     Object.defineProperty(window, 'location', {
       configurable: true,

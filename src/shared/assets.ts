@@ -37,11 +37,19 @@ import mascotWrongImageUrl from '../../frontend/assets/lina-character/mascot-wro
 import mascotImageUrl from '../../frontend/assets/lina-character/mascot.png';
 import logoLinaCuteImageUrl from '../../frontend/assets/logos/logo-lina-cute4.png';
 import chatScreenshotImageUrl from '../../frontend/assets/screenshots/chat-screenshot.png';
+import confluenceScreenshot1HomeImageUrl from '../../frontend/assets/screenshots/confluence-screenshot1-home.png';
+import confluenceScreenshot1ImageUrl from '../../frontend/assets/screenshots/confluence-screenshot1.png';
+import confluenceScreenshot2HomeImageUrl from '../../frontend/assets/screenshots/confluence-screenshot2-home.png';
+import confluenceScreenshot2ImageUrl from '../../frontend/assets/screenshots/confluence-screenshot2.png';
 import chatInputBoxImageUrl from '../../frontend/assets/ui/chat-input-box.png';
 
 export {
   chatInputBoxImageUrl,
   chatScreenshotImageUrl,
+  confluenceScreenshot1HomeImageUrl,
+  confluenceScreenshot1ImageUrl,
+  confluenceScreenshot2HomeImageUrl,
+  confluenceScreenshot2ImageUrl,
   confluenceIconImageUrl,
   iconsImageUrl,
   linaAdminImageUrl,

@@ -24,6 +24,7 @@ import { confluenceIconImageUrl, notionIconImageUrl, slackIconImageUrl } from '@
 const props = defineProps<{
   currentUserLastLoginAt: string;
   currentUserName: string;
+  currentUserId: string;
   isOpen: boolean;
 }>();
 
@@ -238,7 +239,9 @@ onBeforeUnmount(() => {
                   class="size-8 shrink-0 object-contain"
                 />
                 <div class="min-w-0">
-                  <p class="truncate font-lina text-[14px] text-black">Client_id</p>
+                  <p class="truncate font-lina text-[14px] text-black">
+                    {{ currentUserId || 'Confluence' }}
+                  </p>
                   <p class="mt-1 font-lina text-[12px] text-overlay-dark-40">
                     {{ currentUserName }} · 인증 갱신 날짜 : {{ renewalDateLabel }}
                   </p>

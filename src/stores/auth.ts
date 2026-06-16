@@ -78,5 +78,13 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  return { currentUser, isAuthenticated, isRestoringSession, sessionRestoreAttempted, restoreSession, clearAuth, logout };
+  return {
+    currentUser,
+    isAuthenticated,
+    isRestoringSession,
+    sessionRestoreAttempted,
+    restoreSession,
+    clearAuth,
+    logout,
+  };
 });

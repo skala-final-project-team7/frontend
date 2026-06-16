@@ -80,9 +80,10 @@ function startDateKey(anchorDateKey: string, days: number): string {
   return date.toISOString().slice(0, 10);
 }
 
-// TODO(접속 추이 기간 필터): GET /api/admin/stats 의 hourlyAccessTrend 는 현재 시간대(hour)별
-// 집계만 내려오고 date 필드가 없다. 그래서 오늘/7일/30일 탭이 모두 같은 데이터를 렌더링한다.
-// 추후 응답 항목에 date(YYYY-MM-DD)가 추가되면 아래 일자 범위 필터가 실제로 동작한다.
+// TODO(접속 추이 기간 필터): backend-template 기준 GET /api/admin/stats 의
+// hourlyAccessTrend 는 현재 hour/count만 내려오고 date 필드가 없다.
+// 그래서 오늘/7일/30일 탭이 모두 같은 데이터를 렌더링한다.
+// 추후 백엔드 응답 항목에 date(YYYY-MM-DD)가 추가되면 아래 일자 범위 필터를 실제 계약에 맞게 연결한다.
 // 그 전까지는 date 없는 항목이면 전체 trend 를 그대로 반환하며 UI는 현행 유지한다.
 const filteredHourlyAccessTrend = computed(() => {
   const trend = (stats.value?.hourlyAccessTrend ?? []) as DatedHourlyAccessTrendItem[];
