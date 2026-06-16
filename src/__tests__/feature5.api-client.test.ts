@@ -37,6 +37,7 @@ import type {
 
 describe('feature5 API types and client skeleton', () => {
   afterEach(() => {
+    vi.unstubAllEnvs();
     vi.unstubAllGlobals();
   });
 
@@ -428,6 +429,46 @@ describe('feature5 API types and client skeleton', () => {
       }),
     });
     expect(init.headers).not.toHaveProperty('X-Common-Response-Wrapper');
+  });
+
+  it('prefixes API requests with VITE_API_BASE_URL when configured', async () => {
+    vi.stubEnv('VITE_API_BASE_URL', 'https://api.example.com/');
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const requestUrl = String(input);
+      const method = init?.method ?? 'GET';
+
+      if (requestUrl === 'https://api.example.com/api/conversations?page=1&size=10' && method === 'GET') {
+        return jsonResponse({
+          isSuccess: true,
+          code: 200,
+          message: '대화 목록 조회 성공',
+          data: {
+            conversations: [],
+            totalCount: 0,
+            page: 1,
+            size: 10,
+          },
+        });
+      }
+
+      return jsonResponse(
+        {
+          isSuccess: false,
+          code: 404,
+          errorCode: 'RESOURCE_NOT_FOUND',
+          message: `Unexpected request: ${method} ${requestUrl}`,
+        },
+        404,
+      );
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(listConversations({ page: 1, size: 10 })).resolves.toMatchObject({
+      conversations: [],
+      page: 1,
+      size: 10,
+    });
   });
 
   it('unwraps Confluence page preview responses with a pageId query', async () => {
