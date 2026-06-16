@@ -207,6 +207,46 @@ describe('feature10 SCR-500, SCR-510 Reference panel', () => {
     expect(wrapper.find('[data-testid="reference-hover-preview"]').exists()).toBe(false);
   });
 
+  it('shows a centered pending preview message when the preview API does not return data', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const requestUrl =
+          typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+
+        if (requestUrl.includes('/api/confluence/pages/preview')) {
+          return createJsonResponse({
+            isSuccess: false,
+            code: 404,
+            errorCode: 'PREVIEW_NOT_FOUND',
+            message: '미리보기 문서를 찾을 수 없습니다.',
+          });
+        }
+
+        return createJsonResponse({
+          isSuccess: true,
+          code: 200,
+          message: 'ok',
+          data: null,
+        });
+      }),
+    );
+
+    const wrapper = mount(ReferencePanel, {
+      props: {
+        sources: mockSources,
+      },
+    });
+    await flushAsyncUpdates();
+
+    await wrapper.get('[data-testid="reference-list-item"]').trigger('mouseenter');
+
+    const preview = wrapper.get('[data-testid="reference-hover-preview"]');
+
+    expect(preview.text()).toContain('미리보기 준비중');
+    expect(preview.find('[data-testid="preview-page-card-empty"]').exists()).toBe(true);
+  });
+
   it('closes the prior conversation reference panel when starting a new chat', async () => {
     const wrapper = mount(ChatPage, {
       global: {

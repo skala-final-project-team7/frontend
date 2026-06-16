@@ -42,6 +42,10 @@ const sanitizedBodyViewValue = computed(() =>
   }),
 );
 
+const hasBodyContent = computed(() =>
+  sanitizedBodyViewValue.value.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim().length > 0,
+);
+
 async function copyPageUrl() {
   try {
     await navigator.clipboard.writeText(props.page.pageUrl);
@@ -60,13 +64,22 @@ async function copyPageUrl() {
       tabindex="0"
       class="aspect-[166/191] w-[208px] overflow-hidden rounded-item bg-primary-white p-5 text-overlay-dark-80 shadow-floating outline-none transition-shadow group-hover/preview-page:shadow-card-press focus-visible:shadow-focus sm:w-[272px]"
     >
-      <!-- eslint-disable vue/no-v-html -->
       <div
+        v-if="hasBodyContent"
         data-testid="preview-page-card-body"
         class="preview-page-card-body text-small"
-        v-html="sanitizedBodyViewValue"
-      />
-      <!-- eslint-enable vue/no-v-html -->
+      >
+        <!-- eslint-disable vue/no-v-html -->
+        <div v-html="sanitizedBodyViewValue" />
+        <!-- eslint-enable vue/no-v-html -->
+      </div>
+      <div
+        v-else
+        data-testid="preview-page-card-empty"
+        class="flex h-full items-center justify-center text-center font-lina text-small font-semibold text-overlay-dark-40"
+      >
+        미리보기 준비중
+      </div>
     </article>
 
     <div

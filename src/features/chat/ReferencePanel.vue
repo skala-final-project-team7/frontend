@@ -37,7 +37,19 @@ const activeView = ref<'list' | 'graph'>('list');
 const previewsByPageId = ref<Record<string, ConfluencePagePreview>>({});
 const hoveredPageId = ref('');
 
-const hoveredPreview = computed(() => previewsByPageId.value[hoveredPageId.value]);
+const sourceByPageId = computed(() =>
+  Object.fromEntries(props.sources.map((source) => [source.pageId, source])),
+);
+
+const hoveredPreview = computed(() => {
+  const hoveredSource = sourceByPageId.value[hoveredPageId.value];
+
+  if (!hoveredSource) {
+    return undefined;
+  }
+
+  return previewsByPageId.value[hoveredPageId.value] ?? buildPendingPreview(hoveredSource);
+});
 
 watch(
   () => props.sources,
@@ -65,6 +77,19 @@ function sourcePath(source: Source) {
   return preview?.breadcrumbs.length
     ? preview.breadcrumbs.join(' > ')
     : `${source.spaceName} > ${source.title}`;
+}
+
+function buildPendingPreview(source: Source): ConfluencePagePreview {
+  return {
+    pageId: source.pageId,
+    title: source.title,
+    spaceName: source.spaceName,
+    authorName: '',
+    updatedAt: source.sourceUpdatedAt,
+    breadcrumbs: [],
+    pageUrl: source.url,
+    bodyViewValue: '',
+  };
 }
 
 function authorName(source: Source) {
