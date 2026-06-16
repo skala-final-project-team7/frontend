@@ -12,6 +12,7 @@ function mountSettingsModal() {
   return mount(SettingsModal, {
     props: {
       currentUserLastLoginAt: mockCurrentUser.lastLoginAt,
+      currentUserId: mockCurrentUser.userId,
       currentUserName: mockCurrentUser.name,
       isOpen: true,
     },
@@ -102,7 +103,7 @@ describe('feature18 Settings modal', () => {
     expect(getByTestId('settings-account-panel').textContent).toContain('연결된 계정');
     expect(getByTestId('settings-account-nav-item').textContent).toContain('계정 관리');
     expect(document.body.querySelector('[data-testid="settings-tab-data"]')).toBeNull();
-    expect(getByTestId('settings-account-panel').textContent).toContain('Client_id');
+    expect(getByTestId('settings-account-panel').textContent).toContain(mockCurrentUser.userId);
     expect(getByTestId('settings-confluence-icon').getAttribute('src')).toContain(
       'confluence-icon.png',
     );
