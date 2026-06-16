@@ -4876,3 +4876,38 @@
 
 - 이번 작업에서는 feature18.5 범위 밖인 feature8/feature12 기존 실패는 수정하지 않았다.
 - 작업 중 `git status` 기준으로 `src/features/chat/PreviewPageCard.vue`, `src/pages/AuthCallbackPage.vue`, `src/stores/auth.ts`, `src/stores/chat.ts`에 이미 별도 변경이 있었고, 이번 feature18.5 구현 범위에서는 건드리지 않았다.
+
+## 2026-06-16 - feature18.5 localhost 검증 보강: mock-backend Admin 가이드와 seed 추가
+
+### Scope
+
+- 실제 localhost BFF(`:8080`)를 프록시로 확인할 수 있도록 `mock-backend/`에 Admin 검증 가이드 추가
+- Admin 화면이 localhost에서 비지 않도록 Mongo seed에 운영/통계/피드백/동기화 이력용 샘플 데이터 추가
+- `backend-template/`은 참고만 하고 수정하지 않음
+
+### Changed Files
+
+- `../mock-backend/FEATURE18.5-VERIFY.md` (신규)
+  - `VITE_USE_MOCK=false` + `http://localhost:8090` 경유로 `/api/admin/*`를 실제 BFF에 붙여 확인하는 절차 정리
+  - `/api/users/me`만 stub, `/api/admin/*`는 실제 BFF proxy라는 경계 명시
+  - `backend-template`의 MySQL 미설정 시 `/api/admin/users` empty가 정상일 수 있다는 한계 기록
+- `../mock-backend/fixtures/mongo-init.js`
+  - `raw_pages`, `raw_attachments`, `chunked_units`, `sync_logs`, 추가 `feedbacks` seed 확장
+  - `/api/admin/data`, `/api/admin/sync`, `/api/admin/stats`, `/api/admin/feedback` localhost 검증 시 숫자/목록이 보이도록 보강
+- `../mock-backend/README.md`
+  - Admin localhost 검증 가이드 링크 추가
+
+### Commands
+
+- `node --check ../mock-backend/server.mjs`
+- `node --check ../mock-backend/fixtures/mongo-init.js`
+
+### Results
+
+- `server.mjs` syntax check: passed
+- `mongo-init.js` syntax check: passed
+
+### Notes / Remaining Issues
+
+- `mock-backend`는 Admin 인증 전체를 대체하지 않고 `/api/users/me`만 stub 한다. 따라서 Admin 연결 확인의 핵심은 `/api/admin/*`가 실제 localhost BFF까지 도달하는지 보는 것이다.
+- `backend-template`의 `/api/admin/users`는 MySQL read datasource가 없으면 empty가 정상일 수 있어, localhost 검증에서는 실패와 empty를 구분해서 봐야 한다.
