@@ -21,13 +21,13 @@ defineProps<{
   <article
     data-testid="home-document-mock-card"
     :aria-label="title"
-    class="overflow-hidden rounded-[24px] border border-bg-300/60 bg-primary-white shadow-floating"
+    class="overflow-hidden rounded-[24px] border border-bg-300/60 bg-primary-white p-2 shadow-floating"
   >
     <img
       data-testid="home-document-mock-card-image"
       :src="imageUrl"
       :alt="title"
-      class="block h-full w-full object-cover object-top"
+      class="block h-full w-full rounded-[18px] bg-primary-white object-contain object-top"
     />
   </article>
 </template>

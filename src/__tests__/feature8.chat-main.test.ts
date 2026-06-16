@@ -381,10 +381,10 @@ describe('feature8 SCR-400 Chat main screen', () => {
     expect(cards[0]?.attributes('aria-label')).toBe('통합 서비스 태깅 문서 예시');
     expect(cards[1]?.attributes('aria-label')).toBe('배포 체크리스트 문서 예시');
     expect(cards[0]?.find('[data-testid="home-document-mock-card-image"]').attributes('src')).toContain(
-      'confluence-screenshot1',
+      'confluence-screenshot1-home',
     );
     expect(cards[1]?.find('[data-testid="home-document-mock-card-image"]').attributes('src')).toContain(
-      'confluence-screenshot2',
+      'confluence-screenshot2-home',
     );
   });
 

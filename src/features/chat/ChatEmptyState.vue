@@ -15,8 +15,8 @@
 <script setup lang="ts">
 import HomeDocumentMockCard from '@/features/chat/HomeDocumentMockCard.vue';
 import {
-  confluenceScreenshot1ImageUrl,
-  confluenceScreenshot2ImageUrl,
+  confluenceScreenshot1HomeImageUrl,
+  confluenceScreenshot2HomeImageUrl,
   mascotRealizeImageUrl,
   searchImageUrl,
   skpSymbolImageUrl,
@@ -73,14 +73,14 @@ defineProps({
       >
         <HomeDocumentMockCard
           title="통합 서비스 태깅 문서 예시"
-          :image-url="confluenceScreenshot1ImageUrl"
-          class="absolute left-1/2 top-8 z-20 h-[292px] w-[255px] -translate-x-[62%] rotate-[-5deg]"
+          :image-url="confluenceScreenshot1HomeImageUrl"
+          class="absolute left-1/2 top-8 z-20 h-[292px] w-[255px] -translate-x-[62%]"
         />
 
         <HomeDocumentMockCard
           title="배포 체크리스트 문서 예시"
-          :image-url="confluenceScreenshot2ImageUrl"
-          class="absolute left-1/2 top-0 z-10 h-[304px] w-[266px] -translate-x-[4%] rotate-[4deg]"
+          :image-url="confluenceScreenshot2HomeImageUrl"
+          class="absolute left-1/2 top-0 z-10 h-[304px] w-[266px] -translate-x-[4%]"
         />
 
         <img
