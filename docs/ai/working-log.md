@@ -4934,3 +4934,28 @@
 ### Results
 
 - feature14 운영 보드 테스트: 11/11 passed
+
+## 2026-06-16 - 설정 모달 계정 카드 라벨을 userId 기반으로 정리
+
+### Scope
+
+- 계정 관리 설정 모달의 하드코딩 `Client_id` 문구를 제거
+- `/api/users/me`에서 받은 `userId`를 표시하도록 연결
+- `userId`가 없을 때만 `Confluence` fallback이 보이도록 정리
+
+### Changed Files
+
+- `src/features/settings/SettingsModal.vue`
+  - 계정 카드 제목을 정적 문자열 대신 `currentUserId` prop 기반으로 렌더링
+- `src/pages/ChatPage.vue`
+  - `getCurrentUser()` 응답의 `userId`를 Settings 모달로 전달
+- `src/__tests__/feature18.settings-modal.test.ts`
+  - 계정 카드에 `mockCurrentUser.userId`가 노출되는지 검증하도록 기대값 수정
+
+### Commands
+
+- `npm test -- --run src/__tests__/feature18.settings-modal.test.ts`
+
+### Results
+
+- feature18 설정 모달 테스트: 12/12 passed
