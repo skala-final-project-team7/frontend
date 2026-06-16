@@ -42,8 +42,12 @@ const sanitizedBodyViewValue = computed(() =>
   }),
 );
 
-const hasBodyContent = computed(() =>
-  sanitizedBodyViewValue.value.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim().length > 0,
+const hasBodyContent = computed(
+  () =>
+    sanitizedBodyViewValue.value
+      .replace(/<[^>]+>/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .trim().length > 0,
 );
 
 async function copyPageUrl() {

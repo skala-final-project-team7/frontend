@@ -281,26 +281,26 @@
 
 > 목적: feature14~17에서 `docs/api-spec.md` 계약 기반 mock으로 구현한 Admin 화면들을 실제 BFF와 연결하고, feature13 인증(토큰/`role`) 흐름과 합쳐 Admin 영역 전체가 실제 백엔드와 end-to-end로 동작하는지 검증한다. 마지막 백엔드 연동 검증 단계로, Chat(feature11)·Auth(feature13)에 이어 Admin을 실제 연동 완료한다.
 
-[ ] `docs/api-spec.md`의 Admin API 항목과 실제 BFF 응답을 대조해 `src/types/api.ts`의 Admin 타입(`AdminDataOverview`, `AdminSyncHistory*`, `AdminStats`, `AdminUsersResponse`, `AdminFeedbackResponse`, `AdminIngest*`, `AdminKeyActivationResponse`) 수정 필요 여부 확인
-[ ] `VITE_USE_MOCK=false` 환경에서 `GET /api/admin/data` 데이터 현황 조회 연결 (SCR-800)
-[ ] `VITE_USE_MOCK=false` 환경에서 `GET /api/admin/sync` 동기화 이력 조회 연결 (SCR-800 / SCR-830)
-[ ] `VITE_USE_MOCK=false` 환경에서 `POST /api/admin/ingest` 및 ingest status 조회 연결, 진행/완료/실패 상태 반영
-[ ] `VITE_USE_MOCK=false` 환경에서 `GET /api/admin/stats` 대시보드 통계 조회 연결 (SCR-810)
-[ ] `VITE_USE_MOCK=false` 환경에서 `GET /api/admin/users` 사용자 현황 조회 연결 (SCR-810)
-[ ] `VITE_USE_MOCK=false` 환경에서 `GET /api/admin/feedback` 피드백 통계/목록 조회 연결 (SCR-820)
-[ ] 관리자 키 활성화(`AdminKeyActivationResponse`) 흐름이 실제 API와 연결되는지 확인하고, 미확정이면 mock 유지 사유 기록
-[ ] feature13 인증과 통합 검증: 관리자 계정(`role === "ADMIN"`)으로 로그인 → `/admin` 진입 → 각 탭 데이터가 실제 응답으로 채워지는지 확인
+[x] `docs/api-spec.md`의 Admin API 항목과 실제 BFF 응답을 대조해 `src/types/api.ts`의 Admin 타입(`AdminDataOverview`, `AdminSyncHistory*`, `AdminStats`, `AdminUsersResponse`, `AdminFeedbackResponse`, `AdminIngest*`, `AdminKeyActivationResponse`) 수정 필요 여부 확인
+[x] `VITE_USE_MOCK=false` 환경에서 `GET /api/admin/data` 데이터 현황 조회 연결 (SCR-800)
+[x] `VITE_USE_MOCK=false` 환경에서 `GET /api/admin/sync` 동기화 이력 조회 연결 (SCR-800 / SCR-830)
+[x] `VITE_USE_MOCK=false` 환경에서 `POST /api/admin/ingest` 및 ingest status 조회 연결, 진행/완료/실패 상태 반영
+[x] `VITE_USE_MOCK=false` 환경에서 `GET /api/admin/stats` 대시보드 통계 조회 연결 (SCR-810)
+[x] `VITE_USE_MOCK=false` 환경에서 `GET /api/admin/users` 사용자 현황 조회 연결 (SCR-810)
+[x] `VITE_USE_MOCK=false` 환경에서 `GET /api/admin/feedback` 피드백 통계/목록 조회 연결 (SCR-820)
+[x] 관리자 키 활성화(`AdminKeyActivationResponse`) 흐름이 실제 API와 연결되는지 확인하고, 미확정이면 mock 유지 사유 기록
+[x] feature13 인증과 통합 검증: 관리자 계정(`role === "ADMIN"`)으로 로그인 → `/admin` 진입 → 각 탭 데이터가 실제 응답으로 채워지는지 확인
 [ ] 일반 사용자 토큰으로 `/admin/*` 접근 시 라우터 가드 및 BFF 권한(`403`/`401`)이 함께 차단하는지 확인
 [ ] 각 Admin 화면의 Loading / Error / Empty / Success 상태가 실제 API 실패·빈 응답에서도 동작하는지 확인
 [ ] 기간 탭/페이지네이션 query parameter가 실제 BFF 계약과 일치하는지 확인하고, 불일치 시 `docs/api-spec.md`를 먼저 갱신
 [ ] 실제 API 전환 후 불필요한 `TODO(MOCK)` / `MOCK` 마커 제거 또는 후속 mock 유지 사유 기록
-[ ] Admin 연결 회귀 테스트 작성 (실제 API 응답 형태 기준 store/화면 상태 검증)
+[x] Admin 연결 회귀 테스트 작성 (실제 API 응답 형태 기준 store/화면 상태 검증)
 
 #### 전환 체크리스트 (Admin 백엔드 연결시)
 
-- [ ] `src/types/api.ts`의 Admin 타입이 실제 API 응답과 일치하는가
-- [ ] `VITE_USE_MOCK=false`로 변경 시 `/admin` 전체 탭(운영/대시보드/피드백/동기화 이력)이 정상 동작하는가
-- [ ] feature13 인증 토큰(`Authorization: Bearer`)이 Admin API 요청에도 정상 첨부되는가
+- [x] `src/types/api.ts`의 Admin 타입이 실제 API 응답과 일치하는가
+- [x] `VITE_USE_MOCK=false`로 변경 시 `/admin` 전체 탭(운영/대시보드/피드백/동기화 이력)이 정상 동작하는가
+- [x] feature13 인증 토큰(`Authorization: Bearer`)이 Admin API 요청에도 정상 첨부되는가
 - [ ] 관리자/일반 사용자 권한 분기가 라우터 가드와 BFF 응답(`401`/`403`) 양쪽에서 일관되게 동작하는가
 - [ ] `TODO(MOCK)` 마커가 모두 제거되었거나 mock 유지 사유가 기록되었는가
 - [ ] 백엔드 응답 구조가 `docs/api-spec.md`와 다르면 API 명세를 먼저 갱신했는가

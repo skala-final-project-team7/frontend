@@ -4735,7 +4735,7 @@
 - `../mock-backend/FEATURE13-VERIFY.md` (신규)
   - 수동 검증 가이드(방법 A: MSW mock / 방법 B: mock-backend proxy)
 - `frontend/docs/auth-state-guide.md` (신규)
-  - localStorage·Pinia 저장 동작 정리 
+  - localStorage·Pinia 저장 동작 정리
 
 ### Commands
 
@@ -4829,3 +4829,50 @@
 
 - 실제 BFF 계약: `/api/auth/callback`은 JSON(`LoginTokenResponse`)을 반환하므로, 실제 연동 시 BFF가 최종 FE 리디렉션에 `accessToken`과 함께 `returnTo`를 실어주는지 확인 필요. mock-backend는 OAuth 왕복을 생략하고 callback 쿼리로 직접 전달한다.
 - `ALLOWED_RETURN_TO`는 현재 `/chat`, `/admin`만 허용. 향후 진입 대상 경로가 늘면 화이트리스트 확장 필요.
+
+## 2026-06-16 - feature18.5 Admin 백엔드 연결 회귀 테스트 및 타입 정합성 보정
+
+### Scope
+
+- `docs/ai/current-plan.md`의 feature18.5 기준으로 Admin API 연결 상태를 점검
+- 실제 BFF 응답 형태를 기준으로 Admin API wrapper 테스트와 `/admin` 통합 회귀 테스트 추가
+- Admin 통계 응답의 `hourlyAccessTrend.date` 확장 필드를 FE 타입에 반영
+
+### Test Cases
+
+- `AdminStats.hourlyAccessTrend`가 `date` 메타데이터를 포함한 실제 응답 형태를 허용한다
+- Admin API 함수가 Bearer 토큰과 함께 `/api/admin/data`, `/sync`, `/stats`, `/users`, `/feedback`, `/ingest`, `/ingest/status/{jobId}`, `/key/activate`를 올바르게 호출한다
+- 관리자 계정 응답으로 `/admin` 진입 시 운영/대시보드/피드백/동기화 이력 탭이 실제 응답 형태로 렌더링된다
+
+### Changed Files
+
+- `src/types/api.ts`
+  - `HourlyAccessTrendItem`에 `date?: string` 추가로 실제 BFF 응답 확장 필드 허용
+- `src/__tests__/feature5.api-client.test.ts`
+  - Admin API wrapper, Bearer 헤더, query/body 계약, ingest/status, admin key activation 테스트 추가
+- `src/__tests__/feature18.5.admin-backend-integration.test.ts` (신규)
+  - `/admin` 진입 후 각 Admin 탭이 실제 API 응답 형태로 채워지는 통합 회귀 테스트 추가
+- `docs/ai/current-plan.md`
+  - feature18.5 중 이번 세션에서 테스트와 타입 정합성으로 확인한 항목 체크 처리
+
+### Commands
+
+- `npm test -- --run src/__tests__/feature5.api-client.test.ts src/__tests__/feature18.5.admin-backend-integration.test.ts`
+- `./scripts/format.sh`
+- `./scripts/lint.sh`
+- `./scripts/test.sh`
+- `./scripts/verify.sh`
+
+### Results
+
+- 타깃 테스트: 13/13 passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: failed, 기존 회귀 3건 재현
+  - `src/__tests__/feature8.chat-main.test.ts` 2건 (`도움말` vs `도움말 열기`)
+  - `src/__tests__/feature12.auth-login-role-selection.test.ts` 1건 (`right-0` 기대)
+- `./scripts/verify.sh`: failed, 동일한 기존 회귀 3건으로 중단
+
+### Notes / Remaining Issues
+
+- 이번 작업에서는 feature18.5 범위 밖인 feature8/feature12 기존 실패는 수정하지 않았다.
+- 작업 중 `git status` 기준으로 `src/features/chat/PreviewPageCard.vue`, `src/pages/AuthCallbackPage.vue`, `src/stores/auth.ts`, `src/stores/chat.ts`에 이미 별도 변경이 있었고, 이번 feature18.5 구현 범위에서는 건드리지 않았다.

@@ -1,6 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  activateAdminKey,
+  getAdminDataOverview,
+  getAdminFeedback,
+  getAdminIngestStatus,
+  getAdminStats,
+  getAdminSyncHistory,
+  getAdminUsers,
   createConversation,
   deleteConversation,
   getConfluencePagePreview,
@@ -8,6 +15,7 @@ import {
   getCurrentUser,
   listConversations,
   searchConversations,
+  startAdminIngestJob,
   streamConversationChat,
   submitMessageFeedback,
   updateConversationTitle,
@@ -504,6 +512,213 @@ describe('feature5 API types and client skeleton', () => {
       name: '이다연',
       role: 'USER',
       profileImageUrl: 'https://example.com/profile/dayeon.png',
+    });
+  });
+
+  it('unwraps admin APIs with Bearer auth, pagination query params, and ingest endpoints', async () => {
+    stubLocalStorage({ accessToken: 'admin-token' });
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const requestUrl = String(input);
+      const method = init?.method ?? 'GET';
+
+      expect(init?.headers).toMatchObject({
+        Accept: 'application/json',
+        Authorization: 'Bearer admin-token',
+      });
+
+      if (requestUrl === '/api/admin/data' && method === 'GET') {
+        return jsonResponse({
+          isSuccess: true,
+          code: 200,
+          message: '데이터 현황 조회 성공',
+          data: {
+            totalSpaces: 5,
+            totalPages: 1230,
+            totalAttachments: 187,
+            vectorDbSize: '2.3 GB',
+            totalChunks: 8940,
+            lastSyncAt: '2026-05-20T17:00:00+09:00',
+          },
+        });
+      }
+
+      if (requestUrl === '/api/admin/sync' && method === 'GET') {
+        return jsonResponse({
+          isSuccess: true,
+          code: 200,
+          message: '동기화 이력 조회 성공',
+          data: {
+            syncHistory: [
+              {
+                syncId: 'sync-uuid-001',
+                status: 'COMPLETED',
+                updatedPages: 12,
+                deletedPages: 1,
+                duration: 45,
+                completedAt: '2026-05-20T17:00:00+09:00',
+              },
+            ],
+          },
+        });
+      }
+
+      if (requestUrl === '/api/admin/stats' && method === 'GET') {
+        return jsonResponse({
+          isSuccess: true,
+          code: 200,
+          message: '서비스 통계 조회 성공',
+          data: {
+            dailyQueryCount: 142,
+            avgResponseTime: 3.2,
+            totalConversations: 856,
+            hourlyAccessTrend: [
+              { hour: 9, count: 23 },
+              { hour: 10, count: 45 },
+            ],
+          },
+        });
+      }
+
+      if (requestUrl === '/api/admin/users?page=0&size=12' && method === 'GET') {
+        return jsonResponse({
+          isSuccess: true,
+          code: 200,
+          message: '사용자 현황 조회 성공',
+          data: {
+            totalUsers: 48,
+            dailyActiveUsers: 12,
+            users: [
+              {
+                userId: '712020:admin-user',
+                name: '관리자',
+                accessibleSpaceCount: 5,
+                accessiblePageCount: 320,
+                accessibleAttachmentCount: 48,
+                conversationCount: 35,
+                lastAccessAt: '2026-05-20T18:00:00+09:00',
+              },
+            ],
+          },
+        });
+      }
+
+      if (requestUrl === '/api/admin/feedback?page=1&size=5' && method === 'GET') {
+        return jsonResponse({
+          isSuccess: true,
+          code: 200,
+          message: '피드백 현황 조회 성공',
+          data: {
+            totalCount: 320,
+            likeCount: 256,
+            dislikeCount: 64,
+            positiveRatio: 0.8,
+            trend: [{ date: '2026-05-20', likeCount: 52, dislikeCount: 11 }],
+            negativeFeedbacks: [
+              {
+                feedbackId: 'fb-uuid-101',
+                messageId: 'msg-uuid-200',
+                comment: '출처가 질문과 관련 없었어요',
+                question: 'S3 권한 오류 원인이 뭐야?',
+                answer: 'IAM 정책을 확인하세요...',
+                createdAt: '2026-05-20T18:30:00+09:00',
+              },
+            ],
+            page: 1,
+            size: 5,
+          },
+        });
+      }
+
+      if (requestUrl === '/api/admin/key/activate' && method === 'POST') {
+        return jsonResponse({
+          isSuccess: true,
+          code: 200,
+          message: 'Admin Key 활성화 성공',
+          data: {
+            activatedUntil: '2026-06-02T13:56:43+09:00',
+          },
+        });
+      }
+
+      if (requestUrl === '/api/admin/ingest' && method === 'POST') {
+        expect(JSON.parse(String(init?.body))).toEqual({ mode: 'delta' });
+
+        return jsonResponse({
+          isSuccess: true,
+          code: 200,
+          message: '데이터 수집 작업 시작',
+          data: {
+            jobId: 'job-uuid-001',
+            status: 'STARTED',
+            startedAt: '2026-05-06T19:00:00+09:00',
+          },
+        });
+      }
+
+      if (requestUrl === '/api/admin/ingest/status/job-uuid-001' && method === 'GET') {
+        return jsonResponse({
+          isSuccess: true,
+          code: 200,
+          message: '수집 상태 조회 성공',
+          data: {
+            jobId: 'job-uuid-001',
+            status: 'IN_PROGRESS',
+            totalPages: 150,
+            processedPages: 87,
+            failedPages: 2,
+            startedAt: '2026-05-06T19:00:00+09:00',
+          },
+        });
+      }
+
+      return jsonResponse(
+        {
+          isSuccess: false,
+          code: 404,
+          errorCode: 'RESOURCE_NOT_FOUND',
+          message: `Unexpected request: ${method} ${requestUrl}`,
+        },
+        404,
+      );
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(getAdminDataOverview()).resolves.toMatchObject({
+      totalSpaces: 5,
+      totalPages: 1230,
+    });
+    await expect(getAdminSyncHistory()).resolves.toMatchObject({
+      syncHistory: [{ syncId: 'sync-uuid-001', status: 'COMPLETED' }],
+    });
+    await expect(getAdminStats()).resolves.toMatchObject({
+      dailyQueryCount: 142,
+      hourlyAccessTrend: expect.arrayContaining([
+        expect.objectContaining({ hour: 9, count: 23 }),
+      ]),
+    });
+    await expect(getAdminUsers({ page: 0, size: 12 })).resolves.toMatchObject({
+      totalUsers: 48,
+      users: [{ userId: '712020:admin-user' }],
+    });
+    await expect(getAdminFeedback({ page: 1, size: 5 })).resolves.toMatchObject({
+      totalCount: 320,
+      negativeFeedbacks: [{ feedbackId: 'fb-uuid-101' }],
+      page: 1,
+      size: 5,
+    });
+    await expect(activateAdminKey()).resolves.toMatchObject({
+      activatedUntil: '2026-06-02T13:56:43+09:00',
+    });
+    await expect(startAdminIngestJob({ mode: 'delta' })).resolves.toMatchObject({
+      jobId: 'job-uuid-001',
+      status: 'STARTED',
+    });
+    await expect(getAdminIngestStatus('job-uuid-001')).resolves.toMatchObject({
+      jobId: 'job-uuid-001',
+      status: 'IN_PROGRESS',
+      totalPages: 150,
+      processedPages: 87,
     });
   });
 

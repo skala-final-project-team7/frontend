@@ -36,8 +36,7 @@ onMounted(async () => {
 
   // BFF가 에러를 쿼리 파라미터로 전달한 경우 (e.g., 403 admin gate)
   if (error || errorCode) {
-    const isForbidden =
-      errorCode === 'FORBIDDEN' || error === 'FORBIDDEN';
+    const isForbidden = errorCode === 'FORBIDDEN' || error === 'FORBIDDEN';
     await router.replace({
       name: 'login',
       query: isForbidden ? { error: 'FORBIDDEN' } : { error: 'AUTH_FAILED' },
