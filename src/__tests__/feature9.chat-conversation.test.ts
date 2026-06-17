@@ -819,7 +819,7 @@ describe('feature9 SCR-410, SCR-420, SCR-600 Chat conversation screen', () => {
     expect(wrapper.text()).not.toContain('S3 트러블슈팅 가이드');
   });
 
-  it('updates the current conversation title from meta.title', async () => {
+  it('keeps the existing conversation title fixed even if a later meta.title arrives', async () => {
     const wrapper = mountChatPage();
     await flushAsyncUpdates();
 
@@ -827,7 +827,9 @@ describe('feature9 SCR-410, SCR-420, SCR-600 Chat conversation screen', () => {
     await wrapper.get('textarea').trigger('keydown.enter');
     await flushAsyncUpdates();
 
-    expect(wrapper.get('[data-testid="conversation-title"]').text()).toBe('SSE가 생성한 대화 제목');
+    expect(wrapper.get('[data-testid="conversation-title"]').text()).toBe(
+      'S3 권한 오류 해결 방법',
+    );
   });
 
   it('uses the route conversation id when submitting before message history finishes loading', async () => {

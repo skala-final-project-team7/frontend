@@ -14,6 +14,7 @@
     이동, 접속 추이는 스파크라인 + 확대 모달(0~24시 축), 대화 수 인라인 바, 최근성 dot 추가
   - 2026-06-11, feature15 보정, 최근성 기준 7일/30일로 변경·연도 표시, 바 만점을 평균 2배로 변경,
     BaseTooltip 적용, 모달 카드 위치 기점 pop-in 애니메이션, 피크 dot pulse 강조, 레일 지표 순서 조정
+  - 2026-06-17, 사용자 현황 테이블에서 접근 가능 첨부파일 수 컬럼 표시·정렬 제거
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -259,7 +260,7 @@ type SortDirection = 'asc' | 'desc';
 
 const USER_TABLE_COLUMNS: { key: UserSortKey; label: string }[] = [
   { key: 'name', label: '이름' },
-  { key: 'access', label: '스페이스 / 페이지 / 첨부' },
+  { key: 'access', label: '스페이스 / 페이지' },
   { key: 'conversationCount', label: '대화 수' },
   { key: 'lastAccessAt', label: '마지막 접속' },
 ];
@@ -283,8 +284,7 @@ function compareUsers(a: AdminUserItem, b: AdminUserItem, key: UserSortKey): num
     case 'access':
       return (
         a.accessibleSpaceCount - b.accessibleSpaceCount ||
-        a.accessiblePageCount - b.accessiblePageCount ||
-        a.accessibleAttachmentCount - b.accessibleAttachmentCount
+        a.accessiblePageCount - b.accessiblePageCount
       );
     case 'conversationCount':
       return a.conversationCount - b.conversationCount;
@@ -575,8 +575,7 @@ function formatDateTime(value: string): string {
             >
               <td class="px-5 py-3 font-medium text-overlay-dark-80">{{ user.name }}</td>
               <td class="px-5 py-3 text-overlay-dark-80">
-                {{ user.accessibleSpaceCount }} / {{ user.accessiblePageCount }} /
-                {{ user.accessibleAttachmentCount }}
+                {{ user.accessibleSpaceCount }} / {{ user.accessiblePageCount }}
               </td>
               <td class="px-5 py-3">
                 <span data-conv-anchor class="inline-flex w-full max-w-[150px]">

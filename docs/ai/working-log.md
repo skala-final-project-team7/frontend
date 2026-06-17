@@ -5034,3 +5034,70 @@
   - `src/__tests__/feature12.auth-login-role-selection.test.ts`
 - `npm run build`: 기존 TypeScript 오류로 실패
   - `src/__tests__/feature13.auth-backend-connect.test.ts`의 `null` 인자 타입 오류 5건
+
+## 2026-06-17 - 채팅 제목 고정 정책 보정: 새 대화 첫 스트림에서만 RAG title 반영
+
+### Scope
+
+- SSE `meta.title`이 후속 질문마다 대화 제목을 덮어쓰지 않도록 정책 보정
+- 새 대화 첫 스트림에서만 자동 생성 제목을 반영하고, 이후 후속 질문에서는 기존 제목을 유지
+
+### Changed Files
+
+- `src/stores/chat.ts`
+  - `meta.title` 반영 조건을 `shouldApplyGeneratedTitle()`로 분리
+  - 새 대화 placeholder(`새 대화`) 상태이면서 첫 스트림 구간인 경우에만 제목을 갱신하도록 제한
+- `src/__tests__/feature9.chat-sse-store.test.ts`
+  - 첫 질문의 generated title은 반영되고, 후속 질문의 generated title은 무시되는지 회귀 테스트 추가
+
+### Commands
+
+- `npm test -- src/__tests__/feature9.chat-sse-store.test.ts src/__tests__/feature9.chat-conversation.test.ts`
+
+### Results
+
+- `feature9.chat-sse-store.test.ts`: 12/12 passed
+- `feature9.chat-conversation.test.ts`: 35/35 passed
+
+## 2026-06-17 - 관리자 운영 보드: 데이터 동기화(delta) 버튼 추가
+
+### Scope
+
+- 기존 `mode=full` 전용 적재에 더해, 변경분만 수집하는 `mode=delta` 동기화 버튼을 운영 보드에 추가
+- 첫 적재는 전체 불러오기(full), 이후에는 변경분 동기화(delta)를 한 화면에서 수행하도록 구성
+- 동기화 이력이 없을 때 delta 실행을 막고 전체 불러오기를 먼저 하도록 안내
+- 아이콘 버튼 + 툴팁 + 구분선으로 UI 정리
+
+### Test Cases
+
+- 운영 보드 초기 렌더 시 적재 버튼의 `aria-label`에 `데이터 모두 불러오기` 노출
+- 직전 적재 작업 실패 시 적재 버튼 `aria-label`이 `다시 시도`로 변경
+
+### Changed Files
+
+- `src/features/admin/AdminOperationsSection.vue`
+  - "데이터 동기화"(delta) 버튼 추가, `handleDeltaSync()` → `adminIngestStore.startIngest('delta')` 호출
+  - `hasCompletedSync` computed 추가: `adminSyncHistory`에 `status === 'COMPLETED'` 항목 유무로 판단
+  - 이력이 없으면 API 호출 없이 안내 토스트(`데이터 모두 불러오기를 먼저 진행해 주세요.`, info) 표시
+  - 두 버튼을 텍스트 버튼 → 아이콘 전용 버튼(`BaseIconButton`) + 툴팁(`BaseTooltip`)으로 변경
+    - 모두 불러오기: `HardDriveDownload`, 상태별 동적 툴팁(`데이터 모두 불러오기`·`데이터 불러오는 중`·`다시 시도`)
+    - 데이터 동기화: `CloudSync`, 툴팁 `데이터 동기화`
+  - 두 버튼 사이 세로 구분선(`h-6 w-px bg-bg-300`) + 간격(`gap-4`)으로 전체/부분 액션 시각 분리
+  - 미사용 `BaseButton` import 및 `shouldDisableDeltaSync` computed 제거
+- `src/__tests__/feature14.admin-operations-board.test.ts`
+  - 아이콘 전용 전환으로 깨진 `.text()` 검증 2건을 `aria-label` 기준으로 변경
+
+### Commands
+
+- `npx vitest run src/__tests__/feature14.admin-operations-board.test.ts`
+- `npx vue-tsc --noEmit -p tsconfig.app.json`
+
+### Results
+
+- `feature14.admin-operations-board.test.ts`: 11/11 passed
+- `vue-tsc` 타입 체크 통과
+
+### Notes / Remaining Issues
+
+- "이력 있음" 판단은 서버 `GET /api/admin/sync` 응답 기반(로컬 저장 없음) → 새로고침·다른 기기에서도 동일 동작
+- `AdminSyncHistoryItem`에 `mode` 필드가 없어 "한 번이라도 완료됨"으로 추론. 최초 적재는 어차피 full이라 실무상 동일하나, 엄밀히 하려면 서버가 이력에 `mode`를 기록하는 방식 필요
