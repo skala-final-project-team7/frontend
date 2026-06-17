@@ -150,9 +150,9 @@ describe('feature14 Admin operations board', () => {
     expect(wrapper.get('[data-testid="admin-ingest-pipeline-card"]').text()).toContain(
       '새로고침하면 진행 상태가 초기화될 수 있습니다',
     );
-    expect(wrapper.get('[data-testid="admin-start-ingest-button"]').text()).toContain(
-      '데이터 불러오기',
-    );
+    expect(
+      wrapper.get('[data-testid="admin-start-ingest-button"]').attributes('aria-label'),
+    ).toContain('데이터 모두 불러오기');
   });
 
   it('starts ingest directly when the operator clicks 데이터 불러오기', async () => {
@@ -252,7 +252,9 @@ describe('feature14 Admin operations board', () => {
     await wrapper.get('[data-testid="admin-start-ingest-button"]').trigger('click');
     await flushPromises();
 
-    expect(wrapper.get('[data-testid="admin-start-ingest-button"]').text()).toContain('다시 시도');
+    expect(
+      wrapper.get('[data-testid="admin-start-ingest-button"]').attributes('aria-label'),
+    ).toContain('다시 시도');
   });
 
   it('starts ingest without explicit key activation because /api/admin/ingest bundles it', async () => {

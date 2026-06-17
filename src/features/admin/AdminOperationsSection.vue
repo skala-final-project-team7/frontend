@@ -17,7 +17,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
-import { AlertTriangle, HardDriveDownload, Info, RefreshCw } from '@lucide/vue';
+import { AlertTriangle, CloudSync, HardDriveDownload, Info, RefreshCw } from '@lucide/vue';
 
 import { useToast } from '@/composables/useToast';
 import { useAdminIngestStore } from '@/stores';
@@ -28,7 +28,6 @@ import type {
   AdminSyncStatus,
 } from '@/types/api';
 import {
-  BaseButton,
   BaseIconButton,
   BaseTooltip,
   EmptyState,
@@ -71,6 +70,12 @@ const shouldDisablePipelineActions = computed(
   () =>
     isStartingIngest.value ||
     (isPolling.value && status.value !== 'FAILED' && status.value !== 'COMPLETED'),
+);
+
+// 델타(변경분) 동기화는 과거에 한 번이라도 완료된 동기화 이력이 있을 때만 의미가 있다.
+// 이력이 없으면(=최초 적재 전) 클릭 시 전체 불러오기를 먼저 하도록 안내한다.
+const hasCompletedSync = computed(() =>
+  props.adminSyncHistory.some((item) => item.status === 'COMPLETED'),
 );
 
 // ── 데이터 현황 ──────────────────────────────────────────────────────
@@ -213,7 +218,7 @@ const pipelineStatusClasses = computed(() =>
 const ingestPrimaryButtonLabel = computed(() => {
   if (isStartingIngest.value) return '데이터 불러오는 중';
   if (shouldShowRetryIngest.value) return '다시 시도';
-  return '데이터 불러오기';
+  return '데이터 모두 불러오기';
 });
 const pipelineDescription = computed(() => {
   if (lastError.value) return lastError.value;
@@ -303,6 +308,24 @@ async function handleStartIngest() {
   }
 }
 
+async function handleDeltaSync() {
+  if (!hasCompletedSync.value) {
+    showToast('데이터 모두 불러오기를 먼저 진행해 주세요.', { variant: 'info' });
+    return;
+  }
+
+  try {
+    await adminIngestStore.startIngest('delta');
+    showToast('데이터 동기화를 시작했습니다.', { variant: 'success' });
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : '데이터 동기화 작업을 시작하는 중 오류가 발생했습니다.';
+    showToast(message, { variant: 'error' });
+  }
+}
+
 // ── 포맷 유틸 ────────────────────────────────────────────────────────
 function formatNumber(value: number): string {
   return new Intl.NumberFormat('ko-KR').format(value);
@@ -385,16 +408,30 @@ function getStatusClasses(s: AdminDisplayStatus): string {
           <p class="mt-2 line-clamp-2 min-h-[3rem] text-[0.8rem] leading-6 text-overlay-dark-40">
             {{ pipelineDescription }}
           </p>
-          <div class="mt-5 flex flex-wrap gap-2">
-            <BaseButton
-              variant="primary"
-              data-testid="admin-start-ingest-button"
-              :disabled="shouldDisablePipelineActions"
-              @click="handleStartIngest"
-            >
-              <HardDriveDownload aria-hidden="true" class="size-4 shrink-0" />
-              {{ ingestPrimaryButtonLabel }}
-            </BaseButton>
+          <div class="mt-5 flex items-center gap-4">
+            <BaseTooltip :label="ingestPrimaryButtonLabel" placement="top">
+              <BaseIconButton
+                :ariaLabel="ingestPrimaryButtonLabel"
+                variant="primary"
+                data-testid="admin-start-ingest-button"
+                :disabled="shouldDisablePipelineActions"
+                @click="handleStartIngest"
+              >
+                <HardDriveDownload aria-hidden="true" class="size-4" />
+              </BaseIconButton>
+            </BaseTooltip>
+            <span class="h-6 w-px shrink-0 bg-bg-300" aria-hidden="true" />
+            <BaseTooltip label="데이터 동기화" placement="top">
+              <BaseIconButton
+                ariaLabel="데이터 동기화"
+                variant="secondary"
+                data-testid="admin-delta-sync-button"
+                :disabled="shouldDisablePipelineActions"
+                @click="handleDeltaSync"
+              >
+                <CloudSync aria-hidden="true" class="size-4" />
+              </BaseIconButton>
+            </BaseTooltip>
           </div>
           <div class="mt-3 flex items-center gap-1.5 text-[0.72rem] text-overlay-dark-40">
             <Info aria-hidden="true" class="size-3.5 shrink-0" />
