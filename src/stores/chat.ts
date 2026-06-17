@@ -23,6 +23,7 @@ import { useSSE } from '@/composables/useSSE';
 import type { ChatSseEvent, ChatStreamingPhase, Message } from '@/types/api';
 
 let activeStreamAbortController: AbortController | null = null;
+const AUTO_TITLE_PLACEHOLDER = '새 대화';
 
 const KNOWN_STREAMING_PHASES = new Set<ChatStreamingPhase>([
   'idle',
@@ -272,7 +273,8 @@ export const useChatStore = defineStore('chat', {
         if (event.event === 'meta') {
           const title = event.data.title?.trim();
 
-          if (title) {
+          // 서버가 생성한 제목이 있고, 적용 가능한 경우(첫 턴 & 기존 제목 없음)에만 표시 제목으로 저장한다.
+          if (title && this.shouldApplyGeneratedTitle(conversationId)) {
             this.conversationTitlesById[conversationId] = title;
           }
 
@@ -332,6 +334,32 @@ export const useChatStore = defineStore('chat', {
           content: errorMessage,
         };
       });
+    },
+
+    /**
+     * 서버가 `meta` 이벤트로 내려준 자동 생성 제목을 표시 제목에 반영해도 되는지 판정한다.
+     *
+     * 다음 두 조건을 모두 만족할 때만 적용을 허용한다.
+     *   1. 아직 진짜 제목이 없다 — 비어 있거나 기본 placeholder(`새 대화`)인 경우.
+     *      이미 사용자/서버가 정한 제목이 있으면 자동 제목으로 덮어쓰지 않는다(보존).
+     *   2. 첫 질문-답변 턴이다 — 메시지가 2개(user 1 + assistant 1) 이하.
+     *      이후 턴에서 `meta.title`이 다시 와도 재제목 부여를 막는다.
+     *
+     * @param conversationId 판정 대상 대화 ID
+     * @returns 자동 생성 제목을 적용해도 되면 true
+     */
+    shouldApplyGeneratedTitle(conversationId: string) {
+      const currentTitle = this.conversationTitlesById[conversationId]?.trim();
+
+      // ① 이미 placeholder가 아닌 실제 제목이 있으면 덮어쓰지 않는다.
+      if (currentTitle && currentTitle !== AUTO_TITLE_PLACEHOLDER) {
+        return false;
+      }
+
+      // ② 첫 턴(질문1 + 답변1 = 2개 이하)에서만 자동 제목을 허용한다.
+      const conversationMessages = this.messagesByConversationId[conversationId] ?? [];
+
+      return conversationMessages.length <= 2;
     },
   },
 });

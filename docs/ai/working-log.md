@@ -5034,3 +5034,27 @@
   - `src/__tests__/feature12.auth-login-role-selection.test.ts`
 - `npm run build`: 기존 TypeScript 오류로 실패
   - `src/__tests__/feature13.auth-backend-connect.test.ts`의 `null` 인자 타입 오류 5건
+
+## 2026-06-17 - 채팅 제목 고정 정책 보정: 새 대화 첫 스트림에서만 RAG title 반영
+
+### Scope
+
+- SSE `meta.title`이 후속 질문마다 대화 제목을 덮어쓰지 않도록 정책 보정
+- 새 대화 첫 스트림에서만 자동 생성 제목을 반영하고, 이후 후속 질문에서는 기존 제목을 유지
+
+### Changed Files
+
+- `src/stores/chat.ts`
+  - `meta.title` 반영 조건을 `shouldApplyGeneratedTitle()`로 분리
+  - 새 대화 placeholder(`새 대화`) 상태이면서 첫 스트림 구간인 경우에만 제목을 갱신하도록 제한
+- `src/__tests__/feature9.chat-sse-store.test.ts`
+  - 첫 질문의 generated title은 반영되고, 후속 질문의 generated title은 무시되는지 회귀 테스트 추가
+
+### Commands
+
+- `npm test -- src/__tests__/feature9.chat-sse-store.test.ts src/__tests__/feature9.chat-conversation.test.ts`
+
+### Results
+
+- `feature9.chat-sse-store.test.ts`: 12/12 passed
+- `feature9.chat-conversation.test.ts`: 35/35 passed

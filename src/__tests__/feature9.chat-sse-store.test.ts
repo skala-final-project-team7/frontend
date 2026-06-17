@@ -269,6 +269,68 @@ describe('feature9 chat SSE store integration', () => {
     });
   });
 
+  it('applies generated title only for the first new-conversation stream and keeps later titles fixed', () => {
+    const chatStore = useChatStore();
+    chatStore.activeConversationId = 'conv-mock-001';
+    chatStore.messagesByConversationId['conv-mock-001'] = [
+      {
+        messageId: 'msg-local-user-first',
+        role: 'user',
+        content: '첫 질문',
+        createdAt: '2026-05-22T00:00:00Z',
+      },
+      {
+        messageId: 'msg-local-assistant-first',
+        role: 'assistant',
+        content: '첫 답변',
+        createdAt: '2026-05-22T00:00:01Z',
+        sources: [],
+      },
+    ];
+
+    chatStore.applySseEvent('conv-mock-001', 'msg-local-assistant-first', {
+      event: 'meta',
+      data: {
+        intent: '운영가이드',
+        used_llm: 'gpt-4o',
+        feedback_enabled: true,
+        latency_ms: 1234,
+        title: '첫 질문에서 생성된 제목',
+      },
+    });
+
+    expect(chatStore.conversationTitlesById['conv-mock-001']).toBe('첫 질문에서 생성된 제목');
+
+    chatStore.messagesByConversationId['conv-mock-001'].push(
+      {
+        messageId: 'msg-local-user-followup',
+        role: 'user',
+        content: '후속 질문',
+        createdAt: '2026-05-22T00:00:05Z',
+      },
+      {
+        messageId: 'msg-local-assistant-followup',
+        role: 'assistant',
+        content: '후속 답변',
+        createdAt: '2026-05-22T00:00:06Z',
+        sources: [],
+      },
+    );
+
+    chatStore.applySseEvent('conv-mock-001', 'msg-local-assistant-followup', {
+      event: 'meta',
+      data: {
+        intent: '운영가이드',
+        used_llm: 'gpt-4o',
+        feedback_enabled: true,
+        latency_ms: 1234,
+        title: '후속 질문에서 바뀌면 안 되는 제목',
+      },
+    });
+
+    expect(chatStore.conversationTitlesById['conv-mock-001']).toBe('첫 질문에서 생성된 제목');
+  });
+
   it('ignores unknown status phase values and keeps the previous status', () => {
     const chatStore = useChatStore();
     chatStore.activeConversationId = 'conv-mock-001';
