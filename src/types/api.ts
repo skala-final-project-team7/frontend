@@ -133,7 +133,6 @@ export type CurrentUser = {
 export type AdminDataOverview = {
   totalSpaces: number;
   totalPages: number;
-  totalAttachments: number;
   vectorDbSize: string;
   totalChunks: number;
   lastSyncAt: string;

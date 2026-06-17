@@ -64,7 +64,6 @@ describe('feature14 Admin operations board', () => {
     mockedGetAdminDataOverview.mockResolvedValue({
       totalSpaces: 6,
       totalPages: 2847,
-      totalAttachments: 934,
       vectorDbSize: '1.2 GB',
       totalChunks: 18432,
       lastSyncAt: '2026-06-04T07:23:00+09:00',
@@ -414,7 +413,6 @@ describe('feature14 Admin operations board', () => {
     mockedGetAdminDataOverview.mockRejectedValueOnce(new Error('network error')).mockResolvedValue({
       totalSpaces: 6,
       totalPages: 2847,
-      totalAttachments: 934,
       vectorDbSize: '1.2 GB',
       totalChunks: 18432,
       lastSyncAt: '2026-06-04T07:23:00+09:00',

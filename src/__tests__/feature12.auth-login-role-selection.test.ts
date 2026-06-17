@@ -116,7 +116,7 @@ describe('feature12 Auth / Login + Role Selection', () => {
       'text-primary',
     );
     expect(wrapper.get('[data-testid="landing-ask-mockup"]').classes()).toContain('max-w-[560px]');
-    expect(wrapper.get('[data-testid="landing-ask-input-box"]').classes()).toContain('right-0');
+    expect(wrapper.get('[data-testid="landing-ask-input-box"]').classes()).toContain('-right-28');
     expect(wrapper.get('[data-testid="landing-ask-input-box"]').classes()).toContain('top-[122px]');
     expect(wrapper.get('[data-testid="landing-ask-arrow-path"]').attributes('d')).toBe(
       'M 160 236 C 180 172 296 148 354 148',

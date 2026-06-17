@@ -1164,7 +1164,6 @@ FE 는 보관한 access/refresh 토큰을 폐기하고, BFF 는 Authorization Se
   "data": {
     "totalSpaces": 5,
     "totalPages": 1230,
-    "totalAttachments": 187,
     "vectorDbSize": "2.3 GB",
     "totalChunks": 8940,
     "lastSyncAt": "2026-05-20T17:00:00+09:00"
