@@ -26,7 +26,7 @@ export default defineConfig({
     // VITE_USE_MOCK=true(기본값)일 때는 MSW가 브라우저 서비스 워커에서 먼저 가로채므로 이 설정은 무시된다.
     proxy: {
       '/api': {
-        target: 'http://localhost:8090',
+        target: 'http://localhost:8080',
         changeOrigin: true,
       },
     },
