@@ -154,10 +154,6 @@ export type AdminSyncHistoryResponse = {
   syncHistory: AdminSyncHistoryItem[];
 };
 
-export type AdminKeyActivationResponse = {
-  activatedUntil: string;
-};
-
 export type HourlyAccessTrendItem = {
   hour: number;
   count: number;

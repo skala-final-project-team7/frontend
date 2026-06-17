@@ -5,7 +5,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AdminEntryPage from '@/pages/AdminEntryPage.vue';
 import router from '@/router';
 import {
-  activateAdminKey,
   getAdminDataOverview,
   getAdminIngestStatus,
   getAdminSyncHistory,
@@ -15,7 +14,6 @@ import {
 } from '@/api';
 
 vi.mock('@/api', () => ({
-  activateAdminKey: vi.fn(),
   getCurrentUser: vi.fn(),
   getAdminDataOverview: vi.fn(),
   getAdminIngestStatus: vi.fn(),
@@ -24,7 +22,6 @@ vi.mock('@/api', () => ({
   logout: vi.fn(),
 }));
 
-const mockedActivateAdminKey = vi.mocked(activateAdminKey);
 const mockedGetCurrentUser = vi.mocked(getCurrentUser);
 const mockedGetAdminDataOverview = vi.mocked(getAdminDataOverview);
 const mockedGetAdminIngestStatus = vi.mocked(getAdminIngestStatus);
@@ -177,7 +174,6 @@ describe('feature14 Admin operations board', () => {
     await wrapper.get('[data-testid="admin-start-ingest-button"]').trigger('click');
     await flushPromises();
 
-    expect(mockedActivateAdminKey).not.toHaveBeenCalled();
     expect(mockedStartAdminIngestJob).toHaveBeenCalledTimes(1);
     expect(mockedStartAdminIngestJob).toHaveBeenCalledWith({ mode: 'full' });
   });
@@ -213,9 +209,6 @@ describe('feature14 Admin operations board', () => {
       startedAt: string;
     }>();
 
-    mockedActivateAdminKey.mockResolvedValue({
-      activatedUntil: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
-    });
     mockedStartAdminIngestJob.mockReturnValue(ingestDeferred.promise);
 
     const wrapper = mount(AdminEntryPage, {
@@ -244,9 +237,6 @@ describe('feature14 Admin operations board', () => {
 
   it('changes the ingest CTA to 다시 시도 when the latest ingest job failed', async () => {
     mockAdminBoardBase();
-    mockedActivateAdminKey.mockResolvedValue({
-      activatedUntil: '2026-06-09T23:59:00+09:00',
-    });
     mockedStartAdminIngestJob.mockResolvedValueOnce({
       jobId: 'job-uuid-003',
       status: 'FAILED',
@@ -286,7 +276,6 @@ describe('feature14 Admin operations board', () => {
     await wrapper.get('[data-testid="admin-start-ingest-button"]').trigger('click');
     await flushPromises();
 
-    expect(mockedActivateAdminKey).not.toHaveBeenCalled();
     expect(mockedStartAdminIngestJob).toHaveBeenCalledTimes(2);
   });
 
@@ -311,9 +300,6 @@ describe('feature14 Admin operations board', () => {
   it('renders the INLINE D ingest progress card with ETA and updates it on each polling tick', async () => {
     vi.useFakeTimers();
     mockAdminBoardBase();
-    mockedActivateAdminKey.mockResolvedValue({
-      activatedUntil: '2026-06-09T23:59:00+09:00',
-    });
     mockedStartAdminIngestJob.mockResolvedValue({
       jobId: 'job-uuid-010',
       status: 'STARTED',

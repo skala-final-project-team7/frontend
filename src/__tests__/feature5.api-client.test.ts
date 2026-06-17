@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
-  activateAdminKey,
   getAdminDataOverview,
   getAdminFeedback,
   getAdminIngestStatus,
@@ -671,17 +670,6 @@ describe('feature5 API types and client skeleton', () => {
         });
       }
 
-      if (requestUrl === '/api/admin/key/activate' && method === 'POST') {
-        return jsonResponse({
-          isSuccess: true,
-          code: 200,
-          message: 'Admin Key 활성화 성공',
-          data: {
-            activatedUntil: '2026-06-02T13:56:43+09:00',
-          },
-        });
-      }
-
       if (requestUrl === '/api/admin/ingest' && method === 'POST') {
         expect(JSON.parse(String(init?.body))).toEqual({ mode: 'delta' });
 
@@ -747,9 +735,6 @@ describe('feature5 API types and client skeleton', () => {
       negativeFeedbacks: [{ feedbackId: 'fb-uuid-101' }],
       page: 1,
       size: 5,
-    });
-    await expect(activateAdminKey()).resolves.toMatchObject({
-      activatedUntil: '2026-06-02T13:56:43+09:00',
     });
     await expect(startAdminIngestJob({ mode: 'delta' })).resolves.toMatchObject({
       jobId: 'job-uuid-001',

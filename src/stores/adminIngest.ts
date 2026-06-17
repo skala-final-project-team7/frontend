@@ -2,7 +2,7 @@
  * --------------------------------------------------
  * 작성자 : OpenAI Codex
  * 작성목적 : LINA Admin 데이터 수집 진행 상태 Pinia store.
- *           Admin Key 활성화, ingest 시작, 3초 간격 polling 상태를 컴포넌트 밖에서 일관되게 관리한다.
+ *           ingest 시작, 3초 간격 polling 상태를 컴포넌트 밖에서 일관되게 관리한다.
  * 작성일 : 2026-06-09
  * 변경사항 내역 (날짜, 변경목적, 변경내용 순)
  *   - 2026-06-09, 최초 작성, Admin ingest 실행 및 polling 상태 store 추가
@@ -14,7 +14,7 @@
  */
 import { defineStore } from 'pinia';
 
-import { activateAdminKey, getAdminIngestStatus, startAdminIngestJob } from '@/api';
+import { getAdminIngestStatus, startAdminIngestJob } from '@/api';
 import type { AdminIngestJobStatus, AdminIngestMode, AdminIngestStatusResponse } from '@/types/api';
 
 const INGEST_POLL_INTERVAL_MS = 3000;
@@ -30,14 +30,12 @@ type IngestSpeedSample = {
 };
 
 type AdminIngestState = {
-  activatedUntil: string | null;
   jobId: string;
   status: AdminIngestJobStatus | '';
   startedAt: string | null;
   totalPages: number;
   processedPages: number;
   failedPages: number;
-  isActivatingKey: boolean;
   isStartingIngest: boolean;
   isPolling: boolean;
   lastError: string;
@@ -47,14 +45,12 @@ type AdminIngestState = {
 
 export const useAdminIngestStore = defineStore('adminIngest', {
   state: (): AdminIngestState => ({
-    activatedUntil: null,
     jobId: '',
     status: '',
     startedAt: null,
     totalPages: 0,
     processedPages: 0,
     failedPages: 0,
-    isActivatingKey: false,
     isStartingIngest: false,
     isPolling: false,
     lastError: '',
@@ -77,10 +73,6 @@ export const useAdminIngestStore = defineStore('adminIngest', {
       }
 
       return Math.min(100, Math.round((state.processedPages / state.totalPages) * 100));
-    },
-
-    isAdminKeyActive(state): boolean {
-      return state.activatedUntil ? new Date(state.activatedUntil).getTime() > Date.now() : false;
     },
 
     elapsedSeconds(state): number {
@@ -155,11 +147,6 @@ export const useAdminIngestStore = defineStore('adminIngest', {
   },
 
   actions: {
-    applyActivation(activatedUntil: string) {
-      this.activatedUntil = activatedUntil;
-      this.lastError = '';
-    },
-
     applyIngestStatus(response: AdminIngestStatusResponse) {
       this.jobId = response.jobId;
       this.status = response.status;
@@ -188,22 +175,6 @@ export const useAdminIngestStore = defineStore('adminIngest', {
       }
 
       this.speedSamples = [...this.speedSamples, nextSample].slice(-MAX_SPEED_SAMPLES);
-    },
-
-    async ensureAdminKeyActive() {
-      if (this.isAdminKeyActive) {
-        return this.activatedUntil;
-      }
-
-      this.isActivatingKey = true;
-
-      try {
-        const response = await activateAdminKey();
-        this.applyActivation(response.activatedUntil);
-        return response.activatedUntil;
-      } finally {
-        this.isActivatingKey = false;
-      }
     },
 
     async startIngest(mode: AdminIngestMode = 'full') {
@@ -293,7 +264,6 @@ export const useAdminIngestStore = defineStore('adminIngest', {
       this.totalPages = 0;
       this.processedPages = 0;
       this.failedPages = 0;
-      this.isActivatingKey = false;
       this.isStartingIngest = false;
       this.lastError = '';
       this.speedSamples = [];
