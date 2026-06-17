@@ -91,7 +91,6 @@ describe('feature15 Admin dashboard (SCR-810)', () => {
     mockedGetAdminDataOverview.mockResolvedValue({
       totalSpaces: 6,
       totalPages: 2847,
-      totalAttachments: 934,
       vectorDbSize: '1.2 GB',
       totalChunks: 18432,
       lastSyncAt: '2026-06-04T07:23:00+09:00',
@@ -355,7 +354,7 @@ describe('feature15 Admin dashboard (SCR-810)', () => {
     expect(wrapper.find('#admin-access-trend-modal-gradient').exists()).toBe(true);
   });
 
-  it('renders user table rows with name, space/page/attachment, conversationCount', async () => {
+  it('renders user table rows with name, space/page, conversationCount', async () => {
     mockAdminBoardBase();
     mockedGetAdminStats.mockResolvedValue(mockStats);
     mockedGetAdminUsers.mockResolvedValue(mockUsers);
@@ -367,13 +366,16 @@ describe('feature15 Admin dashboard (SCR-810)', () => {
     const user1Row = wrapper.find('[data-testid="admin-user-row-user-001"]');
     expect(user1Row.exists()).toBe(true);
     expect(user1Row.text()).toContain('사용자 1');
-    expect(user1Row.text()).toContain('1 / 143 / 46');
+    expect(user1Row.text()).toContain('1 / 143');
+    // 첨부파일 수는 더 이상 표시하지 않는다
+    expect(user1Row.text()).not.toContain('1 / 143 / 46');
     expect(user1Row.text()).toContain('42');
 
     const user2Row = wrapper.find('[data-testid="admin-user-row-user-002"]');
     expect(user2Row.exists()).toBe(true);
     expect(user2Row.text()).toContain('사용자 2');
-    expect(user2Row.text()).toContain('1 / 136 / 45');
+    expect(user2Row.text()).toContain('1 / 136');
+    expect(user2Row.text()).not.toContain('1 / 136 / 45');
     expect(user2Row.text()).toContain('52');
 
     // 마지막 접속에는 연도를 포함해 표시한다

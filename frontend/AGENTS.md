@@ -111,4 +111,5 @@ flowchart TD
 - 디자인 토큰은 `design-reference.css` 참고, Tailwind config에 등록해 사용 — 임의 색상 금지
 - 답변·검색 결과에는 항상 **출처 / 작성일자 / 작성자** 노출
 - 비동기 컴포넌트는 로딩 / 에러 / 빈 상태 모두 처리
+- Admin 운영 대시보드(SCR-800)와 사용자 현황(SCR-810)에는 **첨부파일 수를 노출하지 않는다**. 데이터 현황은 스페이스 / 페이지 단위로만 집계하고, 사용자별 접근 권한도 스페이스 / 페이지만 표시한다. `GET /api/admin/data` 응답에서 `totalAttachments` 필드는 제거한다(`AdminDataOverview` 타입·api-spec 동기화). (사용자 현황 응답의 `accessibleAttachmentCount` 는 화면 비노출 상태이며 응답 형태에는 잔존 — 추후 정리 대상.)
 - 그 외 세부 코딩 규칙은 `/frontend/docs/code-reference.md` 준수

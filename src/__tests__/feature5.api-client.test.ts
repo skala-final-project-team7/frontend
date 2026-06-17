@@ -575,7 +575,6 @@ describe('feature5 API types and client skeleton', () => {
           data: {
             totalSpaces: 5,
             totalPages: 1230,
-            totalAttachments: 187,
             vectorDbSize: '2.3 GB',
             totalChunks: 8940,
             lastSyncAt: '2026-05-20T17:00:00+09:00',

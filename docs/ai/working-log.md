@@ -5101,3 +5101,39 @@
 
 - "이력 있음" 판단은 서버 `GET /api/admin/sync` 응답 기반(로컬 저장 없음) → 새로고침·다른 기기에서도 동일 동작
 - `AdminSyncHistoryItem`에 `mode` 필드가 없어 "한 번이라도 완료됨"으로 추론. 최초 적재는 어차피 full이라 실무상 동일하나, 엄밀히 하려면 서버가 이력에 `mode`를 기록하는 방식 필요
+
+## 2026-06-17 - 트러블슈팅: 사용자 메시지 버블이 채팅 하단에 중복 렌더링되는 문제
+
+### Symptom
+
+- 메시지를 전송한 직후 채팅 화면 하단에 이전에 보냈던 사용자 메시지 버블이 중복으로 추가됨
+- 새 대화의 첫 질문, 기존 대화의 후속 질문 모두에서 재현
+- 해당 대화창에서 **새로고침하면 중복이 사라짐**(서버 이력만 다시 로드되므로)
+
+### Root Cause (분석)
+
+- `streamMessage`는 사용자 메시지를 임시 ID(`msg-local-user-<timestamp>`)로 Pinia에 추가한다.
+- SSE `done` 이벤트(`ChatDoneEvent`)에는 assistant 메시지 ID만 있어, `applySseEvent`가 assistant 메시지 ID만 서버 실제 ID로 교체한다(`chat.ts`). **user 메시지는 임시 ID인 채로 남는다.**
+- 이후 `loadConversationMessages`가 서버 이력(실제 ID 포함)을 받아 병합할 때, 기존 병합 로직은 "서버 ID 집합에 없는 로컬 메시지"를 모두 보존했다. 임시 ID user 메시지는 서버 ID 집합에 절대 포함되지 않으므로 항상 살아남아 목록 맨 뒤에 덧붙여졌다 → 하단 중복 버블.
+- `loadConversationMessages`는 라우트 변경(`useChatRouteSync` watch) 또는 에러 재시도에서 호출된다. 새 대화 첫 질문은 `createConversation` 후 `router.push`로 라우트가 바뀌며 전송 도중 `loadConversationMessages`가 끼어들어(레이스) 발생하는 것을 코드 경로로 확인했다.
+
+### Changed Files
+
+- `src/stores/chat.ts`
+  - `loadConversationMessages` 병합 로직 변경: 로컬 placeholder(`msg-local-*`)는 ID 매칭이 불가하므로 서버 이력과 `role + content`(trim)로 매칭하여, 서버가 이미 영속한 placeholder는 제외하고 아직 영속 전인 placeholder는 보존
+  - `localMessageContentKey()` 헬퍼 추가
+- `src/__tests__/feature9.chat-sse-store.test.ts`
+  - 재로딩 시 user 메시지가 서버 ID 1개로만 남는지(중복 제거), 서버 미영속 로컬 메시지는 보존되는지 회귀 2건 추가
+
+### Commands / Results
+
+- `npm run lint`: 통과 (0 errors, 0 warnings)
+  - 진행 중 `BaseIconButton`의 `ariaLabel` 전달이 `vue/attribute-hyphenation` 경고를 내, 기존 코드 컨벤션대로 `v-bind="{ ariaLabel: ... }"` 형태로 맞춰 해결
+- `npm run typecheck`: 통과
+- `npm test`: 235/235 passed (21 files)
+
+### Notes / Remaining Issues
+
+- **확정:** 새 대화 첫 질문의 중복은 `router.push` → `loadConversationMessages` 레이스 + 임시 ID user 메시지 잔존이 원인이며, 위 수정으로 해소된다.
+- **미확정:** 후속 질문(기존 대화)은 라우트가 바뀌지 않아 정적 분석상 `loadConversationMessages`/재로딩 트리거가 보이지 않는다. 후속 질문 중복의 정확한 트리거는 **실제 앱 재현으로 확인 필요**. 현 수정이 후속 경로까지 커버하는지 라이브 검증 전까지 단정하지 않는다.
+- **근본 해결책(권장):** 백엔드가 `done`(또는 별도 이벤트)에 user 메시지 ID를 함께 내려주면, 프론트가 user 메시지도 실제 ID로 교체할 수 있어 content 매칭 우회 없이 ID 기준으로 깔끔하게 dedup 가능.

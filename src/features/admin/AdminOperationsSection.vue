@@ -411,7 +411,7 @@ function getStatusClasses(s: AdminDisplayStatus): string {
           <div class="mt-5 flex items-center gap-4">
             <BaseTooltip :label="ingestPrimaryButtonLabel" placement="top">
               <BaseIconButton
-                :ariaLabel="ingestPrimaryButtonLabel"
+                v-bind="{ ariaLabel: ingestPrimaryButtonLabel }"
                 variant="primary"
                 data-testid="admin-start-ingest-button"
                 :disabled="shouldDisablePipelineActions"
@@ -423,7 +423,7 @@ function getStatusClasses(s: AdminDisplayStatus): string {
             <span class="h-6 w-px shrink-0 bg-bg-300" aria-hidden="true" />
             <BaseTooltip label="데이터 동기화" placement="top">
               <BaseIconButton
-                ariaLabel="데이터 동기화"
+                v-bind="{ ariaLabel: '데이터 동기화' }"
                 variant="secondary"
                 data-testid="admin-delta-sync-button"
                 :disabled="shouldDisablePipelineActions"

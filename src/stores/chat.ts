@@ -106,9 +106,27 @@ export const useChatStore = defineStore('chat', {
       const fetchedMessageIds = new Set(
         conversationMessages.messages.map((message) => message.messageId),
       );
-      const pendingLocalMessages = currentMessages.filter(
-        (message) => !fetchedMessageIds.has(message.messageId),
+      // 로컬 placeholder(msg-local-*)는 서버 영속 후 실제 messageId로 교체되지 않아(특히 user 메시지)
+      // ID 기준 dedup만으로는 서버가 돌려준 동일 메시지와 중복으로 쌓인다.
+      // 서버가 같은 role+content를 이미 영속한 placeholder는 제외하되,
+      // 아직 영속 전(일관성 지연)인 placeholder는 보존해 메시지가 사라지지 않도록 한다.
+      const fetchedContentKeys = new Set(
+        conversationMessages.messages.map((message) => localMessageContentKey(message)),
       );
+      const pendingLocalMessages = currentMessages.filter((message) => {
+        if (fetchedMessageIds.has(message.messageId)) {
+          return false;
+        }
+
+        if (
+          message.messageId.startsWith('msg-local-') &&
+          fetchedContentKeys.has(localMessageContentKey(message))
+        ) {
+          return false;
+        }
+
+        return true;
+      });
 
       this.messagesByConversationId[conversationId] = [
         ...conversationMessages.messages,
@@ -366,6 +384,11 @@ export const useChatStore = defineStore('chat', {
 
 function isKnownStreamingPhase(phase: string): phase is ChatStreamingPhase {
   return KNOWN_STREAMING_PHASES.has(phase as ChatStreamingPhase);
+}
+
+// 로컬 placeholder와 서버 영속 메시지를 messageId 없이 매칭하기 위한 role+content 키.
+function localMessageContentKey(message: Pick<Message, 'role' | 'content'>): string {
+  return `${message.role}\n${message.content.trim()}`;
 }
 
 function isAbortError(error: unknown): boolean {

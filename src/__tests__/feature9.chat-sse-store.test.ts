@@ -544,3 +544,103 @@ describe('feature9 chat SSE store integration', () => {
     });
   });
 });
+
+/**
+ * 서버가 영속한 대화 이력을 JSON으로 돌려주는 테스트용 응답을 만든다.
+ *
+ * @param messages 서버가 반환할 메시지 목록
+ * @returns api client 규약(isSuccess/data)에 맞춘 JSON Response
+ */
+function createConversationMessagesResponse(messages: unknown[]): Response {
+  return new Response(
+    JSON.stringify({
+      isSuccess: true,
+      code: 200,
+      message: 'OK',
+      data: { conversationId: 'conv-mock-001', messages },
+    }),
+    {
+      headers: { 'Content-Type': 'application/json' },
+      status: 200,
+    },
+  );
+}
+
+describe('feature9 chat store conversation history dedup', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    vi.unstubAllGlobals();
+  });
+
+  it('does not duplicate a streamed user message when reloading conversation history', async () => {
+    const chatStore = useChatStore();
+
+    // 스트림 완료 후 상태: user 메시지는 로컬 placeholder id, assistant 메시지는 서버 id로 교체된 상태.
+    chatStore.messagesByConversationId['conv-mock-001'] = [
+      {
+        messageId: 'msg-local-user-1700000000000',
+        role: 'user',
+        content: '이제 이건 이렇게',
+        createdAt: '2026-06-17T00:00:00.000Z',
+      },
+      {
+        messageId: 'msg-done-001',
+        role: 'assistant',
+        content: '확인했습니다',
+        createdAt: '2026-06-17T00:00:01.000Z',
+      },
+    ];
+
+    // 서버는 같은 user 메시지를 실제 id로 영속해 돌려준다.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        createConversationMessagesResponse([
+          {
+            messageId: 'msg-server-user-1',
+            role: 'user',
+            content: '이제 이건 이렇게',
+            createdAt: '2026-06-17T00:00:00.000Z',
+          },
+          {
+            messageId: 'msg-done-001',
+            role: 'assistant',
+            content: '확인했습니다',
+            createdAt: '2026-06-17T00:00:01.000Z',
+          },
+        ]),
+      ),
+    );
+
+    await chatStore.loadConversationMessages('conv-mock-001');
+
+    const userMessages = chatStore.activeMessages.filter((message) => message.role === 'user');
+    expect(userMessages).toHaveLength(1);
+    expect(userMessages[0].messageId).toBe('msg-server-user-1');
+    expect(chatStore.activeMessages).toHaveLength(2);
+  });
+
+  it('keeps a local message that the server has not persisted yet', async () => {
+    const chatStore = useChatStore();
+
+    chatStore.messagesByConversationId['conv-mock-001'] = [
+      {
+        messageId: 'msg-local-user-1700000000001',
+        role: 'user',
+        content: '아직 저장 안 된 질문',
+        createdAt: '2026-06-17T00:00:02.000Z',
+      },
+    ];
+
+    // 서버는 아직 해당 메시지를 영속하지 못한 상태(빈 이력)를 돌려준다.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => createConversationMessagesResponse([])),
+    );
+
+    await chatStore.loadConversationMessages('conv-mock-001');
+
+    expect(chatStore.activeMessages).toHaveLength(1);
+    expect(chatStore.activeMessages[0].messageId).toBe('msg-local-user-1700000000001');
+  });
+});

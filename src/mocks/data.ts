@@ -47,7 +47,6 @@ export const mockCurrentUser: CurrentUser = {
 export const mockAdminDataOverview: AdminDataOverview = {
   totalSpaces: 6,
   totalPages: 2847,
-  totalAttachments: 934,
   vectorDbSize: '1.2 GB',
   totalChunks: 18432,
   lastSyncAt: '2026-06-04T07:23:00+09:00',

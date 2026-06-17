@@ -81,7 +81,6 @@ describe('feature18.5 Admin backend integration regression', () => {
           data: {
             totalSpaces: 5,
             totalPages: 1230,
-            totalAttachments: 187,
             vectorDbSize: '2.3 GB',
             totalChunks: 8940,
             lastSyncAt: '2026-06-16T07:00:00+09:00',
@@ -215,7 +214,7 @@ describe('feature18.5 Admin backend integration regression', () => {
 
     await navButtons.find((button) => button.text().includes('사용자 현황'))?.trigger('click');
     await flushPromises();
-    expect(wrapper.get('[data-testid="admin-dashboard-section"]').text()).toContain('5 / 320 / 48');
+    expect(wrapper.get('[data-testid="admin-dashboard-section"]').text()).toContain('5 / 320');
     expect(wrapper.get('[data-testid="admin-stats-card-dailyQueryCount"]').text()).toContain('142');
 
     await navButtons.find((button) => button.text().includes('피드백'))?.trigger('click');
@@ -307,7 +306,6 @@ describe('feature18.5 Admin backend integration regression', () => {
           data: {
             totalSpaces: 1,
             totalPages: 10,
-            totalAttachments: 2,
             vectorDbSize: '0.2 GB',
             totalChunks: 15,
             lastSyncAt: '2026-06-16T07:00:00+09:00',
@@ -497,7 +495,6 @@ describe('feature18.5 Admin backend integration regression', () => {
           data: {
             totalSpaces: 0,
             totalPages: 0,
-            totalAttachments: 0,
             vectorDbSize: '0 B',
             totalChunks: 0,
             lastSyncAt: null,
