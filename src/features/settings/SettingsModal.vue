@@ -17,9 +17,11 @@
 <script setup lang="ts">
 import { ChevronRight, CircleHelp, Info, UserRound, X } from '@lucide/vue';
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
 
 import SettingsHelpModal from '@/features/settings/SettingsHelpModal.vue';
 import { confluenceIconImageUrl, notionIconImageUrl, slackIconImageUrl } from '@/shared/assets';
+import { useAuthStore } from '@/stores/auth';
 
 const props = defineProps<{
   currentUserLastLoginAt: string;
@@ -67,6 +69,15 @@ const renewalDateLabel = computed(() => {
 
 function closeModal() {
   emit('close');
+}
+
+const router = useRouter();
+const authStore = useAuthStore();
+
+// 로그아웃: 서버 세션 무효화(best-effort) + 로컬 토큰/상태 정리 후 로그인 화면으로 이동.
+async function handleLogout() {
+  await authStore.logout();
+  await router.replace({ name: 'login' });
 }
 
 function getFocusableElements(container: HTMLElement): HTMLElement[] {
@@ -349,6 +360,7 @@ onBeforeUnmount(() => {
                 data-testid="settings-logout-button"
                 type="button"
                 class="rounded-full bg-overlay-dark-80 px-6 py-2.5 font-lina text-[14px] text-primary-white transition hover:bg-black focus-visible:outline-none focus-visible:shadow-focus"
+                @click="handleLogout"
               >
                 로그아웃
               </button>
