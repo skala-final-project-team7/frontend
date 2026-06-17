@@ -21,7 +21,6 @@ import type {
   AdminDataOverview,
   AdminFeedbackResponse,
   AdminIngestStatusResponse,
-  AdminKeyActivationResponse,
   AdminIngestMode,
   AdminStats,
   AdminSyncHistoryResponse,
@@ -85,17 +84,6 @@ export function getAdminDataOverview(): Promise<AdminDataOverview> {
  */
 export function getAdminSyncHistory(): Promise<AdminSyncHistoryResponse> {
   return apiRequest<AdminSyncHistoryResponse>('/api/admin/sync');
-}
-
-/**
- * 관리자용 Confluence Admin Key를 명시적으로 활성화한다.
- *
- * @returns Admin Key 활성 만료 시각
- */
-export function activateAdminKey(): Promise<AdminKeyActivationResponse> {
-  return apiRequest<AdminKeyActivationResponse>('/api/admin/key/activate', {
-    method: 'POST',
-  });
 }
 
 /**

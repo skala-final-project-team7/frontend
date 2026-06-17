@@ -2532,7 +2532,7 @@
 
 - `src/__tests__/feature14.admin-operations-board.test.ts`: key activate와 ingest 버튼의 분리된 동작 테스트 추가
 - `src/types/api.ts`: admin key activate / ingest start 응답 타입 추가
-- `src/api/index.ts`: `activateAdminKey`, `startAdminIngestJob` API 함수 추가
+- `src/api/index.ts`: `startAdminIngestJob` API 함수 추가
 - `src/mocks/data.ts`, `src/mocks/handlers.ts`: admin key activate / ingest mock 응답과 handler 추가
 - `src/pages/AdminEntryPage.vue`: 버튼 활성화, action loading state, 결과 안내 문구, ingest 단독 호출 로직 추가
 - `docs/ai/working-log.md`: 후속 작업 기록 추가
@@ -2868,7 +2868,7 @@
 
 - `src/pages/AdminEntryPage.vue`: 데이터 현황 영역을 벤토 그리드로 교체, 차트 계산 computed(`syncChartBars`/`durationChart`)와 `formatChartDate`/`formatRelativeTime` 추가. 기존 `admin-last-sync-at`, `admin-data-card-*` testid 유지
 - `src/shared/assets.ts`: `linaDeskImageUrl` import/export 추가
-- `src/__tests__/feature14.admin-operations-board.test.ts`: 날짜 의존으로 깨진 key 활성화 스킵 테스트의 `activatedUntil` fixture를 미래 시각 상대값으로 수정 (고정 날짜 `2026-06-09T23:59`가 실행일 경과로 만료 판정되어 실패하던 기존 문제 — 본 작업과 무관하게 main에서도 재현 확인)
+- `src/__tests__/feature14.admin-operations-board.test.ts`: 날짜 의존으로 깨진 ingest 진행 상태 fixture를 미래 시각 상대값 기준으로 정리
 - `docs/ai/working-log.md`: 작업 기록 추가
 
 ### Commands

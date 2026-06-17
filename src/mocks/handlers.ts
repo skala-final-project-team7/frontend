@@ -26,7 +26,6 @@ import {
   mockAdminFeedbackData,
   mockAdminIngestStart,
   mockAdminIngestStatusSequence,
-  mockAdminKeyActivation,
   mockAdminStats,
   mockAdminSyncHistory,
   mockAdminUsersData,
@@ -150,16 +149,6 @@ export const mockHandlers = [
       code: 200,
       message: '동기화 이력 조회 성공',
       data: mockAdminSyncHistory,
-    });
-  }),
-
-  // MOCK: POST /api/admin/key/activate — feature14 실제 API 함수 연결 완료. VITE_USE_MOCK=true 개발/테스트 전용
-  http.post('*/api/admin/key/activate', () => {
-    return HttpResponse.json<ApiSuccessResponse<typeof mockAdminKeyActivation>>({
-      isSuccess: true,
-      code: 200,
-      message: 'Admin Key 활성화 성공',
-      data: mockAdminKeyActivation,
     });
   }),
 

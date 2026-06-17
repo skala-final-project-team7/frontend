@@ -6,7 +6,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import AdminEntryPage from '@/pages/AdminEntryPage.vue';
 import router from '@/router';
 import {
-  activateAdminKey,
   getAdminDataOverview,
   getAdminIngestStatus,
   getAdminSyncHistory,
@@ -17,7 +16,6 @@ import {
 import type { AdminSyncHistoryResponse } from '@/types/api';
 
 vi.mock('@/api', () => ({
-  activateAdminKey: vi.fn(),
   getAdminDataOverview: vi.fn(),
   getAdminFeedback: vi.fn(),
   getAdminIngestStatus: vi.fn(),
@@ -29,7 +27,6 @@ vi.mock('@/api', () => ({
   startAdminIngestJob: vi.fn(),
 }));
 
-vi.mocked(activateAdminKey);
 vi.mocked(getAdminIngestStatus);
 vi.mocked(logout);
 vi.mocked(startAdminIngestJob);

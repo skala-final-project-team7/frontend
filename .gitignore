@@ -7,3 +7,4 @@ coverage/
 !.env.example
 .DS_Store
 .vite/
+frontend/docs/demo-video-shoot-plan.md

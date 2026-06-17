@@ -22,7 +22,6 @@ import type {
   AdminFeedbackResponse,
   AdminFeedbackTrendItem,
   AdminIngestStatusResponse,
-  AdminKeyActivationResponse,
   AdminStats,
   AdminUsersResponse,
   StartAdminIngestResponse,
@@ -97,10 +96,6 @@ export const mockAdminSyncHistory: AdminSyncHistoryResponse = {
       completedAt: '2026-06-03T02:23:00+09:00',
     },
   ],
-};
-
-export const mockAdminKeyActivation: AdminKeyActivationResponse = {
-  activatedUntil: '2026-06-09T13:00:00+09:00',
 };
 
 export const mockAdminIngestStart: StartAdminIngestResponse = {
