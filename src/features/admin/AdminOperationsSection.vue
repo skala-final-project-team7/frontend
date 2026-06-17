@@ -7,6 +7,7 @@
 변경사항 내역 (날짜, 변경목적, 변경내용 순)
   - 2026-06-10, feature14-refactor.2, AdminEntryPage에서 운영 탭 컨텐츠 분리
   - 2026-06-12, feature17 구현, 문서 데이터 관리 하위 탭 breadcrumb 헤더 추가
+  - 2026-06-17, 운영 대시보드 데이터 현황에서 첨부파일 수 카드 제거
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -85,11 +86,6 @@ const contentVolumeCards = computed(() => {
       testId: 'totalPages',
       label: '페이지',
       value: formatNumber(props.adminDataOverview.totalPages),
-    },
-    {
-      testId: 'totalAttachments',
-      label: '첨부파일',
-      value: formatNumber(props.adminDataOverview.totalAttachments),
     },
   ];
 });
@@ -731,7 +727,7 @@ function getStatusClasses(s: AdminDisplayStatus): string {
           </div>
         </article>
 
-        <!-- 스페이스 / 페이지 / 첨부파일 -->
+        <!-- 스페이스 / 페이지 -->
         <article
           class="col-span-2 rounded-2xl border border-bg-300/60 bg-primary-white px-[18px] py-4 shadow-[0_2px_8px_rgba(15,23,42,0.03)]"
         >

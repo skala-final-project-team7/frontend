@@ -142,7 +142,6 @@ describe('feature14 Admin operations board', () => {
     expect(wrapper.text()).toContain('Admin Mode');
     expect(wrapper.get('[data-testid="admin-data-card-totalSpaces"]').text()).toContain('6');
     expect(wrapper.get('[data-testid="admin-data-card-totalPages"]').text()).toContain('2,847');
-    expect(wrapper.get('[data-testid="admin-data-card-totalAttachments"]').text()).toContain('934');
     expect(wrapper.get('[data-testid="admin-data-card-vectorDbSize"]').text()).toContain('1.2 GB');
     expect(wrapper.get('[data-testid="admin-data-card-totalChunks"]').text()).toContain('18,432');
     expect(wrapper.get('[data-testid="admin-last-sync-at"]').text()).toContain('06. 04.');
