@@ -14,6 +14,7 @@
  *   - 2026-05-26, feature10 UI 보정, hover preview 카드의 본문 전용 표시 검증 추가
  *   - 2026-05-26, feature10 UI 보정, 단순 질문 keyword highlight 제거 검증 추가
  *   - 2026-06-18, 출처 미리보기 UI 보정, 레이어/스크롤/하단 위치 보정 회귀 테스트 추가
+ *   - 2026-06-18, 출처 미리보기 회귀 수정, row에서 preview로 이동하는 hover bridge 테스트 추가
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -205,6 +206,28 @@ describe('feature10 SCR-500, SCR-510 Reference panel', () => {
     expect(preview.get('[data-testid="preview-page-card-body"]').classes()).not.toContain('mt-5');
 
     await wrapper.get('[data-testid="reference-list-item"]').trigger('mouseleave');
+    await vi.advanceTimersByTimeAsync(120);
+
+    expect(wrapper.find('[data-testid="reference-hover-preview"]').exists()).toBe(false);
+  });
+
+  it('keeps the hover preview open while the pointer moves from the source row into the preview bridge', async () => {
+    const wrapper = mount(ReferencePanel, {
+      props: {
+        sources: mockSources,
+      },
+    });
+    await flushAsyncUpdates();
+
+    const sourceItem = wrapper.get('[data-testid="reference-list-item"]');
+
+    await sourceItem.trigger('mouseenter');
+    await sourceItem.trigger('mouseleave');
+    await wrapper.get('[data-testid="reference-hover-preview"]').trigger('mouseenter');
+
+    expect(wrapper.find('[data-testid="reference-hover-preview"]').exists()).toBe(true);
+
+    await wrapper.get('[data-testid="reference-hover-preview"]').trigger('mouseleave');
 
     expect(wrapper.find('[data-testid="reference-hover-preview"]').exists()).toBe(false);
   });
