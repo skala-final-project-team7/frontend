@@ -5137,3 +5137,52 @@
 - **확정:** 새 대화 첫 질문의 중복은 `router.push` → `loadConversationMessages` 레이스 + 임시 ID user 메시지 잔존이 원인이며, 위 수정으로 해소된다.
 - **미확정:** 후속 질문(기존 대화)은 라우트가 바뀌지 않아 정적 분석상 `loadConversationMessages`/재로딩 트리거가 보이지 않는다. 후속 질문 중복의 정확한 트리거는 **실제 앱 재현으로 확인 필요**. 현 수정이 후속 경로까지 커버하는지 라이브 검증 전까지 단정하지 않는다.
 - **근본 해결책(권장):** 백엔드가 `done`(또는 별도 이벤트)에 user 메시지 ID를 함께 내려주면, 프론트가 user 메시지도 실제 ID로 교체할 수 있어 content 매칭 우회 없이 ID 기준으로 깔끔하게 dedup 가능.
+
+## 2026-06-18 - 출처 미리보기 UI 보정
+
+### Scope
+
+- 출처 hover 미리보기 상단에 `frontend/assets/screenshots/confluence-bg.png` 표시
+- 배경 이미지 아래에 preview API의 `bodyViewValue` HTML을 기존 DOMPurify sanitizing 경로로 렌더링
+- 미리보기 카드가 fixed MessageInput보다 낮은 레이어에 깔리는 문제 수정
+- 하단 source row hover 시 카드가 viewport 아래로 잘리지 않도록 top 위치 보정
+- 출처 리스트가 많을 때 패널 내부 list 영역에서만 세로 스크롤되도록 수정
+- 기존 출처 선택, 패널 닫기, URL 복사/외부 이동, HTML 보안 처리 동작 유지
+
+### Test Cases
+
+- PreviewPageCard가 Confluence 배경 이미지를 HTML 본문보다 먼저 렌더링하고 `<script>`를 제거한다
+- ReferencePanel hover preview가 입력창보다 높은 레이어(`z-40` panel, `z-[60]` preview)에 렌더링된다
+- source 목록이 많으면 `reference-list-scroll-region` 내부가 `overflow-y-auto`로 스크롤된다
+- 하단 row의 `getBoundingClientRect().top`이 낮을 때 preview `top`이 viewport 안쪽으로 보정된다
+- 기존 hover action, breadcrumbs, pending preview, 새 채팅 시 패널 초기화, List/Graph 토글 회귀 테스트 유지
+
+### Changed Files
+
+- `src/features/chat/PreviewPageCard.vue`
+  - `confluenceBgImageUrl`을 상단 이미지로 렌더링
+  - 카드 내부를 flex column으로 바꿔 이미지 아래 sanitized HTML 본문을 배치
+- `src/features/chat/ReferencePanel.vue`
+  - 패널 `z-40`, hover preview `fixed z-[60]` 적용
+  - hover/focus 시 row 위치를 기준으로 preview top을 viewport 내부로 clamp
+  - list 영역에 `min-h-0 overflow-y-auto` 적용
+- `src/shared/assets.ts`
+  - `confluence-bg.png` asset export 추가
+- `src/__tests__/feature8.chat-main.test.ts`
+  - 배경 이미지 + sanitized HTML 순서 회귀 테스트 추가
+- `src/__tests__/feature10.reference-panel.test.ts`
+  - 레이어, 리스트 스크롤, 하단 위치 보정 회귀 테스트 추가
+
+### Commands / Results
+
+- `npm run test -- src/__tests__/feature8.chat-main.test.ts src/__tests__/feature10.reference-panel.test.ts`: 최초 실행 4 failed / 21 passed로 실패 확인
+- `npm run test -- src/__tests__/feature8.chat-main.test.ts src/__tests__/feature10.reference-panel.test.ts`: 25/25 passed
+- `./scripts/format.sh`: 통과
+- `./scripts/lint.sh`: 통과
+- `./scripts/test.sh`: 239/239 passed
+- `./scripts/verify.sh`: 통과(format, lint, test)
+
+### Notes / Remaining Issues
+
+- API/DB 계약 변경 없음. `docs/api-spec.md`, `docs/db-schema.md` 수정 불필요.
+- 전체 테스트 중 기존 `feature18.settings-modal.test.ts`에서 router injection Vue warning이 stderr에 출력되나 테스트는 통과. 이번 변경 범위와 무관.

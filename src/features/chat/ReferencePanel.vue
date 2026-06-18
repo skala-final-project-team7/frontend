@@ -11,6 +11,7 @@
   - 2026-05-26, feature10 UI 보정, source URL action은 hover PreviewPageCard로 한정
   - 2026-05-26, feature10 UI 보정, 카드 공통 named hover scope 사용 및 팝오버 이동 hover 영역 연결
   - 2026-05-26, feature10 UI 보정, 질문 문자열 기반 keyword highlight 제거
+  - 2026-06-18, 출처 미리보기 UI 보정, hover preview 레이어/viewport 보정 및 목록 내부 스크롤 적용
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -36,6 +37,9 @@ defineEmits<{
 const activeView = ref<'list' | 'graph'>('list');
 const previewsByPageId = ref<Record<string, ConfluencePagePreview>>({});
 const hoveredPageId = ref('');
+const hoverPreviewTop = ref(16);
+const previewViewportMargin = 16;
+const previewCardHeight = 320;
 
 const sourceByPageId = computed(() =>
   Object.fromEntries(props.sources.map((source) => [source.pageId, source])),
@@ -92,6 +96,27 @@ function buildPendingPreview(source: Source): ConfluencePagePreview {
   };
 }
 
+function showHoverPreview(pageId: string, event: MouseEvent | FocusEvent) {
+  hoveredPageId.value = pageId;
+
+  const rowElement = event.currentTarget as HTMLElement | null;
+  const rowRect = rowElement?.getBoundingClientRect();
+  const viewportHeight = globalThis.innerHeight;
+  const maxTop = Math.max(
+    previewViewportMargin,
+    viewportHeight - previewCardHeight - previewViewportMargin,
+  );
+
+  hoverPreviewTop.value = Math.min(
+    Math.max(rowRect?.top ?? previewViewportMargin, previewViewportMargin),
+    maxTop,
+  );
+}
+
+function hideHoverPreview() {
+  hoveredPageId.value = '';
+}
+
 function authorName(source: Source) {
   return previewsByPageId.value[source.pageId]?.authorName ?? '작성자 정보 없음';
 }
@@ -116,7 +141,7 @@ function formatDate(value: string) {
     data-testid="reference-panel"
     aria-label="Reference panel"
     aria-hidden="false"
-    class="sticky top-0 flex h-screen w-[376px] shrink-0 flex-col border-l border-bg-300 bg-primary-white"
+    class="sticky top-0 z-40 flex h-screen w-[376px] shrink-0 flex-col border-l border-bg-300 bg-primary-white"
   >
     <header class="flex h-[76px] shrink-0 items-center justify-between border-b border-bg-300 px-5">
       <h2 class="font-lina text-body font-semibold text-overlay-dark-80">
@@ -163,22 +188,27 @@ function formatDate(value: string) {
       </div>
     </div>
 
-    <div v-if="activeView === 'list'" class="flex-1 px-5 pb-5">
+    <div
+      v-if="activeView === 'list'"
+      data-testid="reference-list-scroll-region"
+      class="min-h-0 flex-1 overflow-y-auto px-5 pb-5"
+    >
       <article
         v-for="source in sources"
         :key="source.pageId"
         data-testid="reference-list-item"
         tabindex="0"
         class="group relative border-b border-bg-300 py-4 outline-none transition hover:bg-bg-100 focus-visible:bg-bg-100 focus-visible:shadow-focus"
-        @mouseenter="hoveredPageId = source.pageId"
-        @mouseleave="hoveredPageId = ''"
-        @focusin="hoveredPageId = source.pageId"
-        @focusout="hoveredPageId = ''"
+        @mouseenter="showHoverPreview(source.pageId, $event)"
+        @mouseleave="hideHoverPreview"
+        @focusin="showHoverPreview(source.pageId, $event)"
+        @focusout="hideHoverPreview"
       >
         <div
           v-if="hoveredPageId === source.pageId && hoveredPreview"
           data-testid="reference-hover-preview"
-          class="absolute right-full top-0 z-40 pr-5"
+          class="fixed right-[376px] z-[60] pr-5"
+          :style="{ top: `${hoverPreviewTop}px` }"
         >
           <div class="relative">
             <PreviewPageCard :page="hoveredPreview" />

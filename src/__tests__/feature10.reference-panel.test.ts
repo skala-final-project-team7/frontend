@@ -13,6 +13,7 @@
  *   - 2026-05-26, feature10 UI 보정, 공통 named hover scope와 팝오버 이동 영역 검증 추가
  *   - 2026-05-26, feature10 UI 보정, hover preview 카드의 본문 전용 표시 검증 추가
  *   - 2026-05-26, feature10 UI 보정, 단순 질문 keyword highlight 제거 검증 추가
+ *   - 2026-06-18, 출처 미리보기 UI 보정, 레이어/스크롤/하단 위치 보정 회귀 테스트 추가
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -187,8 +188,9 @@ describe('feature10 SCR-500, SCR-510 Reference panel', () => {
     const previewActions = preview.get('[data-testid="preview-page-card-actions"]');
     const previewBreadcrumbs = preview.get('[data-testid="preview-page-card-breadcrumbs"]');
 
-    expect(preview.classes()).toEqual(expect.arrayContaining(['absolute', 'right-full', 'pr-5']));
-    expect(preview.classes()).not.toContain('mr-5');
+    expect(preview.classes()).toEqual(expect.arrayContaining(['fixed', 'right-[376px]', 'pr-5']));
+    expect(preview.classes()).not.toContain('absolute');
+    expect(preview.classes()).not.toContain('right-full');
     expect(previewComponent.props('isolateHover')).toBeUndefined();
     expect(previewComponent.classes()).toContain('group/preview-page');
     expect(previewCard.classes()).toContain('shadow-floating');
@@ -205,6 +207,74 @@ describe('feature10 SCR-500, SCR-510 Reference panel', () => {
     await wrapper.get('[data-testid="reference-list-item"]').trigger('mouseleave');
 
     expect(wrapper.find('[data-testid="reference-hover-preview"]').exists()).toBe(false);
+  });
+
+  it('renders the hover preview above the fixed chat input layer', async () => {
+    const wrapper = mount(ReferencePanel, {
+      props: {
+        sources: mockSources,
+      },
+    });
+    await flushAsyncUpdates();
+
+    expect(wrapper.get('[data-testid="reference-panel"]').classes()).toContain('z-40');
+
+    await wrapper.get('[data-testid="reference-list-item"]').trigger('mouseenter');
+
+    expect(wrapper.get('[data-testid="reference-hover-preview"]').classes()).toEqual(
+      expect.arrayContaining(['fixed', 'z-[60]']),
+    );
+  });
+
+  it('keeps long source lists scrollable inside the list region', async () => {
+    const manySources = Array.from({ length: 16 }, (_, index) => ({
+      ...mockSources[0],
+      pageId: `source-${index}`,
+      title: `S3 트러블슈팅 가이드 ${index + 1}`,
+    }));
+
+    const wrapper = mount(ReferencePanel, {
+      props: {
+        sources: manySources,
+      },
+    });
+    await flushAsyncUpdates();
+
+    const list = wrapper.get('[data-testid="reference-list-scroll-region"]');
+
+    expect(list.classes()).toEqual(expect.arrayContaining(['min-h-0', 'overflow-y-auto']));
+    expect(wrapper.findAll('[data-testid="reference-list-item"]')).toHaveLength(16);
+  });
+
+  it('adjusts the hover preview upward when a lower source row has insufficient viewport space', async () => {
+    vi.stubGlobal('innerHeight', 500);
+
+    const wrapper = mount(ReferencePanel, {
+      props: {
+        sources: mockSources,
+      },
+    });
+    await flushAsyncUpdates();
+
+    const sourceItem = wrapper.get('[data-testid="reference-list-item"]');
+
+    vi.spyOn(sourceItem.element, 'getBoundingClientRect').mockReturnValue({
+      bottom: 492,
+      height: 72,
+      left: 900,
+      right: 1276,
+      top: 420,
+      width: 376,
+      x: 900,
+      y: 420,
+      toJSON: () => ({}),
+    });
+
+    await sourceItem.trigger('mouseenter');
+
+    expect(wrapper.get('[data-testid="reference-hover-preview"]').attributes('style')).toContain(
+      'top: 164px',
+    );
   });
 
   it('shows a centered pending preview message when the preview API does not return data', async () => {

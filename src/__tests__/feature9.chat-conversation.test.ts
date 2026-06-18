@@ -827,9 +827,7 @@ describe('feature9 SCR-410, SCR-420, SCR-600 Chat conversation screen', () => {
     await wrapper.get('textarea').trigger('keydown.enter');
     await flushAsyncUpdates();
 
-    expect(wrapper.get('[data-testid="conversation-title"]').text()).toBe(
-      'S3 권한 오류 해결 방법',
-    );
+    expect(wrapper.get('[data-testid="conversation-title"]').text()).toBe('S3 권한 오류 해결 방법');
   });
 
   it('uses the route conversation id when submitting before message history finishes loading', async () => {

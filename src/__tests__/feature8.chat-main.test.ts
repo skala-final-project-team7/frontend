@@ -6,11 +6,7 @@ import ChatEmptyState from '@/features/chat/ChatEmptyState.vue';
 import HomeDocumentMockCard from '@/features/chat/HomeDocumentMockCard.vue';
 import MessageInput from '@/features/chat/MessageInput.vue';
 import PreviewPageCard from '@/features/chat/PreviewPageCard.vue';
-import {
-  mockConversations,
-  mockCurrentUser,
-  mockMessagesByConversationId,
-} from '@/mocks/data';
+import { mockConversations, mockCurrentUser, mockMessagesByConversationId } from '@/mocks/data';
 import ChatPage from '@/pages/ChatPage.vue';
 import router from '@/router';
 import { BaseFloatingIconButton, BaseTooltip } from '@/shared';
@@ -138,7 +134,9 @@ describe('feature8 SCR-400 Chat main screen', () => {
     );
     expect(wrapper.get('[data-testid="chat-scroll-region"]').classes()).not.toContain('pb-[220px]');
     expect(wrapper.get('[data-testid="chat-scroll-region"]').classes()).not.toContain('flex');
-    expect(wrapper.get('[data-testid="floating-help-button"]').attributes('aria-label')).toBe('도움말');
+    expect(wrapper.get('[data-testid="floating-help-button"]').attributes('aria-label')).toBe(
+      '도움말',
+    );
     expect(wrapper.find('[data-testid="conversation-title"]').exists()).toBe(false);
     expect(wrapper.find('[data-testid="conversation-menu-button"]').exists()).toBe(false);
     expect(wrapper.get('header').text()).toContain('LINA');
@@ -380,12 +378,12 @@ describe('feature8 SCR-400 Chat main screen', () => {
     expect(cards).toHaveLength(2);
     expect(cards[0]?.attributes('aria-label')).toBe('통합 서비스 태깅 문서 예시');
     expect(cards[1]?.attributes('aria-label')).toBe('배포 체크리스트 문서 예시');
-    expect(cards[0]?.find('[data-testid="home-document-mock-card-image"]').attributes('src')).toContain(
-      'confluence-screenshot1-home',
-    );
-    expect(cards[1]?.find('[data-testid="home-document-mock-card-image"]').attributes('src')).toContain(
-      'confluence-screenshot2-home',
-    );
+    expect(
+      cards[0]?.find('[data-testid="home-document-mock-card-image"]').attributes('src'),
+    ).toContain('confluence-screenshot1-home');
+    expect(
+      cards[1]?.find('[data-testid="home-document-mock-card-image"]').attributes('src'),
+    ).toContain('confluence-screenshot2-home');
   });
 
   it('renders HomeDocumentMockCard as a static screenshot card without preview actions', () => {
@@ -444,6 +442,40 @@ describe('feature8 SCR-400 Chat main screen', () => {
     expect(wrapper.get('[data-testid="preview-page-card-body"]').classes()).not.toContain('mt-5');
     expect(wrapper.text()).toContain('Q. AWS 콘솔 접속은 어떻게 하나요?');
     expect(wrapper.html()).not.toContain('onerror=');
+    expect(wrapper.html()).not.toContain('<script>');
+  });
+
+  it('renders the Confluence screenshot background above the sanitized preview HTML', () => {
+    const wrapper = mount(PreviewPageCard, {
+      props: {
+        page: {
+          pageId: 'home-preview-bg',
+          title: 'Confluence 원문 미리보기',
+          spaceName: 'Cloud Control Center',
+          authorName: 'Platform Team',
+          updatedAt: '2026-06-18T10:00:00+09:00',
+          breadcrumbs: ['Cloud Control Center', 'Runbook'],
+          pageUrl: 'https://confluence.example.com/pages/home-preview-bg',
+          bodyViewValue:
+            '<section><h2>배포 전 확인</h2><p>점검 항목을 순서대로 확인합니다.</p><script>alert("xss")</script></section>',
+        },
+      },
+    });
+
+    const background = wrapper.get('[data-testid="preview-page-card-background"]');
+    const body = wrapper.get('[data-testid="preview-page-card-body"]');
+
+    expect(background.attributes('src')).toContain('confluence-bg');
+    expect(background.attributes('alt')).toBe('');
+    expect(
+      wrapper
+        .get('[data-testid="preview-page-card"]')
+        .element.compareDocumentPosition(body.element),
+    ).toBe(Node.DOCUMENT_POSITION_CONTAINED_BY | Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(
+      background.element.compareDocumentPosition(body.element) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(wrapper.text()).toContain('배포 전 확인');
     expect(wrapper.html()).not.toContain('<script>');
   });
 
