@@ -437,7 +437,10 @@ describe('feature5 API types and client skeleton', () => {
       const requestUrl = String(input);
       const method = init?.method ?? 'GET';
 
-      if (requestUrl === 'https://api.example.com/api/conversations?page=1&size=10' && method === 'GET') {
+      if (
+        requestUrl === 'https://api.example.com/api/conversations?page=1&size=10' &&
+        method === 'GET'
+      ) {
         return jsonResponse({
           isSuccess: true,
           code: 200,
@@ -721,9 +724,7 @@ describe('feature5 API types and client skeleton', () => {
     });
     await expect(getAdminStats()).resolves.toMatchObject({
       dailyQueryCount: 142,
-      hourlyAccessTrend: expect.arrayContaining([
-        expect.objectContaining({ hour: 9, count: 23 }),
-      ]),
+      hourlyAccessTrend: expect.arrayContaining([expect.objectContaining({ hour: 9, count: 23 })]),
     });
     await expect(getAdminUsers({ page: 0, size: 12 })).resolves.toMatchObject({
       totalUsers: 48,

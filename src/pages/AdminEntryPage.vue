@@ -52,7 +52,9 @@ provide('adminTabPagination', tabPagination);
 
 const isAccessDenied = computed(() => accessDeniedReason.value !== '');
 const accessDeniedTitle = computed(() =>
-  accessDeniedReason.value === 'api' ? '관리자 API 접근이 거부되었습니다' : '관리자 권한이 없는 계정입니다',
+  accessDeniedReason.value === 'api'
+    ? '관리자 API 접근이 거부되었습니다'
+    : '관리자 권한이 없는 계정입니다',
 );
 const accessDeniedDescription = computed(() =>
   accessDeniedReason.value === 'api'

@@ -10,6 +10,7 @@
   - 2026-05-20, feature8 보정, 툴팁이 카드 overflow-hidden에 잘리지 않도록 wrapper 분리
   - 2026-05-26, feature10 UI 보정, 배치 위치와 무관한 자체 named hover scope 적용 및 기본 카드 구조 보존
   - 2026-05-26, feature10 UI 보정, 카드 상단 metadata 제거 및 본문 전용 preview 적용
+  - 2026-06-18, 출처 미리보기 UI 보정, Confluence 배경 이미지와 sanitized HTML 본문 순차 렌더링
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -22,6 +23,7 @@ import DOMPurify from 'dompurify';
 import { computed, type PropType } from 'vue';
 
 import { useToast } from '@/composables/useToast';
+import { confluenceBgImageUrl } from '@/shared/assets';
 import { BaseTooltip } from '@/shared';
 import type { ConfluencePagePreview } from '@/types/api';
 
@@ -61,17 +63,24 @@ async function copyPageUrl() {
 </script>
 
 <template>
-  <div class="group/preview-page">
+  <div class="group/preview-page relative">
     <article
       data-testid="preview-page-card"
       role="article"
       tabindex="0"
-      class="aspect-[166/191] w-[208px] overflow-hidden rounded-item bg-primary-white p-5 text-overlay-dark-80 shadow-floating outline-none transition-shadow group-hover/preview-page:shadow-card-press focus-visible:shadow-focus sm:w-[272px]"
+      class="flex aspect-[166/191] w-[208px] flex-col overflow-hidden rounded-item bg-primary-white text-overlay-dark-80 shadow-floating outline-none transition-shadow group-hover/preview-page:shadow-card-press focus-visible:shadow-focus sm:w-[272px]"
     >
+      <img
+        data-testid="preview-page-card-background"
+        :src="confluenceBgImageUrl"
+        alt=""
+        aria-hidden="true"
+        class="h-[92px] w-full shrink-0 object-cover"
+      />
       <div
         v-if="hasBodyContent"
         data-testid="preview-page-card-body"
-        class="preview-page-card-body text-small"
+        class="preview-page-card-body flex-1 overflow-hidden p-5 pt-4 text-small"
       >
         <!-- eslint-disable vue/no-v-html -->
         <div v-html="sanitizedBodyViewValue" />
@@ -80,7 +89,7 @@ async function copyPageUrl() {
       <div
         v-else
         data-testid="preview-page-card-empty"
-        class="flex h-full items-center justify-center text-center font-lina text-small font-semibold text-overlay-dark-40"
+        class="flex flex-1 items-center justify-center px-5 text-center font-lina text-small font-semibold text-overlay-dark-40"
       >
         미리보기 준비중
       </div>

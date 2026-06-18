@@ -9,6 +9,7 @@
  *   - 2026-05-18, SCR-400 확인, mascot/search 이미지 import 경로 보강
  *   - 2026-06-10, admin 데이터 현황 벤토 개선, lina-desk 이미지 import 경로 추가
  *   - 2026-06-10, admin 파이프라인 IDLE 캐릭터, lina-waiting 이미지 import 경로 추가
+ *   - 2026-06-18, 출처 미리보기 UI 보정, confluence-bg screenshot asset export 추가
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -37,6 +38,7 @@ import mascotWrongImageUrl from '../../frontend/assets/lina-character/mascot-wro
 import mascotImageUrl from '../../frontend/assets/lina-character/mascot.png';
 import logoLinaCuteImageUrl from '../../frontend/assets/logos/logo-lina-cute4.png';
 import chatScreenshotImageUrl from '../../frontend/assets/screenshots/chat-screenshot.png';
+import confluenceBgImageUrl from '../../frontend/assets/screenshots/confluence-bg.png';
 import confluenceScreenshot1HomeImageUrl from '../../frontend/assets/screenshots/confluence-screenshot1-home.png';
 import confluenceScreenshot1ImageUrl from '../../frontend/assets/screenshots/confluence-screenshot1.png';
 import confluenceScreenshot2HomeImageUrl from '../../frontend/assets/screenshots/confluence-screenshot2-home.png';
@@ -46,6 +48,7 @@ import chatInputBoxImageUrl from '../../frontend/assets/ui/chat-input-box.png';
 export {
   chatInputBoxImageUrl,
   chatScreenshotImageUrl,
+  confluenceBgImageUrl,
   confluenceScreenshot1HomeImageUrl,
   confluenceScreenshot1ImageUrl,
   confluenceScreenshot2HomeImageUrl,
