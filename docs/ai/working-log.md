@@ -5187,6 +5187,26 @@
 - API/DB 계약 변경 없음. `docs/api-spec.md`, `docs/db-schema.md` 수정 불필요.
 - 전체 테스트 중 기존 `feature18.settings-modal.test.ts`에서 router injection Vue warning이 stderr에 출력되나 테스트는 통과. 이번 변경 범위와 무관.
 
+## 2026-06-18 - 채팅 제목 수정 모달 focus 색상 보정
+
+### Scope
+
+- 제목 수정 모달 input/button focus 시 주황색 `shadow-focus`가 보이지 않도록 제거
+- 수정 버튼 검은색 스타일과 기존 submit/cancel 동작 유지
+
+### Changed Files
+
+- `src/features/chat/ConversationRenameModal.vue`
+  - input `focus:shadow-focus` 제거
+  - 취소/수정 버튼 `focus-visible:shadow-focus` 제거
+- `src/__tests__/feature10.1.conversation-menu.test.ts`
+  - 제목 수정 모달 input/수정 버튼에 `shadow-focus` 클래스가 없음을 검증
+
+### Commands / Results
+
+- `npm run test -- src/__tests__/feature10.1.conversation-menu.test.ts`: 최초 실행 1 failed / 7 passed로 focus shadow 잔존 확인
+- `npm run test -- src/__tests__/feature10.1.conversation-menu.test.ts`: 8/8 passed
+
 ## 2026-06-18 - 출처 미리보기 hover bridge 회귀 수정
 
 ### Symptom
@@ -5210,3 +5230,45 @@
 
 - `npm run test -- src/__tests__/feature10.reference-panel.test.ts`: 최초 실행 1 failed / 9 passed로 실패 확인
 - `npm run test -- src/__tests__/feature10.reference-panel.test.ts`: 10/10 passed
+
+## 2026-06-18 - 채팅 제목 수정 모달 추가
+
+### Scope
+
+- 기존 `window.prompt` 기반 대화 이름 변경을 앱 스타일 중앙 모달로 교체
+- 삭제 확인 모달과 유사한 backdrop/dialog/focus/ESC/scroll lock 동작 제공
+- 수정 확인 버튼은 검은색(`bg-black`)으로 구성
+- 기존 `PATCH /api/conversations/{conversationId}` 제목 수정 API 호출과 제목 반영 흐름 유지
+
+### Test Cases
+
+- `이름 변경` 메뉴 클릭 시 브라우저 prompt를 호출하지 않고 제목 수정 모달을 표시한다
+- 모달 input은 현재 대화 제목을 초기값으로 갖는다
+- `수정` 버튼은 검은색 스타일을 사용하고, 새 제목 입력 후 클릭 시 기존 PATCH 요청을 보낸다
+- `취소` 클릭 시 모달이 닫히고 제목 수정 PATCH를 보내지 않는다
+- 기존 pin/delete 메뉴 동작과 삭제 확인 모달 흐름은 유지한다
+
+### Changed Files
+
+- `src/features/chat/ConversationRenameModal.vue`
+  - 제목 입력, 취소/수정 버튼, ESC/backdrop 닫힘, Tab focus loop, body scroll lock 구현
+- `src/pages/ChatPage.vue`
+  - `pendingRenameConversation`, `isRenameConversationSubmitting` 상태 추가
+  - `renameConversation`을 prompt 호출에서 모달 open 흐름으로 변경
+  - `confirmRenameConversation()`에서 기존 `updateConversationTitle` API 호출 및 conversation replacement 유지
+- `src/__tests__/feature10.1.conversation-menu.test.ts`
+  - prompt 제거, 제목 수정 모달 표시/submit/cancel 회귀 테스트 추가
+
+### Commands / Results
+
+- `npm run test -- src/__tests__/feature10.1.conversation-menu.test.ts`: 최초 실행 2 failed / 6 passed로 prompt 기반 기존 동작 실패 확인
+- `npm run test -- src/__tests__/feature10.1.conversation-menu.test.ts`: 8/8 passed
+- `./scripts/format.sh`: 통과
+- `./scripts/lint.sh`: 통과
+- `./scripts/test.sh`: 241/241 passed
+- `./scripts/verify.sh`: 통과(format, lint, test)
+
+### Notes / Remaining Issues
+
+- API/DB 계약 변경 없음. `docs/api-spec.md`, `docs/db-schema.md` 수정 불필요.
+- 전체 테스트 중 기존 `feature18.settings-modal.test.ts`에서 router injection Vue warning이 stderr에 출력되나 테스트는 통과. 이번 변경 범위와 무관.

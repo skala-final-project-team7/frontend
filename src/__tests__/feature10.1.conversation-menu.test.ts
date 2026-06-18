@@ -6,6 +6,7 @@
  * 작성일 : 2026-06-01
  * 변경사항 내역 (날짜, 변경목적, 변경내용 순)
  *   - 2026-06-01, feature10.1 구현, 대화 케밥 메뉴 acceptance criteria 테스트 추가
+ *   - 2026-06-18, 대화 제목 수정 모달 추가, prompt 제거 및 modal rename 회귀 테스트 추가
  * --------------------------------------------------
  * [호환성]
  *   - Node.js 20.x LTS, TypeScript 5.7+
@@ -175,7 +176,7 @@ describe('feature10.1 conversation kebab menu', () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     setActivePinia(createPinia());
     installFeature101FetchMock();
-    vi.spyOn(window, 'prompt').mockReturnValue('문서 동기화 장애 대응');
+    vi.spyOn(window, 'prompt');
     await router.push('/chat/conv-mock-001');
   });
 
@@ -333,7 +334,30 @@ describe('feature10.1 conversation kebab menu', () => {
     await wrapper.get('[data-testid="conversation-menu-rename"]').trigger('click');
     await flushAsyncUpdates();
 
-    expect(window.prompt).toHaveBeenCalledWith('대화 이름을 입력하세요.', 'S3 권한 오류 해결 방법');
+    const renameDialog = document.querySelector('[data-testid="conversation-rename-dialog"]');
+    const renameInput = document.querySelector<HTMLInputElement>(
+      '[data-testid="conversation-rename-input"]',
+    );
+    const renameConfirm = document.querySelector<HTMLButtonElement>(
+      '[data-testid="conversation-rename-confirm"]',
+    );
+
+    expect(window.prompt).not.toHaveBeenCalled();
+    expect(renameDialog?.textContent).toContain('채팅 제목을 수정하시겠습니까?');
+    expect(renameInput?.value).toBe('S3 권한 오류 해결 방법');
+    expect(renameInput?.className).not.toContain('shadow-focus');
+    expect(renameConfirm?.className).toContain('bg-black');
+    expect(renameConfirm?.className).not.toContain('shadow-focus');
+
+    if (renameInput) {
+      renameInput.value = '문서 동기화 장애 대응';
+      renameInput.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    await flushAsyncUpdates();
+
+    renameConfirm?.click();
+    await flushAsyncUpdates();
+
     expect(
       capturedRequests.some(
         (request) =>
@@ -343,6 +367,7 @@ describe('feature10.1 conversation kebab menu', () => {
       ),
     ).toBe(true);
     expect(wrapper.get('[data-testid="conversation-title"]').text()).toBe('문서 동기화 장애 대응');
+    expect(document.querySelector('[data-testid="conversation-rename-dialog"]')).toBeNull();
 
     await wrapper.get('[data-testid="conversation-menu-button"]').trigger('click');
     await wrapper.get('[data-testid="conversation-menu-delete"]').trigger('click');
@@ -368,6 +393,31 @@ describe('feature10.1 conversation kebab menu', () => {
       ),
     ).toBe(true);
     expect(router.currentRoute.value.fullPath).toBe('/chat');
+  });
+
+  it('closes the rename modal without updating when cancel is clicked', async () => {
+    const wrapper = await mountExpandedChatPage();
+
+    await wrapper.get('[data-testid="conversation-menu-button"]').trigger('click');
+    await wrapper.get('[data-testid="conversation-menu-rename"]').trigger('click');
+    await flushAsyncUpdates();
+
+    expect(document.querySelector('[data-testid="conversation-rename-dialog"]')).not.toBeNull();
+
+    document
+      .querySelector<HTMLButtonElement>('[data-testid="conversation-rename-cancel"]')
+      ?.click();
+    await flushAsyncUpdates();
+
+    expect(document.querySelector('[data-testid="conversation-rename-dialog"]')).toBeNull();
+    expect(
+      capturedRequests.some(
+        (request) =>
+          request.url.endsWith('/api/conversations/conv-mock-001') &&
+          request.method === 'PATCH' &&
+          JSON.stringify(request.body) === JSON.stringify({ title: '문서 동기화 장애 대응' }),
+      ),
+    ).toBe(false);
   });
 
   it('closes the delete confirmation modal without deleting when cancel is clicked', async () => {

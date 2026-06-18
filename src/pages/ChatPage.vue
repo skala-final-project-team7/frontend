@@ -25,6 +25,7 @@
   - 2026-06-15, feature11 구현, 대화 목록/메시지 이력 loading-error-retry 상태와 Bearer 인증 연동 UI 보강
   - 2026-06-15, feature11 구현, 첫 질문 대화 생성 실패용 retry error state 추가
   - 2026-06-15, feature11 구현, assistant 피드백 성공 후 선택 상태 고정 추가
+  - 2026-06-18, 대화 제목 수정 모달 추가, prompt 기반 rename을 앱 모달로 교체
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -50,6 +51,7 @@ import ChatEmptyState from '@/features/chat/ChatEmptyState.vue';
 import ChatHeader from '@/features/chat/ChatHeader.vue';
 import ChatSidebar from '@/features/chat/ChatSidebar.vue';
 import ConversationDeleteConfirmModal from '@/features/chat/ConversationDeleteConfirmModal.vue';
+import ConversationRenameModal from '@/features/chat/ConversationRenameModal.vue';
 import ConversationSearchModal from '@/features/chat/ConversationSearchModal.vue';
 import FeedbackModal from '@/features/chat/FeedbackModal.vue';
 import MessageInput from '@/features/chat/MessageInput.vue';
@@ -114,6 +116,8 @@ const isSettingsModalOpen = ref(false);
 const isHelpModalOpen = ref(false);
 const pendingDeleteConversation = ref<Conversation | null>(null);
 const isDeleteConversationSubmitting = ref(false);
+const pendingRenameConversation = ref<Conversation | null>(null);
+const isRenameConversationSubmitting = ref(false);
 const isScrollToLatestVisible = ref(false);
 
 const routeConversationId = computed(() => {
@@ -307,13 +311,28 @@ async function toggleConversationPin(conversation: Conversation) {
   }
 }
 
-async function renameConversation(conversation: Conversation) {
-  const nextTitle = window.prompt('대화 이름을 입력하세요.', conversation.title)?.trim();
+function renameConversation(conversation: Conversation) {
+  pendingRenameConversation.value = conversation;
+  closeConversationMenu();
+}
 
-  if (!nextTitle) {
-    closeConversationMenu();
+function closeRenameConversationModal() {
+  if (isRenameConversationSubmitting.value) {
     return;
   }
+
+  pendingRenameConversation.value = null;
+}
+
+async function confirmRenameConversation(title: string) {
+  const conversation = pendingRenameConversation.value;
+  const nextTitle = title.trim();
+
+  if (!conversation || isRenameConversationSubmitting.value || !nextTitle) {
+    return;
+  }
+
+  isRenameConversationSubmitting.value = true;
 
   try {
     const nextConversation = await updateConversationTitle(conversation.conversationId, {
@@ -326,6 +345,8 @@ async function renameConversation(conversation: Conversation) {
       variant: 'error',
     });
   } finally {
+    isRenameConversationSubmitting.value = false;
+    pendingRenameConversation.value = null;
     closeConversationMenu();
   }
 }
@@ -874,6 +895,13 @@ watch(
         :is-submitting="isDeleteConversationSubmitting"
         @cancel="closeDeleteConversationModal"
         @confirm="confirmRemoveConversation"
+      />
+      <ConversationRenameModal
+        :conversation-title="pendingRenameConversation?.title ?? ''"
+        :is-open="pendingRenameConversation !== null"
+        :is-submitting="isRenameConversationSubmitting"
+        @cancel="closeRenameConversationModal"
+        @confirm="confirmRenameConversation"
       />
     </div>
   </main>
