@@ -5186,3 +5186,27 @@
 
 - API/DB 계약 변경 없음. `docs/api-spec.md`, `docs/db-schema.md` 수정 불필요.
 - 전체 테스트 중 기존 `feature18.settings-modal.test.ts`에서 router injection Vue warning이 stderr에 출력되나 테스트는 통과. 이번 변경 범위와 무관.
+
+## 2026-06-18 - 출처 미리보기 hover bridge 회귀 수정
+
+### Symptom
+
+- 출처 리스트 row에서 왼쪽 preview 카드로 포인터를 이동할 때 preview가 즉시 사라져 카드 action/link에 hover하기 어려움
+
+### Root Cause
+
+- 2026-06-18 레이어/하단 보정에서 hover preview를 `fixed`로 변경했다.
+- preview가 row 자식 DOM으로 남아 있더라도 시각적 위치는 row 밖이므로, row `mouseleave`에서 즉시 `hoveredPageId = ''`가 실행되어 preview bridge 영역에 `mouseenter`가 들어오기 전에 DOM이 제거됐다.
+
+### Changed Files
+
+- `src/features/chat/ReferencePanel.vue`
+  - row `mouseleave`/`focusout` 시 즉시 닫지 않고 120ms close timer를 예약
+  - preview wrapper `mouseenter`에서 close timer를 취소하고, preview `mouseleave`에서 닫히도록 변경
+- `src/__tests__/feature10.reference-panel.test.ts`
+  - row에서 preview bridge로 이동하면 preview가 유지되고, preview를 벗어나면 닫히는 회귀 테스트 추가
+
+### Commands / Results
+
+- `npm run test -- src/__tests__/feature10.reference-panel.test.ts`: 최초 실행 1 failed / 9 passed로 실패 확인
+- `npm run test -- src/__tests__/feature10.reference-panel.test.ts`: 10/10 passed

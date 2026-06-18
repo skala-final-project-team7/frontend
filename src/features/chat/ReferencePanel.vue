@@ -12,6 +12,7 @@
   - 2026-05-26, feature10 UI 보정, 카드 공통 named hover scope 사용 및 팝오버 이동 hover 영역 연결
   - 2026-05-26, feature10 UI 보정, 질문 문자열 기반 keyword highlight 제거
   - 2026-06-18, 출처 미리보기 UI 보정, hover preview 레이어/viewport 보정 및 목록 내부 스크롤 적용
+  - 2026-06-18, 출처 미리보기 회귀 수정, row에서 preview로 이동하는 hover bridge 유지
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -40,6 +41,7 @@ const hoveredPageId = ref('');
 const hoverPreviewTop = ref(16);
 const previewViewportMargin = 16;
 const previewCardHeight = 320;
+let hoverCloseTimer: ReturnType<typeof window.setTimeout> | undefined;
 
 const sourceByPageId = computed(() =>
   Object.fromEntries(props.sources.map((source) => [source.pageId, source])),
@@ -97,6 +99,7 @@ function buildPendingPreview(source: Source): ConfluencePagePreview {
 }
 
 function showHoverPreview(pageId: string, event: MouseEvent | FocusEvent) {
+  cancelHoverPreviewClose();
   hoveredPageId.value = pageId;
 
   const rowElement = event.currentTarget as HTMLElement | null;
@@ -113,7 +116,24 @@ function showHoverPreview(pageId: string, event: MouseEvent | FocusEvent) {
   );
 }
 
+function cancelHoverPreviewClose() {
+  if (!hoverCloseTimer) {
+    return;
+  }
+
+  window.clearTimeout(hoverCloseTimer);
+  hoverCloseTimer = undefined;
+}
+
+function scheduleHideHoverPreview() {
+  cancelHoverPreviewClose();
+  hoverCloseTimer = window.setTimeout(() => {
+    hideHoverPreview();
+  }, 120);
+}
+
 function hideHoverPreview() {
+  cancelHoverPreviewClose();
   hoveredPageId.value = '';
 }
 
@@ -200,15 +220,17 @@ function formatDate(value: string) {
         tabindex="0"
         class="group relative border-b border-bg-300 py-4 outline-none transition hover:bg-bg-100 focus-visible:bg-bg-100 focus-visible:shadow-focus"
         @mouseenter="showHoverPreview(source.pageId, $event)"
-        @mouseleave="hideHoverPreview"
+        @mouseleave="scheduleHideHoverPreview"
         @focusin="showHoverPreview(source.pageId, $event)"
-        @focusout="hideHoverPreview"
+        @focusout="scheduleHideHoverPreview"
       >
         <div
           v-if="hoveredPageId === source.pageId && hoveredPreview"
           data-testid="reference-hover-preview"
           class="fixed right-[376px] z-[60] pr-5"
           :style="{ top: `${hoverPreviewTop}px` }"
+          @mouseenter="cancelHoverPreviewClose"
+          @mouseleave="hideHoverPreview"
         >
           <div class="relative">
             <PreviewPageCard :page="hoveredPreview" />
