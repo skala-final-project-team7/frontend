@@ -5207,6 +5207,7 @@
 - `npm run test -- src/__tests__/feature10.1.conversation-menu.test.ts`: 최초 실행 1 failed / 7 passed로 focus shadow 잔존 확인
 - `npm run test -- src/__tests__/feature10.1.conversation-menu.test.ts`: 8/8 passed
 
+
 ## 2026-06-18 - 출처 미리보기 hover bridge 회귀 수정
 
 ### Symptom
@@ -5272,3 +5273,28 @@
 
 - API/DB 계약 변경 없음. `docs/api-spec.md`, `docs/db-schema.md` 수정 불필요.
 - 전체 테스트 중 기존 `feature18.settings-modal.test.ts`에서 router injection Vue warning이 stderr에 출력되나 테스트는 통과. 이번 변경 범위와 무관.
+
+## 2026-06-19 - 채팅 답변 citation marker 렌더 제거
+
+### Scope
+
+- assistant 답변 렌더 직전에 `[#숫자]` marker를 제거
+- `[#1][#2][#3]`처럼 연속으로 붙은 marker와 앞 공백을 함께 제거
+- store/SSE 원본 `message.content`와 복사 동작은 변경하지 않고 화면 표시만 보정
+
+### Changed Files
+
+- `src/features/chat/MessageBubble.vue`
+  - `renderedAssistantContent` computed 추가: `props.message.content.replace(/\s*\[#\d+\]/g, '')`
+  - assistant 본문 `<p>` 렌더에만 표시용 content 적용
+- `src/__tests__/feature9.chat-conversation.test.ts`
+  - assistant marker가 화면에서 제거되고 원본 content는 유지되는 회귀 테스트 추가
+
+### Commands / Results
+
+- `npm run test -- src/__tests__/feature9.chat-conversation.test.ts`: 최초 실행 1 failed / 35 passed로 marker 표시 잔존 확인
+- `npm run test -- src/__tests__/feature9.chat-conversation.test.ts`: 36/36 passed
+- `./scripts/format.sh`: passed
+- `./scripts/lint.sh`: passed
+- `./scripts/test.sh`: passed
+- `./scripts/verify.sh`: passed

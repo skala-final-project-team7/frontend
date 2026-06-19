@@ -754,6 +754,31 @@ describe('feature9 SCR-410, SCR-420, SCR-600 Chat conversation screen', () => {
     );
   });
 
+  it('removes inline citation markers from assistant content only at render time', () => {
+    const message = {
+      messageId: 'msg-assistant-citations',
+      role: 'assistant' as const,
+      content: 'S3 권한은 IAM 정책을 확인합니다 [#1][#2][#3]\\n다음 단계는 버킷 정책입니다 [#12].',
+      createdAt: '2026-05-21T00:00:00Z',
+      sources: [],
+    };
+    const wrapper = mount(MessageBubble, {
+      props: {
+        message,
+        editingMessageId: '',
+        editingContent: '',
+        isStreaming: false,
+        streamingMessageId: '',
+      },
+    });
+
+    expect(wrapper.text()).toContain('S3 권한은 IAM 정책을 확인합니다');
+    expect(wrapper.text()).toContain('다음 단계는 버킷 정책입니다.');
+    expect(wrapper.text()).not.toContain('[#1]');
+    expect(wrapper.text()).not.toContain('[#12]');
+    expect(message.content).toContain('[#1][#2][#3]');
+  });
+
   it('keeps Enter submit and Shift+Enter multiline behavior in MessageInput', async () => {
     const onSubmit = vi.fn();
     const wrapper = mount(MessageInput, {

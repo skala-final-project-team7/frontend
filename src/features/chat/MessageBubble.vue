@@ -16,6 +16,7 @@
   - 2026-06-02, feature10.4 보강, assistant 피드백 rating 선택 이벤트 추가
   - 2026-06-15, feature11 구현, assistant 오류 상태에서도 다시 시도 액션 노출
   - 2026-06-15, feature11 구현, assistant 피드백 선택 상태 스타일 추가
+  - 2026-06-19, 채팅 답변 렌더 보정, assistant citation marker 표시 제거
 --------------------------------------------------
 [호환성]
   - Node.js 20.x LTS, TypeScript 5.7+
@@ -87,6 +88,7 @@ const canShowSourceButton = computed(
 const canShowFeedbackActions = computed(
   () => canShowAssistantActions.value && props.message.phase !== 'error',
 );
+const renderedAssistantContent = computed(() => props.message.content.replace(/\s*\[#\d+\]/g, ''));
 const isAssistantLikeSelected = computed(() => props.selectedFeedbackRating === 'LIKE');
 const isAssistantDislikeSelected = computed(() => props.selectedFeedbackRating === 'DISLIKE');
 const userVersionActiveIndex = computed(() => props.userVersionActiveIndex ?? 0);
@@ -241,7 +243,7 @@ function selectUserMessageVersion(versionIndex: number) {
         <div v-if="isStreamingAssistantMessage" data-testid="assistant-stream-loading" class="mb-3">
           <BaseSpinner :label="message.statusMessage ?? ''" />
         </div>
-        <p v-if="message.content.length > 0">{{ message.content }}</p>
+        <p v-if="message.content.length > 0">{{ renderedAssistantContent }}</p>
         <div v-if="canShowSourceButton" class="mt-4 flex flex-wrap items-center gap-2 text-small">
           <button
             data-testid="source-button"
